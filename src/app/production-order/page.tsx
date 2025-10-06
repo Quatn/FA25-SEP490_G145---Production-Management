@@ -4,13 +4,13 @@ import Link from "next/link";
 
 export default function ProudctionOrderHome() {
   return (
-    <Flex h={"full"} direction={"column"} grow={1}>
-      <Header />
-      <main style={{ flexGrow: 1 }}>
-        <Text fontWeight={"semibold"}>Will you answer the call of god?</Text>
-      </main>
-      <footer>
-      </footer>
-    </Flex>
+    <Box m={5} p={2} rounded={"sm"} bg={"gray.200"}>
+      <Text fontWeight={"semibold"} color={"blackAlpha.800"}>Production Order</Text>
+      <Stack ms={3}>
+        <Link href={"/production-order/view"} color={"blue.500"}>
+          Table View
+        </Link>
+      </Stack>
+    </Box>
   );
 }

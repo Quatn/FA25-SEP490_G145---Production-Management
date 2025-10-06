@@ -1,0 +1,47 @@
+[
+  {
+    "id": "prod1",
+    "productionOrderCode": "2781/08",
+    "customer": "AROMA",
+    "wareCode": "H5L 355*255*220 WX001",
+    "waveType": "5CB",
+    "length": "355",
+    "width": "255",
+    "height": "220",
+    "excessInventory": "0",
+    "amount": "3458",
+    "orderReceivedDate": "30/08",
+    "deliveryDate": "20/09",
+    "purchaseOrder": "AR-1432 P14"
+  },
+  {
+    "id": "prod2",
+    "productionOrderCode": "2782/08",
+    "customer": "AROMA",
+    "wareCode": "TN 345*245 (WX0-0001)",
+    "waveType": "3B",
+    "length": "345",
+    "width": "980",
+    "height": "",
+    "excessInventory": "0",
+    "amount": "3458",
+    "orderReceivedDate": "30/08",
+    "deliveryDate": "16/09",
+    "purchaseOrder": "AR-1432 P14"
+  },
+  {
+    "id": "prod3",
+    "productionOrderCode": "2783/08",
+    "customer": "AROMA",
+    "wareCode": "VN3L 345*245*200 WX1-0202",
+    "waveType": "3B",
+    "length": "400",
+    "width": "590",
+    "height": "",
+    "excessInventory": "0",
+    "amount": "3458",
+    "orderReceivedDate": "30/08",
+    "deliveryDate": "16/09",
+    "purchaseOrder": "AR-1432 P14"
+  }
+]
