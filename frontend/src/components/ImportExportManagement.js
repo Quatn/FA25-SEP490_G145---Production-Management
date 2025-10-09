@@ -265,7 +265,7 @@ const ImportExportManagement = () => {
             <th className="text-center">SL</th>
             <th className="text-center">Trạng thái</th>
             <th className="text-center">Ngày Nhận</th>
-            <th className="text-center">SLTT</th>
+            <th className="text-center">SL {isImport ? 'Nhập' : 'Xuất'}</th>
             <th className="text-center">Còn Lại</th>
             <th className="text-center">Ghi Chú</th>
             <th className="text-center">Thao Tác</th>
@@ -447,8 +447,8 @@ const ImportExportManagement = () => {
                 <Col>
                   <strong>Còn Lại:</strong>{" "}
                   {isImport
-                    ? selectedOrder.quantityImportRemaining
-                    : selectedOrder.quantityExportRemaining}
+                    ? selectedOrder.quantityImportRemaining.toLocaleString()
+                    : selectedOrder.quantityExportRemaining.toLocaleString()}
                 </Col>
               </Row>
               <hr />

@@ -3,13 +3,11 @@ const inventory = [
     id: 1,
     productionOrderCode: "2190/08",
     wareCode: "L5L 119*250*5MM",
-    actualQuantity: 20000,
   },
   {
     id: 2,
     productionOrderCode: "2783/08",
     wareCode: "VN3L 345*245*200 WX1-0202",
-    actualQuantity: -2000,
   },
 ];
 
