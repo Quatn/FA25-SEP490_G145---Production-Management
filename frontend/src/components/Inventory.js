@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Container, Row, Col, InputGroup, Form, Table } from "react-bootstrap";
 import {
   importForm,
@@ -8,10 +8,25 @@ import {
 import { commands } from "../data/mockData-commands";
 export const Inventory = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [inventories, setInventories] = useState(inventory);
   const [commandData, setCommandData] = useState(commands);
   const [importData, setImportData] = useState(importForm);
   const [exportData, setExportData] = useState(exportForm);
+  const [inventories, setInventories] = useState(inventory);
+  const [filteredData, setFilteredData] = useState([]);
+
+  useEffect(() => {
+    let result = [...inventories];
+
+    // Lọc theo mã lệnh SX
+    if (searchTerm) {
+      result = result.filter((item) =>
+        item.productionOrderCode
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
+      );
+    }
+    setFilteredData(result);
+  }, [searchTerm, inventories]);
 
   const getCommandDetails = (id) => {
     return commandData.find((item) => item.productionOrderCode === id);
@@ -76,7 +91,7 @@ export const Inventory = () => {
           </tr>
         </thead>
         <tbody>
-          {inventories.map((item, index) => (
+          {filteredData.map((item, index) => (
             <tr key={`inventory-${index}`}>
               <td className="text-center fw-semibold">
                 {item.productionOrderCode}
