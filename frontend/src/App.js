@@ -8,7 +8,8 @@ import {
 } from "react-router-dom";
 import { Navbar, Nav, Container } from "react-bootstrap";
 import { CommandManager } from "./components/CommandManager";
-import { UpdateWave } from "./components/UpdateWave";
+import { ImportExportManagement } from "./components/ImportExportManagement";
+import { Inventory } from "./components/Inventory";
 
 function App() {
   return (
@@ -23,8 +24,11 @@ function App() {
               <Nav.Link as={NavLink} to="/commands" end>
                 Quản lý lệnh sản xuất
               </Nav.Link>
-              <Nav.Link as={NavLink} to="/update-wave">
-                Cập nhật sóng
+              <Nav.Link as={NavLink} to="/import-export">
+                Quản lí đơn nhập/xuất
+              </Nav.Link>
+              <Nav.Link as={NavLink} to="/inventory">
+                Quản lí kho bán thành phẩm
               </Nav.Link>
             </Nav>
           </Navbar.Collapse>
@@ -35,7 +39,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/commands" replace />} />
           <Route path="/commands" element={<CommandManager />} />
-          <Route path="/update-wave" element={<UpdateWave />} />
+          <Route path="/import-export" element={<ImportExportManagement />} />
+          <Route path="/inventory" element={<Inventory />} />
           <Route path="*" element={<h3>404 - Trang không tồn tại</h3>} />
         </Routes>
       </Container>
