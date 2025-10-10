@@ -60,7 +60,7 @@ export default function PaperRollForm() {
     };
 
     return (
-        <Container className="mt-5 p-4" style={{ background: '#D5E8D4', maxWidth: '1000px' }}>
+        <Container className="mt-5 p-4" style={{ background: '#D5E8D4'}}>
             <h4 className="text-center mb-4 fw-bold">NHẬP CUỘN GIẤY MỚI</h4>
 
             <Form noValidate validated={validated} onSubmit={handleSubmit}>
