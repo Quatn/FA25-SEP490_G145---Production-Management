@@ -1,219 +1,174 @@
 "use client";
 
-import { useState } from 'react';
-import { Container, Stack, Form, Button, Modal } from 'react-bootstrap';
+import { useState, useEffect } from 'react';
+import { Container, Stack, Form, Button, Modal, Col, Row, ListGroup, ListGroupItem } from 'react-bootstrap';
 
 export default function PaperRollForm() {
-    const [show, setShow] = useState(false);
-    const [validated, setValidated] = useState(false);
 
-    const [paperRoll, setPaperRoll] = useState({
-        rollId: "",
-        weight: "",
-        importDate: "",
-        paperType: "",
-        factoryCode: "",
-        paperWidth: "",
-        basisWeight: "",
-        materialNote: "",
-        externalNote: "",
-    });
+    const [rows, setRows] = useState([]);
 
-    const handleReset = () => {
-        setPaperRoll({
-            rollId: "",
-            weight: "",
-            importDate: "",
-            paperType: "",
-            factoryCode: "",
-            paperWidth: "",
-            basisWeight: "",
-            materialNote: "",
-            externalNote: "",
-        });
-    }
+    const [activeIndex, setActiveIndex] = useState(null);
 
-    const handleChange = (field) => (e) => {
-        setPaperRoll({ ...paperRoll, [field]: e.target.value });
-    };
+    const [filteredSuggestions, setFilteredSuggestions] = useState([]);
 
-    const handleClose = () => setShow(false);
+    const suggestions = [
+        'M/AP/950/110',
+        'M/AP/950/140',
+        'M/AP/100/110',
+        'M/AP/110/110',
+        'M/AP/115/110',
+        'T/LE/900/140',
+        'T/LE/900/150',
+        'K/LE/950/200',
+        'K/LE/900/140'
+    ];
 
-    const handleSubmit = (event) => {
-        const form = event.currentTarget;
-        event.preventDefault();
+    useEffect(() => {
+        handleAddRow();
+    }, [])
 
-        if (form.checkValidity() === false) {
-            event.stopPropagation();
-            setValidated(true);
-        } else {
-            setValidated(true);
-            setShow(true);
+    const handleChange = (index, field, value) => {
+        const updatedRows = [...rows];
+        updatedRows[index][field] = value;
+        setRows(updatedRows);
+
+        if(field === 'paperType'){
+            setActiveIndex(index);
+            if (value.trim() === ""){
+                setFilteredSuggestions([]);
+                return;
+            }
+
+            const lower = value.toLowerCase();
+            const matched = suggestions.filter((item) => 
+                item.toLowerCase().includes(lower)
+            );
+
+            setFilteredSuggestions(matched);
         }
     };
 
-    const labelStyle = { fontSize: '18px' };
-    const inputStyle = {
-        borderColor: '#000000',
-        borderWidth: '2px',
-        backgroundColor: '#ffffff',
+    const handleSelectSuggestion = (index, value) => {
+        const updatedRows = [...rows];
+        updatedRows[index].paperType = value;
+        setRows(updatedRows);
+        setFilteredSuggestions([]);
+        setActiveIndex(null);
+    }
+
+    const handleAddRow = () => {
+        const newRows = Array.from({ length: 10 }, () => ({
+            paperType: '',
+            weight: '',
+            createdDate: '',
+        }));
+
+        setRows(rows => [...rows, ...newRows]);
+
+    };
+
+    const handleRemoveRow = (index) => {
+        const updatedRows = rows.filter((_, i) => i !== index);
+        setRows(updatedRows);
+    }
+
+    const handleSubmit = (e) => {
+
+        const filteredRows = rows.filter(row => 
+            row.paperType.trim() !== '' ||
+            row.weight.trim() !== '' ||
+            row.createdDate.trim() !== ''
+        );
+
+        setRows(filteredRows);
+
+        e.preventDefault();
+        console.log('Submitted data:', rows);
     };
 
     return (
-        <Container className="mt-5 p-4" style={{ background: '#D5E8D4'}}>
+        <Container className="mt-5 p-4" style={{ background: '#D5E8D4' }}>
             <h4 className="text-center mb-4 fw-bold">NHẬP CUỘN GIẤY MỚI</h4>
 
-            <Form noValidate validated={validated} onSubmit={handleSubmit}>
-                {/* Row 1 */}
-                <Stack direction="horizontal" gap={4} className="mb-4 justify-content-center">
-                    <Form.Group>
-                        <Form.Label className="fw-bold" style={labelStyle}>Mã Cuộn</Form.Label>
-                        <Form.Control
-                            required
-                            type="text"
-                            value={paperRoll.rollId}
-                            onChange={handleChange("rollId")}
-                            style={{ ...inputStyle, width: '200px' }}
-                        />
-                        <Form.Control.Feedback type="invalid">Vui lòng nhập mã cuộn.</Form.Control.Feedback>
-                    </Form.Group>
+            <Form onSubmit={handleSubmit}>
+                {rows.map((row, index) => (
+                    <Row key={index} className='mb-3'>
+                        <Form.Group as={Col}>
+                            <Form.Control
+                                type='text'
+                                placeholder='Tên giấy'
+                                autoComplete='off'
+                                value={row.paperType}
+                                onChange={(e) => handleChange(index, 'paperType', e.target.value)}
+                                onFocus={() => {
+                                    setActiveIndex(index);
+                                    if (row.paperType){
+                                        const matched = suggestions.filter((item) => 
+                                        item.toLowerCase()
+                                            .includes(rows.paperType.toLowerCase())
+                                        );
+                                        setFilteredSuggestions(matched);
+                                    }
+                                }}
 
-                    <Form.Group>
-                        <Form.Label className="fw-bold" style={labelStyle}>Trọng lượng</Form.Label>
-                        <Form.Control
-                            required
-                            type="number"
-                            min={1}
-                            value={paperRoll.weight}
-                            onChange={handleChange("weight")}
-                            style={{ ...inputStyle, width: '200px' }}
-                        />
-                        <Form.Control.Feedback type="invalid">Trọng lượng phải lớn hơn 0.</Form.Control.Feedback>
-                    </Form.Group>
+                                onBlur={() => {
+                                    setTimeout(() => {
+                                        setTimeout(() => setFilteredSuggestions([]), 150);
+                                    })
+                                }}
+                            />
 
-                    <Form.Group>
-                        <Form.Label className="fw-bold" style={labelStyle}>Lô / Ngày nhập</Form.Label>
-                        <Form.Control
-                            required
-                            type="date"
-                            value={paperRoll.importDate}
-                            onChange={handleChange("importDate")}
-                            style={{ ...inputStyle, width: '200px' }}
-                        />
-                        <Form.Control.Feedback type="invalid">Vui lòng chọn ngày nhập.</Form.Control.Feedback>
-                    </Form.Group>
-                </Stack>
+                            {activeIndex === index && filteredSuggestions.length > 0 && (
+                                <ListGroup 
+                                    className='position-absolute w-100 mt-1 shadow-sm'
+                                    style={{zIndex: 1000}}>
+                                        {filteredSuggestions.map((suggest, i) => (
+                                            <ListGroup.Item
+                                                key={i}
+                                                action
+                                                onClick={() => handleSelectSuggestion(index, suggest)}
+                                                >
+                                                    {suggest}
+                                                </ListGroup.Item>
+                                        ))}
+                                    </ListGroup>
+                            )}
+                        </Form.Group>
 
-                {/* Row 2 */}
-                <Stack direction="horizontal" gap={4} className="mb-4 justify-content-center">
-                    <Form.Group className='me-2'>
-                        <Form.Label className="fw-bold" style={labelStyle}>Loại giấy</Form.Label>
-                        <Form.Control
-                            required
-                            type="text"
-                            value={paperRoll.paperType}
-                            onChange={handleChange("paperType")}
-                            style={{ ...inputStyle, width: '100px' }}
-                        />
-                        <Form.Control.Feedback type="invalid">Không được để trống.</Form.Control.Feedback>
-                    </Form.Group>
+                        <Form.Group as={Col}>
+                            <Form.Control
+                                type='number'
+                                min={1}
+                                placeholder='Trọng lượng'
+                                value={row.weight}
+                                onChange={(e) => handleChange(index, 'weight', e.target.value)}
+                            />
+                        </Form.Group>
 
-                    <Form.Group className='me-5 ms-5'>
-                        <Form.Label className="fw-bold" style={{ ...labelStyle, whiteSpace: 'nowrap' }}>Mã nhà giấy</Form.Label>
-                        <Form.Control
-                            required
-                            type="text"
-                            value={paperRoll.factoryCode}
-                            onChange={handleChange("factoryCode")}
-                            style={{ ...inputStyle, width: '100px' }}
-                        />
-                        <Form.Control.Feedback type="invalid">Không được để trống.</Form.Control.Feedback>
-                    </Form.Group>
+                        <Form.Group as={Col}>
+                            <Form.Control
+                                type='date'
+                                value={row.createdDate}
+                                onChange={(e) => handleChange(index, 'createdDate', e.target.value)}
+                            />
+                        </Form.Group>
 
-                    <Form.Group>
-                        <Form.Label className="fw-bold" style={labelStyle}>Khổ giấy</Form.Label>
-                        <Form.Control
-                            required
-                            type="number"
-                            min={1}
-                            value={paperRoll.paperWidth}
-                            onChange={handleChange("paperWidth")}
-                            style={{ ...inputStyle, width: '150px', textAlign: 'center' }}
-                        />
-                        <Form.Control.Feedback type="invalid">Phải là số hợp lệ.</Form.Control.Feedback>
-                    </Form.Group>
+                        <Col xs='auto'>
+                            <Button variant='danger' onClick={() => handleRemoveRow(index)}>
+                                Xóa
+                            </Button>
+                        </Col>
+                    </Row>
+                ))}
+                <Button variant='secondary' onClick={handleAddRow}>
+                    Thêm 10 dòng
+                </Button>
 
-                    <h3 style={{ margin: '4vh 3vh 0vh 3vh' }}>X</h3>
-
-                    <Form.Group>
-                        <Form.Label className="fw-bold" style={{ ...labelStyle, whiteSpace: 'nowrap' }}>Định lượng</Form.Label>
-                        <Form.Control
-                            required
-                            type="number"
-                            min={1}
-                            value={paperRoll.basisWeight}
-                            onChange={handleChange("basisWeight")}
-                            style={{ ...inputStyle, width: '150px', textAlign: 'center' }}
-                        />
-                        <Form.Control.Feedback type="invalid">Phải là số hợp lệ.</Form.Control.Feedback>
-                    </Form.Group>
-                </Stack>
-
-                {/* Row 3 */}
-                <Stack direction="horizontal" gap={4} className="mb-4 justify-content-center">
-                    <Form.Group>
-                        <Form.Label className="fw-bold" style={labelStyle}>Ghi chú nguyên liệu</Form.Label>
-                        <Form.Control
-                            type="text"
-                            value={paperRoll.materialNote}
-                            onChange={handleChange("materialNote")}
-                            style={{ ...inputStyle, width: '320px' }}
-                        />
-                    </Form.Group>
-
-                    <Form.Group>
-                        <Form.Label className="fw-bold" style={labelStyle}>Ghi chú ngoài</Form.Label>
-                        <Form.Control
-                            type="text"
-                            value={paperRoll.externalNote}
-                            onChange={handleChange("externalNote")}
-                            style={{ ...inputStyle, width: '320px' }}
-                        />
-                    </Form.Group>
-                </Stack>
-
-                {/* Buttons */}
-                <Stack direction='horizontal' gap={3} className='mb-4 justify-content-end'>
-                    <Button variant="danger" size='lg' className="me-3 px-5" onClick={handleReset} type="button">Hủy</Button>
-                    <Button variant="primary" size='lg' className="px-5" type="submit">Lưu</Button>
-                </Stack>
+                <Button variant='primary' type='submit'>
+                    Lưu
+                </Button>
             </Form>
 
-            {/* Modal */}
-            <Modal show={show} onHide={handleClose} size='lg'>
-                <Modal.Header closeButton>
-                    <Modal.Title>Xác nhận nhập cuộn giấy mới</Modal.Title>
-                </Modal.Header>
-                <Modal.Body style={{ backgroundColor: '#FFFF88' }}>
-                    <Stack direction='vertical' gap={4}>
-                        <h3>Bạn đang nhập vào kho giấy</h3>
-                        <h3>
-                            Cuộn giấy <span style={{ fontSize: '40px', color: 'red', marginLeft: '4vw' }}>
-                                {`${paperRoll.paperType}/${paperRoll.factoryCode}/${paperRoll.paperWidth}/${paperRoll.basisWeight}/${paperRoll.rollId}`}
-                            </span>
-                        </h3>
-                        <h3>
-                            Trọng lượng <span style={{ fontSize: '40px', color: 'red', marginLeft: '4vw' }}>
-                                {paperRoll.weight} kg
-                            </span>
-                        </h3>
-                    </Stack>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="danger" onClick={handleClose} size='lg' className='me-3 px-5'>Hủy</Button>
-                    <Button variant="primary" onClick={handleClose} size='lg' className='me-3 px-4'>Xác nhận</Button>
-                </Modal.Footer>
-            </Modal>
         </Container>
     );
 }
