@@ -1,5 +1,5 @@
+import LoginBox from "@/components/LoginBox";
 import { Flex } from "@chakra-ui/react";
-import LoginBox from "./LoginBox";
 
 export default function Page() {
   return (

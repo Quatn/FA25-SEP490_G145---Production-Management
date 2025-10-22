@@ -1,6 +1,6 @@
+import ProductionOrderTable from "@/components/production-order/ProductionOrderTable";
+import SearchBar from "@/components/production-order/SearchBar";
 import { Box, For, Stack, Table } from "@chakra-ui/react";
-import ProductionOrderTable from "./ProductionOrderTable";
-import SearchBar from "./SearchBar";
 
 export default function ProductionOrderTablePage() {
   return (
