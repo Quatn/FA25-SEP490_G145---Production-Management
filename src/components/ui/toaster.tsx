@@ -10,8 +10,9 @@ import {
 } from "@chakra-ui/react"
 
 export const toaster = createToaster({
-  placement: "bottom-end",
+  placement: "top-end",
   pauseOnPageIdle: true,
+  duration: 5000,
 })
 
 export const Toaster = () => {
@@ -28,7 +29,7 @@ export const Toaster = () => {
             <Stack gap="1" flex="1" maxWidth="100%">
               {toast.title && <Toast.Title>{toast.title}</Toast.Title>}
               {toast.description && (
-                <Toast.Description>{toast.description}</Toast.Description>
+                <Toast.Description fontSize={"20px"} fontWeight={"bold"}>{toast.description}</Toast.Description>
               )}
             </Stack>
             {toast.action && (

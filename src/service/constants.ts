@@ -6,3 +6,8 @@ export const USE_MOCK_DATA = true;
 export const AUTH_URL = "/api/v1/auth";
 export const USER_URL = "/api/v1/user";
 export const PRODUCTION_ORDER_URL = "/api/v1/production-order";
+export const PAPER_SUPPLIER_URL = "api/v1/paper-supplier";
+export const PAPER_COLOR_URL = "api/v1/paper-color";
+export const PAPER_WIDTH_URL = "api/v1/paper-width";
+export const PAPER_GRAMMAGE_URL = "api/v1/paper-grammage";
+

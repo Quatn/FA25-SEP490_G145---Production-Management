@@ -1,0 +1,49 @@
+[{
+  "_id": {
+    "$oid": "68f7123f3465a086bd70c1e9"
+  },
+  "name": "AN PHÚ",
+  "code": "AP"
+},
+{
+  "_id": {
+    "$oid": "68f7123f3465a086bd70c1ea"
+  },
+  "name": "VINA KRAFT",
+  "code": "KR"
+},
+{
+  "_id": {
+    "$oid": "68f7123f3465a086bd70c1eb"
+  },
+  "name": "BÌNH MINH",
+  "code": "BM"
+},
+{
+  "_id": {
+    "$oid": "68f7123f3465a086bd70c1ec"
+  },
+  "name": "HOÀNG HÀ",
+  "code": "HH"
+},
+{
+  "_id": {
+    "$oid": "68f7123f3465a086bd70c1ed"
+  },
+  "name": "LEE&MAN",
+  "code": "LE"
+},
+{
+  "_id": {
+    "$oid": "68f7123f3465a086bd70c1ee"
+  },
+  "name": "INDONESIA",
+  "code": "ID"
+},
+{
+  "_id": {
+    "$oid": "68f7123f3465a086bd70c1ef"
+  },
+  "name": "ĐỨC TIẾN",
+  "code": "DT"
+}]
