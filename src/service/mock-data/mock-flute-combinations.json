@@ -1,0 +1,86 @@
+[
+  {
+    "id": "flutecombinationid001",
+    "code": "3B",
+    "description": "Single Wall - B Flute (3 layers)",
+    "note": "Loại phổ biến cho thùng carton tiêu chuẩn."
+  },
+  {
+    "id": "flutecombinationid002",
+    "code": "3C",
+    "description": "Single Wall - C Flute (3 layers)",
+    "note": "Sóng C, dày và đàn hồi hơn sóng B, dùng cho hàng nặng hoặc cần chống va đập."
+  },
+  {
+    "id": "flutecombinationid003",
+    "code": "3E",
+    "description": "Single Wall - E Flute (3 layers)",
+    "note": "Sóng mịn E, bề mặt phẳng, phù hợp cho bao bì in ấn cao cấp."
+  },
+  {
+    "id": "flutecombinationid004",
+    "code": "4BC",
+    "description": "Single Face Double Wall - B + C Flute (4 layers)",
+    "note": "Hai lớp sóng xen kẽ hai lớp giấy mặt, một mặt hở. Dùng làm tấm lót hoặc vật liệu đệm giữa các thùng."
+  },
+  {
+    "id": "flutecombinationid005",
+    "code": "5BE",
+    "description": "Double Wall - B + E Flute (5 layers)",
+    "note": "Hai lớp sóng B và E, ba lớp mặt. Phổ biến cho thùng 5 lớp có độ bền cao và bề mặt mịn."
+  },
+  {
+    "id": "flutecombinationid006",
+    "code": "5BC",
+    "description": "Double Wall - B + C Flute (5 layers)",
+    "note": "Loại 5 lớp thông dụng nhất, cân bằng giữa độ bền và chi phí."
+  },
+  {
+    "id": "flutecombinationid007",
+    "code": "5CB",
+    "description": "Double Wall - C + B Flute (5 layers)",
+    "note": "Giống 5BC nhưng đảo thứ tự lớp sóng; ảnh hưởng đến độ phẳng và hướng chịu lực."
+  },
+  {
+    "id": "flutecombinationid008",
+    "code": "5BE",
+    "description": "Double Wall - B + E Flute (5 layers)",
+    "note": "Hai lớp sóng khác nhau về độ cao, cho thùng nhẹ nhưng vẫn cứng."
+  },
+  {
+    "id": "flutecombinationid009",
+    "code": "7CBE",
+    "description": "Triple Wall - C + B + E Flute (7 layers)",
+    "note": "Ba lớp sóng, bốn lớp mặt. Dùng cho bao bì công nghiệp hoặc hàng xuất khẩu yêu cầu chịu nén cao."
+  },
+  {
+    "id": "flutecombinationid010",
+    "code": "7BCB",
+    "description": "Triple Wall - B + C + B Flute (7 layers)",
+    "note": "Tổ hợp sóng đối xứng, tăng khả năng chịu tải và độ phẳng bề mặt."
+  },
+  {
+    "id": "flutecombinationid011",
+    "code": "3A",
+    "description": "Single Wall - A Flute (3 layers)",
+    "note": "Sóng cao A, hấp thụ lực tốt, thường dùng cho hàng dễ vỡ hoặc yêu cầu đệm cao."
+  },
+  {
+    "id": "flutecombinationid012",
+    "code": "4BE",
+    "description": "Single Face Double Wall - B + E Flute (4 layers)",
+    "note": "Hai sóng xen kẽ hai lớp giấy, một mặt hở."
+  },
+  {
+    "id": "flutecombinationid013",
+    "code": "3BE",
+    "description": "Single Wall - Hybrid B/E Flute (3 layers)",
+    "note": "Tổ hợp đặc biệt khi hai loại sóng được kết hợp trên cùng lớp; đôi khi dùng cho thí nghiệm hoặc mẫu đặc biệt."
+  },
+  {
+    "id": "flutecombinationid014",
+    "code": "NL-3B",
+    "description": "No Liner - B Flute Pad (3 layers, open side)",
+    "note": "Tấm 3 lớp nhưng hở một mặt, chỉ có giấy mặt dưới và sóng. Dùng làm lót giữa các lớp carton hoặc bên trong sản phẩm."
+  }
+]

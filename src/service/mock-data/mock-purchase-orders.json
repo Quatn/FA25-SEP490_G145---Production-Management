@@ -1,0 +1,10 @@
+[
+  {
+    "id": "purchaseorderid001",
+    "customerCode": "DONGTAI",
+    "orderDate": "2025-09-24T09:22:00.000Z",
+    "deliveryAdress": "NAMTAI INDUSTRIAL PARK, PHU THAI COMMUNE, HAI PHONG, VIETNAM",
+    "paymentTerms": "TT 30 Days",
+    "notes": "Produce trims as as approved samples and layout, full quality and quantity of trims must be stamped before shipping to our factories. If trims are faulty over 3%, we will debit 10% of PO value automatically."
+  }
+]

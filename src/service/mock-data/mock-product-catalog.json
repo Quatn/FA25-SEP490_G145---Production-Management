@@ -1,0 +1,42 @@
+[
+  {
+    "id": "productid001",
+    "code": "dt-pad-gu-t02",
+    "customerCode": "DONGTAI",
+    "name": "CARTON PAD FOR GU (T0205100010)",
+    "description": "",
+    "image": null,
+    "wareCodes": ["dt-pad-65x50"],
+    "note": ""
+  },
+  {
+    "id": "productid002",
+    "code": "dt-box-gu-t02",
+    "customerCode": "DONGTAI",
+    "name": "CARTON BOX FOR GU (T0206100178)",
+    "description": "",
+    "image": null,
+    "wareCodes": ["dt-box-70x53x15", "dt-box-73x56x15", "dt-box-76x59x15", "dt-box-73x56x14"],
+    "note": ""
+  },
+  {
+    "id": "productid003",
+    "code": "an-blank-490x490x180-VKT140",
+    "customerCode": "ANGLOBAL",
+    "name": "Phôi 5 lớp mặt nâu VKT140 490x490x180",
+    "description": "",
+    "image": null,
+    "wareCodes": [],
+    "note": ""
+  },
+  {
+    "id": "productid004",
+    "code": "an-blank-410x410x150-VKT140",
+    "customerCode": "ANGLOBAL",
+    "name": "Phôi 5 lớp mặt nâu VKT140 410x410x150",
+    "description": "",
+    "image": null,
+    "wareCodes": [],
+    "note": ""
+  }
+]

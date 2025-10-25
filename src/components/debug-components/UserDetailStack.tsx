@@ -9,16 +9,22 @@ export default function UserDetailsStack() {
   const userState: UserProfile = useAppSelector((state) =>
     state.auth.userState
   );
+
   return (
-    <Stack w="100%" h="100%" alignItems={"start"}>
+    <Stack w="100%" h="100%" alignItems="start">
       {check.nonEmptyObject(userState)
         ? (
           <>
-            <Text>Username: {userState.username}</Text>
-            <Text>Email: {userState.email}</Text>
+            {(Object.keys(userState) as (keyof UserProfile)[]).map((key) => (
+              <Text key={String(key)}>
+                {key}: {String(userState[key])}
+              </Text>
+            ))}
           </>
         )
-        : "No user state data"}
+        : (
+          "No user state data"
+        )}
     </Stack>
   );
 }

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "manufacturingprocessid001",
+    "code": "IN",
+    "name": "In",
+    "description": "Công đoạn in ấn lên bề mặt tấm phôi carton, thường dùng máy in flexo để in logo, ký hiệu hoặc thông tin sản phẩm.",
+    "note": "Là công đoạn đầu tiên trong nhóm gia công, có thể in một hoặc nhiều màu tùy yêu cầu."
+  },
+  {
+    "id": "manufacturingprocessid002",
+    "code": "CHAP",
+    "name": "Chạp",
+    "description": "Công đoạn cấn, gấp và tạo nếp cho tấm phôi trước khi ghim hoặc dán; giúp định hình thùng carton.",
+    "note": "Thường thực hiện sau in, có thể kết hợp trong cụm 'In chạp' hoặc 'In chạp-ghim'."
+  },
+  {
+    "id": "manufacturingprocessid003",
+    "code": "BE",
+    "name": "Bế",
+    "description": "Công đoạn cắt theo hình dạng định sẵn bằng khuôn bế (die-cut) để tạo ra bao bì có hình dáng phức tạp.",
+    "note": "Dùng cho thùng bế, hộp nắp chồm hoặc sản phẩm có tay cầm, cửa sổ, khe rãnh đặc biệt."
+  },
+  {
+    "id": "manufacturingprocessid004",
+    "code": "GHIM",
+    "name": "Ghim",
+    "description": "Công đoạn ghim kim loại để nối mép tấm carton thành thùng.",
+    "note": "Áp dụng cho thùng lớn hoặc thùng yêu cầu độ bền cao ở mép nối."
+  },
+  {
+    "id": "manufacturingprocessid005",
+    "code": "DAN",
+    "name": "Dán",
+    "description": "Công đoạn dùng keo dán để nối mép carton, thay cho ghim cơ học.",
+    "note": "Phổ biến cho thùng kích thước nhỏ hoặc yêu cầu thẩm mỹ cao."
+  },
+  {
+    "id": "manufacturingprocessid006",
+    "code": "BO",
+    "name": "Bó",
+    "description": "Công đoạn đóng bó, xếp chồng và buộc dây thùng carton để chuẩn bị giao hàng hoặc chuyển tiếp sang công đoạn khác.",
+    "note": "Là công đoạn cuối cùng của quá trình gia công, thường kết hợp kiểm tra số lượng và chất lượng."
+  }
+]

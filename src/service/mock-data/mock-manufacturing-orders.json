@@ -1,0 +1,24 @@
+[
+  {
+    "id": "manufacturingorderid001",
+    "code": "1/10",
+    "purchaseOrderItemId": "purchaseorderitemid001",
+    "manufacturingDate": "2025-10-25T00:00:00.000Z",
+    "requestedDatetime": "2025-10-27T00:00:00.000Z",
+    "corrugatorLine": 7,
+    "manufacturedAmount": 0,
+    "manufacturingDirective": null,
+    "note": "",
+  },
+  {
+    "id": "manufacturingorderid002",
+    "code": "2/10",
+    "purchaseOrderItemId": "purchaseorderitemid002",
+    "manufacturingDate": "2025-10-25T00:00:00.000Z",
+    "requestedDatetime": "2025-10-27T00:00:00.000Z",
+    "corrugatorLine": 7,
+    "manufacturedAmount": 0,
+    "manufacturingDirective": null,
+    "note": "",
+  }
+]
