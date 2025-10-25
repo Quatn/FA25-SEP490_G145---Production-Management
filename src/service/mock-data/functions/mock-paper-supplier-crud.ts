@@ -1,6 +1,6 @@
 import mockPaperSuppliers from "../FA25-SEP490_G145---StorageManagement.papersupplier.json"
 
-import { PaperSuppliersResponse } from "@/types/paperSupplier.types";
+import { PaperSuppliersResponse } from "@/types/paperStorage.types";
 
 export const mockPaperSupplierQuery = async ({
   page,

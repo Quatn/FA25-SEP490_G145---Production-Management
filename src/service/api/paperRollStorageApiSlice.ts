@@ -4,7 +4,7 @@ import { mockPaperSupplierQuery } from "../mock-data/functions/mock-paper-suppli
 import { mockPaperColorQuery } from "../mock-data/functions/mock-paper-color-crud";
 import { mockPaperGrammageQuery } from "../mock-data/functions/mock-paper-grammage-crud";
 import { mockPaperWidthQuery } from "../mock-data/functions/mock-paper-width-crud";
-import { PaperSupplier, PaperSuppliersResponse } from "@/types/paperSupplier.types";
+import { PaperColor, PaperSupplier, PaperSuppliersResponse } from "@/types/paperStorage.types";
 
 export const paperRollStorageApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -108,7 +108,7 @@ export const paperRollStorageApiSlice = apiSlice.injectEndpoints({
         }),
     }),
 
-    getPaperColor: builder.query({
+    getPaperColors: builder.query({
       ...(USE_MOCK_DATA
         ? {
           queryFn: (
@@ -123,6 +123,65 @@ export const paperRollStorageApiSlice = apiSlice.injectEndpoints({
             credentials: "include",
           }),
         }),
+    }),
+
+    addPaperColors: builder.mutation<{ success: boolean; message: string },PaperColor | PaperColor[]>({
+      ...(USE_MOCK_DATA
+        ? {
+            queryFn: async (body) => {
+              console.log("Mock add paper colors", body);
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              // success
+              return { data: { success: true, message: "Mock added successfully" } };
+              // error example:
+              // return { error: { status: 404, data: { message: "Mock failed" } } };
+            },
+          }
+        : {
+            query: (body) => ({
+              url: `${PAPER_COLOR_URL}`,
+              method: "POST",
+              body,
+              credentials: "include",
+            }),
+          }),
+    }),
+
+    updatePaperColor: builder.mutation<{ success: boolean; message: string },PaperColor>({
+      ...(USE_MOCK_DATA
+        ? {
+            queryFn: async (body) => {
+              console.log("Mock update paper color", body);
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              return { data: { success: true, message: "Mock updated successfully" } };
+            },
+          }
+        : {
+            query: (body) => ({
+              url: `${PAPER_COLOR_URL}/${body._id?.$oid}`,
+              method: "PUT",
+              body,
+              credentials: "include",
+            }),
+          }),
+    }),
+
+    deletePaperColor: builder.mutation<{ success: boolean; message: string },string>({
+      ...(USE_MOCK_DATA
+        ? {
+            queryFn: async (code) => {
+              console.log("Mock delete paper color", code);
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              return { data: { success: true, message: "Mock deleted successfully" } };
+            },
+          }
+        : {
+            query: (code) => ({
+              url: `${PAPER_COLOR_URL}/${code}`,
+              method: "DELETE",
+              credentials: "include",
+            }),
+          }),
     }),
 
     getPaperWidth: builder.query({
@@ -167,7 +226,10 @@ export const {
   useAddPaperSuppliersMutation,
   useUpdatePaperSupplierMutation,
   useDeletePaperSupplierMutation,
-  useGetPaperColorQuery,
+  useGetPaperColorsQuery,
   useGetPaperWidthQuery,
   useGetPaperGrammageQuery,
+  useAddPaperColorsMutation,
+  useUpdatePaperColorMutation,
+  useDeletePaperColorMutation,
 } = paperRollStorageApiSlice;

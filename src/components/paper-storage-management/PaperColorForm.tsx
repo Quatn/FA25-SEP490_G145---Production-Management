@@ -1,24 +1,18 @@
 "use client";
-
-import { Text } from "@chakra-ui/react";
-import {
-    useGetPaperSuppliersQuery,
-    useAddPaperSuppliersMutation,
-    useUpdatePaperSupplierMutation,
-    useDeletePaperSupplierMutation
-} from "../../service/api/paperRollStorageApiSlice";
 import { useEntityForm } from "../hook/usePaperStorageEntityForm";
 import { EntityDialog } from "./EntityDialog";
+import { useGetPaperColorsQuery, useAddPaperColorsMutation, useUpdatePaperColorMutation, useDeletePaperColorMutation } from "../../service/api/paperRollStorageApiSlice";
+import { Text } from "@chakra-ui/react";
 
-const PaperSupplierForm = () => {
+const PaperColorForm = () => {
     const {
-        data: suppliersData,
-        isLoading: isSuppliersLoading,
-        error: suppliersError,
-    } = useGetPaperSuppliersQuery({ page: 1, limit: 20, });
-    const [addSupplier] = useAddPaperSuppliersMutation();
-    const [updateSupplier] = useUpdatePaperSupplierMutation();
-    const [deleteSupplier] = useDeletePaperSupplierMutation();
+        data: colorsData,
+        isLoading: isColorsLoading,
+        error: colorsError,
+    } = useGetPaperColorsQuery({ page: 1, limit: 20, });
+    const [addColor] = useAddPaperColorsMutation();
+    const [updateColor] = useUpdatePaperColorMutation();
+    const [deleteColor] = useDeletePaperColorMutation();
 
     const {
         rows,
@@ -34,25 +28,25 @@ const PaperSupplierForm = () => {
         handleImportExcel,
         getValidRows,
     } = useEntityForm({
-        initialData: suppliersData?.paperSuppliers,
+        initialData: colorsData?.paperColors,
         onSave: async (data) => {
             const payload = { ...data };
-            return addSupplier([payload]).unwrap();
+            return addColor([payload]).unwrap();
         },
         onUpdate: async (data) => {
             const payload = { ...data };
-            return updateSupplier(payload).unwrap();
+            return updateColor(payload).unwrap();
         },
-        onDelete: async (code) => deleteSupplier(code).unwrap(),
-        entityLabel: "nhà giấy",
+        onDelete: async (code) => deleteColor(code).unwrap(),
+        entityLabel: "màu giấy",
     });
 
-    if (isSuppliersLoading) return <Text>Loading...</Text>;
-    if (suppliersError) return <Text>Error loading data</Text>;
+    if (isColorsLoading) return <Text>Loading...</Text>;
+    if (colorsError) return <Text>Error loading data</Text>;
 
     return (
         <EntityDialog
-            title="Tạo nhà giấy"
+            title="Tạo màu giấy"
             rows={rows}
             fileInputRef={fileInputRef}
             onImportExcel={handleImportExcel}
@@ -69,4 +63,4 @@ const PaperSupplierForm = () => {
     );
 };
 
-export default PaperSupplierForm;
+export default PaperColorForm;
