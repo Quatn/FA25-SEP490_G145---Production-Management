@@ -9,8 +9,11 @@ export default function Home() {
         <Box m={5} p={2} rounded={"sm"} bg={"gray.200"}>
           <Text fontWeight={"semibold"} color={"blackAlpha.800"}>Catalog</Text>
           <Stack ms={3}>
-            <Link href={"/production-order"} color={"blue.500"}>
-              Production Order
+            <Link href={"/manufacturing-order"} color={"blue.500"}>
+              Manufacturing Order
+            </Link>
+            <Link href={"/purchase-order"} color={"blue.500"}>
+              Purchase Order
             </Link>
           </Stack>
         </Box>

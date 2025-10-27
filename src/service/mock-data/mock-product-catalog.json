@@ -26,7 +26,7 @@
     "name": "Phôi 5 lớp mặt nâu VKT140 490x490x180",
     "description": "",
     "image": null,
-    "wareCodes": [],
+    "wareCodes": ["an-blank-490x490x180"],
     "note": ""
   },
   {
@@ -36,7 +36,7 @@
     "name": "Phôi 5 lớp mặt nâu VKT140 410x410x150",
     "description": "",
     "image": null,
-    "wareCodes": [],
+    "wareCodes": ["an-blank-410x410x150"],
     "note": ""
   }
 ]

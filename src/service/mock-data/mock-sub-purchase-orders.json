@@ -3,12 +3,16 @@
     "id": "subpurchaseorderid001",
     "purchaseOrderId": "purchaseorderid001",
     "productCode": "dt-pad-gu-t02",
+    "deliveryDate": "2025-10-27T00:00:00.000Z",
+    "status": "NOTSTARTED",
     "note": ""
   },
   {
-    "id": "subpurchaseorderid005",
+    "id": "subpurchaseorderid002",
     "purchaseOrderId": "purchaseorderid001",
     "productCode": "dt-box-gu-t02",
+    "deliveryDate": "2025-10-27T00:00:00.000Z",
+    "status": "NOTSTARTED",
     "note": ""
   }
 ]

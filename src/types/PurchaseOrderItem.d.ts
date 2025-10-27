@@ -1,0 +1,20 @@
+export type PurchaseOrderItem = {
+  id: string;
+  subPurchaseOrderId: string;
+  wareCode: string;
+  amount: number;
+  numberOfBlanks: number;
+  longitudinalCutCount: number;
+  runningLength: number;
+  faceLayerPaperWeight: number;
+  EFlutePaperWeight: number;
+  EBLinerLayerPaperWeight: number;
+  BFlutePaperWeight: number;
+  BACLinerLayerPaperWeight: number;
+  ACFlutePaperWeight: number;
+  backLayerPaperWeight: number;
+  totalVolume: number;
+  totalWeight: number;
+  status: string;
+  note: string;
+};
