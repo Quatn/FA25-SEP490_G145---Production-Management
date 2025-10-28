@@ -4,7 +4,13 @@ import Link from "next/link";
 
 export default function PurchaseOrderHome() {
   return (
-    <Box m={5} p={2} rounded={"sm"} bg={"gray.200"}>
+    <Box
+      m={5}
+      p={2}
+      flexGrow={1}
+      boxSizing={"border-box"}
+      rounded={"sm"}
+    >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
           Manufacturing Orders

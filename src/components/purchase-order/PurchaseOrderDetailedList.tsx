@@ -30,7 +30,7 @@ export default function PurchaseOrderDetailedList() {
     <Box m={5} p={2} rounded={"sm"} bg={"gray.200"}>
       <Stack ms={3}>
         <For each={orders}>
-          {(order) => <PurchaseOrderDetailStack po={order} />}
+          {(order, index) => <PurchaseOrderDetailStack key={index} po={order} />}
         </For>
       </Stack>
     </Box>
