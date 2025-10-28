@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
 import { Flex } from "@chakra-ui/react";
 
-export default function POLayout({
+export default function MainLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
