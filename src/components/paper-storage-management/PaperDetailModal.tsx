@@ -2,20 +2,23 @@
 "use client";
 
 import React from "react";
-import type { PaperRoll, PaperRollTransaction } from "../../types/PaperTypes";
 
 type Props = {
   show: boolean;
   onHide: () => void;
-  paper?: PaperRoll;
-  transactions?: PaperRollTransaction[];
+  paper?: any;
+  transactions?: any[];
+  colorName?: string;
+  supplierName?: string;
 };
 
 function parseMaCuon(code?: string) {
   if (!code) return null;
   const parts = code.split("/");
   return {
-    fullType: [parts[0], parts[1], parts[2], parts[3]].filter(Boolean).join("/"),
+    fullType: [parts[0], parts[1], parts[2], parts[3]]
+      .filter(Boolean)
+      .join("/"),
     color: parts[0] ?? "",
     supplierCode: parts[1] ?? "",
     width: parts[2] ?? "",
@@ -24,7 +27,14 @@ function parseMaCuon(code?: string) {
   };
 }
 
-export const PaperDetailModal: React.FC<Props> = ({ show, onHide, paper, transactions = [] }) => {
+export const PaperDetailModal: React.FC<Props> = ({
+  show,
+  onHide,
+  paper,
+  transactions = [],
+  colorName,
+  supplierName,
+}) => {
   const parsed = parseMaCuon(paper?.name);
 
   if (!show) return null;
@@ -36,7 +46,12 @@ export const PaperDetailModal: React.FC<Props> = ({ show, onHide, paper, transac
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">Chi tiết cuộn giấy</h5>
-              <button type="button" className="btn-close" aria-label="Close" onClick={onHide}></button>
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Close"
+                onClick={onHide}
+              ></button>
             </div>
             <div className="modal-body">
               {!paper ? (
@@ -59,11 +74,11 @@ export const PaperDetailModal: React.FC<Props> = ({ show, onHide, paper, transac
                       </tr>
                       <tr>
                         <th>Màu</th>
-                        <td>{parsed?.color}</td>
+                        <td>{colorName ?? parsed?.color}</td>
                       </tr>
                       <tr>
                         <th>Nhà cung cấp</th>
-                        <td>{parsed?.supplierCode}</td>
+                        <td>{supplierName ?? parsed?.supplierCode}</td>
                       </tr>
                       <tr>
                         <th>Rộng (mm)</th>
@@ -103,12 +118,16 @@ export const PaperDetailModal: React.FC<Props> = ({ show, onHide, paper, transac
                           </td>
                         </tr>
                       )}
-                      {transactions.map((t) => (
-                        <tr key={t.id}>
+                      {transactions.map((t, i) => (
+                        <tr key={t.id ?? i}>
                           <td>{t.timeStamp}</td>
                           <td>{t.transactionType}</td>
-                          <td style={{ textAlign: "right" }}>{t.initialWeight}</td>
-                          <td style={{ textAlign: "right" }}>{t.finalWeight}</td>
+                          <td style={{ textAlign: "right" }}>
+                            {t.initialWeight}
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            {t.finalWeight}
+                          </td>
                           <td>{t.inCharge}</td>
                         </tr>
                       ))}

@@ -10,15 +10,19 @@ import { mockPaperRollsQuery } from "../../service/mock-data/functions/paper-an-
 import { mockPaperTypesQuery } from "../../service/mock-data/functions/paper-an-renamelater/mock-paper-types-crud";
 import { mockPaperSuppliersQuery } from "../../service/mock-data/functions/paper-an-renamelater/mock-paper-suppliers-crud";
 import { mockPaperRollTransactionsQuery } from "../../service/mock-data/functions/paper-an-renamelater/mock-paper-roll-transactions-crud";
+import { mockPaperColorsQuery } from "../../service/mock-data/functions/paper-an-renamelater/mock-paper-colors-crud";
 
 /**
- * PaperList - React.FC implementation that avoids declaring custom TS types.
- * Uses `any` for structured data to keep the file free of `type` declarations.
+ * PaperList - React.FC implementation that:
+ * - keeps checked rows visible even when they don't match search
+ * - displays checked rows at the top
+ * - uses `any` for structured data to avoid new type declarations (per your request)
  */
 export const PaperList: React.FC = () => {
   const [paperRolls, setPaperRolls] = useState<any[]>([]);
   const [paperTypes, setPaperTypes] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [colors, setColors] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [exportsList, setExportsList] = useState<any[]>([]);
   const [query, setQuery] = useState<string>("");
@@ -45,6 +49,9 @@ export const PaperList: React.FC = () => {
       const tx = await mockPaperRollTransactionsQuery({});
       setTransactions((tx && tx.data && tx.data.paperRollTransactions) || []);
 
+      const cl = await mockPaperColorsQuery({});
+      setColors((cl && cl.data && cl.data.paperColors) || []);
+
       setExportsList([]);
     };
     load();
@@ -54,7 +61,8 @@ export const PaperList: React.FC = () => {
     return s !== "" && !Number.isNaN(Number(s));
   }
 
-  const filtered = useMemo(() => {
+  // base filtered set (ignores selected persistence)
+  const baseFiltered = useMemo(() => {
     const q = (query || "").trim();
     if (!q) return paperRolls;
     if (isNumeric(q)) {
@@ -69,9 +77,29 @@ export const PaperList: React.FC = () => {
     );
   }, [paperRolls, query]);
 
+  // selected items (persisted regardless of search)
+  const selectedRolls = useMemo(() => {
+    // keep original paperRolls order for selected items
+    return paperRolls.filter((r: any) => selectedIds[r.paperRollId]);
+  }, [paperRolls, selectedIds]);
+
+  // visible rows: selectedRolls first, then baseFiltered excluding ones already shown (dedupe)
+  const visibleRows = useMemo(() => {
+    const selectedIdsSet = new Set(
+      selectedRolls.map((r: any) => r.paperRollId)
+    );
+    const remaining = baseFiltered.filter(
+      (r: any) => !selectedIdsSet.has(r.paperRollId)
+    );
+    return [...selectedRolls, ...remaining];
+  }, [selectedRolls, baseFiltered]);
+
   const findPaperType = (id?: string) =>
     paperTypes.find((p: any) => p.paperTypeId === id);
-  const findSupplier = (id?: string) => suppliers.find((s: any) => s.id === id);
+  const findSupplierByCode = (code?: string) =>
+    suppliers.find((s: any) => s.code === code);
+  const findColorByCode = (code?: string) =>
+    colors.find((c: any) => c.code === code);
 
   // parse mã cuộn "K/VT/100/170/VT2A" -> { fullType, color, supplierCode, width, grammage, tail }
   function parseMaCuon(code?: string) {
@@ -93,8 +121,9 @@ export const PaperList: React.FC = () => {
   };
 
   const selectAllVisible = (checked: boolean) => {
-    const newSel: Record<string, boolean> = {};
-    filtered.forEach((r: any) => {
+    // toggles selection for all currently visibleRows (not all paperRolls)
+    const newSel: Record<string, boolean> = { ...selectedIds };
+    visibleRows.forEach((r: any) => {
       newSel[r.paperRollId] = checked;
     });
     setSelectedIds(newSel);
@@ -279,7 +308,7 @@ export const PaperList: React.FC = () => {
         <button
           className="btn btn-outline-primary"
           onClick={() => {
-            const anySelected = filtered.some(
+            const anySelected = visibleRows.some(
               (r: any) => selectedIds[r.paperRollId]
             );
             selectAllVisible(!anySelected);
@@ -300,9 +329,10 @@ export const PaperList: React.FC = () => {
                 <input
                   type="checkbox"
                   onChange={(e) => selectAllVisible(e.target.checked)}
+                  // header checks only visibleRows (selected + filtered)
                   checked={
-                    filtered.length > 0 &&
-                    filtered.every((r: any) => selectedIds[r.paperRollId])
+                    visibleRows.length > 0 &&
+                    visibleRows.every((r: any) => selectedIds[r.paperRollId])
                   }
                 />
               </th>
@@ -315,11 +345,29 @@ export const PaperList: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((r: any) => {
+            {visibleRows.map((r: any) => {
               const parsed = parseMaCuon(r.name);
               const typeLabel = parsed?.fullType ?? r.name;
+
+              // resolve supplier and color friendly names
+              const supplierObj = findSupplierByCode(parsed?.supplierCode);
+              const supplierName = supplierObj
+                ? supplierObj.name
+                : parsed?.supplierCode || "-";
+              const colorObj = findColorByCode(parsed?.color);
+              const colorName = colorObj
+                ? colorObj.colorName
+                : parsed?.color || "-";
+
               return (
-                <tr key={r.paperRollId}>
+                <tr
+                  key={r.paperRollId}
+                  style={
+                    selectedIds[r.paperRollId]
+                      ? { background: "rgba(0,123,255,0.04)" }
+                      : undefined
+                  }
+                >
                   <td>
                     <input
                       type="checkbox"
@@ -329,7 +377,12 @@ export const PaperList: React.FC = () => {
                   </td>
                   <td style={{ whiteSpace: "nowrap" }}>{r.name}</td>
                   <td>{r.paperRollId}</td>
-                  <td>{typeLabel}</td>
+                  <td>
+                    <div>{typeLabel}</div>
+                    <div className="small text-muted">
+                      {colorName} • {supplierName}
+                    </div>
+                  </td>
                   <td style={{ textAlign: "right" }}>{r.weight}</td>
                   <td>{r.receivingDate}</td>
                   <td>
@@ -361,12 +414,16 @@ export const PaperList: React.FC = () => {
                       >
                         Nhập lại
                       </button>
+                      <button className="btn btn-warning btn-sm">
+                        Tạo QR
+                      </button>
                     </div>
                   </td>
                 </tr>
               );
             })}
-            {filtered.length === 0 && (
+
+            {visibleRows.length === 0 && (
               <tr>
                 <td colSpan={7} className="text-muted p-4">
                   No rows found
@@ -408,6 +465,7 @@ export const PaperList: React.FC = () => {
         </table>
       </div>
 
+      {/* pass supplierName/colorName too (calculated when opening modal) */}
       <PaperDetailModal
         show={detailOpen.open}
         onHide={() => setDetailOpen({ open: false })}
@@ -416,6 +474,24 @@ export const PaperList: React.FC = () => {
           (t: any) =>
             detailOpen.roll && t.paperRollId === detailOpen.roll.paperRollId
         )}
+        colorName={
+          detailOpen.roll
+            ? (
+                findColorByCode(
+                  (parseMaCuon(detailOpen.roll.name) || {}).color
+                ) || {}
+              ).colorName
+            : undefined
+        }
+        supplierName={
+          detailOpen.roll
+            ? (
+                findSupplierByCode(
+                  (parseMaCuon(detailOpen.roll.name) || {}).supplierCode
+                ) || {}
+              ).name
+            : undefined
+        }
       />
 
       <BulkActionModal
