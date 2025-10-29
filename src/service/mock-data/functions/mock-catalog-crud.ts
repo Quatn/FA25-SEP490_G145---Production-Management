@@ -8,7 +8,7 @@ import { paginatedListFromArray } from "@/utils/dtoUtils";
 
 export const mockProductsQuery = async (
   { page, limit }: { page: number; limit: number },
-): Promise<PaginatedList<Product>> => {
+): Promise<PaginatedList<Serialized<Product>>> => {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -26,7 +26,7 @@ export const mockProductsQuery = async (
 
 export const mockWaresQuery = async (
   { page, limit }: { page: number; limit: number },
-): Promise<PaginatedList<Ware>> => {
+): Promise<PaginatedList<Serialized<Ware>>> => {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -44,7 +44,7 @@ export const mockWaresQuery = async (
 
 export const mockWaresQueryByCodes = async (
   { codes, page, limit }: { codes: string[]; page: number; limit: number },
-): Promise<PaginatedList<Ware>> => {
+): Promise<PaginatedList<Serialized<Ware>>> => {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 

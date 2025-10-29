@@ -1,4 +1,5 @@
 import { PurchaseOrder } from "@/types/PurchaseOrder";
+import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
 import { Box, DataList } from "@chakra-ui/react";
 
 export type PurchaseOrderDetailStackProps = {
@@ -23,7 +24,9 @@ export default function PurchaseOrderDetailStack(
         </DataList.Item>
         <DataList.Item>
           <DataList.ItemLabel>Order Date</DataList.ItemLabel>
-          <DataList.ItemValue>{po.orderDate.toISOString()}</DataList.ItemValue>
+          <DataList.ItemValue>
+            {formatDateToDDMMYYYY(po.orderDate)}
+          </DataList.ItemValue>
         </DataList.Item>
         <DataList.Item>
           <DataList.ItemLabel>

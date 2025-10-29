@@ -6,13 +6,16 @@ import { PurchaseOrder } from "@/types/PurchaseOrder";
 
 export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getPurchaseOrders: builder.query({
+    getPurchaseOrders: builder.query<
+      PaginatedList<Serialized<PurchaseOrder>>,
+      { page: number; limit: number }
+    >({
       ...(USE_MOCK_DATA
         ? {
           queryFn: async (
             { page, limit }: { page: number; limit: number },
           ): Promise<
-            QueryResponse<PaginatedList<PurchaseOrder>>
+            QueryResponse<PaginatedList<Serialized<PurchaseOrder>>>
           > => {
             try {
               const data = await mockPurchaseOrdersQuery({

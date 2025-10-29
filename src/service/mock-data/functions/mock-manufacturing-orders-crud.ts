@@ -17,7 +17,7 @@ export const mockManufacturingOrderQuery = async (
   { page, limit }: { page: number; limit: number },
 ): Promise<
   PaginatedList<
-    ManufacturingOrder
+    Serialized<ManufacturingOrder>
   >
 > => {
   // Simulate network delay
@@ -27,14 +27,8 @@ export const mockManufacturingOrderQuery = async (
   const endIndex = startIndex + limit;
   const slicedData = mockManufacturingOrders.slice(startIndex, endIndex);
 
-  const data: ManufacturingOrder[] = slicedData.map((order) => ({
-    ...order,
-    manufacturingDate: new Date(order.manufacturingDate),
-    requestedDatetime: new Date(order.requestedDatetime),
-  }));
-
   return paginatedListFromArray(
-    data,
+    slicedData,
     page,
     limit,
     mockManufacturingOrders.length,
@@ -43,11 +37,15 @@ export const mockManufacturingOrderQuery = async (
 
 export const mockFullDetailManufacturingOrderQuery = async (
   { page, limit }: { page: number; limit: number },
-) => {
+): Promise<
+  PaginatedList<
+    Serialized<FullDetailManufacturingOrderDTO>
+  >
+> => {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  let data: FullDetailManufacturingOrderDTO[] = [];
+  let data: Serialized<FullDetailManufacturingOrderDTO>[] = [];
 
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
@@ -74,18 +72,9 @@ export const mockFullDetailManufacturingOrderQuery = async (
     });
   }
 
-  const subpo: SubPurchaseOrder[] = poitems.map((poi) => {
-    const spo = mockSubPurchaseOrder.find((spo) =>
-      spo.id === poi.subPurchaseOrderId
-    );
-    if (spo) {
-      return {
-        ...spo,
-        deliveryDate: new Date(spo?.deliveryDate),
-      };
-    }
-    return undefined;
-  }).filter((spoi) => !check.undefined(spoi));
+  const subpo: Serialized<SubPurchaseOrder>[] = poitems.map((poi) =>
+    mockSubPurchaseOrder.find((spo) => spo.id === poi.subPurchaseOrderId)
+  ).filter((spoi) => !check.undefined(spoi));
 
   if (subpo.length != slicedData.length) {
     throw ({
@@ -95,18 +84,9 @@ export const mockFullDetailManufacturingOrderQuery = async (
     });
   }
 
-  const po: PurchaseOrder[] = subpo.map((subpoi) => {
-    const po = mockPurchaseOrder.find((spoi) =>
-      spoi.id === subpoi.purchaseOrderId
-    );
-    if (po) {
-      return {
-        ...po,
-        orderDate: new Date(po?.orderDate),
-      };
-    }
-    return undefined;
-  }).filter((poi) => !check.undefined(poi));
+  const po: Serialized<PurchaseOrder>[] = subpo.map((subpoi) =>
+    mockPurchaseOrder.find((spoi) => spoi.id === subpoi.purchaseOrderId)
+  ).filter((poi) => !check.undefined(poi));
 
   if (po.length != slicedData.length) {
     throw ({
@@ -127,8 +107,8 @@ export const mockFullDetailManufacturingOrderQuery = async (
     wareId: wares[index].id,
     wareCode: wares[index].code,
     wareNote: wares[index].note,
-    manufacturingDate: new Date(mo.manufacturingDate),
-    requestedDatetime: new Date(mo.requestedDatetime),
+    manufacturingDate: mo.manufacturingDate,
+    requestedDatetime: mo.requestedDatetime,
     customerCode: po[index].customerCode,
     orderDate: po[index].orderDate,
     deliveryDate: subpo[index].deliveryDate,

@@ -38,13 +38,11 @@ export default function ManufacturingOrderTable() {
 
   const { open, onOpen, onClose } = useDisclosure();
 
-  const [selectedOrder, setSelectedOrder] = useState<ManufacturingOrder | null>(
+  const [selectedOrder, setSelectedOrder] = useState<Serialized<ManufacturingOrder> | null>(
     null,
   );
 
-  const handleViewDetailsClick = (order: ManufacturingOrder) => {
-    console.log(order);
-    console.log(open);
+  const handleViewDetailsClick = (order: Serialized<ManufacturingOrder>) => {
     setSelectedOrder(order);
     onOpen();
   };

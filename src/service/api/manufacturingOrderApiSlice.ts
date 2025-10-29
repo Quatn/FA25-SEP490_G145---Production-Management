@@ -10,19 +10,23 @@ import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getManufacturingOrders: builder.query({
+    getManufacturingOrders: builder.query<
+      PaginatedList<Serialized<ManufacturingOrder>>,
+      { page: number; limit: number }
+    >({
       ...(USE_MOCK_DATA
         ? {
           queryFn: async (
             { page, limit }: { page: number; limit: number },
           ): Promise<
-            QueryResponse<PaginatedList<ManufacturingOrder>>
+            QueryResponse<PaginatedList<Serialized<ManufacturingOrder>>>
           > => {
             try {
               const data = await mockManufacturingOrderQuery({
                 page,
                 limit,
               });
+
               return {
                 data,
               };
@@ -47,7 +51,7 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
     }),
 
     getFullDetailManufacturingOrders: builder.query<
-      PaginatedList<FullDetailManufacturingOrderDTO>,
+      PaginatedList<Serialized<FullDetailManufacturingOrderDTO>>,
       { page: number; limit: number }
     >({
       ...(USE_MOCK_DATA
@@ -55,16 +59,18 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
           queryFn: async (
             { page, limit }: { page: number; limit: number },
           ): Promise<
-            QueryResponse<PaginatedList<FullDetailManufacturingOrderDTO>>
+            QueryResponse<PaginatedList<Serialized<FullDetailManufacturingOrderDTO>>>
           > => {
             try {
               const data = await mockFullDetailManufacturingOrderQuery({
                 page,
                 limit,
               });
+
               return {
                 data,
               };
+
             } catch (err) {
               return {
                 error: {

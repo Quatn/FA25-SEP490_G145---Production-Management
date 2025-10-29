@@ -7,15 +7,15 @@ import { Product } from "@/types/Product";
 export const productApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getProducts: builder.query<
-        PaginatedList<Product>,
-          { page: number; limit: number }
-  >({
+      PaginatedList<Serialized<Product>>,
+      { page: number; limit: number }
+    >({
       ...(USE_MOCK_DATA
         ? {
           queryFn: async (
             { page, limit }: { page: number; limit: number },
           ): Promise<
-            QueryResponse<PaginatedList<Product>>
+            QueryResponse<PaginatedList<Serialized<Product>>>
           > => {
             try {
               const data = await mockProductsQuery({
