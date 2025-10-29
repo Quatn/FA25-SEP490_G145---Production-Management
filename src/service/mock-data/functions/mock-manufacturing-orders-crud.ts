@@ -9,20 +9,41 @@ import check from "check-types";
 import { Ware } from "@/types/Ware";
 import { SubPurchaseOrder } from "@/types/SubPurchaseOrder";
 import { PurchaseOrder } from "@/types/PurchaseOrder";
+import { PaginatedList } from "@/types/DTO/Response";
+import { paginatedListFromArray } from "@/utils/dtoUtils";
+import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 
-export const mockManufacturingOrderQuery = async ({ }) => {
+export const mockManufacturingOrderQuery = async (
+  { page, limit }: { page: number; limit: number },
+): Promise<
+  PaginatedList<
+    ManufacturingOrder
+  >
+> => {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  return {
-    data: {
-      success: true,
-      data: mockManufacturingOrders,
-    },
-  };
+  const data: ManufacturingOrder[] = mockManufacturingOrders.map((order) => ({
+    ...order,
+    manufacturingDate: new Date(order.manufacturingDate),
+    requestedDatetime: new Date(order.requestedDatetime),
+  }));
+
+  return paginatedListFromArray(
+    data,
+    page,
+    limit,
+    mockManufacturingOrders.length,
+  );
 };
 
-export const mockFullDetailManufacturingOrderQuery = async ({ }) => {
+export const mockFullDetailManufacturingOrderQuery = async (
+  { page, limit }: { page: number; limit: number },
+): Promise<
+  PaginatedList<
+    FullDetailManufacturingOrderDTO
+  >
+> => {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -65,7 +86,8 @@ export const mockFullDetailManufacturingOrderQuery = async ({ }) => {
   if (subpo.length != mockManufacturingOrders.length) {
     throw ({
       message:
-        "Some purchase order items did not have a corresponding sub purchase order item" + subpo.length + "/" + mockManufacturingOrders.length,
+        "Some purchase order items did not have a corresponding sub purchase order item" +
+        subpo.length + "/" + mockManufacturingOrders.length,
     });
   }
 
@@ -89,12 +111,6 @@ export const mockFullDetailManufacturingOrderQuery = async ({ }) => {
     });
   }
 
-  console.log(poitems)
-  console.log(wares)
-  console.log(po)
-  console.log(subpo)
-
-
   data = mockManufacturingOrders.map((
     mo,
     index,
@@ -115,7 +131,10 @@ export const mockFullDetailManufacturingOrderQuery = async ({ }) => {
     purchaseOrderId: po[index].id,
   }));
 
-  return {
+  return paginatedListFromArray(
     data,
-  };
+    page,
+    limit,
+    mockManufacturingOrders.length,
+  );
 };

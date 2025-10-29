@@ -5,16 +5,36 @@ import {
   mockManufacturingOrderQuery,
 } from "../mock-data/functions/mock-manufacturing-orders-crud";
 import { FullDetailManufacturingOrderDTO } from "@/types/DTO/FullDetailManufactureOrder";
-import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { PaginatedList, QueryResponse } from "@/types/DTO/Response";
+import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getManufacturingOrders: builder.query({
       ...(USE_MOCK_DATA
         ? {
-          queryFn: (
+          queryFn: async (
             { page, limit }: { page: number; limit: number },
-          ) => mockManufacturingOrderQuery({ page, limit }),
+          ): Promise<
+            QueryResponse<PaginatedList<ManufacturingOrder>>
+          > => {
+            try {
+              const data = await mockManufacturingOrderQuery({
+                page,
+                limit,
+              });
+              return {
+                data,
+              };
+            } catch (err) {
+              return {
+                error: {
+                  status: "CUSTOM_ERROR",
+                  error: (err as Error).message,
+                },
+              };
+            }
+          },
         }
         : {
           query: ({ page = 1, limit = 20 }) => ({
@@ -32,17 +52,16 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
           queryFn: async (
             { page, limit }: { page: number; limit: number },
           ): Promise<
-            | {
-              data: FullDetailManufacturingOrderDTO[];
-            }
-            | { error: FetchBaseQueryError }
+            QueryResponse<PaginatedList<FullDetailManufacturingOrderDTO>>
           > => {
             try {
               const data = await mockFullDetailManufacturingOrderQuery({
                 page,
                 limit,
               });
-              return data;
+              return {
+                data,
+              };
             } catch (err) {
               return {
                 error: {
