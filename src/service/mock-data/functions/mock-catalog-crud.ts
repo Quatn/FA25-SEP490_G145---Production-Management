@@ -1,36 +1,65 @@
 import check from "check-types";
 import mockProductCatalog from "../mock-product-catalog.json";
 import mockWareCatalog from "../mock-ware-catalog.json";
+import { Product } from "@/types/Product";
+import { PaginatedList } from "@/types/DTO/Response";
+import { Ware } from "@/types/Ware";
+import { paginatedListFromArray } from "@/utils/dtoUtils";
 
-export const mockProductsQuery = async ({ }) => {
+export const mockProductsQuery = async (
+  { page, limit }: { page: number; limit: number },
+): Promise<PaginatedList<Product>> => {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  return {
-    data: mockProductCatalog,
-  };
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const slicedData = mockProductCatalog.slice(startIndex, endIndex);
+
+  const data: Product[] = slicedData.map((product) => ({
+    ...product,
+    // data mapping steps here if needed
+  }));
+
+  return paginatedListFromArray(data, page, limit, mockProductCatalog.length);
 };
 
-export const mockWaresQuery = async ({ }) => {
+export const mockWaresQuery = async (
+  { page, limit }: { page: number; limit: number },
+): Promise<PaginatedList<Ware>> => {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  return {
-    data: mockWareCatalog,
-  };
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const slicedData = mockWareCatalog.slice(startIndex, endIndex);
+
+  const data: Ware[] = slicedData.map((ware) => ({
+    ...ware,
+    // data mapping steps here if needed
+  }));
+
+  return paginatedListFromArray(data, page, limit, mockWareCatalog.length);
 };
 
 export const mockWaresQueryByCodes = async (
-  { codes }: { codes: string[]; page: number; limit: number },
-) => {
+  { codes, page, limit }: { codes: string[]; page: number; limit: number },
+): Promise<PaginatedList<Ware>> => {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  const queryResult = mockWareCatalog.filter((ware) =>
+  const filteredCatalog = mockWareCatalog.filter((ware) =>
     check.contains(codes, ware.code)
   );
 
-  return {
-    data: queryResult,
-  };
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const slicedQueryResult = filteredCatalog.slice(startIndex, endIndex);
+
+  return paginatedListFromArray(
+    slicedQueryResult,
+    page,
+    limit,
+    filteredCatalog.length,
+  );
 };

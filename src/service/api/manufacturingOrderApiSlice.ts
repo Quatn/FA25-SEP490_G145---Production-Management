@@ -46,7 +46,10 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
         }),
     }),
 
-    getFullDetailManufacturingOrders: builder.query({
+    getFullDetailManufacturingOrders: builder.query<
+      PaginatedList<FullDetailManufacturingOrderDTO>,
+      { page: number; limit: number }
+    >({
       ...(USE_MOCK_DATA
         ? {
           queryFn: async (

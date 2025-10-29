@@ -25,10 +25,12 @@ import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 
 export default function ManufacturingOrderTable() {
   const {
-    data: fullDetailManufacturingOrderList,
+    data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
   } = useGetFullDetailManufacturingOrdersQuery({ page: 1, limit: 20 });
+
+  const moList = fullDetailMOPaginatedResponse?.data
 
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
@@ -55,7 +57,7 @@ export default function ManufacturingOrderTable() {
     return <Text>{JSON.stringify(fetchError)}</Text>;
   }
 
-  if (check.undefined(fullDetailManufacturingOrderList)) {
+  if (check.undefined(moList)) {
     return <Text>Unable to load table</Text>;
   }
 
@@ -184,7 +186,7 @@ export default function ManufacturingOrderTable() {
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {fullDetailManufacturingOrderList.map((item) => (
+            {moList.map((item) => (
               <Table.Row
                 key={item.id}
                 bg={"gray.50"}

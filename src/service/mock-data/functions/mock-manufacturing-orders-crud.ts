@@ -23,7 +23,11 @@ export const mockManufacturingOrderQuery = async (
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  const data: ManufacturingOrder[] = mockManufacturingOrders.map((order) => ({
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const slicedData = mockManufacturingOrders.slice(startIndex, endIndex);
+
+  const data: ManufacturingOrder[] = slicedData.map((order) => ({
     ...order,
     manufacturingDate: new Date(order.manufacturingDate),
     requestedDatetime: new Date(order.requestedDatetime),
@@ -39,21 +43,21 @@ export const mockManufacturingOrderQuery = async (
 
 export const mockFullDetailManufacturingOrderQuery = async (
   { page, limit }: { page: number; limit: number },
-): Promise<
-  PaginatedList<
-    FullDetailManufacturingOrderDTO
-  >
-> => {
+) => {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
   let data: FullDetailManufacturingOrderDTO[] = [];
 
-  const poitems: PurchaseOrderItem[] = mockManufacturingOrders.map((mo) =>
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const slicedData = mockManufacturingOrders.slice(startIndex, endIndex);
+
+  const poitems: PurchaseOrderItem[] = slicedData.map((mo) =>
     mockPurchaseOrderItems.find((poi) => poi.id === mo.purchaseOrderItemId)
   ).filter((poi) => !check.undefined(poi));
 
-  if (poitems.length != mockManufacturingOrders.length) {
+  if (poitems.length != slicedData.length) {
     throw ({
       message:
         "Some manufacturing orders did not have a corresponding purchase order item",
@@ -64,7 +68,7 @@ export const mockFullDetailManufacturingOrderQuery = async (
     mockWares.find((ware) => ware.code === poi.wareCode)
   ).filter((ware) => !check.undefined(ware));
 
-  if (wares.length != mockManufacturingOrders.length) {
+  if (wares.length != slicedData.length) {
     throw ({
       message: "Some manufacturing orders did not have a corresponding ware",
     });
@@ -83,11 +87,11 @@ export const mockFullDetailManufacturingOrderQuery = async (
     return undefined;
   }).filter((spoi) => !check.undefined(spoi));
 
-  if (subpo.length != mockManufacturingOrders.length) {
+  if (subpo.length != slicedData.length) {
     throw ({
       message:
         "Some purchase order items did not have a corresponding sub purchase order item" +
-        subpo.length + "/" + mockManufacturingOrders.length,
+        subpo.length + "/" + slicedData.length,
     });
   }
 
@@ -104,14 +108,14 @@ export const mockFullDetailManufacturingOrderQuery = async (
     return undefined;
   }).filter((poi) => !check.undefined(poi));
 
-  if (po.length != mockManufacturingOrders.length) {
+  if (po.length != slicedData.length) {
     throw ({
       message:
         "Some sub purchase orders did not have a corresponding purchase order",
     });
   }
 
-  data = mockManufacturingOrders.map((
+  data = slicedData.map((
     mo,
     index,
   ) => ({

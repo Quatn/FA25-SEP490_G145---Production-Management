@@ -1,6 +1,6 @@
 export type QueryResponse<TData, TError = FetchBaseQueryError> =
-  & QueryReturnValue<TData, TError>
-  & {};
+  | { data: TData }
+  | { error: TError };
 
 export interface PaginatedList<T> {
   data: T[];

@@ -1,15 +1,39 @@
 import { apiSlice } from "./apiSlice";
-import { WARE_URL, USE_MOCK_DATA } from "../constants";
-import { mockWaresQuery, mockWaresQueryByCodes } from "../mock-data/functions/mock-catalog-crud";
+import { USE_MOCK_DATA, WARE_URL } from "../constants";
+import {
+  mockWaresQuery,
+  mockWaresQueryByCodes,
+} from "../mock-data/functions/mock-catalog-crud";
+import { PaginatedList, QueryResponse } from "@/types/DTO/Response";
+import { Ware } from "@/types/Ware";
 
 export const wareApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getWares: builder.query({
       ...(USE_MOCK_DATA
         ? {
-          queryFn: (
+          queryFn: async (
             { page, limit }: { page: number; limit: number },
-          ) => mockWaresQuery({ page, limit }),
+          ): Promise<
+            QueryResponse<PaginatedList<Ware>>
+          > => {
+            try {
+              const data = await mockWaresQuery({
+                page,
+                limit,
+              });
+              return {
+                data,
+              };
+            } catch (err) {
+              return {
+                error: {
+                  status: "CUSTOM_ERROR",
+                  error: (err as Error).message,
+                },
+              };
+            }
+          },
         }
         : {
           query: ({ page = 1, limit = 20 }) => ({
@@ -24,9 +48,33 @@ export const wareApiSlice = apiSlice.injectEndpoints({
     getWaresByCodes: builder.query({
       ...(USE_MOCK_DATA
         ? {
-          queryFn: (
-            { codes, page, limit }: { codes: string[], page: number; limit: number },
-          ) => mockWaresQueryByCodes({ codes, page, limit }),
+          queryFn: async (
+            { page, limit, codes }: {
+              page: number;
+              limit: number;
+              codes: string[];
+            },
+          ): Promise<
+            QueryResponse<PaginatedList<Ware>>
+          > => {
+            try {
+              const data = await mockWaresQueryByCodes({
+                page,
+                limit,
+                codes,
+              });
+              return {
+                data,
+              };
+            } catch (err) {
+              return {
+                error: {
+                  status: "CUSTOM_ERROR",
+                  error: (err as Error).message,
+                },
+              };
+            }
+          },
         }
         : {
           query: ({ codes = [], page = 1, limit = 20 }) => ({
