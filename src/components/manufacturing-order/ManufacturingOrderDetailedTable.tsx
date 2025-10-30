@@ -30,7 +30,7 @@ export default function ManufacturingOrderTable() {
     isLoading: isFetchingList,
   } = useGetFullDetailManufacturingOrdersQuery({ page: 1, limit: 20 });
 
-  const moList = fullDetailMOPaginatedResponse?.data
+  const moList = fullDetailMOPaginatedResponse?.data;
 
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
@@ -38,7 +38,9 @@ export default function ManufacturingOrderTable() {
 
   const { open, onOpen, onClose } = useDisclosure();
 
-  const [selectedOrder, setSelectedOrder] = useState<Serialized<ManufacturingOrder> | null>(
+  const [selectedOrder, setSelectedOrder] = useState<
+    Serialized<ManufacturingOrder> | null
+  >(
     null,
   );
 
@@ -201,8 +203,8 @@ export default function ManufacturingOrderTable() {
                     <Table.Cell>{item.customerCode}</Table.Cell>
                     <Table.Cell>{item.wareCode}</Table.Cell>
                     <Table.Cell>{item.fluteCombinationCode}</Table.Cell>
-                    <Table.Cell>{item.wareLength}</Table.Cell>
                     <Table.Cell>{item.wareWidth}</Table.Cell>
+                    <Table.Cell>{item.wareLength}</Table.Cell>
                     <Table.Cell>{item.wareHeight}</Table.Cell>
                     {/*<Table.Cell>{item.excessInventory}</Table.Cell>*/}
                     <Table.Cell>{item.amount}</Table.Cell>
