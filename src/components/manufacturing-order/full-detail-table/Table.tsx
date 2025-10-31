@@ -1,6 +1,11 @@
 "use client";
 
 import {
+  ManufacturingTableTabType,
+  useManufacturingTableDispatch,
+  useManufacturingTableState,
+} from "@/context/manufacturing-order/manufacturingOrderTableContext";
+import {
   useGetFullDetailManufacturingOrdersQuery,
   useGetManufacturingOrdersQuery,
 } from "@/service/api/manufacturingOrderApiSlice";
@@ -16,36 +21,42 @@ import {
   Stack,
   Table,
   Tabs,
+  TabsRootProps,
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
 import check from "check-types";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 
-export default function ManufacturingOrderTable() {
+export type ManufacturingOrderTableProps = {
+  rootProps?: TabsRootProps;
+};
+
+export default function ManufacturingOrderTable(
+  props: ManufacturingOrderTableProps,
+) {
   const {
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
   } = useGetFullDetailManufacturingOrdersQuery({ page: 1, limit: 20 });
 
+  const { tab, hoveredRowId, selectedOrderId, pinnedOrderIds } =
+    useManufacturingTableState();
+  const dispatch = useManufacturingTableDispatch();
+
   const moList = fullDetailMOPaginatedResponse?.data;
-
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
-
-  const [tab, setTab] = useState<string | null>("order");
 
   const { open, onOpen, onClose } = useDisclosure();
 
-  const [selectedOrder, setSelectedOrder] = useState<
-    Serialized<ManufacturingOrder> | null
-  >(
-    null,
-  );
+  const selectedOrder: Serialized<ManufacturingOrder> | null = useMemo(() => {
+    const mo = moList?.find((mo) => mo.id === selectedOrderId);
+    return check.undefined(mo) ? null : mo;
+  }, [moList, selectedOrderId]);
 
-  const handleViewDetailsClick = (order: Serialized<ManufacturingOrder>) => {
-    setSelectedOrder(order);
+  const handleViewDetailsClick = (id: string | null) => {
+    dispatch({ type: "SET_SELECTED_ORDER_ID", payload: id });
     onOpen();
   };
 
@@ -63,7 +74,16 @@ export default function ManufacturingOrderTable() {
 
   return (
     <>
-      <Tabs.Root value={tab} onValueChange={(e) => setTab(e.value)} mt={3}>
+      <Tabs.Root
+        value={tab}
+        onValueChange={(e) =>
+          dispatch({
+            type: "SET_TAB",
+            payload: e.value as ManufacturingTableTabType,
+          })}
+        mt={3}
+        {...props.rootProps}
+      >
         <Tabs.List ms="200px">
           <Tabs.Trigger value="order">
             <LuUser />
@@ -123,7 +143,7 @@ export default function ManufacturingOrderTable() {
                   <Table.ColumnHeader>Khổ</Table.ColumnHeader>
                   <Table.ColumnHeader>Cắt dài</Table.ColumnHeader>
                   <Table.ColumnHeader>Cánh</Table.ColumnHeader>
-                  <Table.ColumnHeader>Số sản phẩm</Table.ColumnHeader>
+                  <Table.ColumnHeader>Số SP</Table.ColumnHeader>
                   <Table.ColumnHeader>Số tấm</Table.ColumnHeader>
                   <Table.ColumnHeader>Tấm chặt</Table.ColumnHeader>
                   <Table.ColumnHeader>Mét dài</Table.ColumnHeader>
@@ -155,7 +175,7 @@ export default function ManufacturingOrderTable() {
                 </>
               )}
 
-              {tab == "weigth" && (
+              {tab == "weight" && (
                 <>
                   <Table.ColumnHeader>Mặt SP</Table.ColumnHeader>
                   <Table.ColumnHeader>Sóng E</Table.ColumnHeader>
@@ -191,8 +211,10 @@ export default function ManufacturingOrderTable() {
                 key={item.id}
                 bg={"gray.50"}
                 h="50px"
-                onMouseEnter={() => setHoveredRow(item.id)}
-                onMouseLeave={() => setHoveredRow(null)}
+                onMouseEnter={() =>
+                  dispatch({ type: "SET_HOVERED_ROW_ID", payload: item.id })}
+                onMouseLeave={() =>
+                  dispatch({ type: "SET_HOVERED_ROW_ID", payload: null })}
               >
                 <Table.Cell>{item.manufacturingDirective}</Table.Cell>
                 <Table.Cell borderEnd={"3px solid #66b5cf"}>
@@ -258,7 +280,7 @@ export default function ManufacturingOrderTable() {
                   </>
                 )}
 
-                {tab == "weigth" && (
+                {tab == "weight" && (
                   <>
                     <Table.Cell>{item.faceLayerPaperWeight}</Table.Cell>
                     <Table.Cell>{item.EFlutePaperWeight}</Table.Cell>
@@ -290,11 +312,11 @@ export default function ManufacturingOrderTable() {
                   border="none"
                   bg="none"
                 >
-                  {hoveredRow === item.id && (
+                  {hoveredRowId === item.id && (
                     <Button
                       size="xs"
                       colorPalette={"blue"}
-                      onClick={() => handleViewDetailsClick(item)}
+                      onClick={() => handleViewDetailsClick(item.id)}
                     >
                       Chi tiết
                     </Button>
