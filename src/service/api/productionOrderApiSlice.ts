@@ -1,6 +1,6 @@
 import { apiSlice } from "./apiSlice";
 import { PRODUCTION_ORDER_URL, USE_MOCK_DATA } from "../constants";
-import { mockProductionOrderQuery } from "../mock-data/functions/mock-production-orders-crud";
+import { mockProductionOrderQuery, mockTrackingProductionOrderQuery } from "../mock-data/functions/mock-production-orders-crud";
 
 export const chatApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -20,9 +20,26 @@ export const chatApiSlice = apiSlice.injectEndpoints({
           }),
         }),
     }),
+    getTrackingProductionOrders: builder.query({
+      ...(USE_MOCK_DATA
+        ? {
+          queryFn: (
+            { page, limit }: { page: number; limit: number },
+          ) => mockTrackingProductionOrderQuery({ page, limit }),
+        }
+        : {
+          query: ({ page = 1, limit = 20 }) => ({
+            url: `${PRODUCTION_ORDER_URL}/tracking`,
+            method: "GET",
+            params: { page, limit },
+            credentials: "include",
+          }),
+        }),
+    }),
   }),
 });
 
 export const {
   useGetProductionOrdersQuery,
+  useGetTrackingProductionOrdersQuery,
 } = chatApiSlice;

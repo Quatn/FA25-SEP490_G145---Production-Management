@@ -10,6 +10,10 @@ export default function ProudctionOrderHome() {
         <Link href={"/production-order/view"} color={"blue.500"}>
           Table View
         </Link>
+        <Link href={"/production-order/tracking"} color={"blue.500"}>
+          Tracking Production Order
+        </Link>
+        
       </Stack>
     </Box>
   );
