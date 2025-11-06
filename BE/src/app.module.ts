@@ -7,6 +7,8 @@ import { JwtStrategy } from "./modules/auth/jwt.strategy";
 import { ConfigModule } from "@nestjs/config";
 import { validateEnvs } from "./config/env.validation";
 import { ApiBearerAuth } from "@nestjs/swagger";
+import { UserModule } from "./modules/user/user.module";
+import { DatabaseModule } from "./database/database.module";
 
 @ApiBearerAuth("access-token")
 @Module({
@@ -16,8 +18,10 @@ import { ApiBearerAuth } from "@nestjs/swagger";
       validate: validateEnvs,
       envFilePath: `.env.${process.env.NODE_ENV || "development"}`,
     }),
+    DatabaseModule,
     PassportModule.register({ defaultStrategy: "jwt" }),
     AuthModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],

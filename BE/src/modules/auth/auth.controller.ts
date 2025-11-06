@@ -18,7 +18,6 @@ import { accessTokenSignOptions } from "@/config/jwt.config";
 import check from "check-types";
 import ms from "ms";
 import type { AuthenticatedRequest } from "@/common/interfaces/authenticated-request";
-import { OptionalJwtAuthGuard } from "@/common/guards/optional-jwt-auth.guard";
 
 @Controller("auth")
 @ApiBearerAuth("access-token") // IMPORTANT: Include this or else Swagger wont include the access token when testing

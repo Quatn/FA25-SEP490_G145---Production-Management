@@ -5,9 +5,9 @@ import { JwtPayload } from "./common/interfaces/jwt-payload.interface";
 @Injectable()
 export class AppService {
   getWelcomeMessage(user: JwtPayload | undefined): string {
-    if (check.undefined(user)) {
-      return "Welcome to Xuan Cau ERP, your authentication status is: Guest/Unauthenticated";
+    if (check.nonEmptyObject(user)) {
+      return "Welcome to Xuan Cau ERP, your authentication status is: Authenticated";
     }
-    return "Welcome to Xuan Cau ERP, your authentication status is: Authenticated";
+    return "Welcome to Xuan Cau ERP, your authentication status is: Guest/Unauthenticated";
   }
 }
