@@ -1,4 +1,4 @@
-import { JwtSignOptions } from '@nestjs/jwt';
+import { JwtSignOptions } from "@nestjs/jwt";
 
 // Currently useless as the current authorization strategy is single token
 export const refreshTokenSignOptions: JwtSignOptions = {};

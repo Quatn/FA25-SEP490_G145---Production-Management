@@ -1,8 +1,8 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import cookieParser from 'cookie-parser';
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+import { ValidationPipe } from "@nestjs/common";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import cookieParser from "cookie-parser";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,24 +18,24 @@ async function bootstrap() {
 
   // Swagger setup
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('ERP Backend API')
-    .setDescription('API documentation for the ERP system')
-    .setVersion('1.0')
+    .setTitle("ERP Backend API")
+    .setDescription("API documentation for the ERP system")
+    .setVersion("1.0")
     .addBearerAuth(
       {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        description: 'Enter JWT token',
-        in: 'header',
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        name: "Authorization",
+        description: "Enter JWT token",
+        in: "header",
       },
-      'access-token',
+      "access-token",
     ) // enables "Authorize" button for Swagger
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('swagger', app, document, {
+  SwaggerModule.setup("swagger", app, document, {
     swaggerOptions: { persistAuthorization: true },
   });
 

@@ -1,3 +1,4 @@
+import { JwtPayload } from '@/common/interfaces/jwt-payload.interface';
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -12,21 +13,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any) {
-    // payload is what you put into the token when signing it
-    // e.g. { userId, email, role }
+  async validate(payload: JwtPayload) {
+    // Everything thing function returns will be put into the 'user' field of the request returned by @Req
 
-    // Perform extra checks here if needed:
+    // Perform extra checks here if needed like:
     // - Check if user still exists
     // - Check if user is active
     // - Enrich with extra data
 
-    console.log(payload)
-
-    return {
-      userId: payload.sub,
-      username: payload.username,
-      role: payload.role,
-    };
+    // console.log(payload);
+    return payload;
   }
 }

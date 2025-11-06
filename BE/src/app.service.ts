@@ -1,8 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from "@nestjs/common";
+import check from "check-types";
+import { JwtPayload } from "./common/interfaces/jwt-payload.interface";
 
 @Injectable()
 export class AppService {
-  getWelcomeMessage(): string {
-    return 'Hello World!';
+  getWelcomeMessage(user: JwtPayload | undefined): string {
+    if (check.undefined(user)) {
+      return "Welcome to Xuan Cau ERP, your authentication status is: Guest/Unauthenticated";
+    }
+    return "Welcome to Xuan Cau ERP, your authentication status is: Authenticated";
   }
 }

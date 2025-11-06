@@ -1,50 +1,76 @@
-import { Body, Controller, Get, Post, Res, UseGuards } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { ApiOperation } from '@nestjs/swagger';
-import { LoginDto } from './dto/login.dto';
-import type { Response } from 'express';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from "@nestjs/common";
+import { AuthService } from "./auth.service";
+import { ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
+import type { Response as ExpressResponse } from "express";
+import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
+import { LoginRequestDto } from "./dto/login-request.dto";
+import { BaseResponse } from "@/common/dto/response.dto";
+import { LoginResponseDto } from "./dto/login-response.dto";
+import { accessTokenSignOptions } from "@/config/jwt.config";
+import check from "check-types";
+import ms from "ms";
+import type { AuthenticatedRequest } from "@/common/interfaces/authenticated-request";
+import { OptionalJwtAuthGuard } from "@/common/guards/optional-jwt-auth.guard";
 
-@Controller('auth')
+@Controller("auth")
+@ApiBearerAuth("access-token") // IMPORTANT: Include this or else Swagger wont include the access token when testing
 export class AuthController {
   constructor(private authService: AuthService) { }
 
-  @Post('login')
-  @ApiOperation({ summary: 'Login and get JWT token' })
+  @Post("login")
+  @ApiOperation({
+    summary:
+      "Login with username and password. Return an access token if login successful on development environment",
+  })
   async login(
-    @Body() body: LoginDto,
-    @Res({ passthrough: true }) res: Response,
+    @Body() body: LoginRequestDto,
+    @Res({ passthrough: true }) res: ExpressResponse,
   ) {
     const user = await this.authService.validateUser(
       body.username,
       body.password,
     );
+
     const token = await this.authService.login(user);
 
-    // Set the token as an HTTP-only cookie
-    res.cookie('access_token', token.access_token, {
-      httpOnly: true, // cannot be accessed by JS
-      secure: process.env.NODE_ENV === 'production', // only over HTTPS in prod
-      sameSite: 'strict',
-      maxAge: 1000 * 60 * 15, // 15 minutes
+    const cookieMaxAge = check.undefined(accessTokenSignOptions.expiresIn)
+      ? undefined
+      : check.string(accessTokenSignOptions.expiresIn)
+        ? ms(accessTokenSignOptions.expiresIn)
+        : accessTokenSignOptions.expiresIn * 1000;
+
+    res.cookie("access_token", token.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // only over HTTPS in prod
+      sameSite: "strict",
+      maxAge: cookieMaxAge,
     });
 
-    const loginResponse = {
-      message: 'Login successful',
+    const loginResponse: BaseResponse<LoginResponseDto> = {
+      success: true,
+      message: "Login successful",
     };
 
-    // For swagger testing, should be removed soon
-    if (process.env.NODE_ENV === 'development') {
-      loginResponse.access_token = token.access_token;
+    // For swagger testing, should be removed once security becomes a more pressing concern
+    if (process.env.NODE_ENV === "development") {
+      loginResponse.data = { access_token: token.access_token };
     }
 
     return loginResponse;
   }
 
-  @Get('protected')
+  @Get("test-protected-route")
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Can only be accessed by authenticated users' })
-  getProtected(): string {
-    return 'SAND!!!';
+  @ApiOperation({ summary: "Can only be accessed by authenticated users" })
+  getProtected(@Req() req: AuthenticatedRequest): string {
+    return `SAND FOR USER '${req.user.username}'`;
   }
 }
