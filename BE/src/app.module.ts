@@ -9,6 +9,7 @@ import { validateEnvs } from "./config/env.validation";
 import { ApiBearerAuth } from "@nestjs/swagger";
 import { UserModule } from "./modules/user/user.module";
 import { DatabaseModule } from "./database/database.module";
+import { CommonServicesModule } from "./common/services/services.module";
 
 @ApiBearerAuth("access-token")
 @Module({
@@ -20,6 +21,7 @@ import { DatabaseModule } from "./database/database.module";
     }),
     DatabaseModule,
     PassportModule.register({ defaultStrategy: "jwt" }),
+    CommonServicesModule,
     AuthModule,
     UserModule,
   ],

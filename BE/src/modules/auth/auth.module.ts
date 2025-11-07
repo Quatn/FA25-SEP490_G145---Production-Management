@@ -6,6 +6,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { accessTokenSignOptions } from "@/config/jwt.config";
 import { UserModule } from "../user/user.module";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { AuthDevModule } from "./dev/dev.module";
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
       }),
     }),
     UserModule,
+    ...(process.env.NODE_ENV === "development" ? [AuthDevModule] : []),
   ],
   providers: [AuthService],
   controllers: [AuthController],
