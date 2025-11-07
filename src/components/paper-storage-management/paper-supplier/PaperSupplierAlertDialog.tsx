@@ -39,7 +39,7 @@ const PaperSupplierAlertDialog: React.FC<PaperSupplierAlertDialogProps> = ({
                 <Dialog.Positioner>
                     <Dialog.Content>
                         <Dialog.Header>
-                            <Dialog.Title>Xác nhận xóa nhà giấy</Dialog.Title>
+                            <Dialog.Title>Xác Nhận Xóa Nhà Giấy</Dialog.Title>
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
@@ -48,9 +48,9 @@ const PaperSupplierAlertDialog: React.FC<PaperSupplierAlertDialogProps> = ({
                         </Dialog.Body>
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
-                                <Button variant="outline">Cancel</Button>
+                                <Button variant="outline">Hủy</Button>
                             </Dialog.ActionTrigger>
-                            <Button colorPalette="red" onClick={() => handleSubmit()}>Delete</Button>
+                            <Button colorPalette="red" onClick={() => handleSubmit()}>Xóa</Button>
                         </Dialog.Footer>
                         <Dialog.CloseTrigger asChild>
                             <CloseButton size="sm" />

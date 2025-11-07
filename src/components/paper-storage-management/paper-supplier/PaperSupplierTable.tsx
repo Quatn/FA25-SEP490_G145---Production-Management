@@ -219,6 +219,7 @@ const PaperSupplierTable: React.FC = () => {
 
           <Table.Header>
             <Table.Row>
+              <Table.ColumnHeader w='1%' textAlign={'center'}>STT</Table.ColumnHeader>
               <Table.ColumnHeader>Mã Nhà Giấy</Table.ColumnHeader>
               <Table.ColumnHeader>Tên Nhà Giấy</Table.ColumnHeader>
               <Table.ColumnHeader w="1%" textAlign="center">Thao tác</Table.ColumnHeader>
@@ -227,12 +228,13 @@ const PaperSupplierTable: React.FC = () => {
           <Table.Body>
             {filteredSuppliers.map((supplier, index) => (
               <Table.Row key={index}>
+                <Table.Cell textAlign={'center'}>{index+1}</Table.Cell>
                 <Table.Cell>{supplier.code}</Table.Cell>
                 <Table.Cell>{supplier.name}</Table.Cell>
                 <Table.Cell>
                   <Group gap={5}>
                     <PaperSupplierDetailDialog code={supplier.code} name={supplier.name} />
-                    <Button variant={"surface"} colorPalette={"yellow"} onClick={() => handleOpenFormDialog(supplier)}><Icon><FaEdit /></Icon>Cập nhật</Button>
+                    <Button variant={"surface"} colorPalette={"yellow"} onClick={() => handleOpenFormDialog(supplier)}><Icon><FaEdit /></Icon>Sửa</Button>
                     <Button variant={"surface"} colorPalette={"red"} onClick={() => handlOpenAlertDialog(supplier)}><Icon><FaTrashCan /></Icon>Xóa</Button>
                   </Group>
                 </Table.Cell>

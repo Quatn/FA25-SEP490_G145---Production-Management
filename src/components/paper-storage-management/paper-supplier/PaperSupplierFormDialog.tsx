@@ -47,7 +47,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
 
         if (field === "name") {
             if (!value.trim()) errorMsg = "Tên nhà giấy không được để trống";
-            else if (!/^[A-ZÀ-Ỹ0-9]+(?:\s{0,1}[A-ZÀ-Ỹ0-9]+)*$/.test(value))
+            else if (!/^[A-ZÀ-Ỹ0-9 .,&()\-]+$/.test(value))
                 errorMsg = "Sai cú pháp";
             else {
                 const isDuplicate = existingSuppliers.some(
@@ -103,7 +103,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                     <Dialog.Content maxW="md">
                         <Dialog.Header>
                             <Dialog.Title>
-                                {!!!initialData ? "Thêm Nhà Giấy Mới" : "Cập Nhật Nhà Giấy"}
+                                {!!!initialData ? "Thêm Nhà Giấy Mới" : "Sửa Thông Tin Nhà Giấy"}
                             </Dialog.Title>
                         </Dialog.Header>
 

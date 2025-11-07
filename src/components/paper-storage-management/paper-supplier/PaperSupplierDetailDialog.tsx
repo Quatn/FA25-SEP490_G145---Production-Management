@@ -14,7 +14,7 @@ const PaperSupplierDetailDialog: React.FC<PaperSupplier> = ({ code, name }) => {
                 <Dialog.Positioner>
                     <Dialog.Content>
                         <Dialog.Header>
-                            <Dialog.Title>Thông tin nhà giấy</Dialog.Title>
+                            <Dialog.Title>Thông Tin Nhà Giấy</Dialog.Title>
                         </Dialog.Header>
                         <Dialog.Body>
                             <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
