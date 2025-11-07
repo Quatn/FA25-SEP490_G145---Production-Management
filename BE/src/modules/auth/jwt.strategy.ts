@@ -16,7 +16,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   // Can be async
   validate(payload: JwtPayload) {
-    // Everything thing function returns will be put into the 'user' field of the request returned by @Req
+    // Everything thing function returns will be put into the 'user' field of the request returned by @Req when jwt authentication is successful
 
     // Perform extra checks here if needed like:
     // - Check if user still exists

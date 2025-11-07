@@ -10,10 +10,10 @@ export class UserService {
   ) { }
 
   async findAll() {
-    return this.userModel.find();
+    return await this.userModel.find();
   }
 
   async findByUsername(username: string) {
-    return this.userModel.findOne({ username });
+    return await this.userModel.findOne({ username });
   }
 }

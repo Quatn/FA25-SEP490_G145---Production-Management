@@ -1,30 +1,34 @@
 import { JwtPayload } from "@/common/interfaces/jwt-payload.interface";
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { User, UserRole } from "../user/schemas/user.schema";
-import { Types } from "mongoose";
+import { UserDocument } from "../user/schemas/user.schema";
 import { UserService } from "../user/user.service";
 import check from "check-types";
+import bcrypt from "bcrypt";
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
     private userService: UserService,
-  ) {}
+  ) { }
 
-  async validateUser(username: string, password: string): Promise<User> {
+  async validateUser(
+    username: string,
+    password: string,
+  ): Promise<UserDocument> {
     const user = await this.userService.findByUsername(username);
-    if (!check.null(user)) {
-      if (user.password === password) return user;
+    if (!check.null(user) && !check.undefined(user)) {
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (isMatch) return user;
       throw new UnauthorizedException("Invalid credentials");
     }
     throw new UnauthorizedException("User not found");
   }
 
-  async login(user: User): Promise<{ access_token?: string }> {
+  async login(user: UserDocument): Promise<{ access_token?: string }> {
     const payload: JwtPayload = {
-      id: (user._id as Types.ObjectId).toString(),
+      id: user._id.toString(),
       username: user.username,
       role: user.role,
     };
