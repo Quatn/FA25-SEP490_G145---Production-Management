@@ -1,11 +1,19 @@
-import { plainToInstance } from "class-transformer";
+import { plainToInstance, Transform } from "class-transformer";
 import {
   IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
   validateSync,
 } from "class-validator";
+import {
+  ALLOWED_ENCRYPTION_ALGOS,
+  ALLOWED_HASH_ALGOS,
+  DEFAULT_CRYPTO_KEY,
+  DEFAULT_ENCRYPTION_ALGO,
+  DEFAULT_HASH_ALGO,
+} from "./crypto-algorithms.config";
 
 enum Environment {
   Development = "development",
@@ -31,6 +39,20 @@ class EnvironmentVariables {
 
   @IsString()
   JWT_SECRET: string;
+
+  @IsOptional()
+  @IsIn(ALLOWED_HASH_ALGOS)
+  @Transform(({ value }): string => value || DEFAULT_HASH_ALGO)
+  HASH_ALGORITHM: string = DEFAULT_HASH_ALGO;
+
+  @IsOptional()
+  @IsIn(ALLOWED_ENCRYPTION_ALGOS)
+  @Transform(({ value }): string => value || DEFAULT_ENCRYPTION_ALGO)
+  ENCRYPTION_ALGORITHM: string = DEFAULT_ENCRYPTION_ALGO;
+
+  @IsOptional()
+  @Transform(({ value }): string => value || DEFAULT_CRYPTO_KEY)
+  CRYPTO_KEY: string = DEFAULT_CRYPTO_KEY;
 }
 
 export function validateEnvs(config: Record<string, unknown>) {

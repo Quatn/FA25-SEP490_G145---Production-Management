@@ -9,6 +9,9 @@ declare global {
       DB_URI: string;
       DB_NAME: string;
       JWT_SECRET: string;
+      HASH_ALGORITHM: string;
+      ENCRYPTION_ALGORITHM: string;
+      CRYPTO_KEY: string;
     }
   }
 }
