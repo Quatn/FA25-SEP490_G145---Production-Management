@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Container,
   Row,
@@ -198,6 +198,15 @@ export default function ProductList() {
 
   // 🔹 State mới (thay cho showAddProductModal & newProduct)
   const [editingProduct, setEditingProduct] = useState(null);
+
+  const [containerEl, setContainerEl] = useState(null);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      const el = document.querySelector(".bootstrap-scope");
+      if (el) setContainerEl(el);
+    }
+  }, []);
 
   // 🔹 Hàm mở modal
   const handleOpenProductModal = (product = null) => {
@@ -562,7 +571,14 @@ export default function ProductList() {
       ))}
 
       {/* Modal for Adding Item Codes */}
-      <Modal show={showModal} onHide={handleCloseModal} size="lg" centered>
+      <Modal
+        show={showModal}
+        onHide={handleCloseModal}
+        size="lg"
+        centered
+        // container={document.querySelector(".bootstrap-scope")}
+        container={containerEl}
+      >
         <Modal.Header closeButton>
           <Modal.Title>Thêm mã hàng</Modal.Title>
         </Modal.Header>
@@ -695,6 +711,8 @@ export default function ProductList() {
         onHide={handleCloseProductModal}
         size="lg"
         centered
+        // container={document.querySelector(".bootstrap-scope")}
+        container={containerEl}
       >
         <Modal.Header closeButton>
           <Modal.Title>

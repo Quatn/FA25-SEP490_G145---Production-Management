@@ -1,13 +1,13 @@
 import { apiSlice } from "./apiSlice";
-import { PRODUCT_URL, USE_MOCK_DATA } from "../constants";
-import { mockProductsQuery } from "../mock-data/functions/mock-catalog-crud";
+import { PURCHASE_ORDER_URL, USE_MOCK_DATA } from "../constants";
+import { mockPurchaseOrdersQuery } from "../mock-data/functions/mock-purchase-orders-crud";
 import { PaginatedList, QueryResponse } from "@/types/DTO/Response";
-import { Product } from "@/types/Product";
+import { PurchaseOrder } from "@/types/PurchaseOrder";
 
-export const productApiSlice = apiSlice.injectEndpoints({
+export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getProducts: builder.query<
-      PaginatedList<Serialized<Product>>,
+    getPurchaseOrders: builder.query<
+      PaginatedList<Serialized<PurchaseOrder>>,
       { page: number; limit: number }
     >({
       ...(USE_MOCK_DATA
@@ -15,10 +15,10 @@ export const productApiSlice = apiSlice.injectEndpoints({
           queryFn: async (
             { page, limit }: { page: number; limit: number },
           ): Promise<
-            QueryResponse<PaginatedList<Serialized<Product>>>
+            QueryResponse<PaginatedList<Serialized<PurchaseOrder>>>
           > => {
             try {
-              const data = await mockProductsQuery({
+              const data = await mockPurchaseOrdersQuery({
                 page,
                 limit,
               });
@@ -37,7 +37,7 @@ export const productApiSlice = apiSlice.injectEndpoints({
         }
         : {
           query: ({ page = 1, limit = 20 }) => ({
-            url: `${PRODUCT_URL}/`,
+            url: `${PURCHASE_ORDER_URL}/`,
             method: "GET",
             params: { page, limit },
             credentials: "include",
@@ -48,5 +48,5 @@ export const productApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
-  useGetProductsQuery,
-} = productApiSlice;
+  useGetPurchaseOrdersQuery,
+} = purchaseOrderApiSlice;

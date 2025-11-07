@@ -1,0 +1,47 @@
+[
+  {
+    "id": "manufacturingorderprocessid001",
+    "manufacturingOrderCode": "1/10",
+    "manufacturingProcessCode": "BE",
+    "processNumber": "1",
+    "manufacturedAmount": 0,
+    "status": "NOTSTARTED",
+    "note": ""
+  },
+  {
+    "id": "manufacturingorderprocessid002",
+    "manufacturingOrderCode": "1/10",
+    "manufacturingProcessCode": "BO",
+    "processNumber": "2",
+    "manufacturedAmount": 0,
+    "status": "NOTSTARTED",
+    "note": ""
+  },
+  {
+    "id": "manufacturingorderprocessid003",
+    "manufacturingOrderCode": "2/10",
+    "manufacturingProcessCode": "IN",
+    "processNumber": "1",
+    "manufacturedAmount": 0,
+    "status": "NOTSTARTED",
+    "note": ""
+  },
+  {
+    "id": "manufacturingorderprocessid004",
+    "manufacturingOrderCode": "2/10",
+    "manufacturingProcessCode": "CHAP",
+    "processNumber": "2",
+    "manufacturedAmount": 0,
+    "status": "NOTSTARTED",
+    "note": ""
+  },
+  {
+    "id": "manufacturingorderprocessid005",
+    "manufacturingOrderCode": "2/10",
+    "manufacturingProcessCode": "DAN",
+    "processNumber": "3",
+    "manufacturedAmount": 0,
+    "status": "NOTSTARTED",
+    "note": ""
+  }
+]

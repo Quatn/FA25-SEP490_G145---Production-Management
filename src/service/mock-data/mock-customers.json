@@ -1,0 +1,20 @@
+[
+  {
+    "id": "customerid001",
+    "code": "DONGTAI",
+    "name": "DONGTAI VIETNAM INTERNATIONAL CO. LTD",
+    "address": "NAM TAI INDUSTRIAL PARK, PHU THAI COMMUNE, Hải Phòng, Vietnam",
+    "email": "",
+    "contactNumber": "+84(320) 3722 061",
+    "note": ""
+  },
+  {
+    "id": "customerid002",
+    "code": "ANGLOBAL",
+    "name": "AN - GLOBAL PACKAGING CO.,LTD",
+    "address": "Thôn Đoài, xã Hồng Lạc, Thanh Hà District, Hai Duong, Vietnam",
+    "email": "anglobalpackaging@gmail.com",
+    "contactNumber": "",
+    "note": ""
+  }
+]

@@ -1,0 +1,145 @@
+"use client";
+
+import "./main.css";
+import Header from "@/components/Header";
+import { Node, Sidebar } from "@/components/layout/Sidebar";
+import {
+  createTreeCollection,
+  Flex,
+  GridItem,
+  Input,
+  SimpleGrid,
+  useFilter,
+} from "@chakra-ui/react";
+import { useState } from "react";
+
+const initialCollection = createTreeCollection<Node>({
+  nodeToValue: (node) => node.id,
+  nodeToString: (node) => node.name,
+  rootNode: {
+    id: "ROOT",
+    name: "",
+    href: "",
+    children: [
+      {
+        id: "dashboard",
+        name: "Dashboard",
+        href: "/dashboard",
+        children: [],
+      },
+      {
+        id: "purchase-order",
+        name: "Purchase Order",
+        children: [
+          {
+            id: "purchase-order-list",
+            name: "Purchase Order List",
+            href: "/purchase-order",
+            children: [],
+          },
+          {
+            id: "purchase-order-create",
+            name: "Purchase Order Create",
+            href: "/purchase-order/create",
+            children: [],
+          },
+        ],
+      },
+
+      {
+        id: "manufacturing-order",
+        name: "Manufacturing Order",
+        children: [
+          {
+            id: "manufacturing-order-list",
+            name: "Manufacturing Order List",
+            href: "/manufacturing-order",
+            children: [],
+          },
+          {
+            id: "manufacturing-order-create",
+            name: "Manufacturing Order Create",
+            href: "/manufacturing-order/create",
+            children: [],
+          },
+        ],
+      },
+      // {
+      //   id: "product",
+      //   name: "Product Management",
+      //   children: [
+      //     {
+      //       id: "product-list",
+      //       name: "Product List",
+      //       href: "/products",
+      //       children: [],
+      //     },
+      //   ],
+      // },
+    ],
+  },
+});
+
+export default function MainLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const [collection, setCollection] = useState(initialCollection);
+  const [expanded, setExpanded] = useState<string[]>([]);
+  const [query, setQuery] = useState("");
+
+  const { contains } = useFilter({ sensitivity: "base" });
+
+  const search = (search: string) => {
+    setQuery(search);
+    const nextCollection = initialCollection.filter((node) =>
+      contains(node.name, search)
+    );
+    setCollection(nextCollection);
+    setExpanded(nextCollection.getBranchValues());
+  };
+
+  return (
+    <Flex h={"full"} direction={"column"} grow={1}>
+      <Header />
+      <SimpleGrid
+        columns={{ base: 1, sm: 5, md: 5 }}
+        gap={{ base: "24px", md: "40px" }}
+        flexGrow={1}
+      >
+        <GridItem colSpan={{ base: 1, sm: 2, md: 1 }}>
+          <Sidebar.Root>
+            <Sidebar.Header>
+              <Input
+                size="sm"
+                placeholder="Search page"
+                onChange={(e) => search(e.target.value)}
+                backgroundColor={"white"}
+              />
+            </Sidebar.Header>
+
+            <Sidebar.Body>
+              <Sidebar.Tree
+                collection={collection}
+                expandedValue={expanded}
+                onExpandedChange={(details) =>
+                  setExpanded(details.expandedValue)
+                }
+                query={query}
+              />
+            </Sidebar.Body>
+          </Sidebar.Root>
+        </GridItem>
+        <GridItem colSpan={{ base: 1, sm: 3, md: 4 }}>
+          <main
+            style={{ height: "100%", display: "flex", flexDirection: "column" }}
+          >
+            {children}
+          </main>
+        </GridItem>
+      </SimpleGrid>
+      <footer></footer>
+    </Flex>
+  );
+}
