@@ -4,5 +4,5 @@ import { Document } from "mongoose";
 @Schema()
 export class BaseSchema {
   @Prop({ default: false })
-  isDeleted: boolean;
+  isDeleted: boolean = false;
 }
