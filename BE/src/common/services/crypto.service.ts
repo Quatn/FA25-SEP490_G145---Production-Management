@@ -23,7 +23,7 @@ export class CryptoService {
       "ENCRYPTION_ALGORITHM",
     );
 
-    const keyHex = this.configService.getOrThrow<string>("CRYPTO_KEY");
+    const keyHex = this.configService.getOrThrow<string>("ENCRYPTION_SECRET");
     const maybeKey = Buffer.from(keyHex, "hex");
 
     if (maybeKey.length === 0 || maybeKey.length % 8 !== 0) {
