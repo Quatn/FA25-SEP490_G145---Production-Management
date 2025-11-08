@@ -1,6 +1,7 @@
 [
   {
     "id": "purchaseorderitemid001",
+    "code": "DONGTAI-01/09-01-01",
     "subPurchaseOrderId": "subpurchaseorderid001",
     "wareCode": "dt-pad-65x50",
     "amount": 1288,
@@ -22,6 +23,7 @@
   },
   {
     "id": "purchaseorderitemid002",
+    "code": "DONGTAI-01/09-02-01",
     "subPurchaseOrderId": "subpurchaseorderid002",
     "wareCode": "dt-box-70x53x15",
     "amount": 376,
@@ -43,6 +45,7 @@
   },
   {
     "id": "purchaseorderitemid003",
+    "code": "DONGTAI-01/09-02-02",
     "subPurchaseOrderId": "subpurchaseorderid002",
     "wareCode": "dt-box-73x56x15",
     "amount": 676,
@@ -64,6 +67,7 @@
   },
   {
     "id": "purchaseorderitemid004",
+    "code": "DONGTAI-01/09-02-03",
     "subPurchaseOrderId": "subpurchaseorderid002",
     "wareCode": "dt-box-76x59x15",
     "amount": 57,
@@ -85,6 +89,7 @@
   },
   {
     "id": "purchaseorderitemid005",
+    "code": "DONGTAI-01/09-02-04",
     "subPurchaseOrderId": "subpurchaseorderid002",
     "wareCode": "dt-box-73x56x14",
     "amount": 179,

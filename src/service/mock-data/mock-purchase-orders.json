@@ -1,6 +1,7 @@
 [
   {
     "id": "purchaseorderid001",
+    "code": "DONGTAI-01/09",
     "customerCode": "DONGTAI",
     "orderDate": "2025-09-24T09:22:00.000Z",
     "deliveryAdress": "NAMTAI INDUSTRIAL PARK, PHU THAI COMMUNE, HAI PHONG, VIETNAM",

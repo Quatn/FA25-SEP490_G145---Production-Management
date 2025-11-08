@@ -2,12 +2,22 @@
 import React, { createContext, Dispatch, useContext, useReducer } from "react";
 
 type TabType =
+  | "all"
   | "order"
   | "manufacture"
   | "layers"
   | "notes"
   | "weight"
   | "processes";
+
+type SearchFilterType =
+  | "searchAndFilter"
+  | "search"
+  | "filter";
+
+type PaginationType =
+  | "paged"
+  | "pageless";
 
 interface TableState {
   page: number;
@@ -17,6 +27,8 @@ interface TableState {
   hoveredRowId: string | null;
   selectedOrderId: string | null;
   pinnedOrderIds: string[];
+  searchFilterType: SearchFilterType;
+  paginationType: PaginationType;
 }
 
 type TableAction =
@@ -29,6 +41,8 @@ type TableAction =
   | { type: "SET_PINNED_ORDERS_ID"; payload: string[] }
   | { type: "ADD_PINNED_ORDER_ID"; payload: string }
   | { type: "REMOVE_PINNED_ORDER_ID"; payload: string }
+  | { type: "SET_SEARCH_FILTER_TYPE"; payload: SearchFilterType }
+  | { type: "SET_PAGINATION_TYPE"; payload: PaginationType }
   | { type: "RESET" };
 
 const initialState: TableState = {
@@ -39,6 +53,8 @@ const initialState: TableState = {
   hoveredRowId: null,
   selectedOrderId: null,
   pinnedOrderIds: [],
+  searchFilterType: "searchAndFilter",
+  paginationType: "paged",
 };
 
 function tableReducer(state: TableState, action: TableAction): TableState {
@@ -68,6 +84,16 @@ function tableReducer(state: TableState, action: TableAction): TableState {
         pinnedOrderIds: state.pinnedOrderIds.filter((id) =>
           id !== action.payload
         ),
+      };
+    case "SET_SEARCH_FILTER_TYPE":
+      return {
+        ...state,
+        searchFilterType: action.payload,
+      };
+    case "SET_PAGINATION_TYPE":
+      return {
+        ...state,
+        paginationType: action.payload,
       };
     case "RESET":
       return initialState;

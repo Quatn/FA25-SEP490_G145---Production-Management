@@ -1,5 +1,6 @@
 export type PurchaseOrderItem = {
   id: string;
+  code: string;
   subPurchaseOrderId: string;
   wareCode: string;
   amount: number;
