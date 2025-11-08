@@ -9,5 +9,3 @@ export const ALLOWED_ENCRYPTION_ALGOS = [
   "aes-128-gcm",
 ];
 export type AllowedEncryptionAlgos = (typeof ALLOWED_ENCRYPTION_ALGOS)[number];
-
-export const DEFAULT_CRYPTO_KEY = "VbYGP&MpmKyEm9uBjtv@g54jP6pWDeTu";
