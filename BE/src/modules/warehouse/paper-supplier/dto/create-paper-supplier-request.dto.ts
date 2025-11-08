@@ -12,7 +12,7 @@ export class CreatePaperSupplierRequestDto {
 
     @ApiProperty({
         example: 'HOÀNG HÀ',
-        description: 'Unique Full name of the paper supplier',
+        description: 'Full name of the paper supplier',
     })
     @IsString()
     @Length(2, 100, { message: 'Name must be between 2 and 100 characters' })

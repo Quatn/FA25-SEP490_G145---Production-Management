@@ -1,5 +1,5 @@
 export type PaperColor = {
   _id?: { $oid: string, },
   code: string,
-  name: string,
+  title: string,
 };

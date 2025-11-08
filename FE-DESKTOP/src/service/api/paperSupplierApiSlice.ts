@@ -1,5 +1,5 @@
 import { apiSlice } from "./apiSlice";
-import { BaseResponse, PaginatedList, QueryResponse } from "@/types/DTO/Response";
+import { BaseResponse, PaginatedList} from "@/types/DTO/Response";
 import { PaperSupplier } from "@/types/PaperSupplier";
 import { PAPER_SUPPLIER_URL } from "../constants";
 

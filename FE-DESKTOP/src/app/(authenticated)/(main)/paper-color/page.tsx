@@ -1,6 +1,6 @@
-import PaperSupplierList from "@/components/paper-storage/paper-supplier/PaperSupplierList";
-import { Box, Button, Stack, Text } from "@chakra-ui/react";
-export default function PaperSupplierHome() {
+import PaperColorList from "@/components/paper-storage/paper-color/PaperColorList";
+import { Box, Stack, Text } from "@chakra-ui/react";
+export default function PaperColorHome() {
   return (
     <Box
       m={5}
@@ -11,11 +11,11 @@ export default function PaperSupplierHome() {
     >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"bold"} color={"black"}>
-          DANH SÁCH NHÀ GIẤY
+          DANH SÁCH MÀU GIẤY
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>
-        <PaperSupplierList/>
+        <PaperColorList/>
       </Stack>
     </Box>
   );

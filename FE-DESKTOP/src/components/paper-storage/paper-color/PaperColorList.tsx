@@ -3,22 +3,22 @@
 import { Button, ButtonGroup, CloseButton, Flex, IconButton, Input, InputGroup, Pagination, Spacer, Spinner } from "@chakra-ui/react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Text } from "@chakra-ui/react"
-import { useAddPaperSupplierMutation, useDeletePaperSupplierMutation, useGetPaperSupplierQuery, useUpdatePaperSupplierMutation } from "@/service/api/paperSupplierApiSlice";
-import { PaperSupplier } from "@/types/PaperSupplier";
+import { useAddPaperColorMutation, useUpdatePaperColorMutation, useDeletePaperColorMutation, useGetPaperColorQuery } from "@/service/api/paperColorApiSlice";
+import { PaperColor } from "@/types/PaperColor";
 import { toaster } from "@/components/ui/toaster";
 import { Icon } from "@chakra-ui/react";
 import { FaPlus, FaSearch } from "react-icons/fa";
-import PaperSupplierFormDialog from "./PaperSupplierFormDialog";
-import PaperSupplierAlertDialog from "./PaperSupplierAlertDialog";
-import PaperSupplierTable from "./PaperSupplierTable";
+import PaperColorFormDialog from "./PaperColorFormDialog";
+import PaperColorAlertDialog from "./PaperColorAlertDialog";
+import PaperColorTable from "./PaperColorTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 
 
-const PaperSupplierList: React.FC = () => {
+const PaperColorList: React.FC = () => {
 
-    const [addPaperSupplier] = useAddPaperSupplierMutation();
-    const [updatePaperSupplier] = useUpdatePaperSupplierMutation();
-    const [deletePaperSupplier] = useDeletePaperSupplierMutation();
+    const [addPaperColor] = useAddPaperColorMutation();
+    const [updatePaperColor] = useUpdatePaperColorMutation();
+    const [deletePaperColor] = useDeletePaperColorMutation();
 
     const [page, setPage] = useState(1);
     const limit = 10;
@@ -30,26 +30,26 @@ const PaperSupplierList: React.FC = () => {
         return () => clearTimeout(timer);
     }, [search]);
 
-    const { data: suppliersData, error: suppliersError, isLoading: isSuppliersLoading } = useGetPaperSupplierQuery({ page: page, limit: limit, search: debouncedSearch });
+    const { data: colorsData, error: colorsError, isLoading: isColorsLoading } = useGetPaperColorQuery({ page: page, limit: limit, search: debouncedSearch });
 
-    const suppliers = suppliersData?.data?.data ?? [];
+    const colors = colorsData?.data?.data ?? [];
 
-    const totalPages = suppliersData?.data?.totalPages ?? 1;
+    const totalPages = colorsData?.data?.totalPages ?? 1;
 
     const [formDialogOpen, setFormDialogOpen] = useState(false);
     const [alertDialogOpen, setAlertDialogOpen] = useState(false);
-    const [selectedSupplier, setSelectedSupplier] = useState<PaperSupplier | undefined>(undefined);
+    const [selectedColor, setSelectedColor] = useState<PaperColor | undefined>(undefined);
 
 
     const inputRef = useRef<HTMLInputElement | null>(null);
 
-    const handleOpenFormDialog = (supplier?: PaperSupplier) => {
-        setSelectedSupplier(supplier);
+    const handleOpenFormDialog = (color?: PaperColor) => {
+        setSelectedColor(color);
         setFormDialogOpen(true);
     };
 
-    const handleOpenAlertDialog = (supplier: PaperSupplier) => {
-        setSelectedSupplier(supplier);
+    const handleOpenAlertDialog = (color: PaperColor) => {
+        setSelectedColor(color);
         setAlertDialogOpen(true);
     }
 
@@ -87,30 +87,30 @@ const PaperSupplierList: React.FC = () => {
         }
     };
 
-    const handleAddSupplier = async (data: PaperSupplier) => {
+    const handleAddColor = async (data: PaperColor) => {
 
         handleMutation(
-            () => addPaperSupplier(data).unwrap(),
-            `Đã lưu nhà giấy ${data.code} - ${data.name}`,
+            () => addPaperColor(data).unwrap(),
+            `Đã lưu màu giấy ${data.code} - ${data.title}`,
             'Lưu thất bại',
         )
     }
 
-    const handleUpdateSupplier = async (data: PaperSupplier) => {
+    const handleUpdateColor = async (data: PaperColor) => {
 
         handleMutation(
-            () => updatePaperSupplier(data).unwrap(),
-            `Đã cập nhật nhà giấy ${data.code} - ${data.name}`,
+            () => updatePaperColor(data).unwrap(),
+            `Đã cập nhật màu giấy ${data.code} - ${data.title}`,
             'Cập nhật thất bại',
         )
 
     }
 
-    const handleDeleteSupplier = async (data: PaperSupplier) => {
+    const handleDeleteColor = async (data: PaperColor) => {
 
         handleMutation(
-            () => deletePaperSupplier(data).unwrap(),
-            `Xóa nhà giấy ${data.code} - ${data.name}`,
+            () => deletePaperColor(data).unwrap(),
+            `Xóa màu giấy ${data.code} - ${data.title}`,
             'Xóa thất bại',
         )
 
@@ -134,24 +134,24 @@ const PaperSupplierList: React.FC = () => {
         </IconButton>
     );
 
-    if (isSuppliersLoading) return <Text>Đang tải dữ liệu...</Text>;
-    if (suppliersError) return <Text>Không thể tải dữ liệu. Vui lòng thử lại.</Text>;
+    if (isColorsLoading) return <Text>Đang tải dữ liệu...</Text>;
+    if (colorsError) return <Text>Không thể tải dữ liệu. Vui lòng thử lại.</Text>;
 
     return (
 
         <>
-            <PaperSupplierFormDialog
+            <PaperColorFormDialog
                 isOpen={formDialogOpen}
                 onClose={handleCloseFormDialog}
-                initialData={selectedSupplier}
-                onAdd={(data) => handleAddSupplier(data)}
-                onUpdate={(data) => handleUpdateSupplier(data)} />
+                initialData={selectedColor}
+                onAdd={(data) => handleAddColor(data)}
+                onUpdate={(data) => handleUpdateColor(data)} />
 
-            <PaperSupplierAlertDialog
+            <PaperColorAlertDialog
                 isOpen={alertDialogOpen}
                 onClose={handleCloseAlertDialog}
-                initialData={selectedSupplier}
-                onDelete={(data) => handleDeleteSupplier(data)} />
+                initialData={selectedColor}
+                onDelete={(data) => handleDeleteColor(data)} />
 
             <Flex direction={"row-reverse"}>
                 <InputGroup endElement={endElement} w={"full"} maxW={"sm"}>
@@ -167,20 +167,20 @@ const PaperSupplierList: React.FC = () => {
                         }} />
                 </InputGroup>
                 <Spacer />
-                <Button colorPalette={"green"} onClick={() => handleOpenFormDialog()}><Icon><FaPlus /></Icon>Thêm nhà giấy</Button>
+                <Button colorPalette={"green"} onClick={() => handleOpenFormDialog()}><Icon><FaPlus /></Icon>Thêm màu giấy</Button>
             </Flex>
-            {isSuppliersLoading ? (<Spinner />) : (
+            {isColorsLoading ? (<Spinner />) : (
                 <>
-                    <PaperSupplierTable
+                    <PaperColorTable
                         page={page}
                         limit={limit}
-                        suppliers={suppliers}
+                        colors={colors}
                         onEdit={handleOpenFormDialog}
                         onDelete={handleOpenAlertDialog}
                     />
 
                     <Pagination.Root
-                        count={search ? suppliers.length : totalPages * limit}
+                        count={search ? colors.length : totalPages * limit}
                         pageSize={limit}
                         page={page}
                         siblingCount={2}
@@ -220,4 +220,4 @@ const PaperSupplierList: React.FC = () => {
     );
 }
 
-export default PaperSupplierList;
+export default PaperColorList;
