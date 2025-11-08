@@ -1,11 +1,127 @@
 [
   {
-    "id": "purchaseorderid001",
-    "customerCode": "DONGTAI",
-    "orderDate": "2025-09-24T09:22:00.000Z",
-    "deliveryAdress": "NAMTAI INDUSTRIAL PARK, PHU THAI COMMUNE, HAI PHONG, VIETNAM",
-    "paymentTerms": "TT 30 Days",
-    "status": "NOTSTARTED",
-    "notes": "Produce trims as as approved samples and layout, full quality and quantity of trims must be stamped before shipping to our factories. If trims are faulty over 3%, we will debit 10% of PO value automatically."
+    "id": "po1",
+    "poNumber": "PO-XC-25-174",
+    "poDate": "2025-09-24",
+    "customer": "Công ty ABC",
+    "address": "Hải Phòng",
+    "phone": "0123456789",
+    "email": "abc@company.vn",
+    "taxTemplate": "PURCHASE-VAT 8% DISC 5%",
+    "poType": "Domestic",
+    "style": "YNW-GU-018.25.2",
+    "styleDetails": "60216H001A - Ws washable tailored jacket",
+    "status": "Waiting",
+    "subPOs": [
+      {
+        "id": "sub1",
+        "poId": "po1",
+        "title": "Line 1 - Carton Pad",
+        "status": "Open",
+        "assignedTo": "Line A",
+        "notes": "Priority",
+        "items": [
+          {
+            "id": "i1",
+            "subPOId": "sub1",
+            "sku": "T020510010",
+            "description": "CARTON PAD FOR GU",
+            "uom": "PCS",
+            "unitPrice": 10000,
+            "quantity": 100,
+            "total": 1000000,
+            "status": "Done"
+          }
+        ]
+      },
+      {
+        "id": "sub2",
+        "poId": "po1",
+        "title": "Line 2 - Carton Box",
+        "status": "Open",
+        "items": [
+          {
+            "id": "i2",
+            "subPOId": "sub2",
+            "sku": "T020610178",
+            "description": "CARTON BOX FOR G.U",
+            "uom": "PCS",
+            "unitPrice": 12000,
+            "quantity": 200,
+            "total": 2400000,
+            "status": "Pending"
+          },
+          {
+            "id": "i3",
+            "subPOId": "sub2",
+            "sku": "T020610179",
+            "description": "SMALL BOX",
+            "uom": "PCS",
+            "unitPrice": 8000,
+            "quantity": 50,
+            "total": 400000,
+            "status": "Pending"
+          }
+        ]
+      }
+    ],
+    "totalItems": 3,
+    "totalValue": 3800000
+  },
+
+  {
+    "id": "po2",
+    "poNumber": "PO-XC-25-476",
+    "poDate": "2025-09-24",
+    "customer": "CÔNG TY TNHH AN-GLOBAL PACKAGING",
+    "address": "Hải Dương",
+    "phone": "02203600838",
+    "email": "anglobalpackaging@gmail.com",
+    "taxTemplate": "PURCHASE-VAT 8%",
+    "poType": "Domestic",
+    "style": "AN-TRIM-2025",
+    "styleDetails": "Trim and carton set",
+    "status": "Waiting",
+    "subPOs": [
+      {
+        "id": "sub3",
+        "poId": "po2",
+        "title": "Trim Set A",
+        "status": "Open",
+        "items": [
+          {
+            "id": "i4",
+            "subPOId": "sub3",
+            "sku": "TRIM-001",
+            "description": "Trim set - size A",
+            "uom": "PCS",
+            "unitPrice": 5000,
+            "quantity": 505,
+            "total": 2525000,
+            "status": "InProgress"
+          }
+        ]
+      }
+    ],
+    "totalItems": 1,
+    "totalValue": 2525000
+  },
+
+  {
+    "id": "po3",
+    "poNumber": "PO-DT-2025-001",
+    "poDate": "2025-09-06",
+    "customer": "DONG TAI COMPANY",
+    "address": "Nam Từ Liêm",
+    "phone": "024000000",
+    "email": "purchase@dongtai.vn",
+    "taxTemplate": "PURCHASE-VAT",
+    "poType": "Export",
+    "style": "DT-TRIM-001",
+    "styleDetails": "Multiple sizes",
+    "status": "Approved",
+    "subPOs": [],
+    "totalItems": 0,
+    "totalValue": 0
   }
 ]

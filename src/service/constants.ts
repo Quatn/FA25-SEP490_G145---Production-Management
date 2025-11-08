@@ -10,4 +10,3 @@ export const PURCHASE_ORDER_URL = "/purchase-order";
 export const PRODUCT_URL = "/product";
 export const WARE_URL = "/ware";
 export const MANUFACTURING_ORDER_URL = "/manufacturing-order";
-
