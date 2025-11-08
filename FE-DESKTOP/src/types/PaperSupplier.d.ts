@@ -5,7 +5,7 @@ export type PaperSupplier = {
   phone?: string,
   address?: string,
   email?: string,
-  note?: string,
   bank?: string,
   bankAccount?: string,
+  note?: string,
 };

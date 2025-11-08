@@ -1,16 +1,16 @@
 import { apiSlice } from "./apiSlice";
-import { PaginatedList, QueryResponse } from "@/types/DTO/Response";
+import { BaseResponse, PaginatedList, QueryResponse } from "@/types/DTO/Response";
 import { PaperSupplier } from "@/types/PaperSupplier";
 import { PAPER_SUPPLIER_URL } from "../constants";
 
 export const paperSupplierApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
-        getPaperSupplier: builder.query<PaginatedList<PaperSupplier>, { page?: number; limit?: number }>(
+        getPaperSupplier: builder.query<BaseResponse<PaginatedList<PaperSupplier>>, { page?: number; limit?: number, search?: string }>(
             {
-                query: ({ page = 1, limit = 20 }) => ({
-                    url: PAPER_SUPPLIER_URL,
+                query: ({ page = 1, limit = 10, search = '' }) => ({
+                    url: `${PAPER_SUPPLIER_URL}/list`,
                     method: "GET",
-                    params: { page, limit },
+                    params: { page, limit, search },
                     credentials: "include",
                 }),
                 providesTags: ["PaperSupplier"],
@@ -18,7 +18,7 @@ export const paperSupplierApiSlice = apiSlice.injectEndpoints({
 
         addPaperSupplier: builder.mutation<{ success: boolean; message: string }, PaperSupplier>({
             query: (body) => ({
-                url: PAPER_SUPPLIER_URL,
+                url: `${PAPER_SUPPLIER_URL}/create`,
                 method: "POST",
                 body,
                 credentials: "include",
@@ -28,17 +28,17 @@ export const paperSupplierApiSlice = apiSlice.injectEndpoints({
 
         updatePaperSupplier: builder.mutation<{ success: boolean; message: string }, PaperSupplier>({
             query: (body) => ({
-                url: `${PAPER_SUPPLIER_URL}/${body._id?.$oid ?? body._id}`,
-                method: "PUT",
+                url: `${PAPER_SUPPLIER_URL}/update/${body._id?.$oid ?? body._id}`,
+                method: "PATCH",
                 body,
                 credentials: "include",
             }),
             invalidatesTags: ["PaperSupplier"],
         }),
 
-        deletePaperSupplier: builder.mutation<{ success: boolean; message: string }, string>({
-            query: (id) => ({
-                url: `${PAPER_SUPPLIER_URL}/${id}`,
+        deletePaperSupplier: builder.mutation<{ success: boolean; message: string }, PaperSupplier>({
+            query: (body) => ({
+                url: `${PAPER_SUPPLIER_URL}/delete-soft/${body._id?.$oid ?? body._id}`,
                 method: "DELETE",
                 credentials: "include",
             }),

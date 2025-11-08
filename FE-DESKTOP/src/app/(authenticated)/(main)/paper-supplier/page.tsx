@@ -1,4 +1,4 @@
-import PaperSupplierTable from "@/components/paper-storage/paper-supplier/PaperSupplierTable";
+import PaperSupplierList from "@/components/paper-storage/paper-supplier/PaperSupplierList";
 import { Box, Button, Stack, Text } from "@chakra-ui/react";
 export default function PurchaseOrderHome() {
   return (
@@ -15,7 +15,7 @@ export default function PurchaseOrderHome() {
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>
-        <PaperSupplierTable/>
+        <PaperSupplierList/>
       </Stack>
     </Box>
   );

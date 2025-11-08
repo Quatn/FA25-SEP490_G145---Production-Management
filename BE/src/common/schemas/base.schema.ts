@@ -5,4 +5,7 @@ import { Document } from "mongoose";
 export class BaseSchema {
   @Prop({ default: false })
   isDeleted: boolean;
+
+  @Prop({ type: Date, default: null })
+  deletedAt?: Date | null;
 }
