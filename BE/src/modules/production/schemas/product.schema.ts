@@ -28,7 +28,7 @@ export class Product extends BaseSchema {
   @IsString()
   description: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsString()
   image: string | null;

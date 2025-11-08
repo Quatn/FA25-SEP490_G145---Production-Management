@@ -29,7 +29,7 @@ export class ManufacturingOrder extends BaseSchema {
   @IsDate()
   manufacturingDate: Date;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: Date, default: null })
   @IsOptional()
   @IsDate()
   requestedDatetime: Date | null;
@@ -43,7 +43,7 @@ export class ManufacturingOrder extends BaseSchema {
   manufacturedAmount: number;
 
   // TODO: Change this to an enum, maybe
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsString()
   manufacturingDirective: string | null;

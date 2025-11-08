@@ -66,37 +66,37 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
   @IsNumber()
   runningLength: number = 0;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsNumber()
   faceLayerPaperWeight: number | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsNumber()
   EFlutePaperWeight: number | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsNumber()
   EBLinerLayerPaperWeight: number | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsNumber()
   BFlutePaperWeight: number | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsNumber()
   BACLinerLayerPaperWeight: number | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsNumber()
   ACFlutePaperWeight: number | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsNumber()
   backLayerPaperWeight: number | null;

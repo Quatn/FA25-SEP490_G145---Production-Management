@@ -39,7 +39,7 @@ export class Ware extends BaseDenormalizedSchema {
   @IsNumber()
   wareLength: number;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   wareHeight: number | null;
@@ -54,22 +54,22 @@ export class Ware extends BaseDenormalizedSchema {
     | mongoose.Schema.Types.ObjectId
     | WareManufacturingProcessType;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsNumber()
   warePerBlankAdjustment: number | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsNumber()
   flapAdjustment: number | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsNumber()
   flapOverlapAdjustment: number | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsNumber()
   crossCutCountAdjustment: number | null;
@@ -86,7 +86,7 @@ export class Ware extends BaseDenormalizedSchema {
   @IsNumber()
   blankLength: number;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsNumber()
   flapLength: number | null;
@@ -103,37 +103,37 @@ export class Ware extends BaseDenormalizedSchema {
   @IsNumber()
   crossCutCount: number;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsString()
   faceLayerPaperType: string | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsString()
   EFlutePaperType: string | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsString()
   EBLinerLayerPaperType: string | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsString()
   BFlutePaperType: string | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsString()
   BACLinerLayerPaperType: string | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsString()
   ACFlutePaperType: string | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsString()
   backLayerPaperType: string | null;
@@ -161,7 +161,7 @@ export class Ware extends BaseDenormalizedSchema {
   @IsArray()
   printColors: mongoose.Schema.Types.ObjectId[] | PrintColor[];
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, default: null })
   @IsOptional()
   @IsString()
   typeOfPrinter: string | null;
