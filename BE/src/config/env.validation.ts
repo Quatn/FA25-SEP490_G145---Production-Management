@@ -10,7 +10,6 @@ import {
 import {
   ALLOWED_ENCRYPTION_ALGOS,
   ALLOWED_HASH_ALGOS,
-  DEFAULT_CRYPTO_KEY,
   DEFAULT_ENCRYPTION_ALGO,
   DEFAULT_HASH_ALGO,
 } from "./crypto-algorithms.config";
@@ -50,9 +49,8 @@ class EnvironmentVariables {
   @Transform(({ value }): string => value || DEFAULT_ENCRYPTION_ALGO)
   ENCRYPTION_ALGORITHM: string = DEFAULT_ENCRYPTION_ALGO;
 
-  @IsOptional()
-  @Transform(({ value }): string => value || DEFAULT_CRYPTO_KEY)
-  CRYPTO_KEY: string = DEFAULT_CRYPTO_KEY;
+  @IsString()
+  ENCRYPTION_SECRET: string;
 }
 
 export function validateEnvs(config: Record<string, unknown>) {
