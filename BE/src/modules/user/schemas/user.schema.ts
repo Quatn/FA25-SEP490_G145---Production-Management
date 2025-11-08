@@ -14,7 +14,7 @@ export class User extends BaseSchema {
   @Prop({ required: true })
   username: string;
 
-  // Not encrypted yet
+  // Should be encrypted before saving, although there's currently no way to enforce that
   @Prop({ required: true })
   password: string;
 

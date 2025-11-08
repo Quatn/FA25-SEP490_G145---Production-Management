@@ -10,6 +10,8 @@ import { ApiBearerAuth } from "@nestjs/swagger";
 import { UserModule } from "./modules/user/user.module";
 import { DatabaseModule } from "./database/database.module";
 import { CommonServicesModule } from "./common/services/services.module";
+import { ProductionModule } from './modules/production/production.module';
+import { WarehouseModule } from './modules/warehouse/warehouse.module';
 
 @ApiBearerAuth("access-token")
 @Module({
@@ -24,6 +26,8 @@ import { CommonServicesModule } from "./common/services/services.module";
     CommonServicesModule,
     AuthModule,
     UserModule,
+    ProductionModule,
+    WarehouseModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],

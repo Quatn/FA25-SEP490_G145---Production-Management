@@ -32,7 +32,7 @@ export class AuthController {
   async login(
     @Body() body: LoginRequestDto,
     @Res({ passthrough: true }) res: ExpressResponse,
-  ) {
+  ): Promise<BaseResponse<LoginResponseDto>> {
     const user = await this.authService.validateUser(
       body.username,
       body.password,
