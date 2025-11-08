@@ -31,7 +31,7 @@ export const PaperStorageApp: React.FC = () => {
         <div style={{ flex: 1 }} />
 
         {/* raw action buttons (no modals) — visible when on the list tab */}
-        {activeTab === "list" && (
+        {/* {activeTab === "list" && (
           <div style={{ display: "flex", gap: 8 }}>
             <button className="btn btn-outline-success" >
               Tạo nhà cung cấp
@@ -45,7 +45,7 @@ export const PaperStorageApp: React.FC = () => {
               Nhập cuộn giấy
             </button>
           </div>
-        )}
+        )} */}
       </div>
 
       <div>{activeTab === "list" ? <PaperList /> : <HistoryTab />}</div>

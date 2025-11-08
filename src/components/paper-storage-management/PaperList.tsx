@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import QRCode from "qrcode";
 
 import PaperDetailModal from "./PaperDetailModal";
 import BulkActionModal from "./BulkActionModal";
@@ -13,10 +14,8 @@ import { mockPaperRollTransactionsQuery } from "../../service/mock-data/function
 import { mockPaperColorsQuery } from "../../service/mock-data/functions/paper-an-renamelater/mock-paper-colors-crud";
 
 /**
- * PaperList - React.FC implementation that:
- * - keeps checked rows visible even when they don't match search
- * - displays checked rows at the top
- * - uses `any` for structured data to avoid new type declarations (per your request)
+ * PaperList - React.FC implementation with client-side QR generation using `qrcode`.
+ * Keeps `any` usage as before for quick integration with your mock-data.
  */
 export const PaperList: React.FC = () => {
   const [paperRolls, setPaperRolls] = useState<any[]>([]);
@@ -34,6 +33,13 @@ export const PaperList: React.FC = () => {
     open: boolean;
     mode?: "XUAT" | "NHAPLAI";
   }>({ open: false });
+
+  // QR state (client-side)
+  const [qrModal, setQrModal] = useState<{ open: boolean; text?: string }>({
+    open: false,
+  });
+  const [qrDataUrl, setQrDataUrl] = useState<string | undefined>(undefined);
+  const [qrLoading, setQrLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const load = async () => {
@@ -79,7 +85,6 @@ export const PaperList: React.FC = () => {
 
   // selected items (persisted regardless of search)
   const selectedRolls = useMemo(() => {
-    // keep original paperRolls order for selected items
     return paperRolls.filter((r: any) => selectedIds[r.paperRollId]);
   }, [paperRolls, selectedIds]);
 
@@ -101,7 +106,6 @@ export const PaperList: React.FC = () => {
   const findColorByCode = (code?: string) =>
     colors.find((c: any) => c.code === code);
 
-  // parse mã cuộn "K/VT/100/170/VT2A" -> { fullType, color, supplierCode, width, grammage, tail }
   function parseMaCuon(code?: string) {
     if (!code) return null;
     const parts = code.split("/");
@@ -121,7 +125,6 @@ export const PaperList: React.FC = () => {
   };
 
   const selectAllVisible = (checked: boolean) => {
-    // toggles selection for all currently visibleRows (not all paperRolls)
     const newSel: Record<string, boolean> = { ...selectedIds };
     visibleRows.forEach((r: any) => {
       newSel[r.paperRollId] = checked;
@@ -132,7 +135,7 @@ export const PaperList: React.FC = () => {
   const getSelectedRolls = (): any[] =>
     paperRolls.filter((r: any) => selectedIds[r.paperRollId]);
 
-  // Single-row export (full weight)
+  // ... (export/import methods unchanged) ...
   const doSingleExport = (roll: any) => {
     if (!roll) return;
     const w = Number(roll.weight || 0);
@@ -148,14 +151,12 @@ export const PaperList: React.FC = () => {
       used: w,
       sourceId: roll.paperRollId,
     };
-
     setExportsList((prev) => [exportRow, ...prev]);
     setPaperRolls((prev) =>
       prev.map((p: any) =>
         p.paperRollId === roll.paperRollId ? { ...p, weight: 0 } : p
       )
     );
-
     const tx = {
       id: `TX${Date.now()}`,
       paperRollId: roll.paperRollId,
@@ -169,10 +170,8 @@ export const PaperList: React.FC = () => {
     alert(`Đã xuất ${w} kg từ ${roll.paperRollId}`);
   };
 
-  // Bulk export full weight (selected)
   const doBulkExport = (selected: any[]) => {
     if (!selected || selected.length === 0) return;
-
     const now = new Date().toISOString();
     const exportRows = selected.map((roll: any) => {
       const w = Number(roll.weight || 0);
@@ -188,7 +187,6 @@ export const PaperList: React.FC = () => {
       };
     });
     setExportsList((prev) => [...exportRows, ...prev]);
-
     setPaperRolls((prev) =>
       prev.map((p: any) =>
         selected.find((s: any) => s.paperRollId === p.paperRollId)
@@ -196,7 +194,6 @@ export const PaperList: React.FC = () => {
           : p
       )
     );
-
     const txs = selected.map((roll: any) => ({
       id: `TX${Date.now()}${Math.floor(Math.random() * 1000)}`,
       paperRollId: roll.paperRollId,
@@ -207,21 +204,17 @@ export const PaperList: React.FC = () => {
       inCharge: "Operator Bulk",
     }));
     setTransactions((prev) => [...txs, ...prev]);
-
     setSelectedIds({});
   };
 
-  // Bulk re-import: updates is array of { paperRollId, newWeight }
   const doBulkReImport = (updates: any[]) => {
     if (!updates || updates.length === 0) return;
-
     setPaperRolls((prev) =>
       prev.map((p: any) => {
         const u = updates.find((x: any) => x.paperRollId === p.paperRollId);
         return u ? { ...p, weight: u.newWeight } : p;
       })
     );
-
     setExportsList((prev) =>
       prev.map((ex: any) => {
         const u = updates.find((x: any) => x.paperRollId === ex.sourceId);
@@ -233,7 +226,6 @@ export const PaperList: React.FC = () => {
         return ex;
       })
     );
-
     const txs = updates.map((u: any) => ({
       id: `TX${Date.now()}${Math.floor(Math.random() * 1000)}`,
       paperRollId: u.paperRollId,
@@ -244,14 +236,101 @@ export const PaperList: React.FC = () => {
       inCharge: "Operator Bulk",
     }));
     setTransactions((prev) => [...txs, ...prev]);
-
     setSelectedIds({});
   };
 
   const openDetail = (roll: any) => setDetailOpen({ open: true, roll });
-
   const onQueryChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setQuery(e.target.value);
+
+  // ---- QR handlers using `qrcode` lib ----
+  const handleCreateQR = async (text: string) => {
+    setQrModal({ open: true, text });
+    setQrLoading(true);
+    try {
+      // generate data URL PNG (client-side)
+      const dataUrl = await QRCode.toDataURL(text, { width: 400 });
+      setQrDataUrl(dataUrl);
+    } catch (err) {
+      console.error("QR generation failed", err);
+      setQrDataUrl(undefined);
+      alert("Failed to generate QR");
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
+  const handleCloseQr = () => {
+    setQrModal({ open: false, text: undefined });
+    setQrDataUrl(undefined);
+    setQrLoading(false);
+  };
+
+  const handleDownloadQr = () => {
+    if (!qrDataUrl || !qrModal.text) return alert("QR not ready");
+    // qrDataUrl is data:image/png;base64,...
+    const a = document.createElement("a");
+    a.href = qrDataUrl;
+    a.download = `${qrModal.text}-qr.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const handleOpenQrInNewTab = () => {
+    if (!qrDataUrl) return;
+    // open data URL in new tab
+    const w = window.open();
+    if (!w) return alert("Popup blocked");
+    w.document.write(`<img src="${qrDataUrl}" alt="QR" />`);
+  };
+
+  const handleCopyCode = async () => {
+    if (!qrModal.text) return;
+    try {
+      await navigator.clipboard.writeText(qrModal.text);
+      alert("Mã cuộn đã được copy");
+    } catch {
+      alert("Copy failed — please copy manually: " + qrModal.text);
+    }
+  };
+
+  const handlePrintQr = () => {
+    if (!qrDataUrl) return alert("QR not ready");
+    const w = window.open("", "_blank", "width=600,height=600");
+    if (!w) return alert("Popup blocked");
+    w.document.write(`
+    <html>
+      <head>
+        <title>QR Print</title>
+        <style>
+          body { 
+            text-align: center; 
+            font-family: sans-serif; 
+            margin-top: 40px;
+          }
+          img { 
+            width: 300px; 
+            height: 300px; 
+          }
+          .code {
+            margin-top: 12px;
+            font-size: 16px;
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        <img src="${qrDataUrl}" alt="QR" />
+        <div class="code">${qrModal.text ?? ""}</div>
+        <script>
+          window.onload = () => window.print();
+        </script>
+      </body>
+    </html>
+  `);
+    w.document.close();
+  };
 
   return (
     <div>
@@ -266,7 +345,6 @@ export const PaperList: React.FC = () => {
         <div>
           <strong>List cuộn giấy</strong>
         </div>
-
         <div style={{ display: "flex", gap: 8 }}>
           <input
             className="form-control"
@@ -329,7 +407,6 @@ export const PaperList: React.FC = () => {
                 <input
                   type="checkbox"
                   onChange={(e) => selectAllVisible(e.target.checked)}
-                  // header checks only visibleRows (selected + filtered)
                   checked={
                     visibleRows.length > 0 &&
                     visibleRows.every((r: any) => selectedIds[r.paperRollId])
@@ -341,15 +418,13 @@ export const PaperList: React.FC = () => {
               <th>Loại giấy</th>
               <th style={{ textAlign: "right" }}>Trọng lượng</th>
               <th>Ngày nhận</th>
-              <th style={{ width: 180 }}>Actions</th>
+              <th style={{ width: 220 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {visibleRows.map((r: any) => {
               const parsed = parseMaCuon(r.name);
               const typeLabel = parsed?.fullType ?? r.name;
-
-              // resolve supplier and color friendly names
               const supplierObj = findSupplierByCode(parsed?.supplierCode);
               const supplierName = supplierObj
                 ? supplierObj.name
@@ -393,7 +468,6 @@ export const PaperList: React.FC = () => {
                       >
                         Xem chi tiết
                       </button>
-
                       <button
                         className="btn btn-danger btn-sm"
                         onClick={() => {
@@ -404,7 +478,6 @@ export const PaperList: React.FC = () => {
                       >
                         Xuất
                       </button>
-
                       <button
                         className="btn btn-secondary btn-sm"
                         onClick={() => {
@@ -414,7 +487,10 @@ export const PaperList: React.FC = () => {
                       >
                         Nhập lại
                       </button>
-                      <button className="btn btn-warning btn-sm">
+                      <button
+                        className="btn btn-warning btn-sm"
+                        onClick={() => handleCreateQR(r.name)}
+                      >
                         Tạo QR
                       </button>
                     </div>
@@ -465,7 +541,6 @@ export const PaperList: React.FC = () => {
         </table>
       </div>
 
-      {/* pass supplierName/colorName too (calculated when opening modal) */}
       <PaperDetailModal
         show={detailOpen.open}
         onHide={() => setDetailOpen({ open: false })}
@@ -504,6 +579,82 @@ export const PaperList: React.FC = () => {
           setBulkModal({ open: false });
         }}
       />
+
+      {/* QR Modal (client-side generated data URL) */}
+      {qrModal.open && (
+        <div className="modal-backdrop" style={{ display: "block" }}>
+          <div className="modal" role="dialog" style={{ display: "block" }}>
+            <div className="modal-dialog modal-sm">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">QR: {qrModal.text}</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Close"
+                    onClick={handleCloseQr}
+                  ></button>
+                </div>
+
+                <div className="modal-body" style={{ textAlign: "center" }}>
+                  {qrLoading ? (
+                    <div>Đang tạo QR...</div>
+                  ) : qrDataUrl ? (
+                    <>
+                      <img
+                        src={qrDataUrl}
+                        alt="QR"
+                        style={{ maxWidth: "100%", height: "auto" }}
+                      />
+                      <div
+                        style={{
+                          marginTop: 12,
+                          display: "flex",
+                          gap: 8,
+                          justifyContent: "center",
+                        }}
+                      >
+                        <button
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={handleOpenQrInNewTab}
+                        >
+                          Mở tab mới
+                        </button>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={handleDownloadQr}
+                        >
+                          Download
+                        </button>
+                        <button
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={handleCopyCode}
+                        >
+                          Copy mã cuộn
+                        </button>
+                        <button
+                          className="btn btn-success btn-sm"
+                          onClick={handlePrintQr}
+                        >
+                          In
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-danger">Tạo QR thất bại</div>
+                  )}
+                </div>
+
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={handleCloseQr}>
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
