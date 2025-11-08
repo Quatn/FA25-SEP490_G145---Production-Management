@@ -20,6 +20,9 @@
         "status": "Open",
         "assignedTo": "Line A",
         "notes": "Priority",
+        "productType": "Bộ",
+        "customerCode": "AROMA",
+        "size": "240×125×260",
         "items": [
           {
             "id": "i1",
@@ -30,7 +33,9 @@
             "unitPrice": 10000,
             "quantity": 100,
             "total": 1000000,
-            "status": "Done"
+            "status": "Done",
+            "waveType": "5C",
+            "grammage": 1100
           }
         ]
       },
@@ -39,6 +44,9 @@
         "poId": "po1",
         "title": "Line 2 - Carton Box",
         "status": "Open",
+        "productType": "Lót",
+        "customerCode": "THUẬN AN",
+        "size": "610×508×324",
         "items": [
           {
             "id": "i2",
@@ -49,7 +57,9 @@
             "unitPrice": 12000,
             "quantity": 200,
             "total": 2400000,
-            "status": "Pending"
+            "status": "Pending",
+            "waveType": "7CBE",
+            "grammage": 1250
           },
           {
             "id": "i3",
@@ -60,7 +70,9 @@
             "unitPrice": 8000,
             "quantity": 50,
             "total": 400000,
-            "status": "Pending"
+            "status": "Pending",
+            "waveType": "7CBE",
+            "grammage": 1250
           }
         ]
       }
@@ -68,7 +80,6 @@
     "totalItems": 3,
     "totalValue": 3800000
   },
-
   {
     "id": "po2",
     "poNumber": "PO-XC-25-476",
@@ -88,6 +99,9 @@
         "poId": "po2",
         "title": "Trim Set A",
         "status": "Open",
+        "productType": "Thùng",
+        "customerCode": "BAO XUAN",
+        "size": "490×490×180",
         "items": [
           {
             "id": "i4",
@@ -98,7 +112,9 @@
             "unitPrice": 5000,
             "quantity": 505,
             "total": 2525000,
-            "status": "InProgress"
+            "status": "InProgress",
+            "waveType": "5AB",
+            "grammage": 1500
           }
         ]
       }
@@ -106,7 +122,6 @@
     "totalItems": 1,
     "totalValue": 2525000
   },
-
   {
     "id": "po3",
     "poNumber": "PO-DT-2025-001",

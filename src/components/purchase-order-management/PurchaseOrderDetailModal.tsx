@@ -24,7 +24,12 @@ function makeId(prefix = "") {
   return `${prefix}${Date.now()}${Math.floor(Math.random() * 9000 + 1000)}`;
 }
 
-export const PurchaseOrderDetailModal: React.FC<Props> = ({ po, onClose, onSave, onOpenSubPOSelector }) => {
+export const PurchaseOrderDetailModal: React.FC<Props> = ({
+  po,
+  onClose,
+  onSave,
+  onOpenSubPOSelector,
+}) => {
   const [local, setLocal] = useState<PurchaseOrder | null>(null);
 
   // initialize local state from prop
@@ -45,7 +50,13 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({ po, onClose, onSave,
     (local.subPOs || []).forEach((s) => {
       (s.items || []).forEach((it) => {
         items += 1;
-        const t = Number(it.total ?? (it.unitPrice != null && it.quantity != null ? it.unitPrice * it.quantity : 0)) || 0;
+        const t =
+          Number(
+            it.total ??
+              (it.unitPrice != null && it.quantity != null
+                ? it.unitPrice * it.quantity
+                : 0)
+          ) || 0;
         value += t;
       });
     });
@@ -122,7 +133,13 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({ po, onClose, onSave,
       const s = (curr.subPOs || []).find((x) => x.id === subId);
       if (!s) {
         curr.subPOs = curr.subPOs || [];
-        curr.subPOs.push({ id: subId, poId: curr.id, title: "Auto", status: "Open", items: [newItem] });
+        curr.subPOs.push({
+          id: subId,
+          poId: curr.id,
+          title: "Auto",
+          status: "Open",
+          items: [newItem],
+        });
       } else {
         s.items = s.items || [];
         s.items.push(newItem);
@@ -141,7 +158,12 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({ po, onClose, onSave,
     });
   };
 
-  const handleChangeItemField = (subId: string, itemId: string, field: keyof POItem, value: any) => {
+  const handleChangeItemField = (
+    subId: string,
+    itemId: string,
+    field: keyof POItem,
+    value: any
+  ) => {
     if (!local) return;
     updateLocal((curr) => {
       const s = (curr.subPOs || []).find((x) => x.id === subId);
@@ -172,7 +194,11 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({ po, onClose, onSave,
     (clone.subPOs || []).forEach((s) => {
       (s.items || []).forEach((it) => {
         items += 1;
-        const t = Number(it.total ?? (it.unitPrice && it.quantity ? it.unitPrice * it.quantity : 0)) || 0;
+        const t =
+          Number(
+            it.total ??
+              (it.unitPrice && it.quantity ? it.unitPrice * it.quantity : 0)
+          ) || 0;
         value += t;
       });
     });
@@ -188,7 +214,9 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({ po, onClose, onSave,
       onOpenSubPOSelector(local?.id, subId);
       return;
     }
-    alert("Sub-PO selector not implemented here. Parent can inject it via onOpenSubPOSelector.");
+    alert(
+      "Sub-PO selector not implemented here. Parent can inject it via onOpenSubPOSelector."
+    );
   };
 
   if (!local) return null;
@@ -218,7 +246,9 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({ po, onClose, onSave,
                       <th>Customer</th>
                       <td>{local.customer}</td>
                       <th>Phone / Email</th>
-                      <td>{local.phone} / {local.email}</td>
+                      <td>
+                        {local.phone} / {local.email}
+                      </td>
                     </tr>
                     <tr>
                       <th>Tax Template</th>
@@ -244,19 +274,52 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({ po, onClose, onSave,
 
               {/* Sub-PO section */}
               <div style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 8,
+                  }}
+                >
                   <h6 className="m-0">Sub-POs</h6>
                   <div>
-                    <button className="btn btn-outline-success btn-sm" onClick={handleAddSubPO}>+ Add Sub-PO</button>
+                    <button
+                      className="btn btn-outline-success btn-sm"
+                      onClick={handleAddSubPO}
+                    >
+                      + Add Sub-PO
+                    </button>
                   </div>
                 </div>
 
                 {(local.subPOs || []).map((s) => (
                   <div key={s.id} className="card mb-2">
                     <div className="card-body">
-                      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
-                        <input className="form-control" style={{ maxWidth: 420 }} value={s.title} onChange={(e) => handleChangeSubTitle(s.id, e.target.value)} />
-                        <select className="form-select" style={{ width: 160 }} value={s.status ?? "Open"} onChange={(e) => handleChangeSubStatus(s.id, e.target.value)}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 12,
+                          alignItems: "center",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <input
+                          className="form-control"
+                          style={{ maxWidth: 420 }}
+                          value={s.title}
+                          onChange={(e) =>
+                            handleChangeSubTitle(s.id, e.target.value)
+                          }
+                        />
+                        <select
+                          className="form-select"
+                          style={{ width: 160 }}
+                          value={s.status ?? "Open"}
+                          onChange={(e) =>
+                            handleChangeSubStatus(s.id, e.target.value)
+                          }
+                        >
                           <option value="Open">Open</option>
                           <option value="Waiting">Waiting</option>
                           <option value="InProgress">InProgress</option>
@@ -264,55 +327,185 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({ po, onClose, onSave,
                           <option value="Cancelled">Cancelled</option>
                         </select>
 
-                        <button className="btn btn-outline-secondary btn-sm" onClick={() => handleOpenSubPOSelector(s.id)}>Select sub-PO</button>
+                        <div style={{ marginLeft: 8 }}>
+                          {s.productType && (
+                            <span className="badge bg-secondary me-1">
+                              Loại: {s.productType}
+                            </span>
+                          )}
+                          {s.customerCode && (
+                            <span className="badge bg-light text-dark me-1">
+                              Khách: {s.customerCode}
+                            </span>
+                          )}
+                          {s.size && (
+                            <span className="badge bg-info text-dark">
+                              Size: {s.size}
+                            </span>
+                          )}
+                        </div>
+
+                        <button
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => handleOpenSubPOSelector(s.id)}
+                        >
+                          Select sub-PO
+                        </button>
 
                         <div style={{ flex: 1 }} />
 
-                        <button className="btn btn-danger btn-sm" onClick={() => handleRemoveSubPO(s.id)}>Remove sub-PO</button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => handleRemoveSubPO(s.id)}
+                        >
+                          Remove sub-PO
+                        </button>
                       </div>
 
                       {/* PO items inside subPO */}
                       <div>
                         <div style={{ marginBottom: 8 }}>
-                          <button className="btn btn-outline-primary btn-sm" onClick={() => handleAddItem(s.id)}>+ Add item</button>
+                          <button
+                            className="btn btn-outline-primary btn-sm"
+                            onClick={() => handleAddItem(s.id)}
+                          >
+                            + Add item
+                          </button>
                         </div>
 
                         <div style={{ overflowX: "auto" }}>
                           <table className="table table-sm table-bordered">
                             <thead>
                               <tr>
-                                <th>SKU</th>
-                                <th>Description</th>
+                                <th>Mã hàng</th>
+                                <th>Mô tả</th>
+                                <th>Sóng</th>
+                                <th>Khổ</th>
                                 <th>UOM</th>
-                                <th style={{ textAlign: "right" }}>Qty</th>
-                                <th style={{ textAlign: "right" }}>Unit price</th>
-                                <th style={{ textAlign: "right" }}>Total</th>
+                                <th style={{ textAlign: "right" }}>Số lượng</th>
+                                <th style={{ textAlign: "right" }}>Đơn giá</th>
+                                <th style={{ textAlign: "right" }}>Tổng</th>
                                 <th style={{ width: 120 }}>Actions</th>
                               </tr>
                             </thead>
                             <tbody>
                               {(s.items || []).map((it) => (
                                 <tr key={it.id}>
-                                  <td><input className="form-control form-control-sm" value={it.sku} onChange={(e) => handleChangeItemField(s.id, it.id, "sku", e.target.value)} /></td>
-                                  <td><input className="form-control form-control-sm" value={it.description} onChange={(e) => handleChangeItemField(s.id, it.id, "description", e.target.value)} /></td>
-                                  <td><input className="form-control form-control-sm" value={it.uom} onChange={(e) => handleChangeItemField(s.id, it.id, "uom", e.target.value)} /></td>
-                                  <td style={{ textAlign: "right" }}><input className="form-control form-control-sm" type="number" value={it.quantity} onChange={(e) => handleChangeItemField(s.id, it.id, "quantity", Number(e.target.value))} /></td>
-                                  <td style={{ textAlign: "right" }}><input className="form-control form-control-sm" type="number" value={it.unitPrice} onChange={(e) => handleChangeItemField(s.id, it.id, "unitPrice", Number(e.target.value))} /></td>
-                                  <td style={{ textAlign: "right" }}>{Number(it.total ?? (it.unitPrice ?? 0 * it.quantity)).toLocaleString()}</td>
+                                  <td>
+                                    <input
+                                      className="form-control form-control-sm"
+                                      value={it.sku}
+                                      onChange={(e) =>
+                                        handleChangeItemField(
+                                          s.id,
+                                          it.id,
+                                          "sku",
+                                          e.target.value
+                                        )
+                                      }
+                                    />
+                                  </td>
+                                  <td>
+                                    <input
+                                      className="form-control form-control-sm"
+                                      value={it.description}
+                                      onChange={(e) =>
+                                        handleChangeItemField(
+                                          s.id,
+                                          it.id,
+                                          "description",
+                                          e.target.value
+                                        )
+                                      }
+                                    />
+                                  </td>
+                                  <td>{it.waveType ?? "-"}</td>
+                                  <td>{it.grammage ?? "-"}</td>
+                                  <td>
+                                    <input
+                                      className="form-control form-control-sm"
+                                      value={it.uom}
+                                      onChange={(e) =>
+                                        handleChangeItemField(
+                                          s.id,
+                                          it.id,
+                                          "uom",
+                                          e.target.value
+                                        )
+                                      }
+                                    />
+                                  </td>
+                                  <td style={{ textAlign: "right" }}>
+                                    <input
+                                      className="form-control form-control-sm"
+                                      type="number"
+                                      value={it.quantity}
+                                      onChange={(e) =>
+                                        handleChangeItemField(
+                                          s.id,
+                                          it.id,
+                                          "quantity",
+                                          Number(e.target.value)
+                                        )
+                                      }
+                                    />
+                                  </td>
+                                  <td style={{ textAlign: "right" }}>
+                                    <input
+                                      className="form-control form-control-sm"
+                                      type="number"
+                                      value={it.unitPrice}
+                                      onChange={(e) =>
+                                        handleChangeItemField(
+                                          s.id,
+                                          it.id,
+                                          "unitPrice",
+                                          Number(e.target.value)
+                                        )
+                                      }
+                                    />
+                                  </td>
+                                  <td style={{ textAlign: "right" }}>
+                                    {Number(
+                                      it.total ??
+                                        it.unitPrice ??
+                                        0 * it.quantity
+                                    ).toLocaleString()}
+                                  </td>
+
                                   <td>
                                     <div style={{ display: "flex", gap: 6 }}>
-                                      <button className="btn btn-outline-secondary btn-sm" onClick={() => {
-                                        // quick mark as Done
-                                        handleChangeItemField(s.id, it.id, "status", "Done");
-                                      }}>Mark Done</button>
-                                      <button className="btn btn-danger btn-sm" onClick={() => handleRemoveItem(s.id, it.id)}>Remove</button>
+                                      {/* <button
+                                        className="btn btn-outline-secondary btn-sm"
+                                        onClick={() => {
+                                          // quick mark as Done
+                                          handleChangeItemField(
+                                            s.id,
+                                            it.id,
+                                            "status",
+                                            "Done"
+                                          );
+                                        }}
+                                      >
+                                        Mark Done
+                                      </button> */}
+                                      <button
+                                        className="btn btn-danger btn-sm"
+                                        onClick={() =>
+                                          handleRemoveItem(s.id, it.id)
+                                        }
+                                      >
+                                        Remove
+                                      </button>
                                     </div>
                                   </td>
                                 </tr>
                               ))}
                               {(s.items || []).length === 0 && (
                                 <tr>
-                                  <td colSpan={7} className="text-muted">No items yet</td>
+                                  <td colSpan={7} className="text-muted">
+                                    No items yet
+                                  </td>
                                 </tr>
                               )}
                             </tbody>
@@ -323,13 +516,19 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({ po, onClose, onSave,
                   </div>
                 ))}
 
-                {(local.subPOs || []).length === 0 && <div className="text-muted">No sub-POs yet</div>}
+                {(local.subPOs || []).length === 0 && (
+                  <div className="text-muted">No sub-POs yet</div>
+                )}
               </div>
             </div>
 
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={onClose}>Close</button>
-              <button className="btn btn-primary" onClick={handleSave}>Save changes</button>
+              <button className="btn btn-secondary" onClick={onClose}>
+                Close
+              </button>
+              <button className="btn btn-primary" onClick={handleSave}>
+                Save changes
+              </button>
             </div>
           </div>
         </div>
