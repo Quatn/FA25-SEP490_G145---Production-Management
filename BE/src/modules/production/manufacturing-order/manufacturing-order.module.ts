@@ -15,5 +15,6 @@ import {
   ],
   controllers: [ManufacturingOrderController],
   providers: [ManufacturingOrderService],
+  exports: [ManufacturingOrderService],
 })
 export class ManufacturingOrderModule {}

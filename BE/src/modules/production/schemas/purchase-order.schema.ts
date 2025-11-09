@@ -46,11 +46,15 @@ export class PurchaseOrder extends BaseSchema {
   @IsString()
   paymentTerms: string;
 
-  @Prop({ required: true })
+  @Prop({
+    required: true,
+    enum: PurchaseOrderStatus,
+    default: PurchaseOrderStatus.Draft,
+  })
   @IsEnum(PurchaseOrderStatus)
   status: PurchaseOrderStatus;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
   note: string = "";

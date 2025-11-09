@@ -24,11 +24,12 @@ export class Product extends BaseSchema {
   @IsMongoId()
   customer: mongoose.Schema.Types.ObjectId | Customer;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
+  @IsOptional()
   @IsString()
   description: string;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   image: string | null;
@@ -40,7 +41,7 @@ export class Product extends BaseSchema {
   @IsArray()
   wares: mongoose.Schema.Types.ObjectId[] | Ware[];
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
   note: string = "";

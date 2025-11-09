@@ -51,71 +51,75 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
   @IsNumber()
   amount: number;
 
-  @Prop({ required: true })
+  @Prop({ required: false, type: Number, default: 0 })
   @IsOptional()
   @IsNumber()
   numberOfBlanks: number = 0;
 
-  @Prop({ required: true })
+  @Prop({ required: false, type: Number, default: 0 })
   @IsOptional()
   @IsNumber()
   longitudinalCutCount: number = 0;
 
-  @Prop({ required: true })
+  @Prop({ required: false, type: Number, default: 0 })
   @IsOptional()
   @IsNumber()
   runningLength: number = 0;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   faceLayerPaperWeight: number | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   EFlutePaperWeight: number | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   EBLinerLayerPaperWeight: number | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   BFlutePaperWeight: number | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   BACLinerLayerPaperWeight: number | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   ACFlutePaperWeight: number | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   backLayerPaperWeight: number | null;
 
-  @Prop({ required: true })
+  @Prop({ required: false, type: Number, default: 0 })
   @IsOptional()
   @IsNumber()
   totalVolume: number = 0;
 
-  @Prop({ required: true })
+  @Prop({ required: false, type: Number, default: 0 })
   @IsOptional()
   @IsNumber()
   totalWeight: number = 0;
 
-  @Prop({ required: true })
+  @Prop({
+    required: true,
+    enum: PurchaseOrderItemStatus,
+    default: PurchaseOrderItemStatus.PendingApproval,
+  })
   @IsEnum(PurchaseOrderItemStatus)
   status: PurchaseOrderItemStatus;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
   note: string = "";

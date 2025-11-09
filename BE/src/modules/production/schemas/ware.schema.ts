@@ -13,6 +13,7 @@ import {
 } from "class-validator";
 import { PrintColor } from "./print-color.schema";
 import { WareFinishingProcessType } from "./ware-finishing-process-type.schema";
+import { Optional } from "@nestjs/common";
 
 @Schema({ timestamps: true })
 export class Ware extends BaseDenormalizedSchema {
@@ -29,17 +30,18 @@ export class Ware extends BaseDenormalizedSchema {
     type: mongoose.Schema.Types.ObjectId,
     ref: FluteCombination.name,
   })
-  fluteCombinationCode: mongoose.Schema.Types.ObjectId | FluteCombination;
+  fluteCombination: mongoose.Schema.Types.ObjectId | FluteCombination;
 
   @Prop({ required: true })
   @IsNumber()
   wareWidth: number;
 
   @Prop({ required: true })
+  @Optional()
   @IsNumber()
   wareLength: number;
 
-  @Prop({ required: true, type: Number, default: null })
+  @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   wareHeight: number | null;
@@ -54,22 +56,22 @@ export class Ware extends BaseDenormalizedSchema {
     | mongoose.Schema.Types.ObjectId
     | WareManufacturingProcessType;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   warePerBlankAdjustment: number | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   flapAdjustment: number | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   flapOverlapAdjustment: number | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   crossCutCountAdjustment: number | null;
@@ -103,37 +105,37 @@ export class Ware extends BaseDenormalizedSchema {
   @IsNumber()
   crossCutCount: number;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   faceLayerPaperType: string | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   EFlutePaperType: string | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   EBLinerLayerPaperType: string | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   BFlutePaperType: string | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   BACLinerLayerPaperType: string | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   ACFlutePaperType: string | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   backLayerPaperType: string | null;
@@ -161,7 +163,7 @@ export class Ware extends BaseDenormalizedSchema {
   @IsArray()
   printColors: mongoose.Schema.Types.ObjectId[] | PrintColor[];
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   typeOfPrinter: string | null;
@@ -176,7 +178,7 @@ export class Ware extends BaseDenormalizedSchema {
     | mongoose.Schema.Types.ObjectId[]
     | WareFinishingProcessType[];
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
   note: string = "";

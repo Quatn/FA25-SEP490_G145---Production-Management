@@ -51,11 +51,15 @@ export class SubPurchaseOrder extends BaseSchema {
   @IsDate()
   deliveryDate: Date;
 
-  @Prop({ required: true })
+  @Prop({
+    required: true,
+    enum: SubPurchaseOrderStatus,
+    default: SubPurchaseOrderStatus.PendingApproval,
+  })
   @IsEnum(SubPurchaseOrderStatus)
   status: SubPurchaseOrderStatus;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
   note: string = "";

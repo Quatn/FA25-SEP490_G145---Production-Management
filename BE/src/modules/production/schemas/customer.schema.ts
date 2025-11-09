@@ -14,22 +14,22 @@ export class Customer extends BaseSchema {
   @IsString()
   name: string;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   address: string | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   email: string | null;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   contactNumber: string | null;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
   note: string = "";

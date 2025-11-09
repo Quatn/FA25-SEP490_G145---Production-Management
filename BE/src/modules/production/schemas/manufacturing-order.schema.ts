@@ -19,6 +19,7 @@ export class ManufacturingOrder extends BaseSchema {
 
   @Prop({
     required: true,
+    unique: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: PurchaseOrderItem.name,
   })
@@ -43,12 +44,12 @@ export class ManufacturingOrder extends BaseSchema {
   manufacturedAmount: number;
 
   // TODO: Change this to an enum, maybe
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   manufacturingDirective: string | null;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
   note: string = "";

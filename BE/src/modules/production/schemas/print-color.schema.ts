@@ -10,12 +10,12 @@ export class PrintColor extends BaseSchema {
   @IsString()
   code: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
   description: string = "";
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
   note: string = "";

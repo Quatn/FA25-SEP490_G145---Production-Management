@@ -14,12 +14,12 @@ export class WareFinishingProcessType extends BaseSchema {
   @IsString()
   name: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
   description: string = "";
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
   note: string = "";
