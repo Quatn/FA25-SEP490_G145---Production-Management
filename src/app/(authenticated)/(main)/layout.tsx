@@ -64,18 +64,18 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
-      // {
-      //   id: "product",
-      //   name: "Product Management",
-      //   children: [
-      //     {
-      //       id: "product-list",
-      //       name: "Product List",
-      //       href: "/products",
-      //       children: [],
-      //     },
-      //   ],
-      // },
+      {
+        id: "product",
+        name: "Product Management",
+        children: [
+          {
+            id: "product-list",
+            name: "Product List",
+            href: "/products",
+            children: [],
+          },
+        ],
+      },
     ],
   },
 });

@@ -39,6 +39,7 @@ export default function ProductList() {
           width_panel_flap: 730,
           height: 240,
           paper_size: 1100,
+          usage_type: "Thùng",
         },
         {
           id: 2,
@@ -48,6 +49,7 @@ export default function ProductList() {
           width_panel_flap: 740,
           height: 250,
           paper_size: 1120,
+          usage_type: "Lót",
         },
       ],
     },
@@ -73,6 +75,7 @@ export default function ProductList() {
           width_panel_flap: 508,
           height: 324,
           paper_size: 1250,
+          usage_type: "Lót",
         },
       ],
     },
@@ -98,6 +101,7 @@ export default function ProductList() {
           width_panel_flap: 680,
           height: 280,
           paper_size: 1500,
+          usage_type: "Thùng",
         },
       ],
     },
@@ -122,6 +126,7 @@ export default function ProductList() {
       dock_part_2: 4,
       margin: 30,
       paper_size: 1100,
+      usage_type: "Thùng",
     },
     {
       id: 2,
@@ -143,6 +148,7 @@ export default function ProductList() {
       dock_part_2: 1,
       margin: 32,
       paper_size: 900,
+      usage_type: "Lót",
     },
     {
       id: 3,
@@ -164,6 +170,7 @@ export default function ProductList() {
       dock_part_2: 1,
       margin: 18,
       paper_size: 1000,
+      usage_type: "Đế",
     },
     {
       id: 4,
@@ -185,9 +192,11 @@ export default function ProductList() {
       dock_part_2: 3,
       margin: 27,
       paper_size: 1550,
+      usage_type: "Thùng",
     },
   ];
 
+  const [products, setProducts] = useState(mockProducts);
   const [openIds, setOpenIds] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -252,6 +261,137 @@ export default function ProductList() {
     }
   };
 
+  const getUsageBadgeVariant = (usageType) => {
+    switch (usageType) {
+      case "Thùng":
+        return "success"; // xanh lá
+      case "Lót":
+        return "primary"; // xanh dương
+      case "Đế":
+        return "warning"; // vàng
+      default:
+        return "secondary";
+    }
+  };
+
+  const getNextUniqueId = () => {
+    const maxId = products.reduce((max, p) => {
+      const idNum = parseInt(p.unique_id.replace("CAT-", "")) || 0;
+      return idNum > max ? idNum : max;
+    }, 0);
+    return `CAT-${String(maxId + 1).padStart(4, "0")}`;
+  };
+
+  // 1. Thêm/Cập nhật Sản phẩm (Create/Update)
+  const handleSaveProduct = () => {
+    if (!editingProduct) return;
+
+    if (editingProduct.unique_id) {
+      // Cập nhật sản phẩm hiện có
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.unique_id === editingProduct.unique_id ? editingProduct : p
+        )
+      );
+      console.log("Sản phẩm đã được cập nhật:", editingProduct.unique_id);
+    } else {
+      // Thêm sản phẩm mới
+      const newProduct = {
+        ...editingProduct,
+        unique_id: getNextUniqueId(), // Tạo ID mới
+        // Đảm bảo các trường số là number
+        length: Number(editingProduct.length) || 0,
+        width: Number(editingProduct.width) || 0,
+        height: Number(editingProduct.height) || 0,
+        quantity: Number(editingProduct.quantity) || 0,
+        received_date:
+          editingProduct.received_date || new Date().toISOString().slice(0, 10),
+        delivery_date: editingProduct.delivery_date || "",
+        item_codes: editingProduct.item_codes.map((item) => ({
+          ...item,
+          id: item.id || Date.now() + Math.random(), // Đảm bảo item_codes có ID nếu chưa có
+          // Chỉ giữ lại các trường cần thiết nếu cần, hiện tại giữ tất cả
+        })),
+      };
+
+      setProducts((prev) => [...prev, newProduct]);
+      console.log("Sản phẩm mới đã được thêm:", newProduct.unique_id);
+    }
+
+    handleCloseProductModal();
+    setModalSearchTerm(""); // Đặt lại search term cho modal item code
+  };
+
+  // 2. Xóa Sản phẩm (Delete)
+  const handleDeleteProduct = (productId) => {
+    if (
+      window.confirm(`Bạn có chắc chắn muốn xóa sản phẩm ${productId} không?`)
+    ) {
+      setProducts((prev) => prev.filter((p) => p.unique_id !== productId));
+      console.log("Sản phẩm đã được xóa:", productId);
+      setOpenIds((prev) => prev.filter((id) => id !== productId)); // Đóng collapse nếu đang mở
+    }
+  };
+
+  const handleAddItemCodeToProduct = () => {
+    if (!selectedProductId || !selectedItemId) return;
+
+    const itemToAdd = availableItemCodes.find(
+      (item) => item.id === selectedItemId
+    );
+
+    if (itemToAdd) {
+      // Chuyển đổi item code từ availableItemCodes format sang product item_codes format
+      const newItemCode = {
+        id: itemToAdd.id,
+        product_code: itemToAdd.product_code,
+        wave_type: itemToAdd.production_type, // Sóng
+        length: itemToAdd.length,
+        width_panel_flap: itemToAdd.width_panel_flap,
+        height: itemToAdd.height || null, // Có thể thiếu height trong availableItemCodes
+        paper_size: itemToAdd.paper_size,
+        usage_type: itemToAdd.usage_type,
+      };
+
+      setProducts((prev) =>
+        prev.map((product) => {
+          if (product.unique_id === selectedProductId) {
+            const isExist = product.item_codes.some(
+              (item) => item.id === newItemCode.id
+            );
+            return isExist
+              ? product // Đã tồn tại thì không thêm
+              : {
+                  ...product,
+                  item_codes: [...product.item_codes, newItemCode],
+                };
+          }
+          return product;
+        })
+      );
+      console.log(
+        `Đã thêm mã hàng ${newItemCode.product_code} vào sản phẩm ${selectedProductId}`
+      );
+    }
+
+    handleCloseModal();
+  };
+
+  const handleRemoveItemCode = (productId, itemId) => {
+    setProducts((prev) =>
+      prev.map((product) => {
+        if (product.unique_id === productId) {
+          return {
+            ...product,
+            item_codes: product.item_codes.filter((item) => item.id !== itemId),
+          };
+        }
+        return product;
+      })
+    );
+    console.log(`Đã xóa mã hàng ID ${itemId} khỏi sản phẩm ${productId}`);
+  };
+
   const handleShowModal = (productId) => {
     setSelectedProductId(productId);
     setShowModal(true);
@@ -266,7 +406,7 @@ export default function ProductList() {
   };
 
   // Filter products based on search and type
-  const filteredProducts = mockProducts.filter((product) => {
+  const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.product_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -296,7 +436,7 @@ export default function ProductList() {
 
       {/* Search and Filter Section */}
       <Row className="mb-4">
-        <Col xs={12} md={8} className="mb-3 mb-md-0">
+        <Col xs={12} md={6} className="mb-3 mb-md-0">
           <InputGroup>
             <InputGroup.Text>
               <i className="bi bi-search"></i>
@@ -309,12 +449,23 @@ export default function ProductList() {
             />
           </InputGroup>
         </Col>
-        <Col xs={12} md={4}>
+        <Col xs={12} md={2}>
           <Form.Select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
           >
-            <option value="all">Tất cả loại</option>
+            <option value="all">--Chọn Loại--</option>
+            <option value="Bộ">Bộ</option>
+            <option value="Lót">Lót</option>
+            <option value="Thùng">Thùng</option>
+          </Form.Select>
+        </Col>
+        <Col xs={12} md={2}>
+          <Form.Select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+          >
+            <option value="all">--Khách Hàng--</option>
             <option value="Bộ">Bộ</option>
             <option value="Lót">Lót</option>
             <option value="Thùng">Thùng</option>
@@ -382,6 +533,7 @@ export default function ProductList() {
                 justifyContent: "center",
               }}
               title="Xóa"
+              onClick={() => handleDeleteProduct(product.unique_id)}
             >
               <i className="bi bi-trash3"></i>
             </Button>
@@ -412,22 +564,22 @@ export default function ProductList() {
 
               {/* Product Info */}
               <Col xs={12} md={8}>
-                <div className="d-flex justify-content-between align-items-start mb-2">
-                  <div>
-                    <h5 style={{ marginBottom: "0.25rem" }}>
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <div className="d-flex align-items-center gap-3">
+                    <h5 style={{ marginBottom: 0 }}>
                       {product.product_name} 📦 {product.product_code}
                     </h5>
-                    <Badge
+                    {/* <Badge
                       bg={getBadgeColor(product.product_type)}
                       style={{
                         fontSize: "13px",
-                        padding: "4px 12px",
+                        padding: "4px 12px 8px 12px",
                         fontWeight: 500,
                         borderRadius: "6px",
                       }}
                     >
                       Loại: {product.product_type}
-                    </Badge>
+                    </Badge> */}
                   </div>
                 </div>
 
@@ -464,11 +616,11 @@ export default function ProductList() {
                         borderRadius: "8px",
                       }}
                     >
-                      <i className="bi bi-basket2 me-2"></i>
+                      <i className="bi bi-box me-2"></i>
                       <small style={{ color: "#6b7280" }}>
-                        Quantity: <br />
+                        Type: <br />
                       </small>{" "}
-                      <strong>{product.quantity} pcs</strong>
+                      <strong>{product.product_type}</strong>
                     </div>
                   </Col>
                   <Col xs={12} sm={4}>
@@ -517,8 +669,26 @@ export default function ProductList() {
                             marginTop: "6px",
                           }}
                         >
-                          <div style={{ fontSize: "13px", fontWeight: 500 }}>
-                            {item.product_code}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              // justifyContent: "space-between",
+                              gap: "15px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "13px",
+                                fontWeight: 600,
+                                color: "#1f2937",
+                              }}
+                            >
+                              {item.product_code}
+                            </div>
+                            <Badge bg={getUsageBadgeVariant(item.usage_type)}>
+                              {item.usage_type}
+                            </Badge>
                           </div>
                           <div style={{ fontSize: "12px" }}>
                             Kích thước: {item.length}×{item.width_panel_flap}×
@@ -632,13 +802,24 @@ export default function ProductList() {
                 >
                   <div
                     style={{
-                      fontSize: "14px",
-                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                       marginBottom: "8px",
-                      color: "#1f2937",
                     }}
                   >
-                    {item.product_code}
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: "#1f2937",
+                      }}
+                    >
+                      {item.product_code}
+                    </div>
+                    <Badge bg={getUsageBadgeVariant(item.usage_type)}>
+                      {item.usage_type}
+                    </Badge>
                   </div>
                   <Row style={{ fontSize: "13px", color: "#4b5563" }}>
                     <Col xs={12} md={6}>
@@ -695,10 +876,7 @@ export default function ProductList() {
           <Button
             variant="dark"
             disabled={!selectedItemId}
-            onClick={() => {
-              console.log("Đã chọn mã hàng ID:", selectedItemId);
-              handleCloseModal();
-            }}
+            onClick={handleAddItemCodeToProduct}
           >
             Thêm
           </Button>
@@ -727,7 +905,7 @@ export default function ProductList() {
             <Form>
               {/* --- Thông tin cơ bản --- */}
               <Row className="mb-3">
-                <Col md={6}>
+                <Col md={4}>
                   <Form.Group>
                     <Form.Label>Mã sản phẩm</Form.Label>
                     <Form.Control
@@ -743,7 +921,7 @@ export default function ProductList() {
                     />
                   </Form.Group>
                 </Col>
-                <Col md={6}>
+                <Col md={4}>
                   <Form.Group>
                     <Form.Label>Mã khách hàng</Form.Label>
                     <Form.Control
@@ -757,6 +935,24 @@ export default function ProductList() {
                       }
                       placeholder="VD: AROMA"
                     />
+                  </Form.Group>
+                </Col>
+                <Col md={4}>
+                  <Form.Group>
+                    <Form.Label>Loại sản phẩm</Form.Label>
+                    <Form.Select
+                      value={editingProduct.product_type}
+                      onChange={(e) =>
+                        setEditingProduct({
+                          ...editingProduct,
+                          product_type: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="Bộ">Bộ</option>
+                      <option value="Lót">Lót</option>
+                      <option value="Thùng">Thùng</option>
+                    </Form.Select>
                   </Form.Group>
                 </Col>
               </Row>
@@ -819,71 +1015,6 @@ export default function ProductList() {
                 ))}
               </Row>
 
-              <Row className="mb-3">
-                <Col md={4}>
-                  <Form.Group>
-                    <Form.Label>Số lượng</Form.Label>
-                    <Form.Control
-                      type="number"
-                      value={editingProduct.quantity}
-                      onChange={(e) =>
-                        setEditingProduct({
-                          ...editingProduct,
-                          quantity: e.target.value,
-                        })
-                      }
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={4}>
-                  <Form.Group>
-                    <Form.Label>Loại sản phẩm</Form.Label>
-                    <Form.Select
-                      value={editingProduct.product_type}
-                      onChange={(e) =>
-                        setEditingProduct({
-                          ...editingProduct,
-                          product_type: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="Bộ">Bộ</option>
-                      <option value="Lót">Lót</option>
-                      <option value="Thùng">Thùng</option>
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={4}>
-                  <Form.Group>
-                    <Form.Label>Ngày nhận</Form.Label>
-                    <Form.Control
-                      type="date"
-                      value={editingProduct.received_date}
-                      onChange={(e) =>
-                        setEditingProduct({
-                          ...editingProduct,
-                          received_date: e.target.value,
-                        })
-                      }
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Ngày giao</Form.Label>
-                <Form.Control
-                  type="date"
-                  value={editingProduct.delivery_date}
-                  onChange={(e) =>
-                    setEditingProduct({
-                      ...editingProduct,
-                      delivery_date: e.target.value,
-                    })
-                  }
-                />
-              </Form.Group>
-
               {/* --- Chọn mã hàng (card style) --- */}
               <hr />
               <Form.Group className="mb-3">
@@ -896,7 +1027,13 @@ export default function ProductList() {
                 />
               </Form.Group>
 
-              <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+              <div
+                style={{
+                  maxHeight: "400px",
+                  overflowY: "auto",
+                  padding: "6px 4px",
+                }}
+              >
                 {availableItemCodes
                   .filter((item) =>
                     item.product_code
@@ -913,7 +1050,33 @@ export default function ProductList() {
                         className={`mb-2 shadow-sm ${
                           isSelected ? "border-dark border-2" : ""
                         }`}
-                        style={{ cursor: "pointer", borderRadius: "10px" }}
+                        style={{
+                          cursor: "pointer",
+                          borderRadius: "10px",
+                          transition: "all 0.2s ease",
+                          border: isSelected
+                            ? "2px solid #000"
+                            : "1px solid #e5e7eb",
+                          position: "relative",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) {
+                            // e.currentTarget.style.borderColor = "#007bff";
+                            e.currentTarget.style.boxShadow =
+                              "0 4px 12px rgba(0, 123, 255, 0.25)";
+                            e.currentTarget.style.transform =
+                              "translateY(-2px)";
+                            e.currentTarget.style.zIndex = "10";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.borderColor = "#e5e7eb";
+                            e.currentTarget.style.boxShadow = "";
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.zIndex = "1";
+                          }
+                        }}
                         onClick={() => {
                           let updated = editingProduct.item_codes || [];
                           updated = isSelected
@@ -926,7 +1089,26 @@ export default function ProductList() {
                         }}
                       >
                         <Card.Body className="py-2 px-3">
-                          <div className="fw-bold">{item.product_code}</div>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "14px",
+                                fontWeight: 600,
+                                color: "#1f2937",
+                              }}
+                            >
+                              {item.product_code}
+                            </div>
+                            <Badge bg={getUsageBadgeVariant(item.usage_type)}>
+                              {item.usage_type}
+                            </Badge>
+                          </div>
                           <div style={{ fontSize: "13px", color: "#6c757d" }}>
                             Khách hàng: {item.customer} | Sóng:{" "}
                             <span className="text-primary fw-semibold">
@@ -950,15 +1132,7 @@ export default function ProductList() {
           <Button variant="secondary" onClick={handleCloseProductModal}>
             Hủy
           </Button>
-          <Button
-            variant="dark"
-            onClick={() => {
-              if (editingProduct.unique_id)
-                console.log("Cập nhật sản phẩm:", editingProduct);
-              else console.log("Thêm sản phẩm mới:", editingProduct);
-              handleCloseProductModal();
-            }}
-          >
+          <Button variant="dark" onClick={handleSaveProduct}>
             {editingProduct?.unique_id ? "Cập nhật" : "Lưu sản phẩm"}
           </Button>
         </Modal.Footer>
