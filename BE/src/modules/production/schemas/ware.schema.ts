@@ -56,22 +56,22 @@ export class Ware extends BaseDenormalizedSchema {
     | mongoose.Schema.Types.ObjectId
     | WareManufacturingProcessType;
 
-  @Prop({ required: false, type: String, default: null })
+  @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   warePerBlankAdjustment: number | null;
 
-  @Prop({ required: false, type: String, default: null })
+  @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   flapAdjustment: number | null;
 
-  @Prop({ required: false, type: String, default: null })
+  @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   flapOverlapAdjustment: number | null;
 
-  @Prop({ required: false, type: String, default: null })
+  @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   crossCutCountAdjustment: number | null;
@@ -88,7 +88,7 @@ export class Ware extends BaseDenormalizedSchema {
   @IsNumber()
   blankLength: number;
 
-  @Prop({ required: true, type: String, default: null })
+  @Prop({ required: true, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   flapLength: number | null;
