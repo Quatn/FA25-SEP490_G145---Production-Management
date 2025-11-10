@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-export class BaseResponse<T = object> {
+export class BaseResponse<TData = object, TError = object> {
   @ApiProperty()
   success: boolean;
 
@@ -8,5 +8,8 @@ export class BaseResponse<T = object> {
   message: string;
 
   @ApiProperty({ required: false })
-  data?: T;
+  data?: TData;
+
+  @ApiProperty({ required: false })
+  error?: TError;
 }
