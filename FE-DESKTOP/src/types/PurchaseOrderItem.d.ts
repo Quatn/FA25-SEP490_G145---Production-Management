@@ -1,8 +1,8 @@
-export type PurchaseOrderItem = {
-  id: string;
+import { SubPurchaseOrder } from "./SubPurchaseOrder";
+import { Ware } from "./Ware";
+
+export interface PurchaseOrderItem extends BaseSchema {
   code: string;
-  subPurchaseOrderId: string;
-  wareCode: string;
   amount: number;
   numberOfBlanks: number;
   longitudinalCutCount: number;
@@ -18,4 +18,7 @@ export type PurchaseOrderItem = {
   totalWeight: number;
   status: string;
   note: string;
-};
+
+  subPurchaseOrder?: SubPurchaseOrder;
+  ware?: Ware;
+}

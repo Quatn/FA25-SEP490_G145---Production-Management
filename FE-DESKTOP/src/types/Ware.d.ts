@@ -1,12 +1,13 @@
-export type Ware = {
-  id: string;
+import { FluteCombination } from "./FluteCombination";
+import { WareFinishingProcessType } from "./WareFinishingProcessType";
+import { WareManufacturingProcessType } from "./WareManufacturingProcessType";
+
+export interface Ware extends BaseSchema {
   code: string;
   unitPrice: number;
-  fluteCombinationCode: string;
   wareWidth: number;
   wareLength: number;
   wareHeight: number | null;
-  wareManufacturingProcessType: string;
   warePerBlankAdjustment: number | null;
   flapAdjustment: number | null;
   flapOverlapAdjustment: number | null;
@@ -29,8 +30,11 @@ export type Ware = {
   warePerSet: number;
   warePerCombinedSet: number;
   horizontalWareSplit: number;
-  printColors: string[];
-  typeOfPrinter: string | null;
-  manufacturingProcesses: string[];
   note: string;
-};
+
+  fluteCombination?: FluteCombination;
+  wareManufacturingProcessType?: WareManufacturingProcessType;
+  printColors?: string[];
+  typeOfPrinter?: string | null;
+  finishingProcesses: WareFinishingProcessType[];
+}

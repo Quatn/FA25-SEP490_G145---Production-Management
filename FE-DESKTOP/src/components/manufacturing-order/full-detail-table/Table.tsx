@@ -63,6 +63,8 @@ export default function ManufacturingOrderTable(
 
   const columnsForTab = manufacturingOrderTableColumnsByTabs[tab] ?? [];
 
+  console.log(fullDetailMOPaginatedResponse);
+
   const moList = fullDetailMOPaginatedResponse?.data;
 
   if (isFetchingList) {
@@ -167,7 +169,12 @@ export default function ManufacturingOrderTable(
               >
                 KH Giao
               </Table.ColumnHeader>
-              <Table.ColumnHeader minW="100px" w="100px" left="100px" data-sticky="end">
+              <Table.ColumnHeader
+                minW="100px"
+                w="100px"
+                left="100px"
+                data-sticky="end"
+              >
                 Mã lệnh
               </Table.ColumnHeader>
               {columnsForTab.map((col) => (
@@ -193,7 +200,12 @@ export default function ManufacturingOrderTable(
                 <Table.Cell minW="100px" w="100px" left="0" data-sticky>
                   {item.manufacturingDirective}
                 </Table.Cell>
-                <Table.Cell minW="100px" w="100px" left="100px" data-sticky="end">
+                <Table.Cell
+                  minW="100px"
+                  w="100px"
+                  left="100px"
+                  data-sticky="end"
+                >
                   {item.code}
                 </Table.Cell>
                 {columnsForTab.map((col) => (

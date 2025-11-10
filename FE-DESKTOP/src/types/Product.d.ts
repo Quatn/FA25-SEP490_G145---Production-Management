@@ -1,10 +1,13 @@
-export type Product = {
-  id: string;
+import { Customer } from "./Customer";
+import { Ware } from "./Ware";
+
+export interface Product extends BaseSchema {
   code: string;
-  customerCode: string;
   name: string;
   description: string;
   image: string | null;
-  wareCodes: string[];
   note: string;
-};
+
+  customer?: Customer;
+  wares?: Ware[];
+}
