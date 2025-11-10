@@ -14,17 +14,21 @@ import {
 import { PrintColor } from "./print-color.schema";
 import { WareFinishingProcessType } from "./ware-finishing-process-type.schema";
 import { Optional } from "@nestjs/common";
+import { ApiProperty } from "@nestjs/swagger";
 
 @Schema({ timestamps: true })
 export class Ware extends BaseDenormalizedSchema {
+  @ApiProperty()
   @Prop({ required: true, unique: true })
   @IsString()
   code: string;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   unitPrice: number;
 
+  @ApiProperty()
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -32,20 +36,24 @@ export class Ware extends BaseDenormalizedSchema {
   })
   fluteCombination: mongoose.Schema.Types.ObjectId | FluteCombination;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   wareWidth: number;
 
+  @ApiProperty()
   @Prop({ required: true })
   @Optional()
   @IsNumber()
   wareLength: number;
 
+  @ApiProperty()
   @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   wareHeight: number | null;
 
+  @ApiProperty()
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -56,106 +64,129 @@ export class Ware extends BaseDenormalizedSchema {
     | mongoose.Schema.Types.ObjectId
     | WareManufacturingProcessType;
 
+  @ApiProperty()
   @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   warePerBlankAdjustment: number | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   flapAdjustment: number | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   flapOverlapAdjustment: number | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   crossCutCountAdjustment: number | null;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   warePerBlank: number;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   blankWidth: number;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   blankLength: number;
 
+  @ApiProperty()
   @Prop({ required: true, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   flapLength: number | null;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   margin: number;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   paperWidth: number;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   crossCutCount: number;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   faceLayerPaperType: string | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   EFlutePaperType: string | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   EBLinerLayerPaperType: string | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   BFlutePaperType: string | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   BACLinerLayerPaperType: string | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   ACFlutePaperType: string | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   backLayerPaperType: string | null;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   volume: number;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   warePerSet: number;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   warePerCombinedSet: number;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   horizontalWareSplit: number;
 
+  @ApiProperty()
   @Prop({
     required: true,
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: PrintColor.name }],
@@ -163,11 +194,13 @@ export class Ware extends BaseDenormalizedSchema {
   @IsArray()
   printColors: mongoose.Schema.Types.ObjectId[] | PrintColor[];
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   typeOfPrinter: string | null;
 
+  @ApiProperty()
   @Prop({
     type: [{
       type: mongoose.Schema.Types.ObjectId,
@@ -178,6 +211,7 @@ export class Ware extends BaseDenormalizedSchema {
     | mongoose.Schema.Types.ObjectId[]
     | WareFinishingProcessType[];
 
+  @ApiProperty()
   @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()

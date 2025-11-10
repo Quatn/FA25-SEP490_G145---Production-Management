@@ -1,24 +1,12 @@
-import mongoose, { Document, isValidObjectId, Mongoose } from "mongoose";
 import { ManufacturingOrder } from "../../schemas/manufacturing-order.schema";
-import {
-  PurchaseOrderItem,
-  PurchaseOrderItemStatus,
-} from "../../schemas/purchase-order-item.schema";
+import { PurchaseOrderItem } from "../../schemas/purchase-order-item.schema";
 import { Ware } from "../../schemas/ware.schema";
-import {
-  IsDate,
-  IsEnum,
-  IsMongoId,
-  IsNumber,
-  IsOptional,
-  IsString,
-} from "class-validator";
-import { ApiOkResponse, ApiProperty, ApiResponse } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 import { SubPurchaseOrder } from "../../schemas/sub-purchase-order.schema";
 import { PurchaseOrder } from "../../schemas/purchase-order.schema";
 import { Customer } from "../../schemas/customer.schema";
-import check from "check-types";
 import { isRefPopulated } from "@/common/utils/populate-check";
+import { Product } from "../../schemas/product.schema";
 
 // Change the ref fields from id or object (unpopulated or populated) to just object since you are supposed to populate all of the full detail dto's fields
 class PopulatedPurchaseOrder extends PurchaseOrder {
@@ -45,10 +33,21 @@ class PopulatedSubPurchaseOrder extends SubPurchaseOrder {
   })
   declare purchaseOrder: PopulatedPurchaseOrder;
 
+  @ApiProperty({
+    type: Product,
+    description: "Populated product",
+  })
+  declare product: Product;
+
   constructor(order: SubPurchaseOrder) {
     if (!isRefPopulated(order.purchaseOrder)) {
       throw Error(
         "mo.purchaseOrderItem.subPurchaseOrder.purchaseOrder must be populated in order to be used in FullDetailManufacturingOrderDto",
+      );
+    }
+    if (!isRefPopulated(order.product)) {
+      throw Error(
+        "mo.purchaseOrderItem.subPurchaseOrder.product must be populated in order to be used in FullDetailManufacturingOrderDto",
       );
     }
     super();
@@ -56,6 +55,7 @@ class PopulatedSubPurchaseOrder extends SubPurchaseOrder {
     this.purchaseOrder = new PopulatedPurchaseOrder(
       order.purchaseOrder as PurchaseOrder,
     );
+    this.product = order.product as Product;
   }
 }
 
@@ -66,10 +66,21 @@ class PopulatedPurchaseOrderItem extends PurchaseOrderItem {
   })
   declare subPurchaseOrder: PopulatedSubPurchaseOrder;
 
+  @ApiProperty({
+    type: Ware,
+    description: "Populated ware",
+  })
+  declare ware: Ware;
+
   constructor(order: PurchaseOrderItem) {
     if (!isRefPopulated(order.subPurchaseOrder)) {
       throw Error(
         "mo.purchaseOrderItem.subPurchaseOrder must be populated in order to be used in FullDetailManufacturingOrderDto",
+      );
+    }
+    if (!isRefPopulated(order.ware)) {
+      throw Error(
+        "mo.purchaseOrderItem.ware must be populated in order to be used in FullDetailManufacturingOrderDto",
       );
     }
     super();
@@ -77,6 +88,7 @@ class PopulatedPurchaseOrderItem extends PurchaseOrderItem {
     this.subPurchaseOrder = new PopulatedSubPurchaseOrder(
       order.subPurchaseOrder as SubPurchaseOrder,
     );
+    this.ware = order.ware as Ware;
   }
 }
 

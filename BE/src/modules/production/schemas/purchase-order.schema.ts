@@ -4,6 +4,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { IsDate, IsEnum, IsOptional, IsString } from "class-validator";
 import mongoose, { HydratedDocument } from "mongoose";
 import { Customer } from "./customer.schema";
+import { ApiProperty } from "@nestjs/swagger";
 
 export enum PurchaseOrderStatus {
   Draft = "DRAFT",
@@ -22,10 +23,12 @@ export enum PurchaseOrderStatus {
 
 @Schema({ timestamps: true })
 export class PurchaseOrder extends BaseSchema {
+  @ApiProperty()
   @Prop({ required: true, unique: true })
   @IsString()
   code: string;
 
+  @ApiProperty()
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -34,18 +37,22 @@ export class PurchaseOrder extends BaseSchema {
   @IsOptional()
   customer: mongoose.Schema.Types.ObjectId | Customer;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsDate()
   orderDate: Date;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsString()
   deliveryAdress: string;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsString()
   paymentTerms: string;
 
+  @ApiProperty()
   @Prop({
     required: true,
     enum: PurchaseOrderStatus,
@@ -54,6 +61,7 @@ export class PurchaseOrder extends BaseSchema {
   @IsEnum(PurchaseOrderStatus)
   status: PurchaseOrderStatus;
 
+  @ApiProperty()
   @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()

@@ -80,7 +80,25 @@ export class ManufacturingOrderService {
     const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
     const warePath = PurchaseOrderItemSchema.path("ware");
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
+    const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
+
+    const populate = {
+      path: poiPath.path,
+      populate: [
+        { path: warePath.path },
+        {
+          path: subpoPath.path,
+          populate: [
+            productPath,
+            {
+              path: poPath.path,
+              populate: { path: customerPath.path },
+            },
+          ],
+        },
+      ],
+    };
 
     const [totalItems, data] = await Promise.all([
       this.manufacturingOrderModel.countDocuments(filter),
@@ -88,27 +106,16 @@ export class ManufacturingOrderService {
         .find(filter)
         .skip(skip)
         .limit(limit)
-        .populate({
-          path: poiPath.path,
-          populate: [
-            { path: warePath.path },
-            {
-              path: subpoPath.path,
-              populate: {
-                path: poPath.path,
-                populate: { path: customerPath.path },
-              },
-            },
-          ],
-        }).lean(),
+        .populate(populate)
+        .lean(),
     ]);
 
     const totalPages = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
 
-    const mappedData: FullDetailManufacturingOrderDto[] = data.map((mo) =>
-      new FullDetailManufacturingOrderDto(mo)
+    const mappedData: FullDetailManufacturingOrderDto[] = data.map(
+      (mo) => new FullDetailManufacturingOrderDto(mo),
     );
 
     return {

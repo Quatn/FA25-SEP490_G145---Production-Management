@@ -32,29 +32,35 @@ export class ManufacturingOrder extends BaseSchema {
   @IsMongoId()
   purchaseOrderItem: mongoose.Schema.Types.ObjectId | PurchaseOrderItem;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsDate()
   manufacturingDate: Date;
 
+  @ApiProperty()
   @Prop({ required: true, type: Date, default: null })
   @IsOptional()
   @IsDate()
   requestedDatetime: Date | null;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsString()
   corrugatorLine: string;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   manufacturedAmount: number;
 
   // TODO: Change this to an enum, maybe
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   manufacturingDirective: string | null;
 
+  @ApiProperty()
   @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()

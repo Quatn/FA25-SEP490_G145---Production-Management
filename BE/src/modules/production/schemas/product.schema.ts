@@ -5,17 +5,21 @@ import mongoose, { HydratedDocument } from "mongoose";
 import { Ware } from "./ware.schema";
 import { Customer } from "./customer.schema";
 import { IsArray, IsMongoId, IsOptional, IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
 @Schema({ timestamps: true })
 export class Product extends BaseSchema {
+  @ApiProperty()
   @Prop({ required: true, unique: true })
   @IsString()
   code: string;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsString()
   name: string;
 
+  @ApiProperty()
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -24,16 +28,19 @@ export class Product extends BaseSchema {
   @IsMongoId()
   customer: mongoose.Schema.Types.ObjectId | Customer;
 
+  @ApiProperty()
   @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
   description: string;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsString()
   image: string | null;
 
+  @ApiProperty()
   @Prop({
     required: true,
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: Ware.name }],
@@ -41,6 +48,7 @@ export class Product extends BaseSchema {
   @IsArray()
   wares: mongoose.Schema.Types.ObjectId[] | Ware[];
 
+  @ApiProperty()
   @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()

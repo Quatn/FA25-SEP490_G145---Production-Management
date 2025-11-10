@@ -11,6 +11,7 @@ import {
 import mongoose, { HydratedDocument } from "mongoose";
 import { PurchaseOrder } from "./purchase-order.schema";
 import { Product } from "./product.schema";
+import { ApiProperty } from "@nestjs/swagger";
 
 export enum SubPurchaseOrderStatus {
   PendingApproval = "PENDINGAPPROVAL",
@@ -27,10 +28,12 @@ export enum SubPurchaseOrderStatus {
 
 @Schema({ timestamps: true })
 export class SubPurchaseOrder extends BaseSchema {
+  @ApiProperty()
   @Prop({ required: true, unique: true })
   @IsString()
   code: string;
 
+  @ApiProperty()
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -39,6 +42,7 @@ export class SubPurchaseOrder extends BaseSchema {
   @IsMongoId()
   purchaseOrder: mongoose.Schema.Types.ObjectId | PurchaseOrder;
 
+  @ApiProperty()
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -47,10 +51,12 @@ export class SubPurchaseOrder extends BaseSchema {
   @IsMongoId()
   product: mongoose.Schema.Types.ObjectId | Product;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsDate()
   deliveryDate: Date;
 
+  @ApiProperty()
   @Prop({
     required: true,
     enum: SubPurchaseOrderStatus,
@@ -59,6 +65,7 @@ export class SubPurchaseOrder extends BaseSchema {
   @IsEnum(SubPurchaseOrderStatus)
   status: SubPurchaseOrderStatus;
 
+  @ApiProperty()
   @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()
