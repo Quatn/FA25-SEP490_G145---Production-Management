@@ -11,6 +11,7 @@ import mongoose, { HydratedDocument } from "mongoose";
 import { SubPurchaseOrder } from "./sub-purchase-order.schema";
 import { Ware } from "./ware.schema";
 import { BaseDenormalizedSchema } from "@/common/schemas/base.denormalized.schema";
+import { ApiProperty } from "@nestjs/swagger";
 
 export enum PurchaseOrderItemStatus {
   PendingApproval = "PENDINGAPPROVAL",
@@ -27,10 +28,12 @@ export enum PurchaseOrderItemStatus {
 
 @Schema({ timestamps: true })
 export class PurchaseOrderItem extends BaseDenormalizedSchema {
+  @ApiProperty()
   @Prop({ required: true, unique: true })
   @IsString()
   code: string;
 
+  @ApiProperty()
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -39,6 +42,7 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
   @IsMongoId()
   subPurchaseOrder: mongoose.Schema.Types.ObjectId | SubPurchaseOrder;
 
+  @ApiProperty()
   @Prop({
     required: true,
     type: mongoose.Schema.Types.ObjectId,
@@ -47,70 +51,84 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
   @IsMongoId()
   ware: mongoose.Schema.Types.ObjectId | Ware;
 
+  @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
   amount: number;
 
+  @ApiProperty()
   @Prop({ required: false, type: Number, default: 0 })
   @IsOptional()
   @IsNumber()
   numberOfBlanks: number = 0;
 
+  @ApiProperty()
   @Prop({ required: false, type: Number, default: 0 })
   @IsOptional()
   @IsNumber()
   longitudinalCutCount: number = 0;
 
+  @ApiProperty()
   @Prop({ required: false, type: Number, default: 0 })
   @IsOptional()
   @IsNumber()
   runningLength: number = 0;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   faceLayerPaperWeight: number | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   EFlutePaperWeight: number | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   EBLinerLayerPaperWeight: number | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   BFlutePaperWeight: number | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   BACLinerLayerPaperWeight: number | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   ACFlutePaperWeight: number | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: String, default: null })
   @IsOptional()
   @IsNumber()
   backLayerPaperWeight: number | null;
 
+  @ApiProperty()
   @Prop({ required: false, type: Number, default: 0 })
   @IsOptional()
   @IsNumber()
   totalVolume: number = 0;
 
+  @ApiProperty()
   @Prop({ required: false, type: Number, default: 0 })
   @IsOptional()
   @IsNumber()
   totalWeight: number = 0;
 
+  @ApiProperty({ default: PurchaseOrderItemStatus.PendingApproval })
   @Prop({
     required: true,
     enum: PurchaseOrderItemStatus,
@@ -119,6 +137,7 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
   @IsEnum(PurchaseOrderItemStatus)
   status: PurchaseOrderItemStatus;
 
+  @ApiProperty()
   @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()

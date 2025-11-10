@@ -8,15 +8,21 @@ import {
   IsOptional,
   IsString,
 } from "class-validator";
-import mongoose, { HydratedDocument } from "mongoose";
+import mongoose, { HydratedDocument, Types } from "mongoose";
 import { PurchaseOrderItem } from "./purchase-order-item.schema";
+import { ApiProperty, getSchemaPath } from "@nestjs/swagger";
 
 @Schema({ timestamps: true })
 export class ManufacturingOrder extends BaseSchema {
+  @ApiProperty()
   @Prop({ required: true, unique: true })
   @IsString()
   code: string;
 
+  @ApiProperty({
+    type: mongoose.Schema.Types.ObjectId,
+    description: "ObjectId by default, PurchaseOrderItem when populated",
+  })
   @Prop({
     required: true,
     unique: true,
@@ -59,6 +65,4 @@ export type ManufacturingOrderDocument = HydratedDocument<ManufacturingOrder>;
 
 export const ManufacturingOrderSchema = SchemaFactory.createForClass(
   ManufacturingOrder,
-).plugin(
-  softDeletePlugin,
-);
+).plugin(softDeletePlugin);
