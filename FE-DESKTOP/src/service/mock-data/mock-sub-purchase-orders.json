@@ -1,6 +1,7 @@
 [
   {
     "id": "subpurchaseorderid001",
+    "code": "DONGTAI-01/09-01",
     "purchaseOrderId": "purchaseorderid001",
     "productCode": "dt-pad-gu-t02",
     "deliveryDate": "2025-10-27T00:00:00.000Z",
@@ -9,6 +10,7 @@
   },
   {
     "id": "subpurchaseorderid002",
+    "code": "DONGTAI-01/09-02",
     "purchaseOrderId": "purchaseorderid001",
     "productCode": "dt-box-gu-t02",
     "deliveryDate": "2025-10-27T00:00:00.000Z",

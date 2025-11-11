@@ -106,9 +106,10 @@ export default function MainLayout({
       <SimpleGrid
         columns={{ base: 1, sm: 5, md: 5 }}
         gap={{ base: "24px", md: "40px" }}
+        overflowY={"hidden"}
         flexGrow={1}
       >
-        <GridItem colSpan={{ base: 1, sm: 2, md: 1 }}>
+        <GridItem colSpan={{ base: 1, sm: 2, md: 1 }} overflowY={"auto"}>
           <Sidebar.Root>
             <Sidebar.Header>
               <Input
@@ -131,7 +132,7 @@ export default function MainLayout({
             </Sidebar.Body>
           </Sidebar.Root>
         </GridItem>
-        <GridItem colSpan={{ base: 1, sm: 3, md: 4 }}>
+        <GridItem colSpan={{ base: 1, sm: 3, md: 4 }} overflowY={"auto"}>
           <main
             style={{ height: "100%", display: "flex", flexDirection: "column" }}
           >

@@ -1,9 +1,12 @@
-export type PurchaseOrder = {
-  id: string;
-  customerCode: string;
+import { Customer } from "./Customer";
+
+export interface PurchaseOrder extends BaseSchema {
+  code: string;
   orderDate: Date;
   deliveryAdress: string;
   paymentTerms: string;
   status: string;
   notes: string;
-};
+
+  customer?: Customer;
+}

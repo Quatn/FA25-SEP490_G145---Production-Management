@@ -1,57 +1,44 @@
 import { apiSlice } from "./apiSlice";
-import { MANUFACTURING_ORDER_URL, USE_MOCK_DATA } from "../constants";
 import {
-  mockFullDetailManufacturingOrderQuery,
   mockManufacturingOrderQuery,
 } from "../mock-data/functions/mock-manufacturing-orders-crud";
-import { FullDetailManufacturingOrderDTO } from "@/types/DTO/FullDetailManufactureOrder";
-import { PaginatedList, QueryResponse } from "@/types/DTO/Response";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { PageResponse } from "@/types/DTO/PageResponse";
+import { createApiEndpoint } from "@/utils/endpointFactory";
+import { MANUFACTURING_ORDER_URL } from "../constants";
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getManufacturingOrders: builder.query<
-      PaginatedList<Serialized<ManufacturingOrder>>,
+    getManufacturingOrders: createApiEndpoint<
+      PageResponse<Serialized<ManufacturingOrder>>,
       { page: number; limit: number }
-    >({
-      ...(USE_MOCK_DATA
-        ? {
-          queryFn: async (
-            { page, limit }: { page: number; limit: number },
-          ): Promise<
-            QueryResponse<PaginatedList<Serialized<ManufacturingOrder>>>
-          > => {
-            try {
-              const data = await mockManufacturingOrderQuery({
-                page,
-                limit,
-              });
-
-              return {
-                data,
-              };
-            } catch (err) {
-              return {
-                error: {
-                  status: "CUSTOM_ERROR",
-                  error: (err as Error).message,
-                },
-              };
-            }
-          },
-        }
-        : {
-          query: ({ page = 1, limit = 20 }) => ({
-            url: `${MANUFACTURING_ORDER_URL}/`,
-            method: "GET",
-            params: { page, limit },
-            credentials: "include",
-          }),
-        }),
+    >(builder, {
+      query: ({ page, limit }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/query/full-details`,
+        method: "GET",
+        params: { page, limit },
+        credentials: "include",
+      }),
+      mockFn: ({ page = 1, limit = 20 }) =>
+        mockManufacturingOrderQuery({ page, limit }),
     }),
 
+    getFullDetailManufacturingOrders: createApiEndpoint<
+      PageResponse<Serialized<ManufacturingOrder>>,
+      { page: number; limit: number }
+    >(builder, {
+      query: ({ page, limit }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/query/full-details`,
+        method: "GET",
+        params: { page, limit },
+        credentials: "include",
+      }),
+      mockFn: ({ page = 1, limit = 20 }) =>
+        mockManufacturingOrderQuery({ page, limit }),
+    }),
+    /*
     getFullDetailManufacturingOrders: builder.query<
-      PaginatedList<Serialized<FullDetailManufacturingOrderDTO>>,
+      PageResponse<Serialized<ManufacturingOrder>>,
       { page: number; limit: number }
     >({
       ...(USE_MOCK_DATA
@@ -59,7 +46,7 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
           queryFn: async (
             { page, limit }: { page: number; limit: number },
           ): Promise<
-            QueryResponse<PaginatedList<Serialized<FullDetailManufacturingOrderDTO>>>
+            MockResponse<PageResponse<Serialized<ManufacturingOrder>>>
           > => {
             try {
               const data = await mockFullDetailManufacturingOrderQuery({
@@ -70,7 +57,6 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
               return {
                 data,
               };
-
             } catch (err) {
               return {
                 error: {
@@ -83,13 +69,14 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
         }
         : {
           query: ({ page = 1, limit = 20 }) => ({
-            url: `${MANUFACTURING_ORDER_URL}/full-detail`,
+            url: `${MANUFACTURING_ORDER_URL}/query/full-details`,
             method: "GET",
             params: { page, limit },
             credentials: "include",
           }),
         }),
     }),
+  */
   }),
 });
 
