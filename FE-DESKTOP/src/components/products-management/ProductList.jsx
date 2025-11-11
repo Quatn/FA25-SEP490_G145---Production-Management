@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Container,
   Row,
@@ -13,202 +13,163 @@ import {
   Modal,
 } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
+import {
+  useGetProductsQuery,
+  useCreateProductMutation,
+  useUpdateProductMutation,
+  useDeleteProductMutation,
+} from "@/service/api/productApiSlice";
 
 export default function ProductList() {
-  const mockProducts = [
-    {
-      unique_id: "CAT-0001",
-      product_code: "VN-BOX-001",
-      customer_code: "AROMA",
-      product_name: "Thùng carton Aroma 5 lớp",
-      description:
-        "Thùng carton 5 lớp sử dụng để đóng gói sản phẩm nước hoa Aroma",
-      length: 200,
-      width: 300,
-      height: 100,
-      quantity: 200,
-      product_type: "Bộ",
-      received_date: "2025-10-25",
-      delivery_date: "2025-11-02",
-      item_codes: [
-        {
-          id: 1,
-          product_code: "VN 240*125*260 (WX1-0202)",
-          wave_type: "5C",
-          length: 260,
-          width_panel_flap: 730,
-          height: 240,
-          paper_size: 1100,
-          usage_type: "Thùng",
-        },
-        {
-          id: 2,
-          product_code: "VN 250*130*270 (WX1-0203)",
-          wave_type: "5C",
-          length: 270,
-          width_panel_flap: 740,
-          height: 250,
-          paper_size: 1120,
-          usage_type: "Lót",
-        },
-      ],
-    },
-    {
-      unique_id: "CAT-0003",
-      product_code: "VN-BOX-003",
-      customer_code: "THUẬN AN",
-      product_name: "Thùng carton 7 lớp",
-      description: "Thùng carton 7 lớp cho sản phẩm công nghiệp",
-      length: 610,
-      width: 508,
-      height: 324,
-      quantity: 150,
-      product_type: "Lót",
-      received_date: "2025-10-28",
-      delivery_date: "2025-11-05",
-      item_codes: [
-        {
-          id: 1,
-          product_code: "VN 610*508*324 (TA-0707)",
-          wave_type: "7CBE",
-          length: 610,
-          width_panel_flap: 508,
-          height: 324,
-          paper_size: 1250,
-          usage_type: "Lót",
-        },
-      ],
-    },
-    {
-      unique_id: "CAT-0005",
-      product_code: "VN-BOX-005",
-      customer_code: "MAY YÊN",
-      product_name: "Thùng carton 5 lớp TAG",
-      description: "Thùng carton 5 lớp có TAG cho sản phẩm may mặc",
-      length: 940,
-      width: 680,
-      height: 280,
-      quantity: 100,
-      product_type: "Thùng",
-      received_date: "2025-10-26",
-      delivery_date: "2025-11-03",
-      item_codes: [
-        {
-          id: 1,
-          product_code: "VN 940*680*280 (MY-0505)",
-          wave_type: "3BC",
-          length: 940,
-          width_panel_flap: 680,
-          height: 280,
-          paper_size: 1500,
-          usage_type: "Thùng",
-        },
-      ],
-    },
-  ];
+  const availableItemCodes = useMemo(
+    () => [
+      {
+        id: 1,
+        customerCode: "AROMA",
+        wareCode: "VN 240*125*260 (WX1-0202)",
+        fluteCombination: "5CB",
+        wareLength: 260,
+        wareWidth: 730,
+        wareHeight: 0,
+        processingType: "Tấm",
+        paperSize: 1100,
+        wareUsageType: "Thùng",
+      },
+      {
+        id: 2,
+        customerCode: "THUẬN AN",
+        wareCode: "7L 610*508*324",
+        fluteCombination: "7CBE",
+        wareLength: 610,
+        wareWidth: 508,
+        wareHeight: 324,
+        processingType: "Ghép",
+        paperSize: 900,
+        wareUsageType: "Lót",
+      },
+      {
+        id: 3,
+        customerCode: "MAY YÊN",
+        wareCode: "H5L 940*680*280 TAG",
+        fluteCombination: "5AB",
+        wareLength: 940,
+        wareWidth: 680,
+        wareHeight: 280,
+        processingType: "Liền",
+        paperSize: 1000,
+        wareUsageType: "Đế",
+      },
+      {
+        id: 4,
+        customerCode: "AROMA",
+        wareCode: "H5L 185*185*310",
+        fluteCombination: "5CB",
+        wareLength: 185,
+        wareWidth: 185,
+        wareHeight: 310,
+        processingType: "Tấm",
+        paperSize: 1550,
+        wareUsageType: "Thùng",
+      },
+      {
+        id: 5,
+        customerCode: "test",
+        wareCode: "H5L 185*185*310",
+        fluteCombination: "5CB",
+        wareLength: 185,
+        wareWidth: 185,
+        wareHeight: 310,
+        processingType: "Tấm",
+        paperSize: 1550,
+        wareUsageType: "Thùng",
+      },
+    ],
+    []
+  );
 
-  const availableItemCodes = [
-    {
-      id: 1,
-      customer: "AROMA",
-      product_code: "VN 240*125*260 (WX1-0202)",
-      production_type: "5CB",
-      length: 260,
-      width_panel_flap: 730,
-      processing_type: "Tấm",
-      quantity: 2.0,
-      processing_size: 260,
-      processing_cd: 730,
-      quantity_per_sheet: 2,
-      dock_position: "",
-      dock_flap_sum: "",
-      dock_part: "",
-      dock_part_2: 4,
-      margin: 30,
-      paper_size: 1100,
-      usage_type: "Thùng",
-    },
-    {
-      id: 2,
-      customer: "THUẬN AN",
-      product_code: "7L 610*508*324",
-      production_type: "7CBE",
-      length: 610,
-      width_panel_flap: 508,
-      height: 324,
-      processing_type: "Ghép",
-      quantity: 1.0,
-      processing_size: 836,
-      processing_cd: 2266,
-      product_lid_flap: 256,
-      quantity_per_sheet: "",
-      dock_position: 30,
-      dock_flap_sum: 2,
-      dock_part: 1,
-      dock_part_2: 1,
-      margin: 32,
-      paper_size: 900,
-      usage_type: "Lót",
-    },
-    {
-      id: 3,
-      customer: "MAY YÊN",
-      product_code: "H5L 940*680*280 TAG",
-      production_type: "5AB",
-      length: 940,
-      width_panel_flap: 680,
-      height: 280,
-      processing_type: "Liền",
-      quantity: 0.5,
-      processing_size: 964,
-      processing_cd: 1655,
-      product_lid_flap: 342,
-      quantity_per_sheet: "",
-      dock_position: "",
-      dock_flap_sum: "",
-      dock_part: 1,
-      dock_part_2: 1,
-      margin: 18,
-      paper_size: 1000,
-      usage_type: "Đế",
-    },
-    {
-      id: 4,
-      customer: "AROMA",
-      product_code: "H5L 185*185*310",
-      production_type: "5CB",
-      length: 185,
-      width_panel_flap: 185,
-      height: 310,
-      processing_type: "Tấm",
-      quantity: 1.0,
-      processing_size: 499,
-      processing_cd: 775,
-      product_lid_flap: 94.5,
-      quantity_per_sheet: "",
-      dock_position: "",
-      dock_flap_sum: "",
-      dock_part: 3,
-      dock_part_2: 3,
-      margin: 27,
-      paper_size: 1550,
-      usage_type: "Thùng",
-    },
-  ];
-
-  const [products, setProducts] = useState(mockProducts);
-  const [openIds, setOpenIds] = useState([]);
+  const [page, setPage] = useState(1);
+  // 💡 Đổi từ const [limit] sang state để người dùng có thể thay đổi
+  const [limit, setLimit] = useState(2);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all");
-  const [showModal, setShowModal] = useState(false);
+  const [productTypeFilter, setProductTypeFilter] = useState("all");
+  const [customerFilter, setCustomerFilter] = useState("all");
+  const [openIds, setOpenIds] = useState([]);
   const [modalSearchTerm, setModalSearchTerm] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState(null);
-  const [selectedItemId, setSelectedItemId] = useState(null);
-
-  // 🔹 State mới (thay cho showAddProductModal & newProduct)
   const [editingProduct, setEditingProduct] = useState(null);
-
   const [containerEl, setContainerEl] = useState(null);
+
+  // State mới cho Modal thêm mã hàng
+  const [showAddItemCodeModal, setShowAddItemCodeModal] = useState(false);
+  const [productToUpdateWareCodes, setProductToUpdateWareCodes] =
+    useState(null);
+  const [selectedItemCodeId, setSelectedItemCodeId] = useState(null);
+
+  const queryArgs = useMemo(
+    () => ({
+      page,
+      limit,
+      ...(searchTerm.trim() ? { search: searchTerm.trim() } : {}),
+      ...(productTypeFilter !== "all"
+        ? { productType: productTypeFilter }
+        : {}),
+      ...(customerFilter !== "all" ? { customerCode: customerFilter } : {}),
+    }),
+    [page, limit, searchTerm, productTypeFilter, customerFilter]
+  );
+
+  const {
+    data: productList,
+    error: fetchError,
+    isLoading: isFetchingList,
+    isFetching,
+  } = useGetProductsQuery(queryArgs);
+
+  const products = productList?.data ?? [];
+
+  console.log(productList);
+
+  // Logic lọc cho Modal Thêm/Sửa Sản phẩm (Modal chính)
+  const filteredModalItems = useMemo(
+    () =>
+      availableItemCodes.filter((item) =>
+        item.wareCode.toLowerCase().includes(modalSearchTerm.toLowerCase())
+      ),
+    [availableItemCodes, modalSearchTerm]
+  );
+
+  // Logic lọc cho Modal Thêm Mã Hàng (Modal phụ)
+  const filteredAddItemCodeModalItems = useMemo(() => {
+    if (!productToUpdateWareCodes) return [];
+
+    const existingIds = (productToUpdateWareCodes.wareCodes || []).map(
+      (item) => item.id
+    );
+    return availableItemCodes
+      .filter((item) => !existingIds.includes(item.id))
+      .filter((item) =>
+        item.wareCode.toLowerCase().includes(modalSearchTerm.toLowerCase())
+      );
+  }, [availableItemCodes, modalSearchTerm, productToUpdateWareCodes]);
+
+  const customerOptions = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...products.map((p) => p.customerCode).filter(Boolean),
+          ...availableItemCodes
+            .map((item) => item.customerCode)
+            .filter(Boolean),
+        ])
+      ),
+    [products, availableItemCodes]
+  );
+
+  const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
+  const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
+  const [deleteProductMutation, { isLoading: isDeleting }] =
+    useDeleteProductMutation();
+
+  const isMutating = isCreating || isUpdating;
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -217,30 +178,144 @@ export default function ProductList() {
     }
   }, []);
 
-  // 🔹 Hàm mở modal
-  const handleOpenProductModal = (product = null) => {
-    setEditingProduct(
-      product
-        ? { ...product } // Chỉnh sửa
-        : {
-            product_code: "",
-            customer_code: "",
-            product_name: "",
-            description: "",
-            length: "",
-            width: "",
-            height: "",
-            quantity: "",
-            product_type: "Bộ",
-            received_date: "",
-            delivery_date: "",
-            item_codes: [],
-          } // Thêm mới
-    );
+  const emptyProduct = {
+    id: "",
+    customerCode: "",
+    productName: "",
+    description: "",
+    productLength: 0,
+    productWidth: 0,
+    productHeight: 0,
+    productType: "Bộ",
+    wareCodes: [],
   };
 
-  // 🔹 Hàm đóng modal
+  // 🔹 Hàm mở modal chính (Thêm/Sửa Sản phẩm)
+  const handleOpenProductModal = (product = null) => {
+    if (product) {
+      setEditingProduct({
+        ...product,
+        wareCodes: product.wareCodes ? [...product.wareCodes] : [],
+      });
+    } else {
+      setEditingProduct({ ...emptyProduct, wareCodes: [] });
+    }
+    setModalSearchTerm("");
+  };
+
+  // 🔹 Hàm đóng modal chính
   const handleCloseProductModal = () => setEditingProduct(null);
+
+  // 🆕 Hàm mở modal thêm mã hàng
+  const handleShowAddItemCodeModal = (product) => {
+    setProductToUpdateWareCodes(product); // Lưu sản phẩm cần cập nhật
+    setModalSearchTerm(""); // Reset thanh tìm kiếm
+    setSelectedItemCodeId(null); // Reset mã hàng đã chọn
+    setShowAddItemCodeModal(true);
+  };
+
+  // 🆕 Hàm đóng modal thêm mã hàng
+  const handleCloseAddItemCodeModal = () => {
+    setShowAddItemCodeModal(false);
+    setProductToUpdateWareCodes(null);
+    setSelectedItemCodeId(null);
+  };
+
+  // 🆕 Hàm chọn mã hàng trong modal phụ
+  const handleSelectItemCode = (itemId) => {
+    setSelectedItemCodeId(itemId);
+  };
+
+  // 🆕 Hàm thêm mã hàng vào sản phẩm và gọi API cập nhật
+  const handleAddItemCodeToProduct = async () => {
+    if (!productToUpdateWareCodes || !selectedItemCodeId) return;
+
+    const selectedItem = availableItemCodes.find(
+      (item) => item.id === selectedItemCodeId
+    );
+    if (!selectedItem) return;
+
+    const updatedWareCodes = [
+      ...(productToUpdateWareCodes.wareCodes || []),
+      {
+        ...selectedItem,
+      },
+    ];
+
+    const payload = {
+      id: productToUpdateWareCodes.id?.trim() ?? "",
+      customerCode: productToUpdateWareCodes.customerCode?.trim() ?? "",
+      productName: productToUpdateWareCodes.productName?.trim() ?? "",
+      description: productToUpdateWareCodes.description ?? "",
+      productLength: Number(productToUpdateWareCodes.productLength) || 0,
+      productWidth: Number(productToUpdateWareCodes.productWidth) || 0,
+      productHeight: Number(productToUpdateWareCodes.productHeight) || 0,
+      productType: productToUpdateWareCodes.productType,
+      wareCodes: updatedWareCodes.map((item, index) => ({
+        ...item,
+        id: item.id ?? index + 1,
+        wareHeight: item.wareHeight ?? 0,
+      })),
+    };
+
+    try {
+      // 🚨 Gọi API cập nhật sản phẩm
+      await updateProduct({
+        productId: productToUpdateWareCodes._id, // Sử dụng _id của MongoDB để update
+        body: payload,
+      }).unwrap();
+
+      // Đóng modal sau khi cập nhật thành công
+      handleCloseAddItemCodeModal();
+    } catch (error) {
+      console.error("Không thể thêm mã hàng vào sản phẩm:", error);
+      window.alert("Đã xảy ra lỗi khi thêm mã hàng. Vui lòng thử lại.");
+    }
+  };
+
+  // 🆕 Hàm xóa mã hàng khỏi sản phẩm
+  const handleRemoveItemCode = async (productId, itemCodeId, itemCode) => {
+    const product = products.find((p) => p._id === productId);
+    if (!product) return;
+
+    if (
+      !window.confirm(
+        `Bạn có chắc chắn muốn xóa mã hàng ${itemCode} khỏi sản phẩm ${product.id} không?`
+      )
+    ) {
+      return;
+    }
+
+    const updatedWareCodes = (product.wareCodes || []).filter(
+      (item) => item.id !== itemCodeId
+    );
+
+    const payload = {
+      id: product.id?.trim() ?? "",
+      customerCode: product.customerCode?.trim() ?? "",
+      productName: product.productName?.trim() ?? "",
+      description: product.description ?? "",
+      productLength: Number(product.productLength) || 0,
+      productWidth: Number(product.productWidth) || 0,
+      productHeight: Number(product.productHeight) || 0,
+      productType: product.productType,
+      wareCodes: updatedWareCodes.map((item, index) => ({
+        ...item,
+        id: item.id ?? index + 1,
+        wareHeight: item.wareHeight ?? 0,
+      })),
+    };
+
+    try {
+      await updateProduct({
+        productId: productId,
+        body: payload,
+      }).unwrap();
+    } catch (error) {
+      console.error("Không thể xóa mã hàng:", error);
+      window.alert("Đã xảy ra lỗi khi xóa mã hàng. Vui lòng thử lại.");
+    }
+  };
 
   const toggleCollapse = (id) => {
     setOpenIds((prev) =>
@@ -274,159 +349,102 @@ export default function ProductList() {
     }
   };
 
-  const getNextUniqueId = () => {
-    const maxId = products.reduce((max, p) => {
-      const idNum = parseInt(p.unique_id.replace("CAT-", "")) || 0;
-      return idNum > max ? idNum : max;
-    }, 0);
-    return `CAT-${String(maxId + 1).padStart(4, "0")}`;
-  };
-
   // 1. Thêm/Cập nhật Sản phẩm (Create/Update)
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
     if (!editingProduct) return;
 
-    if (editingProduct.unique_id) {
-      // Cập nhật sản phẩm hiện có
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.unique_id === editingProduct.unique_id ? editingProduct : p
-        )
-      );
-      console.log("Sản phẩm đã được cập nhật:", editingProduct.unique_id);
-    } else {
-      // Thêm sản phẩm mới
-      const newProduct = {
-        ...editingProduct,
-        unique_id: getNextUniqueId(), // Tạo ID mới
-        // Đảm bảo các trường số là number
-        length: Number(editingProduct.length) || 0,
-        width: Number(editingProduct.width) || 0,
-        height: Number(editingProduct.height) || 0,
-        quantity: Number(editingProduct.quantity) || 0,
-        received_date:
-          editingProduct.received_date || new Date().toISOString().slice(0, 10),
-        delivery_date: editingProduct.delivery_date || "",
-        item_codes: editingProduct.item_codes.map((item) => ({
-          ...item,
-          id: item.id || Date.now() + Math.random(), // Đảm bảo item_codes có ID nếu chưa có
-          // Chỉ giữ lại các trường cần thiết nếu cần, hiện tại giữ tất cả
-        })),
-      };
+    const payload = {
+      id: editingProduct.id?.trim() ?? "",
+      customerCode: editingProduct.customerCode?.trim() ?? "",
+      productName: editingProduct.productName?.trim() ?? "",
+      description: editingProduct.description ?? "",
+      productLength: Number(editingProduct.productLength) || 0,
+      productWidth: Number(editingProduct.productWidth) || 0,
+      productHeight: Number(editingProduct.productHeight) || 0,
+      productType: editingProduct.productType,
+      //sẽ thêm sau
+      // image: "",
+      wareCodes: (editingProduct.wareCodes || []).map((item, index) => ({
+        ...item,
+        id: item.id ?? index + 1,
+        wareHeight: item.wareHeight ?? 0,
+      })),
+    };
 
-      setProducts((prev) => [...prev, newProduct]);
-      console.log("Sản phẩm mới đã được thêm:", newProduct.unique_id);
+    if (!payload.id || !payload.customerCode || !payload.productName) {
+      window.alert("Vui lòng nhập mã sản phẩm, khách hàng và tên sản phẩm.");
+      return;
     }
 
-    handleCloseProductModal();
-    setModalSearchTerm(""); // Đặt lại search term cho modal item code
+    try {
+      if (editingProduct._id) {
+        await updateProduct({
+          productId: editingProduct._id,
+          body: payload,
+        }).unwrap();
+      } else {
+        await createProduct(payload).unwrap();
+      }
+      handleCloseProductModal();
+    } catch (error) {
+      console.error("Không thể lưu sản phẩm:", error);
+      window.alert("Đã xảy ra lỗi khi lưu sản phẩm. Vui lòng thử lại.");
+    }
   };
 
   // 2. Xóa Sản phẩm (Delete)
-  const handleDeleteProduct = (productId) => {
+  const handleDeleteProduct = async (productId, productCode) => {
     if (
-      window.confirm(`Bạn có chắc chắn muốn xóa sản phẩm ${productId} không?`)
+      !productId ||
+      !window.confirm(
+        `Bạn có chắc chắn muốn xóa sản phẩm ${productCode || productId} không?`
+      )
     ) {
-      setProducts((prev) => prev.filter((p) => p.unique_id !== productId));
-      console.log("Sản phẩm đã được xóa:", productId);
-      setOpenIds((prev) => prev.filter((id) => id !== productId)); // Đóng collapse nếu đang mở
+      return;
+    }
+
+    try {
+      await deleteProductMutation(productId).unwrap();
+      setOpenIds((prev) => prev.filter((id) => id !== productId));
+    } catch (error) {
+      console.error("Không thể xóa sản phẩm:", error);
+      window.alert("Đã xảy ra lỗi khi xóa sản phẩm. Vui lòng thử lại.");
     }
   };
 
-  const handleAddItemCodeToProduct = () => {
-    if (!selectedProductId || !selectedItemId) return;
-
-    const itemToAdd = availableItemCodes.find(
-      (item) => item.id === selectedItemId
-    );
-
-    if (itemToAdd) {
-      // Chuyển đổi item code từ availableItemCodes format sang product item_codes format
-      const newItemCode = {
-        id: itemToAdd.id,
-        product_code: itemToAdd.product_code,
-        wave_type: itemToAdd.production_type, // Sóng
-        length: itemToAdd.length,
-        width_panel_flap: itemToAdd.width_panel_flap,
-        height: itemToAdd.height || null, // Có thể thiếu height trong availableItemCodes
-        paper_size: itemToAdd.paper_size,
-        usage_type: itemToAdd.usage_type,
-      };
-
-      setProducts((prev) =>
-        prev.map((product) => {
-          if (product.unique_id === selectedProductId) {
-            const isExist = product.item_codes.some(
-              (item) => item.id === newItemCode.id
-            );
-            return isExist
-              ? product // Đã tồn tại thì không thêm
-              : {
-                  ...product,
-                  item_codes: [...product.item_codes, newItemCode],
-                };
-          }
-          return product;
-        })
-      );
-      console.log(
-        `Đã thêm mã hàng ${newItemCode.product_code} vào sản phẩm ${selectedProductId}`
-      );
-    }
-
-    handleCloseModal();
+  // ----------------------------------------
+  // 💡 LOGIC PHÂN TRANG MỚI
+  // ----------------------------------------
+  const handlePageChange = (newPage) => {
+    const totalPages = productList?.totalPages || 1;
+    let finalPage = newPage;
+    if (newPage < 1) finalPage = 1;
+    if (newPage > totalPages) finalPage = totalPages;
+    setPage(finalPage);
   };
 
-  const handleRemoveItemCode = (productId, itemId) => {
-    setProducts((prev) =>
-      prev.map((product) => {
-        if (product.unique_id === productId) {
-          return {
-            ...product,
-            item_codes: product.item_codes.filter((item) => item.id !== itemId),
-          };
-        }
-        return product;
-      })
-    );
-    console.log(`Đã xóa mã hàng ID ${itemId} khỏi sản phẩm ${productId}`);
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    setPage(1); // Reset về trang 1 khi đổi limit
   };
 
-  const handleShowModal = (productId) => {
-    setSelectedProductId(productId);
-    setShowModal(true);
-    setModalSearchTerm("");
-  };
+  const totalItems = productList?.totalItems ?? 0;
+  const totalPages = productList?.totalPages ?? 1;
+  const hasNextPage = productList?.hasNextPage ?? false;
+  const hasPrevPage = productList?.hasPrevPage ?? false;
+  const currentPage = productList?.page ?? 1;
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedProductId(null);
-    setSelectedItemId(null);
-    setModalSearchTerm("");
-  };
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * limit + 1;
+  const endItem = Math.min(currentPage * limit, totalItems);
+  const rangeDisplay = `${startItem} - ${endItem} of ${totalItems}`;
 
-  // Filter products based on search and type
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch =
-      product.product_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.item_codes.some((item) =>
-        item.product_code.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  const limitOptions = [2, 4, 6, 10]; // Thêm 5 để dễ test với DB ít sản phẩm
 
-    const matchesType =
-      filterType === "all" || product.product_type === filterType;
-
-    return matchesSearch && matchesType;
-  });
-
-  // Filter available item codes in modal
-  const filteredModalItems = availableItemCodes.filter((item) =>
-    item.product_code.toLowerCase().includes(modalSearchTerm.toLowerCase())
-  );
+  // ----------------------------------------
 
   return (
     <Container style={{ paddingTop: "1.5rem", paddingBottom: "1.5rem" }}>
+      {/* Header, Search and Filter Section (Giữ nguyên) */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Quản Lý Sản Phẩm</h2>
         <Button variant="success" onClick={() => handleOpenProductModal()}>
@@ -434,7 +452,7 @@ export default function ProductList() {
         </Button>
       </div>
 
-      {/* Search and Filter Section */}
+      {/* Search and Filter Section (Giữ nguyên) */}
       <Row className="mb-4">
         <Col xs={12} md={6} className="mb-3 mb-md-0">
           <InputGroup>
@@ -445,39 +463,62 @@ export default function ProductList() {
               type="text"
               placeholder="Tìm kiếm theo mã sản phẩm, tên sản phẩm, hoặc mã hàng..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
             />
           </InputGroup>
         </Col>
         <Col xs={12} md={2}>
           <Form.Select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
+            value={productTypeFilter}
+            onChange={(e) => {
+              setProductTypeFilter(e.target.value);
+              setPage(1);
+            }}
           >
             <option value="all">--Chọn Loại--</option>
             <option value="Bộ">Bộ</option>
             <option value="Lót">Lót</option>
             <option value="Thùng">Thùng</option>
+            <option value="Vách">Vách</option>
+            <option value="Đế">Đế</option>
           </Form.Select>
         </Col>
         <Col xs={12} md={2}>
           <Form.Select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
+            value={customerFilter}
+            onChange={(e) => {
+              setCustomerFilter(e.target.value);
+              setPage(1);
+            }}
           >
             <option value="all">--Khách Hàng--</option>
-            <option value="Bộ">Bộ</option>
-            <option value="Lót">Lót</option>
-            <option value="Thùng">Thùng</option>
+            {customerOptions.map((customer) => (
+              <option key={customer} value={customer}>
+                {customer}
+              </option>
+            ))}
           </Form.Select>
         </Col>
       </Row>
 
-      {/* Product List */}
-      {filteredProducts.map((product, index) => (
+      {fetchError && (
+        <div className="alert alert-danger">
+          Không thể tải danh sách sản phẩm. Vui lòng thử lại.
+        </div>
+      )}
+
+      {(isFetchingList || isFetching) && (
+        <div className="text-muted mb-3">Đang tải dữ liệu...</div>
+      )}
+
+      {/* Product List (Giữ nguyên) */}
+      {products.map((product) => (
         <Card
           className="col-md-10"
-          key={product.unique_id}
+          key={product._id}
           style={{
             marginBottom: "1.5rem",
             borderRadius: "12px",
@@ -495,7 +536,6 @@ export default function ProductList() {
             e.currentTarget.style.transform = "translateY(0)";
           }}
         >
-          {/* Action Buttons */}
           <div
             style={{
               position: "absolute",
@@ -533,7 +573,7 @@ export default function ProductList() {
                 justifyContent: "center",
               }}
               title="Xóa"
-              onClick={() => handleDeleteProduct(product.unique_id)}
+              onClick={() => handleDeleteProduct(product._id, product.id)}
             >
               <i className="bi bi-trash3"></i>
             </Button>
@@ -567,19 +607,8 @@ export default function ProductList() {
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <div className="d-flex align-items-center gap-3">
                     <h5 style={{ marginBottom: 0 }}>
-                      {product.product_name} 📦 {product.product_code}
+                      {product.productName} 📦
                     </h5>
-                    {/* <Badge
-                      bg={getBadgeColor(product.product_type)}
-                      style={{
-                        fontSize: "13px",
-                        padding: "4px 12px 8px 12px",
-                        fontWeight: 500,
-                        borderRadius: "6px",
-                      }}
-                    >
-                      Loại: {product.product_type}
-                    </Badge> */}
                   </div>
                 </div>
 
@@ -604,7 +633,11 @@ export default function ProductList() {
                         Box size: <br />
                       </small>{" "}
                       <strong>
-                        {product.length}×{product.width}×{product.height} cm
+                        {product.productLength}×{product.productWidth}
+                        {product.productHeight == 0
+                          ? ""
+                          : `x${product.productHeight}`}{" "}
+                        cm
                       </strong>
                     </div>
                   </Col>
@@ -620,7 +653,7 @@ export default function ProductList() {
                       <small style={{ color: "#6b7280" }}>
                         Type: <br />
                       </small>{" "}
-                      <strong>{product.product_type}</strong>
+                      <strong>{product.productType}</strong>
                     </div>
                   </Col>
                   <Col xs={12} sm={4}>
@@ -635,7 +668,7 @@ export default function ProductList() {
                       <small style={{ color: "#6b7280" }}>
                         Customer: <br />
                       </small>{" "}
-                      <strong>{product.customer_code}</strong>
+                      <strong>{product.customerCode}</strong>
                     </div>
                   </Col>
                 </Row>
@@ -645,21 +678,21 @@ export default function ProductList() {
                   <Button
                     variant="outline-secondary"
                     size="sm"
-                    onClick={() => toggleCollapse(product.unique_id)}
+                    onClick={() => toggleCollapse(product._id)}
                   >
-                    Hiển thị mã hàng ({product.item_codes.length}){" "}
+                    Hiển thị mã hàng ({product.wareCodes?.length ?? 0}){" "}
                     <i
                       className={`bi ${
-                        openIds.includes(product.unique_id)
+                        openIds.includes(product._id)
                           ? "bi-chevron-up"
                           : "bi-chevron-down"
                       }`}
                     ></i>
                   </Button>
 
-                  <Collapse in={openIds.includes(product.unique_id)}>
+                  <Collapse in={openIds.includes(product._id)}>
                     <div style={{ marginTop: "10px" }}>
-                      {product.item_codes.map((item) => (
+                      {(product.wareCodes ?? []).map((item) => (
                         <div
                           key={item.id}
                           style={{
@@ -667,57 +700,87 @@ export default function ProductList() {
                             padding: "8px 12px",
                             borderRadius: "8px",
                             marginTop: "6px",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
                           }}
                         >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              // justifyContent: "space-between",
-                              gap: "15px",
-                            }}
-                          >
+                          <div>
                             <div
                               style={{
-                                fontSize: "13px",
-                                fontWeight: 600,
-                                color: "#1f2937",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "15px",
                               }}
                             >
-                              {item.product_code}
+                              <div
+                                style={{
+                                  fontSize: "13px",
+                                  fontWeight: 600,
+                                  color: "#1f2937",
+                                }}
+                              >
+                                {item.wareCode}
+                              </div>
+                              <Badge
+                                bg={getUsageBadgeVariant(item.wareUsageType)}
+                              >
+                                {item.wareUsageType}
+                              </Badge>
                             </div>
-                            <Badge bg={getUsageBadgeVariant(item.usage_type)}>
-                              {item.usage_type}
-                            </Badge>
+                            <div style={{ fontSize: "12px" }}>
+                              Kích thước: {item.wareLength}×{item.wareWidth}
+                              {item.wareHeight ? `×${item.wareHeight}` : ""} mm
+                              | Sóng:{" "}
+                              <span
+                                style={{
+                                  fontSize: "12px",
+                                  fontWeight: "500",
+                                  color: "blue",
+                                }}
+                              >
+                                {item.fluteCombination}
+                              </span>{" "}
+                              | Khổ giấy:{" "}
+                              <span
+                                style={{
+                                  fontSize: "12px",
+                                  fontWeight: "500",
+                                  color: "red",
+                                  textDecoration: "underline",
+                                }}
+                              >
+                                {item.paperSize}
+                              </span>
+                            </div>
                           </div>
-                          <div style={{ fontSize: "12px" }}>
-                            Kích thước: {item.length}×{item.width_panel_flap}×
-                            {item.height} mm | Sóng:{" "}
-                            <span
-                              style={{
-                                fontSize: "12px",
-                                fontWeight: "500",
-                                color: "blue",
-                              }}
-                            >
-                              {item.wave_type}
-                            </span>{" "}
-                            | Khổ giấy:{" "}
-                            <span
-                              style={{
-                                fontSize: "12px",
-                                fontWeight: "500",
-                                color: "red",
-                                textDecoration: "underline",
-                              }}
-                            >
-                              {item.paper_size}
-                            </span>
-                          </div>
+                          {/* Nút Xóa Mã Hàng */}
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation(); // Ngăn chặn toggleCollapse
+                              handleRemoveItemCode(
+                                product._id,
+                                item.id,
+                                item.wareCode
+                              );
+                            }}
+                            style={{
+                              width: "30px",
+                              height: "30px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: "50%",
+                              flexShrink: 0,
+                            }}
+                            title="Xóa mã hàng này"
+                          >
+                            <i className="bi bi-trash3"></i>
+                          </Button>
                         </div>
                       ))}
-
-                      {/* Add New Item Button */}
                       <Button
                         variant="outline-success"
                         size="sm"
@@ -726,7 +789,7 @@ export default function ProductList() {
                           width: "100%",
                           borderStyle: "dashed",
                         }}
-                        onClick={() => handleShowModal(product.unique_id)}
+                        onClick={() => handleShowAddItemCodeModal(product)}
                       >
                         <i className="bi bi-plus-circle me-2"></i>
                         Thêm mã hàng mới
@@ -740,163 +803,158 @@ export default function ProductList() {
         </Card>
       ))}
 
-      {/* Modal for Adding Item Codes */}
-      <Modal
-        show={showModal}
-        onHide={handleCloseModal}
-        size="lg"
-        centered
-        // container={document.querySelector(".bootstrap-scope")}
-        container={containerEl}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Thêm mã hàng</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {/* Search Input */}
-          <Form.Group className="mb-3">
-            <Form.Label>Mã Hàng</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="Nhập mã hàng để tìm kiếm..."
-              value={modalSearchTerm}
-              onChange={(e) => setModalSearchTerm(e.target.value)}
-            />
-          </Form.Group>
+      {!isFetching && products.length === 0 && !fetchError && (
+        <div className="text-muted">
+          Không có sản phẩm phù hợp với bộ lọc hiện tại.
+        </div>
+      )}
 
-          {/* Results List */}
-          <div
-            style={{
-              maxHeight: "400px",
-              overflowY: "auto",
-              border: "1px solid #e5e7eb",
-              borderRadius: "8px",
-              padding: "10px",
-            }}
-          >
-            {filteredModalItems.length > 0 ? (
-              filteredModalItems.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => setSelectedItemId(item.id)}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor =
-                      item.id === selectedItemId ? "#000" : "#000";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor =
-                      item.id === selectedItemId ? "#000" : "#e5e7eb";
-                  }}
-                  style={{
-                    background: "#f9fafb",
-                    padding: "15px",
-                    borderRadius: "8px",
-                    marginBottom: "10px",
-                    border:
-                      item.id === selectedItemId
-                        ? "2px solid #000"
-                        : "1px solid #e5e7eb",
-                    cursor: "pointer",
-                    transition: "border-color 0.2s ease",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 600,
-                        color: "#1f2937",
-                      }}
-                    >
-                      {item.product_code}
-                    </div>
-                    <Badge bg={getUsageBadgeVariant(item.usage_type)}>
-                      {item.usage_type}
-                    </Badge>
-                  </div>
-                  <Row style={{ fontSize: "13px", color: "#4b5563" }}>
-                    <Col xs={12} md={6}>
-                      <div className="mb-2">
-                        <strong>Khách Hàng:</strong> {item.customer}
-                      </div>
-                      <div className="mb-2">
-                        <strong>Kích Thước (DxRxC):</strong> {item.length}×
-                        {item.width_panel_flap}
-                        {item.height ? `×${item.height}` : ""}
-                      </div>
-                    </Col>
-                    <Col xs={12} md={6}>
-                      <div className="mb-2">
-                        <strong>Sóng:</strong>{" "}
-                        <span style={{ color: "blue", fontWeight: 500 }}>
-                          {item.production_type}
-                        </span>
-                      </div>
-                      <div className="mb-2">
-                        <strong>Khổ Giấy:</strong>{" "}
-                        <span style={{ color: "red", fontWeight: 500 }}>
-                          {item.paper_size}
-                        </span>
-                      </div>
-                      <div className="mb-2">
-                        <strong>Loại Chế Biến:</strong> {item.processing_type}
-                      </div>
-                    </Col>
-                  </Row>
-                </div>
-              ))
-            ) : (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "40px",
-                  color: "#9ca3af",
-                }}
+      {/* ---------------------------------------- */}
+      {/* 💡 PHÂN TRANG THEO MẪU CỦA BẠN */}
+      {/* ---------------------------------------- */}
+      {totalItems > 0 && (
+        <div
+          className="d-flex justify-content-start align-items-center mt-4"
+          style={{
+            // Đảm bảo nó không bị quá to khi màn hình nhỏ
+            width: "100%",
+            maxWidth: "800px",
+            margin: "0 auto",
+          }}
+        >
+          <div className="d-flex align-items-center gap-4">
+            {/* 1. Rows per page */}
+            <div className="d-flex align-items-center gap-2">
+              <Form.Label
+                className="mb-0 text-muted"
+                style={{ fontSize: "0.9rem" }}
               >
-                <i
-                  className="bi bi-inbox"
-                  style={{ fontSize: "48px", marginBottom: "10px" }}
-                ></i>
-                <div>Không tìm thấy mã hàng phù hợp</div>
-              </div>
-            )}
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Hủy bỏ
-          </Button>
-          <Button
-            variant="dark"
-            disabled={!selectedItemId}
-            onClick={handleAddItemCodeToProduct}
-          >
-            Thêm
-          </Button>
-        </Modal.Footer>
-      </Modal>
+                Rows per page
+              </Form.Label>
+              <Form.Select
+                style={{
+                  width: "80px",
+                  height: "40px",
+                  borderRadius: "8px",
+                  backgroundColor: "#fff",
+                  padding: "6px 10px",
+                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+                }}
+                value={limit}
+                onChange={(e) => handleLimitChange(Number(e.target.value))}
+                disabled={isFetching}
+              >
+                {limitOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </Form.Select>
+            </div>
 
-      {/* Modal thêm sản phẩm */}
+            {/* 2. Range Display */}
+            <span
+              className="text-muted"
+              style={{
+                fontWeight: 500,
+                whiteSpace: "nowrap",
+                fontSize: "0.9rem",
+              }}
+            >
+              {rangeDisplay}
+            </span>
+          </div>
+
+          {/* 3. Buttons */}
+          <div className="d-flex gap-2 ms-4">
+            {/* First Page button (|<) */}
+            <Button
+              variant="light"
+              disabled={!hasPrevPage || isFetching}
+              onClick={() => handlePageChange(1)}
+              style={{
+                borderRadius: "8px",
+                width: "40px",
+                height: "40px",
+                padding: 0,
+                backgroundColor: "#f1f1f1", // Màu xám nhạt
+                border: "none",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+              }}
+            >
+              <i className="bi bi-chevron-bar-left"></i>
+            </Button>
+
+            {/* Previous Page button (<) */}
+            <Button
+              variant="light"
+              disabled={!hasPrevPage || isFetching}
+              onClick={() => handlePageChange(currentPage - 1)}
+              style={{
+                borderRadius: "8px",
+                width: "40px",
+                height: "40px",
+                padding: 0,
+                backgroundColor: "#f1f1f1",
+                border: "none",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+              }}
+            >
+              <i className="bi bi-chevron-left"></i>
+            </Button>
+
+            {/* Next Page button (>) */}
+            <Button
+              variant="light"
+              disabled={!hasNextPage || isFetching}
+              onClick={() => handlePageChange(currentPage + 1)}
+              style={{
+                borderRadius: "8px",
+                width: "40px",
+                height: "40px",
+                padding: 0,
+                backgroundColor: "#f1f1f1",
+                border: "none",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+              }}
+            >
+              <i className="bi bi-chevron-right"></i>
+            </Button>
+
+            {/* Last Page button (>|) */}
+            <Button
+              variant="light"
+              disabled={!hasNextPage || isFetching}
+              onClick={() => handlePageChange(totalPages)}
+              style={{
+                borderRadius: "8px",
+                width: "40px",
+                height: "40px",
+                padding: 0,
+                backgroundColor: "#f1f1f1",
+                border: "none",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+              }}
+            >
+              <i className="bi bi-chevron-bar-right"></i>
+            </Button>
+          </div>
+        </div>
+      )}
+      {/* ---------------------------------------- */}
+
+      {/* Modal thêm sản phẩm (Modal chính) và Modal Thêm Mã Hàng (Modal phụ) (Giữ nguyên) */}
+      {/* ... */}
       <Modal
         show={!!editingProduct}
         onHide={handleCloseProductModal}
         size="lg"
         centered
-        // container={document.querySelector(".bootstrap-scope")}
         container={containerEl}
       >
         <Modal.Header closeButton>
           <Modal.Title>
-            {editingProduct?.unique_id
-              ? "Cập nhật sản phẩm"
-              : "Thêm sản phẩm mới"}
+            {editingProduct?._id ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}
           </Modal.Title>
         </Modal.Header>
 
@@ -910,11 +968,11 @@ export default function ProductList() {
                     <Form.Label>Mã sản phẩm</Form.Label>
                     <Form.Control
                       type="text"
-                      value={editingProduct.product_code}
+                      value={editingProduct.id}
                       onChange={(e) =>
                         setEditingProduct({
                           ...editingProduct,
-                          product_code: e.target.value,
+                          id: e.target.value,
                         })
                       }
                       placeholder="VD: VN-BOX-999"
@@ -926,11 +984,11 @@ export default function ProductList() {
                     <Form.Label>Mã khách hàng</Form.Label>
                     <Form.Control
                       type="text"
-                      value={editingProduct.customer_code}
+                      value={editingProduct.customerCode}
                       onChange={(e) =>
                         setEditingProduct({
                           ...editingProduct,
-                          customer_code: e.target.value,
+                          customerCode: e.target.value,
                         })
                       }
                       placeholder="VD: AROMA"
@@ -941,11 +999,11 @@ export default function ProductList() {
                   <Form.Group>
                     <Form.Label>Loại sản phẩm</Form.Label>
                     <Form.Select
-                      value={editingProduct.product_type}
+                      value={editingProduct.productType}
                       onChange={(e) =>
                         setEditingProduct({
                           ...editingProduct,
-                          product_type: e.target.value,
+                          productType: e.target.value,
                         })
                       }
                     >
@@ -961,11 +1019,11 @@ export default function ProductList() {
                 <Form.Label>Tên sản phẩm</Form.Label>
                 <Form.Control
                   type="text"
-                  value={editingProduct.product_name}
+                  value={editingProduct.productName}
                   onChange={(e) =>
                     setEditingProduct({
                       ...editingProduct,
-                      product_name: e.target.value,
+                      productName: e.target.value,
                     })
                   }
                   placeholder="VD: Thùng carton 5 lớp Aroma"
@@ -990,32 +1048,34 @@ export default function ProductList() {
 
               {/* --- Kích thước & loại sản phẩm --- */}
               <Row className="mb-3">
-                {["length", "width", "height"].map((field, idx) => (
-                  <Col md={4} key={idx}>
-                    <Form.Group>
-                      <Form.Label>
-                        {field === "length"
-                          ? "Chiều dài (mm)"
-                          : field === "width"
-                          ? "Chiều rộng (mm)"
-                          : "Chiều cao (mm)"}
-                      </Form.Label>
-                      <Form.Control
-                        type="number"
-                        value={editingProduct[field]}
-                        onChange={(e) =>
-                          setEditingProduct({
-                            ...editingProduct,
-                            [field]: e.target.value,
-                          })
-                        }
-                      />
-                    </Form.Group>
-                  </Col>
-                ))}
+                {["productLength", "productWidth", "productHeight"].map(
+                  (field, idx) => (
+                    <Col md={4} key={idx}>
+                      <Form.Group>
+                        <Form.Label>
+                          {field === "productLength"
+                            ? "Chiều dài (cm)"
+                            : field === "productWidth"
+                            ? "Chiều rộng (mm)"
+                            : "Chiều cao (mm)"}
+                        </Form.Label>
+                        <Form.Control
+                          type="number"
+                          value={editingProduct[field]}
+                          onChange={(e) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              [field]: e.target.value,
+                            })
+                          }
+                        />
+                      </Form.Group>
+                    </Col>
+                  )
+                )}
               </Row>
 
-              {/* --- Chọn mã hàng (card style) --- */}
+              {/* --- Chọn mã hàng (card style) - Đã khôi phục logic ban đầu --- */}
               <hr />
               <Form.Group className="mb-3">
                 <Form.Label className="fw-bold fs-6">Chọn mã hàng</Form.Label>
@@ -1034,95 +1094,81 @@ export default function ProductList() {
                   padding: "6px 4px",
                 }}
               >
-                {availableItemCodes
-                  .filter((item) =>
-                    item.product_code
-                      .toLowerCase()
-                      .includes(modalSearchTerm.toLowerCase())
-                  )
-                  .map((item) => {
-                    const isSelected = editingProduct.item_codes.some(
-                      (i) => i.id === item.id
-                    );
-                    return (
-                      <Card
-                        key={item.id}
-                        className={`mb-2 shadow-sm ${
-                          isSelected ? "border-dark border-2" : ""
-                        }`}
-                        style={{
-                          cursor: "pointer",
-                          borderRadius: "10px",
-                          transition: "all 0.2s ease",
-                          border: isSelected
-                            ? "2px solid #000"
-                            : "1px solid #e5e7eb",
-                          position: "relative",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isSelected) {
-                            // e.currentTarget.style.borderColor = "#007bff";
-                            e.currentTarget.style.boxShadow =
-                              "0 4px 12px rgba(0, 123, 255, 0.25)";
-                            e.currentTarget.style.transform =
-                              "translateY(-2px)";
-                            e.currentTarget.style.zIndex = "10";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isSelected) {
-                            e.currentTarget.style.borderColor = "#e5e7eb";
-                            e.currentTarget.style.boxShadow = "";
-                            e.currentTarget.style.transform = "translateY(0)";
-                            e.currentTarget.style.zIndex = "1";
-                          }
-                        }}
-                        onClick={() => {
-                          let updated = editingProduct.item_codes || [];
-                          updated = isSelected
-                            ? updated.filter((i) => i.id !== item.id)
-                            : [...updated, item];
-                          setEditingProduct({
-                            ...editingProduct,
-                            item_codes: updated,
-                          });
-                        }}
-                      >
-                        <Card.Body className="py-2 px-3">
+                {/* 🚨 Logic đã khôi phục */}
+                {filteredModalItems.map((item) => {
+                  const isSelected = (editingProduct.wareCodes || []).some(
+                    (i) => i.id === item.id
+                  );
+                  return (
+                    <Card
+                      key={item.id}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.zIndex = "10";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = "#e5e7eb";
+                        e.currentTarget.style.boxShadow = "";
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.zIndex = "1";
+                      }}
+                      style={{
+                        background: isSelected ? "#e6f7ff" : "#f9fafb",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        marginBottom: "10px",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        boxShadow: isSelected
+                          ? "0 4px 8px rgba(0, 0, 0, 0.1)"
+                          : "none",
+                      }}
+                      onClick={() => {
+                        let updated = editingProduct.wareCodes || [];
+                        updated = isSelected
+                          ? updated.filter((i) => i.id !== item.id)
+                          : [...updated, item];
+                        setEditingProduct({
+                          ...editingProduct,
+                          wareCodes: updated,
+                        });
+                      }}
+                    >
+                      <Card.Body className="py-2 px-3">
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                          }}
+                        >
                           <div
                             style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              color: "#1f2937",
                             }}
                           >
-                            <div
-                              style={{
-                                fontSize: "14px",
-                                fontWeight: 600,
-                                color: "#1f2937",
-                              }}
-                            >
-                              {item.product_code}
-                            </div>
-                            <Badge bg={getUsageBadgeVariant(item.usage_type)}>
-                              {item.usage_type}
-                            </Badge>
+                            {item.wareCode}
                           </div>
-                          <div style={{ fontSize: "13px", color: "#6c757d" }}>
-                            Khách hàng: {item.customer} | Sóng:{" "}
-                            <span className="text-primary fw-semibold">
-                              {item.production_type}
-                            </span>{" "}
-                            | Khổ giấy:{" "}
-                            <span className="text-danger fw-semibold">
-                              {item.paper_size}
-                            </span>
-                          </div>
-                        </Card.Body>
-                      </Card>
-                    );
-                  })}
+                          <Badge bg={getUsageBadgeVariant(item.wareUsageType)}>
+                            {item.wareUsageType}
+                          </Badge>
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#6c757d" }}>
+                          Khách hàng: {item.customerCode} | Sóng:{" "}
+                          <span className="text-primary fw-semibold">
+                            {item.fluteCombination}
+                          </span>{" "}
+                          | Khổ giấy:{" "}
+                          <span className="text-danger fw-semibold">
+                            {item.paperSize}
+                          </span>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  );
+                })}
               </div>
             </Form>
           )}
@@ -1132,8 +1178,161 @@ export default function ProductList() {
           <Button variant="secondary" onClick={handleCloseProductModal}>
             Hủy
           </Button>
-          <Button variant="dark" onClick={handleSaveProduct}>
-            {editingProduct?.unique_id ? "Cập nhật" : "Lưu sản phẩm"}
+          <Button
+            variant="dark"
+            onClick={handleSaveProduct}
+            disabled={isMutating}
+          >
+            {editingProduct?._id ? "Cập nhật" : "Lưu sản phẩm"}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal Thêm Mã Hàng (Modal phụ - giữ nguyên logic) */}
+      <Modal
+        show={showAddItemCodeModal}
+        onHide={handleCloseAddItemCodeModal}
+        size="lg"
+        centered
+        container={containerEl}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Thêm Mã Hàng</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {/* Search Input */}
+          <Form.Group className="mb-3">
+            {/* <Form.Label>Mã Hàng (Mã đã có sẽ không hiển thị)</Form.Label> */}
+            <Form.Label>Mã Hàng (Mã đã có sẽ không hiển thị)</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="Nhập mã hàng để tìm kiếm..."
+              value={modalSearchTerm}
+              onChange={(e) => setModalSearchTerm(e.target.value)}
+            />
+          </Form.Group>
+
+          {/* Results List */}
+          <div
+            style={{
+              maxHeight: "400px",
+              overflowY: "auto",
+              border: "1px solid #e5e7eb",
+              borderRadius: "8px",
+              padding: "10px",
+            }}
+          >
+            {filteredAddItemCodeModalItems.length > 0 ? (
+              filteredAddItemCodeModalItems.map((item) => {
+                const isSelected = item.id === selectedItemCodeId;
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleSelectItemCode(item.id)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.zIndex = "10";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = "#e5e7eb";
+                      e.currentTarget.style.boxShadow = "";
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.zIndex = "1";
+                    }}
+                    style={{
+                      background: isSelected ? "#e6f7ff" : "#f9fafb",
+                      padding: "15px",
+                      borderRadius: "8px",
+                      marginBottom: "10px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      boxShadow: isSelected
+                        ? "0 4px 8px rgba(0, 0, 0, 0.1)"
+                        : "none",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#1f2937",
+                        }}
+                      >
+                        {item.wareCode}
+                      </div>
+                      <Badge bg={getUsageBadgeVariant(item.wareUsageType)}>
+                        {item.wareUsageType}
+                      </Badge>
+                    </div>
+                    <Row style={{ fontSize: "13px", color: "#4b5563" }}>
+                      <Col xs={12} md={6}>
+                        <div className="mb-2">
+                          <strong>Khách Hàng:</strong> {item.customerCode}
+                        </div>
+                        <div className="mb-2">
+                          <strong>Kích Thước (DxRxC):</strong> {item.wareLength}
+                          ×{item.wareWidth}
+                          {item.wareHeight ? `×${item.wareHeight}` : ""}
+                        </div>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <div className="mb-2">
+                          <strong>Sóng:</strong>{" "}
+                          <span style={{ color: "blue", fontWeight: 500 }}>
+                            {item.fluteCombination}
+                          </span>
+                        </div>
+                        <div className="mb-2">
+                          <strong>Khổ Giấy:</strong>{" "}
+                          <span style={{ color: "red", fontWeight: 500 }}>
+                            {item.paperSize}
+                          </span>
+                        </div>
+                        <div className="mb-2">
+                          <strong>Loại Chế Biến:</strong> {item.processingType}
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                );
+              })
+            ) : (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "40px",
+                  color: "#9ca3af",
+                }}
+              >
+                <i
+                  className="bi bi-inbox"
+                  style={{ fontSize: "48px", marginBottom: "10px" }}
+                ></i>
+                <div>
+                  Không tìm thấy mã hàng phù hợp hoặc tất cả đã được thêm.
+                </div>
+              </div>
+            )}
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseAddItemCodeModal}>
+            Hủy bỏ
+          </Button>
+          <Button
+            variant="dark"
+            disabled={!selectedItemCodeId || isUpdating}
+            onClick={handleAddItemCodeToProduct}
+          >
+            {isUpdating ? "Đang thêm..." : "Thêm"}
           </Button>
         </Modal.Footer>
       </Modal>
