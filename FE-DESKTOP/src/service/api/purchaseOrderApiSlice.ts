@@ -1,48 +1,24 @@
 import { apiSlice } from "./apiSlice";
-import { PURCHASE_ORDER_URL, USE_MOCK_DATA } from "../constants";
+import { PURCHASE_ORDER_URL } from "../constants";
 import { mockPurchaseOrdersQuery } from "../mock-data/functions/mock-purchase-orders-crud";
-import { PaginatedList, QueryResponse } from "@/types/DTO/Response";
 import { PurchaseOrder } from "@/types/PurchaseOrder";
+import { createApiEndpoint } from "@/utils/endpointFactory";
+import { PageResponse } from "@/types/DTO/PageResponse";
 
 export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getPurchaseOrders: builder.query<
-      PaginatedList<Serialized<PurchaseOrder>>,
+    getPurchaseOrders: createApiEndpoint<
+      PageResponse<Serialized<PurchaseOrder>>,
       { page: number; limit: number }
-    >({
-      ...(USE_MOCK_DATA
-        ? {
-          queryFn: async (
-            { page, limit }: { page: number; limit: number },
-          ): Promise<
-            QueryResponse<PaginatedList<Serialized<PurchaseOrder>>>
-          > => {
-            try {
-              const data = await mockPurchaseOrdersQuery({
-                page,
-                limit,
-              });
-              return {
-                data,
-              };
-            } catch (err) {
-              return {
-                error: {
-                  status: "CUSTOM_ERROR",
-                  error: (err as Error).message,
-                },
-              };
-            }
-          },
-        }
-        : {
-          query: ({ page = 1, limit = 20 }) => ({
-            url: `${PURCHASE_ORDER_URL}/`,
-            method: "GET",
-            params: { page, limit },
-            credentials: "include",
-          }),
-        }),
+    >(builder, {
+      query: ({ page, limit }) => ({
+        url: `${PURCHASE_ORDER_URL}/`,
+        method: "GET",
+        params: { page, limit },
+        credentials: "include",
+      }),
+      mockFn: ({ page = 1, limit = 20 }) =>
+        mockPurchaseOrdersQuery({ page, limit }),
     }),
   }),
 });

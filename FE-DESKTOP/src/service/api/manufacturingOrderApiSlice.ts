@@ -36,47 +36,6 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
       mockFn: ({ page = 1, limit = 20 }) =>
         mockManufacturingOrderQuery({ page, limit }),
     }),
-    /*
-    getFullDetailManufacturingOrders: builder.query<
-      PageResponse<Serialized<ManufacturingOrder>>,
-      { page: number; limit: number }
-    >({
-      ...(USE_MOCK_DATA
-        ? {
-          queryFn: async (
-            { page, limit }: { page: number; limit: number },
-          ): Promise<
-            MockResponse<PageResponse<Serialized<ManufacturingOrder>>>
-          > => {
-            try {
-              const data = await mockFullDetailManufacturingOrderQuery({
-                page,
-                limit,
-              });
-
-              return {
-                data,
-              };
-            } catch (err) {
-              return {
-                error: {
-                  status: "CUSTOM_ERROR",
-                  error: (err as Error).message,
-                },
-              };
-            }
-          },
-        }
-        : {
-          query: ({ page = 1, limit = 20 }) => ({
-            url: `${MANUFACTURING_ORDER_URL}/query/full-details`,
-            method: "GET",
-            params: { page, limit },
-            credentials: "include",
-          }),
-        }),
-    }),
-  */
   }),
 });
 
