@@ -4,86 +4,37 @@ import {
   mockWaresQuery,
   mockWaresQueryByCodes,
 } from "../mock-data/functions/mock-catalog-crud";
-import { PaginatedList, QueryResponse } from "@/types/DTO/Response";
 import { Ware } from "@/types/Ware";
+import { createApiEndpoint } from "@/utils/endpointFactory";
+import { PageResponse } from "@/types/DTO/PageResponse";
 
 export const wareApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getWares: builder.query({
-      ...(USE_MOCK_DATA
-        ? {
-          queryFn: async (
-            { page, limit }: { page: number; limit: number },
-          ): Promise<
-            QueryResponse<PaginatedList<Ware>>
-          > => {
-            try {
-              const data = await mockWaresQuery({
-                page,
-                limit,
-              });
-              return {
-                data,
-              };
-            } catch (err) {
-              return {
-                error: {
-                  status: "CUSTOM_ERROR",
-                  error: (err as Error).message,
-                },
-              };
-            }
-          },
-        }
-        : {
-          query: ({ page = 1, limit = 20 }) => ({
-            url: `${WARE_URL}/`,
-            method: "GET",
-            params: { page, limit },
-            credentials: "include",
-          }),
-        }),
+    getWares: createApiEndpoint<
+      PageResponse<Serialized<Ware>>,
+      { page: number; limit: number }
+    >(builder, {
+      query: ({ page, limit }) => ({
+        url: `${WARE_URL}/`,
+        method: "GET",
+        params: { page, limit },
+        credentials: "include",
+      }),
+      mockFn: ({ page = 1, limit = 20 }) => mockWaresQuery({ page, limit }),
     }),
 
-    getWaresByCodes: builder.query({
-      ...(USE_MOCK_DATA
-        ? {
-          queryFn: async (
-            { page, limit, codes }: {
-              page: number;
-              limit: number;
-              codes: string[];
-            },
-          ): Promise<
-            QueryResponse<PaginatedList<Ware>>
-          > => {
-            try {
-              const data = await mockWaresQueryByCodes({
-                page,
-                limit,
-                codes,
-              });
-              return {
-                data,
-              };
-            } catch (err) {
-              return {
-                error: {
-                  status: "CUSTOM_ERROR",
-                  error: (err as Error).message,
-                },
-              };
-            }
-          },
-        }
-        : {
-          query: ({ codes = [], page = 1, limit = 20 }) => ({
-            url: `${WARE_URL}/`,
-            method: "GET",
-            params: { codes, page, limit },
-            credentials: "include",
-          }),
-        }),
+    getWaresByCodes: createApiEndpoint<
+      PageResponse<Serialized<Ware>>,
+      { page: number; limit: number; codes: string[] }
+    >(builder, {
+      query: ({ page, limit, codes }) => ({
+        url: `${WARE_URL}/codes`,
+        method: "GET",
+        params: { page, limit, codes },
+        credentials: "include",
+      }),
+      mockFn: ({ page = 1, limit = 20, codes }) =>
+        mockWaresQueryByCodes({ page, limit, codes }),
     }),
   }),
 });

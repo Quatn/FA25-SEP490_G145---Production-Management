@@ -31,7 +31,7 @@ const pageOptions = createListCollection({
 });
 
 export default function ManufacturingOrderPagination() {
-  const { limit } = useManufacturingTableState();
+  const { page, limit, totalItems } = useManufacturingTableState();
   const dispatch = useManufacturingTableDispatch();
 
   const pageSizeSelect = (e: SelectValueChangeDetails) => {
@@ -44,10 +44,11 @@ export default function ManufacturingOrderPagination() {
   return (
     <HStack>
       <Pagination.Root
-        count={200}
-        pageSize={10}
-        defaultPage={1}
+        count={totalItems}
+        page={page}
+        pageSize={limit}
         siblingCount={2}
+        onPageChange={(e) => dispatch({ type: "SET_PAGE", payload: e.page })}
       >
         <ButtonGroup variant="ghost" size="sm">
           <Pagination.PrevTrigger asChild>

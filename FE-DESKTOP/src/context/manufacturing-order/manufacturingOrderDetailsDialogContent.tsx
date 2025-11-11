@@ -1,10 +1,10 @@
 "use client";
-import { FullDetailManufacturingOrderDTO } from "@/types/DTO/FullDetailManufactureOrder";
+import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { UseDisclosureProps } from "@chakra-ui/react";
 import React, { createContext, Dispatch, useContext, useReducer } from "react";
 
 interface DialogState extends UseDisclosureProps {
-  order: Serialized<FullDetailManufacturingOrderDTO> | null;
+  order: Serialized<ManufacturingOrder> | null;
 }
 
 type DialogAction =
@@ -13,9 +13,9 @@ type DialogAction =
   | { type: "CLOSE_DIALOG" }
   | {
     type: "OPEN_DIALOG_WITH_ORDER";
-    payload: Serialized<FullDetailManufacturingOrderDTO>;
+    payload: Serialized<ManufacturingOrder>;
   }
-  | { type: "SET_ORDER"; payload: Serialized<FullDetailManufacturingOrderDTO> }
+  | { type: "SET_ORDER"; payload: Serialized<ManufacturingOrder> }
   | { type: "RESET" };
 
 const DialogStateContext = createContext<DialogState | undefined>(undefined);

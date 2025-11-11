@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { ManufacturingOrderService } from "./manufacturing-order.service";
 import { ApiExtraModels, ApiOperation } from "@nestjs/swagger";
 import { BaseResponse } from "@/common/dto/response.dto";
@@ -13,6 +13,7 @@ import {
 } from "./dto/query-list.dto";
 import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
 import { ApiResponseWith } from "@/common/decorators/swagger-response-docs";
+import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 
 @Controller("manufacturing-order")
 // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -51,6 +52,7 @@ export class ManufacturingOrderController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Get("query/full-details")
   @ApiOperation({ summary: "Query fully populated manufacturing orders" })
   // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger

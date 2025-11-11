@@ -12,6 +12,7 @@ import { DatabaseModule } from "./database/database.module";
 import { CommonServicesModule } from "./common/services/services.module";
 import { ProductionModule } from './modules/production/production.module';
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
+import { PaperTypeModule } from "./modules/warehouse/paper-type/paper-type.module";
 
 @ApiBearerAuth("access-token")
 @Module({
@@ -28,6 +29,7 @@ import { WarehouseModule } from './modules/warehouse/warehouse.module';
     UserModule,
     ProductionModule,
     WarehouseModule,
+    PaperTypeModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],

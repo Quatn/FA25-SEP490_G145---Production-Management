@@ -24,6 +24,7 @@ import check from "check-types";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { manufacturingOrderTableColumnsByTabs } from "./tableDefinition";
 import { useOptionalManufacturingDialogDispatch } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
+import { useEffect } from "react";
 
 const items = [
   { id: 1, name: "Laptop", category: "Electronics", price: 999.99 },
@@ -65,7 +66,14 @@ export default function ManufacturingOrderTable(
 
   console.log(fullDetailMOPaginatedResponse);
 
-  const moList = fullDetailMOPaginatedResponse?.data;
+  const moPaginatedList = fullDetailMOPaginatedResponse?.data;
+
+  useEffect(() => {
+    dispatch({
+      type: "SET_TOTAL_ITEMS",
+      payload: moPaginatedList ? moPaginatedList.totalItems : 0,
+    });
+  }, [dispatch, moPaginatedList, moPaginatedList?.totalItems]);
 
   if (isFetchingList) {
     return <Text>Loading table</Text>;
@@ -75,7 +83,7 @@ export default function ManufacturingOrderTable(
     return <Text>{JSON.stringify(fetchError)}</Text>;
   }
 
-  if (check.undefined(moList)) {
+  if (check.undefined(moPaginatedList)) {
     return <Text>Unable to load table</Text>;
   }
 
@@ -187,13 +195,13 @@ export default function ManufacturingOrderTable(
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {moList.map((item) => (
+            {moPaginatedList.data.map((item) => (
               <Table.Row
-                key={item.id}
+                key={item._id}
                 bg={"gray.50"}
                 h="50px"
                 onMouseEnter={() =>
-                  dispatch({ type: "SET_HOVERED_ROW_ID", payload: item.id })}
+                  dispatch({ type: "SET_HOVERED_ROW_ID", payload: item._id })}
                 onMouseLeave={() =>
                   dispatch({ type: "SET_HOVERED_ROW_ID", payload: null })}
               >
@@ -216,7 +224,7 @@ export default function ManufacturingOrderTable(
                   border="none"
                   bg="none"
                 >
-                  {hoveredRowId === item.id && (
+                  {hoveredRowId === item._id && (
                     <>
                       {dialogDispatch &&
                         (

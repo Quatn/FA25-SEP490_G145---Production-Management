@@ -22,6 +22,7 @@ type PaginationType =
 interface TableState {
   page: number;
   limit: number;
+  totalItems: number;
   search: string;
   tab: TabType;
   hoveredRowId: string | null;
@@ -34,6 +35,7 @@ interface TableState {
 type TableAction =
   | { type: "SET_PAGE"; payload: number }
   | { type: "SET_LIMIT"; payload: number }
+  | { type: "SET_TOTAL_ITEMS"; payload: number }
   | { type: "SET_SEARCH"; payload: string }
   | { type: "SET_TAB"; payload: TabType }
   | { type: "SET_HOVERED_ROW_ID"; payload: string | null }
@@ -48,6 +50,7 @@ type TableAction =
 const initialState: TableState = {
   page: 1,
   limit: 20,
+  totalItems: 0,
   search: "",
   tab: "order",
   hoveredRowId: null,
@@ -63,6 +66,8 @@ function tableReducer(state: TableState, action: TableAction): TableState {
       return { ...state, page: action.payload };
     case "SET_LIMIT":
       return { ...state, limit: action.payload };
+    case "SET_TOTAL_ITEMS":
+      return { ...state, totalItems: action.payload };
     case "SET_SEARCH":
       return { ...state, search: action.payload };
     case "SET_TAB":

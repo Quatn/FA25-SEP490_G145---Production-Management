@@ -12,6 +12,7 @@ import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
 import { PurchaseOrderItemSchema } from "../schemas/purchase-order-item.schema";
 import { SubPurchaseOrderSchema } from "../schemas/sub-purchase-order.schema";
 import { PurchaseOrderSchema } from "../schemas/purchase-order.schema";
+import { Ware, WareSchema } from "../schemas/ware.schema";
 
 @Injectable()
 export class ManufacturingOrderService {
@@ -79,6 +80,8 @@ export class ManufacturingOrderService {
     const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
     const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
     const warePath = PurchaseOrderItemSchema.path("ware");
+    const fluteCombinationPath = WareSchema.path("fluteCombination");
+    const finishingProcessesPath = WareSchema.path("finishingProcesses");
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
     const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
@@ -86,7 +89,10 @@ export class ManufacturingOrderService {
     const populate = {
       path: poiPath.path,
       populate: [
-        { path: warePath.path },
+        {
+          path: warePath.path,
+          populate: [fluteCombinationPath, finishingProcessesPath],
+        },
         {
           path: subpoPath.path,
           populate: [
