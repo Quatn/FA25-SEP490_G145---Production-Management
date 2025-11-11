@@ -1,4 +1,4 @@
-import { PurchaseOrder } from "./PurchaseOrder";
+import { PurchaseOrderItem } from "./PurchaseOrderItem";
 
 export interface ManufacturingOrder extends BaseSchema {
   code: string;
@@ -9,5 +9,5 @@ export interface ManufacturingOrder extends BaseSchema {
   manufacturingDirective: string | null;
   note: string;
 
-  purchaseOrderItem?: PurchaseOrder;
+  purchaseOrderItem?: PurchaseOrderItem;
 }

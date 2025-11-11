@@ -1,5 +1,5 @@
 import { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
-import { FullDetailManufacturingOrderDTO } from "@/types/DTO/FullDetailManufactureOrder";
+import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
 import check from "check-types";
 
@@ -7,7 +7,7 @@ export type ManufacturingOrderTableColumnsType = {
   key: string;
   header: string;
   render: (
-    order: Serialized<FullDetailManufacturingOrderDTO>,
+    order: Serialized<ManufacturingOrder>,
   ) => string | number | null | undefined;
 };
 
@@ -16,114 +16,151 @@ export const manufacturingOrderTableColumns:
     {
       key: "customerCode",
       header: "Khách hàng",
-      render: (order) => order.customerCode,
+      render: (order) =>
+        order.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.customer
+          ?.code,
     },
-    { key: "wareCode", header: "Mã hàng", render: (order) => order.wareCode },
+    {
+      key: "wareCode",
+      header: "Mã hàng",
+      render: (order) => order.purchaseOrderItem?.ware?.code,
+    },
     {
       key: "fluteCombo",
       header: "Sóng",
-      render: (order) => order.fluteCombinationCode,
+      render: (order) => order.purchaseOrderItem?.ware?.fluteCombination?.code,
     },
     {
       key: "wareWidth",
       header: "Dài / Khổ",
-      render: (order) => order.wareWidth,
+      render: (order) => order.purchaseOrderItem?.ware?.wareWidth,
     },
-    { key: "wareLength", header: "Rộng", render: (order) => order.wareLength },
-    { key: "wareHeight", header: "Cao", render: (order) => order.wareHeight },
-    { key: "amount", header: "Số lượng", render: (order) => order.amount },
+    {
+      key: "wareLength",
+      header: "Rộng",
+      render: (order) => order.purchaseOrderItem?.ware?.wareLength,
+    },
+    {
+      key: "wareHeight",
+      header: "Cao",
+      render: (order) => order.purchaseOrderItem?.ware?.wareHeight,
+    },
+    {
+      key: "amount",
+      header: "Số lượng",
+      render: (order) => order.purchaseOrderItem?.amount,
+    },
     {
       key: "orderDate",
       header: "Ngày nhận",
-      render: (order) => formatDateToDDMMYYYY(order.orderDate),
+      render: (order) =>
+        formatDateToDDMMYYYY(
+          order.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.orderDate,
+        ),
     },
     {
       key: "deliveryDate",
       header: "Ngày giao",
-      render: (order) => formatDateToDDMMYYYY(order.deliveryDate),
+      render: (order) =>
+        formatDateToDDMMYYYY(
+          order.purchaseOrderItem?.subPurchaseOrder?.deliveryDate,
+        ),
     },
     {
-      key: "purchaseOrderId",
+      key: "purchaseOrderCode",
       header: "Đơn hàng",
-      render: (order) => order.purchaseOrderId,
+      render: (order) =>
+        order.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.code,
     },
-    { key: "blankWidth", header: "Khổ", render: (order) => order.blankWidth },
+    {
+      key: "blankWidth",
+      header: "Khổ",
+      render: (order) => order.purchaseOrderItem?.ware?.blankWidth,
+    },
     {
       key: "blankLength",
       header: "Cắt dài",
-      render: (order) => order.blankLength,
+      render: (order) => order.purchaseOrderItem?.ware?.blankLength,
     },
-    { key: "flapLength", header: "Cánh", render: (order) => order.flapLength },
+    {
+      key: "flapLength",
+      header: "Cánh",
+      render: (order) => order.purchaseOrderItem?.ware?.flapLength,
+    },
     {
       key: "warePerBlank",
       header: "Số SP",
-      render: (order) => order.warePerBlank,
+      render: (order) => order.purchaseOrderItem?.ware?.warePerBlank,
     },
     {
       key: "numberOfBlanks",
       header: "Số tấm",
-      render: (order) => order.numberOfBlanks,
+      render: (order) => order.purchaseOrderItem?.numberOfBlanks,
     },
     {
       key: "longitudinalCutCount",
       header: "Tấm chặt",
-      render: (order) => order.longitudinalCutCount,
+      render: (order) => order.purchaseOrderItem?.longitudinalCutCount,
     },
     {
       key: "runningLength",
       header: "Mét dài",
-      render: (order) => order.runningLength,
+      render: (order) => order.purchaseOrderItem?.runningLength,
     },
     {
       key: "crossCutCount",
       header: "Part SX",
-      render: (order) => order.crossCutCount,
+      render: (order) => order.purchaseOrderItem?.ware?.crossCutCount,
     },
     {
       key: "paperWidth",
       header: "Khổ giấy",
-      render: (order) => order.paperWidth,
+      render: (order) => order.purchaseOrderItem?.ware?.paperWidth,
     },
-    { key: "margin", header: "Lề biên", render: (order) => order.margin },
+    {
+      key: "margin",
+      header: "Lề biên",
+      render: (order) => order.purchaseOrderItem?.ware?.margin,
+    },
     {
       key: "faceLayerPaperType",
       header: "Mặt SP",
-      render: (order) => order.faceLayerPaperType,
+      render: (order) => order.purchaseOrderItem?.ware?.faceLayerPaperType,
     },
     {
       key: "EFlutePaperType",
       header: "Sóng E",
-      render: (order) => order.EFlutePaperType,
+      render: (order) => order.purchaseOrderItem?.ware?.EFlutePaperType,
     },
     {
       key: "EBLinerLayerPaperType",
       header: "Lớp giữa",
-      render: (order) => order.EBLinerLayerPaperType,
+      render: (order) => order.purchaseOrderItem?.ware?.EBLinerLayerPaperType,
     },
     {
       key: "BFlutePaperType",
       header: "Sóng B",
-      render: (order) => order.BFlutePaperType,
+      render: (order) => order.purchaseOrderItem?.ware?.BFlutePaperType,
     },
     {
       key: "BACLinerLayerPaperType",
       header: "Lớp giữa",
-      render: (order) => order.BACLinerLayerPaperType,
+      render: (order) => order.purchaseOrderItem?.ware?.BACLinerLayerPaperType,
     },
     {
       key: "ACFlutePaperType",
       header: "Sóng A/C",
-      render: (order) => order.ACFlutePaperType,
+      render: (order) => order.purchaseOrderItem?.ware?.ACFlutePaperType,
     },
     {
       key: "backLayerPaperType",
       header: "Mặt trong",
-      render: (order) => order.backLayerPaperType,
+      render: (order) => order.purchaseOrderItem?.ware?.backLayerPaperType,
     },
     {
       key: "purchaseOrderItemNote",
       header: "Ghi chú cố định",
-      render: (order) => order.purchaseOrderItemNote,
+      render: (order) => order.purchaseOrderItem?.note,
     },
     { key: "note", header: "Ghi chú tạm thời", render: (order) => order.note },
     {
@@ -144,92 +181,63 @@ export const manufacturingOrderTableColumns:
     {
       key: "faceLayerPaperWeight",
       header: "Mặt SP",
-      render: (order) => order.faceLayerPaperWeight,
+      render: (order) => order.purchaseOrderItem?.faceLayerPaperWeight,
     },
     {
       key: "EFlutePaperWeight",
       header: "Sóng E",
-      render: (order) => order.EFlutePaperWeight,
+      render: (order) => order.purchaseOrderItem?.EFlutePaperWeight,
     },
     {
       key: "EBLinerLayerPaperWeight",
       header: "Lớp giữa",
-      render: (order) => order.EBLinerLayerPaperWeight,
+      render: (order) => order.purchaseOrderItem?.EBLinerLayerPaperWeight,
     },
     {
       key: "BFlutePaperWeight",
       header: "Sóng B",
-      render: (order) => order.BFlutePaperWeight,
+      render: (order) => order.purchaseOrderItem?.BFlutePaperWeight,
     },
     {
       key: "BACLinerLayerPaperWeight",
       header: "Lớp giữa",
-      render: (order) => order.BACLinerLayerPaperWeight,
+      render: (order) => order.purchaseOrderItem?.BACLinerLayerPaperWeight,
     },
     {
       key: "ACFlutePaperWeight",
       header: "Sóng A/C",
-      render: (order) => order.ACFlutePaperWeight,
+      render: (order) => order.purchaseOrderItem?.ACFlutePaperWeight,
     },
     {
       key: "backLayerPaperWeight",
       header: "Mặt trong",
-      render: (order) => order.backLayerPaperWeight,
+      render: (order) => order.purchaseOrderItem?.backLayerPaperWeight,
     },
     {
       key: "totalVolume",
       header: "Khối",
-      render: (order) => order.totalVolume,
+      render: (order) => order.purchaseOrderItem?.totalVolume,
     },
     {
       key: "totalWeight",
       header: "Tổng trọng lượng",
-      render: (order) => order.totalWeight,
+      render: (order) => order.purchaseOrderItem?.totalWeight,
     },
     {
       key: "typeOfPrinter",
       header: "Máy In",
-      render: (order) => order.typeOfPrinter,
+      render: (order) => order.purchaseOrderItem?.ware?.typeOfPrinter,
     },
     {
-      key: "printColor1",
-      header: "Màu 1",
-      render: (order) => order.printColors?.at(0),
+      key: "printColors",
+      header: "Màu In",
+      render: (order) => order.purchaseOrderItem?.ware?.printColors?.join(", "),
     },
     {
-      key: "printColor2",
-      header: "Màu 2",
-      render: (order) => order.printColors?.at(1),
-    },
-    {
-      key: "printColor3",
-      header: "Màu 3",
-      render: (order) => order.printColors?.at(2),
-    },
-    {
-      key: "printColor4",
-      header: "Màu 4",
-      render: (order) => order.printColors?.at(3),
-    },
-    {
-      key: "process1",
-      header: "Công đoạn gia công 1",
-      render: (order) => order.manufacturingProcesses?.at(1),
-    },
-    {
-      key: "process2",
-      header: "Công đoạn gia công 2",
-      render: (order) => order.manufacturingProcesses?.at(2),
-    },
-    {
-      key: "process3",
-      header: "Công đoạn gia công 3",
-      render: (order) => order.manufacturingProcesses?.at(3),
-    },
-    {
-      key: "process4",
-      header: "Công đoạn gia công 4",
-      render: (order) => order.manufacturingProcesses?.at(4),
+      key: "processes",
+      header: "Công đoạn gia công",
+      render: (order) =>
+        order.purchaseOrderItem?.ware?.finishingProcesses?.map(c => c.name).join(", "),
     },
   ];
 
@@ -254,7 +262,7 @@ export const manufacturingOrderTableColumnsByTabs: Record<
     check.in(col.key, [
       "orderDate",
       "deliveryDate",
-      "purchaseOrderId",
+      "purchaseOrderCode",
       "blankWidth",
       "blankLength",
       "flapLength",
@@ -303,14 +311,8 @@ export const manufacturingOrderTableColumnsByTabs: Record<
   processes: manufacturingOrderTableColumns.filter((col) =>
     check.in(col.key, [
       "typeOfPrinter",
-      "printColor1",
-      "printColor2",
-      "printColor3",
-      "printColor4",
-      "process1",
-      "process2",
-      "process3",
-      "process4",
+      "printColors",
+      "processes",
     ])
   ),
 };

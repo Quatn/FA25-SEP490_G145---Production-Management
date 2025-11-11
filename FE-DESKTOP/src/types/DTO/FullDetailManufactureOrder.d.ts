@@ -2,6 +2,7 @@ import { ManufacturingOrder } from "../ManufacturingOrder";
 import { PurchaseOrderItem } from "../PurchaseOrderItem";
 import { Ware } from "../Ware";
 
+/* DEPRECATED, DO NOT USE */
 export interface FullDetailManufacturingOrderDTO
   extends
   ManufacturingOrder,

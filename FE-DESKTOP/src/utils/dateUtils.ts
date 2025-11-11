@@ -1,7 +1,11 @@
 import check from "check-types";
 
-export function formatDateToDDMMYYYY(date: Date | string) {
-  const d = (check.date(date)) ? date : new Date(date);
+export function formatDateToDDMMYYYY(date: Date | string | null | undefined) {
+  if (!check.assigned(date)) {
+    return "";
+  }
+
+  const d = (check.date(date)) ? date : new Date(date as string);
 
   if (!check.date(d)) {
     return "";

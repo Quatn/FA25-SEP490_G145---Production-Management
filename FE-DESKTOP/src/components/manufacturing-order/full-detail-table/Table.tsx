@@ -65,7 +65,7 @@ export default function ManufacturingOrderTable(
 
   console.log(fullDetailMOPaginatedResponse);
 
-  const moList = fullDetailMOPaginatedResponse?.data;
+  const moPaginatedList = fullDetailMOPaginatedResponse?.data;
 
   if (isFetchingList) {
     return <Text>Loading table</Text>;
@@ -75,7 +75,7 @@ export default function ManufacturingOrderTable(
     return <Text>{JSON.stringify(fetchError)}</Text>;
   }
 
-  if (check.undefined(moList)) {
+  if (check.undefined(moPaginatedList)) {
     return <Text>Unable to load table</Text>;
   }
 
@@ -187,13 +187,13 @@ export default function ManufacturingOrderTable(
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {moList.map((item) => (
+            {moPaginatedList.data.map((item) => (
               <Table.Row
-                key={item.id}
+                key={item._id}
                 bg={"gray.50"}
                 h="50px"
                 onMouseEnter={() =>
-                  dispatch({ type: "SET_HOVERED_ROW_ID", payload: item.id })}
+                  dispatch({ type: "SET_HOVERED_ROW_ID", payload: item._id })}
                 onMouseLeave={() =>
                   dispatch({ type: "SET_HOVERED_ROW_ID", payload: null })}
               >
@@ -216,7 +216,7 @@ export default function ManufacturingOrderTable(
                   border="none"
                   bg="none"
                 >
-                  {hoveredRowId === item.id && (
+                  {hoveredRowId === item._id && (
                     <>
                       {dialogDispatch &&
                         (
