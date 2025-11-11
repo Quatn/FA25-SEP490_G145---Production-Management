@@ -1,5 +1,5 @@
 export type PaperCatalog = {
     _id?: { $oid: string, },
-    paperSupplier: { $oid: string, },
-    PaperSpecification: { $oid: string, },
+    paperSupplierId: { $oid: string, },
+    paperTypeId: { $oid: string, },
 };

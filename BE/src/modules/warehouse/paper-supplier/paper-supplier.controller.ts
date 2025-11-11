@@ -28,6 +28,18 @@ export class PaperSupplierController {
     }
 
     // @UseGuards(JwtAuthGuard)
+    @Get("list-all")
+    @ApiOperation({ summary: "List paper suppliers" })
+    async findAll(): Promise<BaseResponse<PaperSupplierDocument[]>> {
+        const docs = await this.psService.findAll();
+        return {
+            success: true,
+            message: "Fetch successful",
+            data: docs,
+        };
+    }
+
+    // @UseGuards(JwtAuthGuard)
     @Get("detail/:id")
     @ApiOperation({ summary: "Paper supplier detail" })
     async findOne(@Param("id") id: string): Promise<BaseResponse<PaperSupplierDocument>> {

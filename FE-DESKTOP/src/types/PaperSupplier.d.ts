@@ -1,5 +1,5 @@
 export type PaperSupplier = {
-  _id?: { $oid: string, },
+  _id?: string, 
   code: string,
   name: string,
   phone?: string,

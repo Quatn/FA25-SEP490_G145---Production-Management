@@ -28,6 +28,18 @@ export class PaperColorController {
     }
 
     // @UseGuards(JwtAuthGuard)
+    @Get("list-all")
+    @ApiOperation({ summary: "List paper colors" })
+    async findAll(): Promise<BaseResponse<PaperColorDocument[]>> {
+        const docs = await this.pcService.findAll();
+        return {
+            success: true,
+            message: "Fetch successful",
+            data: docs,
+        };
+    }
+
+    // @UseGuards(JwtAuthGuard)
     @Get("detail/:id")
     @ApiOperation({ summary: "Paper color detail" })
     async findOne(@Param("id") id: string): Promise<BaseResponse<PaperColorDocument>> {

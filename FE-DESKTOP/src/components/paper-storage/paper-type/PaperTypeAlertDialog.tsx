@@ -1,35 +1,39 @@
 import { useState, useEffect } from "react";
 import { Box, Button, CloseButton, Dialog, Field, Flex, Input, Portal } from "@chakra-ui/react"
-import { PaperColor } from "@/types/PaperColor";
+import { PaperType } from "@/types/PaperType";
 
-interface PaperColorAlertDialogProps {
+interface PaperTypeAlertDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: PaperColor;
-    onDelete: (data: PaperColor) => void;
+    initialData?: PaperType;
+    onDelete: (data: PaperType) => void;
 }
 
-const PaperColorAlertDialog: React.FC<PaperColorAlertDialogProps> = ({
+const PaperTypeAlertDialog: React.FC<PaperTypeAlertDialogProps> = ({
     isOpen,
     onClose,
     initialData,
     onDelete,
 }) => {
 
-    const [color, setColor] = useState<PaperColor>({
-        _id: "",
-        code: "",
-        title: "",
+    const [type, setType] = useState<PaperType>({
+        paperColor: { _id: '' , code: '', title: '' },
+        width: 0,
+        grammage: 0,
     });
 
     const handleSubmit = () => {
-        onDelete(color);
+        onDelete(type);
         onClose();
     };
 
     useEffect(() => {
         if (isOpen) {
-            setColor(initialData ?? { _id: "", code: "", title: "" });
+            setType(initialData ?? {
+                paperColor: { _id:'' , code: '', title: '' },
+                width: 0,
+                grammage: 0,
+            });
         }
     }, [isOpen, initialData]);
 
@@ -40,11 +44,11 @@ const PaperColorAlertDialog: React.FC<PaperColorAlertDialogProps> = ({
                 <Dialog.Positioner>
                     <Dialog.Content>
                         <Dialog.Header>
-                            <Dialog.Title>Xác Nhận Xóa Màu Giấy</Dialog.Title>
+                            <Dialog.Title>Xác Nhận Xóa Loại Giấy</Dialog.Title>
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
-                                Xóa Màu Giấy {color.code} - {color.title}?
+                                Xóa Loại Giấy {type.paperColor.code}/{type.width}/{type.grammage}?
                             </p>
                         </Dialog.Body>
                         <Dialog.Footer>
@@ -63,4 +67,4 @@ const PaperColorAlertDialog: React.FC<PaperColorAlertDialogProps> = ({
     );
 };
 
-export default PaperColorAlertDialog;
+export default PaperTypeAlertDialog;

@@ -54,7 +54,7 @@ const PaperSupplierTable = ({
 
                 <Table.Body>
                     {suppliers.map((supplier, index) => (
-                        <Table.Row key={supplier._id?.$oid ?? index}>
+                        <Table.Row key={supplier._id ?? index}>
                             <Table.Cell textAlign="center">{(page - 1) * limit + index + 1}</Table.Cell>
                             <Table.Cell>{supplier.code}</Table.Cell>
                             <Table.Cell>{supplier.name}</Table.Cell>

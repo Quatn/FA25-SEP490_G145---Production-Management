@@ -20,6 +20,7 @@ const PaperColorFormDialog: React.FC<PaperColorFormDialogProps> = ({
     onUpdate,
 }) => {
     const [color, setColor] = useState<PaperColor>({
+        _id: "",
         code: "",
         title: "",
     });
@@ -60,7 +61,7 @@ const PaperColorFormDialog: React.FC<PaperColorFormDialogProps> = ({
         if (isOpen) {
 
             setColor({
-                _id: initialData?._id ?? undefined,
+                _id: initialData?._id ?? "",
                 code: initialData?.code ?? "",
                 title: initialData?.title ?? "",
             });
@@ -79,6 +80,7 @@ const PaperColorFormDialog: React.FC<PaperColorFormDialogProps> = ({
         if (isCodeValid && isNameValid) {
             !!initialData ? onUpdate(color) : onAdd(color);
             if (!!!initialData) setColor({
+                _id: "",
                 code: "",
                 title: "",
             });

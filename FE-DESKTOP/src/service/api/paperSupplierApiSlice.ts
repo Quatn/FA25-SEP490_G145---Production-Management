@@ -1,10 +1,20 @@
 import { apiSlice } from "./apiSlice";
-import { BaseResponse, PaginatedList} from "@/types/DTO/Response";
+import { BaseResponse, PaginatedList } from "@/types/DTO/Response";
 import { PaperSupplier } from "@/types/PaperSupplier";
 import { PAPER_SUPPLIER_URL } from "../constants";
 
 export const paperSupplierApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
+
+        getAllPaperSuppliers: builder.query<PaperSupplier[], void>({
+            query: () => ({
+                url: `${PAPER_SUPPLIER_URL}/list-all`,
+                method: "GET",
+                credentials: "include",
+            }),
+            providesTags: ["PaperSupplier"],
+        }),
+
         getPaperSupplier: builder.query<BaseResponse<PaginatedList<PaperSupplier>>, { page?: number; limit?: number, search?: string }>(
             {
                 query: ({ page = 1, limit = 10, search = '' }) => ({
@@ -48,6 +58,7 @@ export const paperSupplierApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
+    useGetAllPaperSuppliersQuery,
     useAddPaperSupplierMutation,
     useGetPaperSupplierQuery,
     useUpdatePaperSupplierMutation,

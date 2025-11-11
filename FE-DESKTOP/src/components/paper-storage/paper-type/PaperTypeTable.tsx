@@ -1,25 +1,24 @@
 import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
-import { Tooltip } from "@/components/ui/tooltip"
 import { FaEdit } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
-import { PaperColor } from "@/types/PaperColor";
-import PaperColorDetailDialog from "./PaperColorDetailDialog";
+import { PaperType } from "@/types/PaperType";
+import PaperTypeDetailDialog from "./PaperTypeDetailDialog";
 
-interface PaperColorTableProps {
+interface PaperTypeTableProps {
     page: number;
     limit: number;
-    colors: PaperColor[];
-    onEdit: (color: PaperColor) => void;
-    onDelete: (color: PaperColor) => void;
+    types: PaperType[];
+    onEdit: (color: PaperType) => void;
+    onDelete: (color: PaperType) => void;
 }
 
-const PaperColorTable = ({
+const PaperTypeTable = ({
     page,
     limit,
-    colors,
+    types,
     onEdit,
     onDelete,
-}: PaperColorTableProps) => {
+}: PaperTypeTableProps) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
@@ -41,8 +40,10 @@ const PaperColorTable = ({
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
-                        <Table.ColumnHeader>Mã Màu Giấy</Table.ColumnHeader>
-                        <Table.ColumnHeader>Tiêu Đề Màu Giấy</Table.ColumnHeader>
+                        <Table.ColumnHeader>Mã Loại Giấy</Table.ColumnHeader>
+                        <Table.ColumnHeader>Màu Giấy</Table.ColumnHeader>
+                        <Table.ColumnHeader>Khổ Giấy</Table.ColumnHeader>
+                        <Table.ColumnHeader>Định lượng</Table.ColumnHeader>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             Thao tác
                         </Table.ColumnHeader>
@@ -50,21 +51,22 @@ const PaperColorTable = ({
                 </Table.Header>
 
                 <Table.Body>
-                    {colors.map((color, index) => (
-                        <Table.Row key={color._id ?? index}>
+                    {types.map((type, index) => (
+                        <Table.Row key={type._id ?? index}>
                             <Table.Cell textAlign="center">{(page - 1) * limit + index + 1}</Table.Cell>
-                            <Table.Cell>{color.code}</Table.Cell>
-                            <Table.Cell>{color.title}</Table.Cell>
-
+                            <Table.Cell>{type.paperColor.code}/{type.width}/{type.grammage}</Table.Cell>
+                            <Table.Cell>{type.paperColor.title}</Table.Cell>
+                            <Table.Cell>{type.width}</Table.Cell>
+                            <Table.Cell>{type.grammage}</Table.Cell>
                             <Table.Cell>
                                 <Group gap={5}>
-                                    <PaperColorDetailDialog
-                                        color={color}
+                                    <PaperTypeDetailDialog
+                                        type={type}
                                     />
                                     <Button
                                         variant="surface"
                                         colorPalette="yellow"
-                                        onClick={() => onEdit(color)}
+                                        onClick={() => onEdit(type)}
                                     >
                                         <Icon>
                                             <FaEdit />
@@ -74,7 +76,7 @@ const PaperColorTable = ({
                                     <Button
                                         variant="surface"
                                         colorPalette="red"
-                                        onClick={() => onDelete(color)}
+                                        onClick={() => onDelete(type)}
                                     >
                                         <Icon>
                                             <FaTrashCan />
@@ -91,4 +93,4 @@ const PaperColorTable = ({
     );
 };
 
-export default PaperColorTable;
+export default PaperTypeTable;

@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PaperSupplier, PaperSupplierDocument } from '../schemas/paper-supplier.schema';
-import { Model } from 'mongoose';
-import { InjectModel } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { CreatePaperSupplierRequestDto } from './dto/create-paper-supplier-request.dto';
 import { UpdatePaperSupplierRequestDto } from './dto/update-paper-supplier-request.dto';
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
@@ -13,7 +13,48 @@ export class PaperSupplierService {
     constructor(
         @InjectModel(PaperSupplier.name)
         private readonly paperSupplierModel: Model<PaperSupplier>,
+        @InjectConnection() private readonly connection: Connection,
     ) { }
+
+    async checkDuplicates(dto: CreatePaperSupplierRequestDto | UpdatePaperSupplierRequestDto) {
+        const duplicates = await this.paperSupplierModel.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { code: dto.code },
+                        { name: dto.name },
+                        { email: dto.email },
+                        { phone: dto.phone },
+                        { bankAccount: dto.bankAccount },
+                    ],
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    code: 1,
+                    name: 1,
+                    email: 1,
+                    phone: 1,
+                    bankAccount: 1,
+                },
+            },
+        ]);
+
+        if (duplicates.length > 0) {
+            const duplicateFields: string[] = [];
+            duplicates.forEach((d) => {
+                if (d.code === dto.code) duplicateFields.push('Mã nhà giấy');
+                if (d.name === dto.name) duplicateFields.push('Tên nhà giấy');
+                if (d.email && d.email === dto.email) duplicateFields.push('Email');
+                if (d.phone && d.phone === dto.phone) duplicateFields.push('Số điện thoại');
+                if (d.bankAccount && d.bankAccount === dto.bankAccount) duplicateFields.push('Tài khoản ngân hàng');
+            });
+            throw new BadRequestException(
+                `Trùng lặp giá trị ở các trường: ${duplicateFields.join(', ')}`,
+            );
+        }
+    }
 
     async findPaginated(page = 1, limit = 10, search?: string) {
         const skip = (page - 1) * limit;
@@ -49,47 +90,28 @@ export class PaperSupplierService {
         };
     }
 
+    async findAll() {
+        return await this.paperSupplierModel.find();
+    }
+
     async findOne(id: string) {
         const supplier = await this.paperSupplierModel.findById(id);
         if (!supplier) throw new NotFoundException("Paper supplier not found");
         return supplier;
     }
 
-    async createOne(dto: CreatePaperSupplierRequestDto): Promise<PaperSupplierDocument> {
-        try {
-            const doc = new this.paperSupplierModel(dto);
-            return await doc.save();
-        } catch (err: any) {
-            if (err.code === 11000 && err.keyValue) {
-                const field = Object.keys(err.keyValue)[0];
-                const value = err.keyValue[field];
-                let message = '';
-
-                if (field === 'code') {
-                    message = `Mã nhà giấy "${value}" đã tồn tại.`;
-                } else {
-                    message = `Giá trị "${value}" ở trường "${field}" đã tồn tại.`;
-                }
-
-                throw new BadRequestException(message);
-            }
-            throw err;
-        }
+    async createOne(dto: CreatePaperSupplierRequestDto) {
+        await this.checkDuplicates(dto);
+        const doc = new this.paperSupplierModel(dto);
+        return doc.save();
     }
 
     async updateOne(id: string, dto: UpdatePaperSupplierRequestDto): Promise<PaperSupplierDocument> {
-        try {
-            const updated = await this.paperSupplierModel.findByIdAndUpdate(id, dto, { new: true });
-            if (!updated) throw new NotFoundException('Paper supplier not found');
-            return updated;
-        } catch (err: any) {
-            if (err.code === 11000) {
-                const field = Object.keys(err.keyValue)[0];
-                const value = err.keyValue[field];
-                throw new BadRequestException(`Giá trị "${value}" ở trường "${field}" đã tồn tại.`);
-            }
-            throw err;
-        }
+
+        await this.checkDuplicates(dto);
+        const updated = await this.paperSupplierModel.findByIdAndUpdate(id, dto, { new: true });
+        if (!updated) throw new NotFoundException('Paper supplier not found');
+        return updated;
     }
 
     async softDelete(id: string) {

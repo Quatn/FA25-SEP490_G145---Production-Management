@@ -15,6 +15,37 @@ export class PaperColorService {
         private readonly paperColorModel: Model<PaperColor>,
     ) { }
 
+    async checkDuplicates(dto: CreatePaperColorRequestDto | UpdatePaperColorRequestDto) {
+        const duplicates = await this.paperColorModel.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { code: dto.code },
+                        { title: dto.title },
+                    ],
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    code: 1,
+                    title: 1,
+                },
+            },
+        ]);
+
+        if (duplicates.length > 0) {
+            const duplicateFields: string[] = [];
+            duplicates.forEach((d) => {
+                if (d.code === dto.code) duplicateFields.push('Mã màu giấy');
+                if (d.title === dto.title) duplicateFields.push('Tiêu đề màu giấy');
+            });
+            throw new BadRequestException(
+                `Trùng lặp giá trị ở các trường: ${duplicateFields.join(', ')}`,
+            );
+        }
+    }
+
     async findPaginated(page = 1, limit = 10, search?: string) {
         const skip = (page - 1) * limit;
 
@@ -46,10 +77,14 @@ export class PaperColorService {
         };
     }
 
+    async findAll() {
+        return await this.paperColorModel.find();
+    }
+
     async findOne(id: string) {
-        const supplier = await this.paperColorModel.findById(id);
-        if (!supplier) throw new NotFoundException("Paper supplier not found");
-        return supplier;
+        const color = await this.paperColorModel.findById(id);
+        if (!color) throw new NotFoundException("Paper color not found");
+        return color;
     }
 
     async createOne(dto: CreatePaperColorRequestDto): Promise<PaperColorDocument> {
@@ -98,16 +133,16 @@ export class PaperColorService {
     }
 
     async softDelete(id: string) {
-        const supplier = await this.paperColorModel.findById(id) as SoftPaperColor;
-        if (!supplier) throw new NotFoundException("Paper color not found");
-        await supplier.softDelete();
+        const color = await this.paperColorModel.findById(id) as SoftPaperColor;
+        if (!color) throw new NotFoundException("Paper color not found");
+        await color.softDelete();
         return { success: true };
     }
 
     async restore(id: string) {
-        const supplier = await this.paperColorModel.findById(id) as SoftPaperColor;
-        if (!supplier) throw new NotFoundException("Paper color not found");
-        await supplier.restore();
+        const color = await this.paperColorModel.findById(id) as SoftPaperColor;
+        if (!color) throw new NotFoundException("Paper color not found");
+        await color.restore();
         return { success: true };
     }
 
