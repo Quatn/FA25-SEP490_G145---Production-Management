@@ -24,6 +24,7 @@ import check from "check-types";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { manufacturingOrderTableColumnsByTabs } from "./tableDefinition";
 import { useOptionalManufacturingDialogDispatch } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
+import { useEffect } from "react";
 
 const items = [
   { id: 1, name: "Laptop", category: "Electronics", price: 999.99 },
@@ -66,6 +67,13 @@ export default function ManufacturingOrderTable(
   console.log(fullDetailMOPaginatedResponse);
 
   const moPaginatedList = fullDetailMOPaginatedResponse?.data;
+
+  useEffect(() => {
+    dispatch({
+      type: "SET_TOTAL_ITEMS",
+      payload: moPaginatedList ? moPaginatedList.totalItems : 0,
+    });
+  }, [dispatch, moPaginatedList, moPaginatedList?.totalItems]);
 
   if (isFetchingList) {
     return <Text>Loading table</Text>;
