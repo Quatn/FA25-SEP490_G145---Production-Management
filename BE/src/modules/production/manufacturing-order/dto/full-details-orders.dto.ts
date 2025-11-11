@@ -7,10 +7,11 @@ import { PurchaseOrder } from "../../schemas/purchase-order.schema";
 import { Customer } from "../../schemas/customer.schema";
 import { isRefPopulated } from "@/common/utils/populate-check";
 import { Product } from "../../schemas/product.schema";
+import { FluteCombination } from "../../schemas/flute-combination.schema";
+import { WareFinishingProcessType } from "../../schemas/ware-finishing-process-type.schema";
 
 // Change the ref fields from id or object (unpopulated or populated) to just object since you are supposed to populate all of the full detail dto's fields
 class PopulatedPurchaseOrder extends PurchaseOrder {
-  @ApiProperty()
   @ApiProperty({ type: Customer, description: "Populated customer" })
   declare customer: Customer;
 
@@ -23,6 +24,33 @@ class PopulatedPurchaseOrder extends PurchaseOrder {
     super();
     Object.assign(this, order);
     this.customer = order.customer as Customer;
+  }
+}
+
+class PopulatedWare extends Ware {
+  @ApiProperty({
+    type: FluteCombination,
+    description: "Populated fluteCombination",
+  })
+  declare fluteCombination: FluteCombination;
+
+  @ApiProperty({
+    type: Array<WareFinishingProcessType>,
+    description: "Populated fluteCombination",
+  })
+  declare finishingProcesses: WareFinishingProcessType[];
+
+  constructor(ware: Ware) {
+    if (!isRefPopulated(ware.fluteCombination)) {
+      throw Error(
+        "mo.purchaseOrderItem.ware.fluteCombination must be populated in order to be used in FullDetailManufacturingOrderDto",
+      );
+    }
+    super();
+    Object.assign(this, ware);
+    this.fluteCombination = ware.fluteCombination as FluteCombination;
+    this.finishingProcesses =
+      ware.finishingProcesses as WareFinishingProcessType[];
   }
 }
 
@@ -67,10 +95,10 @@ class PopulatedPurchaseOrderItem extends PurchaseOrderItem {
   declare subPurchaseOrder: PopulatedSubPurchaseOrder;
 
   @ApiProperty({
-    type: Ware,
+    type: PopulatedWare,
     description: "Populated ware",
   })
-  declare ware: Ware;
+  declare ware: PopulatedWare;
 
   constructor(order: PurchaseOrderItem) {
     if (!isRefPopulated(order.subPurchaseOrder)) {
@@ -88,7 +116,7 @@ class PopulatedPurchaseOrderItem extends PurchaseOrderItem {
     this.subPurchaseOrder = new PopulatedSubPurchaseOrder(
       order.subPurchaseOrder as SubPurchaseOrder,
     );
-    this.ware = order.ware as Ware;
+    this.ware = new PopulatedWare(order.ware as Ware);
   }
 }
 
