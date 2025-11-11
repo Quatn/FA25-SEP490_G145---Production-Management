@@ -8,6 +8,8 @@ import {
   QueryListPurchaseOrderRequestDto,
   QueryListPurchaseOrderResponseDto,
 } from "./dto/query-list.dto";
+import { PaginatedList } from "@/common/dto/paginated-list.dto";
+import { QueryOrdersWithUnmanufacturedItemsDto } from "./dto/query-orders-with-unmanufactured-items.dto";
 
 @Controller("purchase-order")
 // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -30,13 +32,14 @@ export class PurchaseOrderController {
     };
   }
 
-
   @Get("query/not-fully-scheduled")
   @ApiOperation({ summary: "Query purchase order items" })
   @ApiResponseWith(PurchaseOrder, { paginated: true })
   async queryOrdersWithUnmanufacturedItems(
     @Query() query: QueryListPurchaseOrderRequestDto,
-  ): Promise<QueryListPurchaseOrderResponseDto> {
+  ): Promise<
+    BaseResponse<PaginatedList<QueryOrdersWithUnmanufacturedItemsDto>>
+  > {
     const docs = await this.poService.queryOrdersWithUnmanufacturedItems(query);
     return {
       success: true,
