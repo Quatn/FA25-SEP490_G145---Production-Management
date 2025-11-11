@@ -96,7 +96,7 @@ export class PaperTypeController {
 
     // @UseGuards(JwtAuthGuard)
     @Delete("delete-soft/:id")
-    @ApiOperation({ summary: "Soft delete paper Type" })
+    @ApiOperation({ summary: "Soft delete paper type" })
     async softDelete(
         @Param("id") id: string,
     ): Promise<BaseResponse<null>> {
@@ -110,7 +110,7 @@ export class PaperTypeController {
 
     // @UseGuards(JwtAuthGuard)
     @Patch("restore/:id")
-    @ApiOperation({ summary: "Restore paper Type" })
+    @ApiOperation({ summary: "Restore paper type" })
     async restore(
         @Param("id") id: string,
     ): Promise<BaseResponse<null>> {
@@ -124,7 +124,7 @@ export class PaperTypeController {
 
     // @UseGuards(JwtAuthGuard)
     @Delete("delete-hard/:id")
-    @ApiOperation({ summary: "Hard delete paper Type" })
+    @ApiOperation({ summary: "Hard delete paper type" })
     async hardDelete(
         @Param("id") id: string,
     ): Promise<BaseResponse<null>> {

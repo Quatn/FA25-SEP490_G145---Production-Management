@@ -54,8 +54,8 @@ const PaperTypeTable = ({
                     {types.map((type, index) => (
                         <Table.Row key={type._id ?? index}>
                             <Table.Cell textAlign="center">{(page - 1) * limit + index + 1}</Table.Cell>
-                            <Table.Cell>{type.paperColor.code}/{type.width}/{type.grammage}</Table.Cell>
-                            <Table.Cell>{type.paperColor.title}</Table.Cell>
+                            <Table.Cell>{type.paperColor?.code}/{type.width}/{type.grammage}</Table.Cell>
+                            <Table.Cell>{type.paperColor?.title}</Table.Cell>
                             <Table.Cell>{type.width}</Table.Cell>
                             <Table.Cell>{type.grammage}</Table.Cell>
                             <Table.Cell>

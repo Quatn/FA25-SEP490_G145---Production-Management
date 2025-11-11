@@ -5,7 +5,6 @@ import { Connection, Model } from 'mongoose';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { CreatePaperTypeRequestDto } from './dto/create-paper-type-request.dto';
 import { UpdatePaperTypeRequestDto } from './dto/update-paper-type-request.dto';
-import { PaperColor } from '../schemas/paper-color.schema';
 
 type SoftPaperType = PaperType & SoftDeleteDocument;
 

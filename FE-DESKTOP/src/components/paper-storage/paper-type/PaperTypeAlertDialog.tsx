@@ -48,7 +48,7 @@ const PaperTypeAlertDialog: React.FC<PaperTypeAlertDialogProps> = ({
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
-                                Xóa Loại Giấy {type.paperColor.code}/{type.width}/{type.grammage}?
+                                Xóa Loại Giấy {type.paperColor?.code}/{type.width}/{type.grammage}?
                             </p>
                         </Dialog.Body>
                         <Dialog.Footer>

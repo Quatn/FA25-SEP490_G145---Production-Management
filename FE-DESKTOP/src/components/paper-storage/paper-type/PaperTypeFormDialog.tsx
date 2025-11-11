@@ -39,7 +39,8 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
     onUpdate,
 }) => {
     const [type, setType] = useState<PaperType>({
-        paperColor: { _id: '' , code: '', title: '' },
+        paperColorId: '',
+        paperColor: { _id: '', code: '', title: '' },
         width: 0,
         grammage: 0,
     });
@@ -61,7 +62,8 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
         if (isOpen) {
             setType({
                 _id: initialData?._id ?? undefined,
-                paperColor: initialData?.paperColor ?? { _id:'' , code: '', title: '' },
+                paperColorId: initialData?.paperColorId ?? '',
+                paperColor: initialData?.paperColor ?? { _id: '', code: '', title: '' },
                 width: initialData?.width ?? 0,
                 grammage: initialData?.grammage ?? 0,
             });
@@ -75,14 +77,16 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
     }, [isOpen, initialData]);
 
     const handleChange = (field: keyof PaperType, value: any) => {
-        if (field === 'paperColor') {
+        if (field === 'paperColor' && value?.["_id"]) {
             const input: PaperColor = {
-                _id: value._id, 
+                _id: value._id,
                 code: value.code,
                 title: value.title,
             }
-            setType((prev) => ({ ...prev, paperColor: input }));
+            setType((prev) => ({ ...prev, paperColorId: value._id, paperColor: input }));
         } else setType((prev) => ({ ...prev, [field]: value }));
+
+
         let errorMsg = "";
         if (field === "paperColor" && !value) errorMsg = "Màu giấy không được để trống";
         if (field === "width" && (!value || value <= 0)) errorMsg = "Khổ giấy không được để trống";
@@ -95,6 +99,11 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
         !!initialData ? onUpdate(type) : onAdd(type);
         onClose();
     };
+
+    const initInputPaperColor = (id: string) => {
+        const searchCollection = initialItems;
+        return searchCollection.find((item) => item.value === id)?.label;
+    }
 
     const hasError = Object.values(errors).some((msg) => msg);
     const isEmpty = !type.paperColor || !type.width || !type.grammage;
@@ -117,12 +126,11 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Màu giấy</Field.Label>
                                     <Combobox.Root
                                         collection={collection}
+                                        defaultInputValue={initInputPaperColor(type.paperColorId ?? "")}
                                         onInputValueChange={(e) => filter(e.inputValue)}
                                         onValueChange={(details) => {
                                             const selectedValue = details.value[0] as string;
                                             const selectedItem = paperColors.find((c) => c._id === selectedValue);
-                                            console.log(selectedValue);
-                                            console.log(selectedItem);
                                             handleChange("paperColor", selectedItem);
                                         }}>
                                         <Combobox.Control>

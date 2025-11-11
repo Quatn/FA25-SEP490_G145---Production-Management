@@ -23,11 +23,11 @@ const PaperTypeDetailDialog: React.FC<PaperTypeDetailDialogProps> = ({ type: typ
                             <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Mã Loại Giấy</DataList.ItemLabel>
-                                    <DataList.ItemValue>{type.paperColor.code}/{type.width}/{type.grammage}</DataList.ItemValue>
+                                    <DataList.ItemValue>{type.paperColor?.code}/{type.width}/{type.grammage}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Màu Giấy</DataList.ItemLabel>
-                                    <DataList.ItemValue>{type.paperColor.title}</DataList.ItemValue>
+                                    <DataList.ItemValue>{type.paperColor?.title}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Khổ Giấy</DataList.ItemLabel>

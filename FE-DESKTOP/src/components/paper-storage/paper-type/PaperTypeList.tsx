@@ -6,7 +6,7 @@ import { Text } from "@chakra-ui/react"
 import { useAddPaperTypeMutation, useGetPaperTypeQuery, useDeletePaperTypeMutation, useUpdatePaperTypeMutation } from "@/service/api/paperTypeApiSlice";
 import { useGetAllPaperColorsQuery } from "@/service/api/paperColorApiSlice";
 import { PaperColorResponse } from "@/types/PaperColor";
-import { PaperType, PaperTypeRequest } from "@/types/PaperType";
+import { PaperType } from "@/types/PaperType";
 import { toaster } from "@/components/ui/toaster";
 import { Icon } from "@chakra-ui/react";
 import { FaPlus, FaSearch } from "react-icons/fa";
@@ -93,28 +93,17 @@ const PaperTypeList: React.FC = () => {
 
 
     const handleAddType = async (data: PaperType) => {
-        const requestData: PaperTypeRequest = {
-            paperColorId: data.paperColor._id,
-            width: data.width,
-            grammage: data.grammage,
-        };
         handleMutation(
-            () => addPaperType(requestData).unwrap(),
-            `Đã lưu loại giấy ${data.paperColor.code}/${data.width}/${data.grammage}`,
+            () => addPaperType(data).unwrap(),
+            `Đã lưu loại giấy ${data.paperColor?.code}/${data.width}/${data.grammage}`,
             'Lưu thất bại',
         )
     }
 
     const handleUpdateType = async (data: PaperType) => {
-        const requestData: PaperTypeRequest = {
-            _id: {$oid: data._id ?? ""},
-            paperColorId: data.paperColor._id,
-            width: data.width,
-            grammage: data.grammage,
-        };
         handleMutation(
-            () => updatePaperType(requestData).unwrap(),
-            `Đã cập nhật loại giấy ${data.paperColor.code}/${data.width}/${data.grammage}`,
+            () => updatePaperType(data).unwrap(),
+            `Đã cập nhật loại giấy ${data.paperColor?.code}/${data.width}/${data.grammage}`,
             'Cập nhật thất bại',
         )
 
@@ -124,7 +113,7 @@ const PaperTypeList: React.FC = () => {
 
         handleMutation(
             () => deletePaperType(data).unwrap(),
-            `Xóa loại giấy ${data.paperColor.code}/${data.width}/${data.grammage}`,
+            `Xóa loại giấy ${data.paperColor?.code}/${data.width}/${data.grammage}`,
             'Xóa thất bại',
         )
 

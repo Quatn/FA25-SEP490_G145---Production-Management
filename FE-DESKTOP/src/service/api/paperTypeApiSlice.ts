@@ -1,6 +1,6 @@
 import { apiSlice } from "./apiSlice";
 import { BaseResponse, PaginatedList } from "@/types/DTO/Response";
-import { PaperType, PaperTypeRequest } from "@/types/PaperType";
+import { PaperType } from "@/types/PaperType";
 import { PAPER_TYPE_URL } from "../constants";
 
 
@@ -27,7 +27,7 @@ export const paperTypeApiSlice = apiSlice.injectEndpoints({
                 providesTags: ["PaperType"],
             }),
 
-        addPaperType: builder.mutation<{ success: boolean; message: string }, PaperTypeRequest>({
+        addPaperType: builder.mutation<{ success: boolean; message: string }, PaperType>({
             query: (body) => ({
                 url: `${PAPER_TYPE_URL}/create`,
                 method: "POST",
@@ -37,9 +37,9 @@ export const paperTypeApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: ["PaperType"],
         }),
 
-        updatePaperType: builder.mutation<{ success: boolean; message: string }, PaperTypeRequest>({
+        updatePaperType: builder.mutation<{ success: boolean; message: string }, PaperType>({
             query: (body) => ({
-                url: `${PAPER_TYPE_URL}/update/${body._id?.$oid ?? body._id}`,
+                url: `${PAPER_TYPE_URL}/update/${body._id}`,
                 method: "PATCH",
                 body,
                 credentials: "include",
@@ -49,7 +49,7 @@ export const paperTypeApiSlice = apiSlice.injectEndpoints({
 
         deletePaperType: builder.mutation<{ success: boolean; message: string }, PaperType>({
             query: (body) => ({
-                url: `${PAPER_TYPE_URL}/delete-soft/${body._id?.$oid ?? body._id}`,
+                url: `${PAPER_TYPE_URL}/delete-soft/${body._id}`,
                 method: "DELETE",
                 credentials: "include",
             }),
