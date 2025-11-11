@@ -12,16 +12,6 @@ export type PaperColor = {
   colorCode?: string;
 };
 
-export type PaperWidth = {
-  id: string;
-  widthMm: number;
-};
-
-export type PaperGrammage = {
-  id: string;
-  grammage: number;
-};
-
 export type PaperType = {
   paperTypeId: string;
   supplierId: string;
@@ -47,4 +37,15 @@ export type PaperRollTransaction = {
   initialWeight: number;
   finalWeight: number;
   inCharge?: string;
+};
+
+
+export type PaperWidth = {
+  id: string;
+  widthMm: number;
+};
+
+export type PaperGrammage = {
+  id: string;
+  grammage: number;
 };
