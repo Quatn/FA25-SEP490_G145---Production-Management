@@ -64,6 +64,42 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
+      {
+        id: "paper-supplier",
+        name: "Paper Supplier",
+        children: [
+          {
+            id: "paper-supplier-list",
+            name: "Paper Supplier List",
+            href: "/paper-supplier",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "paper-color",
+        name: "Paper Color",
+        children: [
+          {
+            id: "paper-color-list",
+            name: "Paper Color List",
+            href: "/paper-color",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "paper-type",
+        name: "Paper Type",
+        children: [
+          {
+            id: "paper-type-list",
+            name: "Paper Type List",
+            href: "/paper-type",
+            children: [],
+          },
+        ],
+      },
     ],
   },
 });
