@@ -64,6 +64,18 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
+      // {
+      //   id: "product",
+      //   name: "Product Management",
+      //   children: [
+      //     {
+      //       id: "product-list",
+      //       name: "Product List",
+      //       href: "/products",
+      //       children: [],
+      //     },
+      //   ],
+      // },
     ],
   },
 });
@@ -112,7 +124,8 @@ export default function MainLayout({
                 collection={collection}
                 expandedValue={expanded}
                 onExpandedChange={(details) =>
-                  setExpanded(details.expandedValue)}
+                  setExpanded(details.expandedValue)
+                }
                 query={query}
               />
             </Sidebar.Body>
@@ -126,8 +139,7 @@ export default function MainLayout({
           </main>
         </GridItem>
       </SimpleGrid>
-      <footer>
-      </footer>
+      <footer></footer>
     </Flex>
   );
 }
