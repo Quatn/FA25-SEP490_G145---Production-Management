@@ -13,4 +13,5 @@ export const MANUFACTURING_ORDER_URL = "/manufacturing-order";
 export const PAPER_SUPPLIER_URL = '/paper-supplier';
 export const PAPER_COLOR_URL = '/paper-color';
 export const PAPER_TYPE_URL = '/paper-type';
+export const WARE_MANUFACTURING_PROCESS_TYPE_URL = '/ware-manufacturing-process-type';
 

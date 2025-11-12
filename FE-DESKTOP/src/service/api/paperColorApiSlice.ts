@@ -38,7 +38,7 @@ export const paperColorApiSlice = apiSlice.injectEndpoints({
 
         updatePaperColor: builder.mutation<{ success: boolean; message: string }, PaperColor>({
             query: (body) => ({
-                url: `${PAPER_COLOR_URL}/update/${body._id?.$oid ?? body._id}`,
+                url: `${PAPER_COLOR_URL}/update/${body._id}`,
                 method: "PATCH",
                 body,
                 credentials: "include",
@@ -48,7 +48,7 @@ export const paperColorApiSlice = apiSlice.injectEndpoints({
 
         deletePaperColor: builder.mutation<{ success: boolean; message: string }, PaperColor>({
             query: (body) => ({
-                url: `${PAPER_COLOR_URL}/delete-soft/${body._id?.$oid ?? body._id}`,
+                url: `${PAPER_COLOR_URL}/delete-soft/${body._id}`,
                 method: "DELETE",
                 credentials: "include",
             }),

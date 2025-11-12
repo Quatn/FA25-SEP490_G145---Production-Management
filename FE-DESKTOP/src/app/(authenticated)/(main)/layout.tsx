@@ -100,6 +100,18 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
+      {
+        id: "ware-manufacturing-process-type",
+        name: "Ware Manufacturing Process Type",
+        children: [
+          {
+            id: "ware-manufacturing-process-type-list",
+            name: "Ware Manufacturing Process Type List",
+            href: "/ware-manufacturing-process-type",
+            children: [],
+          },
+        ],
+      },
     ],
   },
 });
