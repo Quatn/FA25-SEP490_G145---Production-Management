@@ -124,6 +124,18 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
+      {
+        id: "product-type",
+        name: "Product Type",
+        children: [
+          {
+            id: "product-type-list",
+            name: "Product Type List",
+            href: "/product-type",
+            children: [],
+          },
+        ],
+      },
     ],
   },
 });
