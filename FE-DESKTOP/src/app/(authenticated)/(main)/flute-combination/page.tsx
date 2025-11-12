@@ -1,6 +1,6 @@
-import ProductTypeList from "@/components/product/product-type/ProductTypeList";
+import FluteCombinationList from "@/components/flute-combination/FluteCombinationList";
 import { Box, Stack, Text } from "@chakra-ui/react";
-export default function ProductTypeHome() {
+export default function FluteCombinationHome() {
   return (
     <Box
       m={5}
@@ -11,11 +11,11 @@ export default function ProductTypeHome() {
     >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"bold"} color={"black"}>
-          DANH SÁCH LOẠI SẢN PHẨM
+          DANH SÁCH LOẠI SÓNG
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>
-        <ProductTypeList/>
+        <FluteCombinationList />
       </Stack>
     </Box>
   );

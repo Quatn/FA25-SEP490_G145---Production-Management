@@ -13,6 +13,7 @@ const tagTypes = [
   "WareManufacturingProcessType",
   "WareFinishingProcessType",
   "ProductType",
+  "FluteCombination",
 ];
 
 export const apiSlice = createApi({

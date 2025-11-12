@@ -7,6 +7,7 @@ import { PurchaseOrderItemModule } from "./purchase-order-item/purchase-order-it
 import { WareManufacturingProcessTypeModule } from './ware-manufacturing-process-type/ware-manufacturing-process-type.module';
 import { WareFinishingProcessTypeModule } from "./ware-finishing-process-type/ware-finishing-process-type.module";
 import { ProductTypeModule } from './product-type/product-type.module';
+import { FluteCombinationModule } from './flute-combination/flute-combination.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ProductTypeModule } from './product-type/product-type.module';
     ProductionDevModule,
     ...(process.env.NODE_ENV === "development" ? [ProductionDevModule] : []),
     ProductTypeModule,
+    FluteCombinationModule,
   ],
 })
 export class ProductionModule { }

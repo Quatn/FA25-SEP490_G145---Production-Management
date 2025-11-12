@@ -136,6 +136,18 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
+      {
+        id: "flute-combination",
+        name: "Flute Combination",
+        children: [
+          {
+            id: "flute-combination-list",
+            name: "Flute Combination List",
+            href: "/flute-combination",
+            children: [],
+          },
+        ],
+      },
     ],
   },
 });

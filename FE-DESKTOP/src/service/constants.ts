@@ -16,3 +16,4 @@ export const PAPER_TYPE_URL = '/paper-type';
 export const WARE_MANUFACTURING_PROCESS_TYPE_URL = '/ware-manufacturing-process-type';
 export const WARE_FINISHING_PROCESS_TYPE_URL = '/ware-finishing-process-type';
 export const PRODUCT_TYPE_URL = '/product-type';
+export const FLUTE_COMBINATION_URL = '/flute-combination';
