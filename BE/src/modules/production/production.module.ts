@@ -5,6 +5,7 @@ import { PurchaseOrderModule } from "./purchase-order/purchase-order.module";
 import { SubPurchaseOrderModule } from "./sub-purchase-order/sub-purchase-order.module";
 import { PurchaseOrderItemModule } from "./purchase-order-item/purchase-order-item.module";
 import { WareManufacturingProcessTypeModule } from './ware-manufacturing-process-type/ware-manufacturing-process-type.module';
+import { WareFinishingProcessTypeModule } from "./ware-finishing-process-type/ware-finishing-process-type.module";
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { WareManufacturingProcessTypeModule } from './ware-manufacturing-process
     SubPurchaseOrderModule,
     PurchaseOrderItemModule,
     WareManufacturingProcessTypeModule,
+    WareFinishingProcessTypeModule,
     ...(process.env.NODE_ENV === "development" ? [ProductionDevModule] : []),
   ],
 })

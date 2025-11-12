@@ -112,6 +112,18 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
+      {
+        id: "ware-finishing-process-type",
+        name: "Ware Finishing Process Type",
+        children: [
+          {
+            id: "ware-finishing-process-type-list",
+            name: "Ware Finishing Process Type List",
+            href: "/ware-finishing-process-type",
+            children: [],
+          },
+        ],
+      },
     ],
   },
 });
