@@ -231,13 +231,17 @@ export const manufacturingOrderTableColumns:
     {
       key: "printColors",
       header: "Màu In",
-      render: (order) => order.purchaseOrderItem?.ware?.printColors?.join(", "),
+      render: (order) =>
+        order.purchaseOrderItem?.ware?.printColors?.map((c) => c.code).join(
+          ", ",
+        ),
     },
     {
       key: "processes",
       header: "Công đoạn gia công",
       render: (order) =>
-        order.purchaseOrderItem?.ware?.finishingProcesses?.map(c => c.name).join(", "),
+        order.purchaseOrderItem?.ware?.finishingProcesses?.map((c) => c.name)
+          .join(", "),
     },
   ];
 

@@ -1,99 +1,47 @@
 "use client";
 
 import {
-  ManufacturingTableTabType,
-  useManufacturingTableDispatch,
-  useManufacturingTableState,
-} from "@/context/manufacturing-order/manufacturingOrderTableContext";
-import {
-  useGetFullDetailManufacturingOrdersQuery,
-} from "@/service/api/manufacturingOrderApiSlice";
+  PurchaseOrderItemPickerTabType,
+  useManufacturingPageDispatch,
+  useManufacturingPageState,
+} from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import {
   Box,
   BoxProps,
   Button,
-  Grid,
-  GridItem,
+  Group,
+  HStack,
   Table,
   TableRootProps,
   Tabs,
   TabsRootProps,
-  Text,
 } from "@chakra-ui/react";
-import check from "check-types";
+import { purchaseOrderItemTableColumnsByTabs } from "./poiTableDefinition";
+import { useState } from "react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
-import { manufacturingOrderTableColumnsByTabs } from "./tableDefinition";
-import { useOptionalManufacturingDialogDispatch } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
-import { useEffect } from "react";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 
-const items = [
-  { id: 1, name: "Laptop", category: "Electronics", price: 999.99 },
-  { id: 2, name: "Coffee Maker", category: "Home Appliances", price: 49.99 },
-  { id: 3, name: "Desk Chair", category: "Furniture", price: 150.0 },
-  { id: 4, name: "Smartphone", category: "Electronics", price: 799.99 },
-  { id: 5, name: "Headphones", category: "Accessories", price: 199.99 },
-];
-
-export type ManufacturingOrderTableProps = {
+type TableProps = {
   rootProps?: BoxProps;
   tabsRootProps?: TabsRootProps;
   tableRootProps?: TableRootProps;
+  items: Serialized<PurchaseOrderItem>[];
 };
 
-export default function ManufacturingOrderTable(
-  props: ManufacturingOrderTableProps,
+export default function PurchaseOrderItemPickerTable(
+  props: TableProps,
 ) {
-  const {
-    page,
-    limit,
-    tab,
-    search,
-    hoveredRowId,
-    selectedOrderId,
-    pinnedOrderIds,
-  } = useManufacturingTableState();
-  const dispatch = useManufacturingTableDispatch();
+  const { groupType } = useManufacturingPageState();
+  const dispatch = useManufacturingPageDispatch();
 
-  const {
-    data: fullDetailMOPaginatedResponse,
-    error: fetchError,
-    isLoading: isFetchingList,
-  } = useGetFullDetailManufacturingOrdersQuery({ page, limit });
-
-  const dialogDispatch = useOptionalManufacturingDialogDispatch();
-
-  const columnsForTab = manufacturingOrderTableColumnsByTabs[tab] ?? [];
-
-  const moPaginatedList = fullDetailMOPaginatedResponse?.data;
-
-  useEffect(() => {
-    dispatch({
-      type: "SET_TOTAL_ITEMS",
-      payload: moPaginatedList ? moPaginatedList.totalItems : 0,
-    });
-  }, [dispatch, moPaginatedList, moPaginatedList?.totalItems]);
-
-  if (isFetchingList) {
-    return <Text>Loading table</Text>;
-  }
-
-  if (fetchError) {
-    return <Text>{JSON.stringify(fetchError)}</Text>;
-  }
-
-  if (check.undefined(moPaginatedList)) {
-    return <Text>Unable to load table</Text>;
-  }
+  const [tab, setTab] = useState<PurchaseOrderItemPickerTabType>("all");
+  const columnsForTab = purchaseOrderItemTableColumnsByTabs[tab] ?? [];
 
   return (
     <Box mt={3} {...props.rootProps}>
       <Tabs.Root
         value={tab}
-        onValueChange={(e) =>
-          dispatch({
-            type: "SET_TAB",
-            payload: e.value as ManufacturingTableTabType,
-          })}
+        onValueChange={(e) => setTab(e.value as PurchaseOrderItemPickerTabType)}
         {...props.tabsRootProps}
       >
         <Tabs.List ms="200px">
@@ -101,7 +49,7 @@ export default function ManufacturingOrderTable(
             <LuUser />
             Tổng quan
           </Tabs.Trigger>
-          <Tabs.Trigger value="order">
+          <Tabs.Trigger value="ware">
             <LuUser />
             Thông tin đơn hàng
           </Tabs.Trigger>
@@ -173,7 +121,7 @@ export default function ManufacturingOrderTable(
                 w="100px"
                 left="0"
               >
-                KH Giao
+                Mã PO Item
               </Table.ColumnHeader>
               <Table.ColumnHeader
                 minW="100px"
@@ -181,30 +129,24 @@ export default function ManufacturingOrderTable(
                 left="100px"
                 data-sticky="end"
               >
-                Mã lệnh
+                Mã hàng
               </Table.ColumnHeader>
               {columnsForTab.map((col) => (
                 <Table.ColumnHeader key={col.key}>
                   {col.header}
                 </Table.ColumnHeader>
               ))}
-
-              <Table.ColumnHeader w="120px" border="none" />
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {moPaginatedList.data.map((item) => (
+            {props.items.map((item) => (
               <Table.Row
                 key={item._id}
                 bg={"gray.50"}
                 h="50px"
-                onMouseEnter={() =>
-                  dispatch({ type: "SET_HOVERED_ROW_ID", payload: item._id })}
-                onMouseLeave={() =>
-                  dispatch({ type: "SET_HOVERED_ROW_ID", payload: null })}
               >
                 <Table.Cell minW="100px" w="100px" left="0" data-sticky>
-                  {item.manufacturingDirective}
+                  {item.code}
                 </Table.Cell>
                 <Table.Cell
                   minW="100px"
@@ -212,35 +154,11 @@ export default function ManufacturingOrderTable(
                   left="100px"
                   data-sticky="end"
                 >
-                  {item.code}
+                  {item.ware?.code}
                 </Table.Cell>
                 {columnsForTab.map((col) => (
                   <Table.Cell key={col.key}>{col.render(item)}</Table.Cell>
                 ))}
-                <Table.Cell
-                  w="120px"
-                  border="none"
-                  bg="none"
-                >
-                  {hoveredRowId === item._id && (
-                    <>
-                      {dialogDispatch &&
-                        (
-                          <Button
-                            size="xs"
-                            colorPalette={"blue"}
-                            onClick={() =>
-                              dialogDispatch({
-                                type: "OPEN_DIALOG_WITH_ORDER",
-                                payload: item,
-                              })}
-                          >
-                            Chi tiết
-                          </Button>
-                        )}
-                    </>
-                  )}
-                </Table.Cell>
               </Table.Row>
             ))}
           </Table.Body>

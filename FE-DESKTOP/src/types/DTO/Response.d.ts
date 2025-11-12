@@ -1,3 +1,4 @@
+// Old file, do not use, migrate if possible
 export type QueryResponse<TData, TError = FetchBaseQueryError> =
   | { data: TData }
   | { error: TError };

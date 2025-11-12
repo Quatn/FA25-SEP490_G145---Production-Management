@@ -26,7 +26,7 @@ export default function PurchaseOrderCreatePage() {
             py={5}
             rounded={"md"}
             backgroundColor={"gray.100"}
-            height={"80vh"}
+            minH={"80vh"}
           >
             <Stack height={"full"} gapY={2}>
               <Text fontWeight={"semibold"} color={"blackAlpha.800"}>

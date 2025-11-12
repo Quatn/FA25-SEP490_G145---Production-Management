@@ -6,6 +6,15 @@ type TabType =
   | "materialRequirementSummary"
   | "excessWareInventorySummary";
 
+type TableTabType =
+  | "all"
+  | "ware"
+  | "manufacture"
+  | "layers"
+  | "notes"
+  | "weight"
+  | "processes";
+
 type GroupType =
   | "PO"
   | "POI";
@@ -96,4 +105,5 @@ export function useManufacturingPageDispatch() {
   return context;
 }
 
-export type ManufacturingPageTabType = TabType;
+export type ManufacturingCreatePageTabType = TabType;
+export type PurchaseOrderItemPickerTabType = TableTabType;

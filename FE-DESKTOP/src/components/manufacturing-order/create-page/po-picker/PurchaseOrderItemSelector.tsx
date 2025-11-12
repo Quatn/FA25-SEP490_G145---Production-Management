@@ -5,7 +5,15 @@ import {
   useManufacturingPageState,
 } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { useQueryOrdersWithUnmanufacturedItemsQuery } from "@/service/api/purchaseOrderApiSlice";
-import { Button, Group, HStack, Skeleton, Stack, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Group,
+  HStack,
+  Skeleton,
+  Stack,
+  Text,
+} from "@chakra-ui/react";
 import check from "check-types";
 import { CiWarning } from "react-icons/ci";
 import PurchaseOrderItemSelectorItem from "./PurchaseOrderItemSelectorItem";
@@ -38,14 +46,28 @@ export default function PurchaseOrderItemSelector() {
     );
   }
 
+  const poCount = orderPaginatedList.data.length;
+  const poisCount = orderPaginatedList.data.map((po) =>
+    po.manufacturedItemCount + po.unmanufacturedItemCount
+  ).reduce((acc, i) => acc + i);
+  const unmannufacturedPoisCount = orderPaginatedList.data.map((po) =>
+    po.unmanufacturedItemCount
+  ).reduce((acc, i) => acc + i);
+
   return (
-    <Stack>
-      {orderPaginatedList.data.map((order) => (
-        <PurchaseOrderItemSelectorItem
-          key={order.purchaseOrder._id}
-          po={order}
-        />
-      ))}
-    </Stack>
+    <Box>
+      <Text>
+        Đang hiển thị {poCount} PO, trong đó bao gồm {poisCount} PO Item,{" "}
+        {unmannufacturedPoisCount} trong số đó chưa có lệnh sản xuất
+      </Text>
+      <Stack>
+        {orderPaginatedList.data.map((order) => (
+          <PurchaseOrderItemSelectorItem
+            key={order.purchaseOrder._id}
+            po={order}
+          />
+        ))}
+      </Stack>
+    </Box>
   );
 }

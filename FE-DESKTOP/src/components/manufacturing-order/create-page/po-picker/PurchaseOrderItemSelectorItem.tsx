@@ -18,7 +18,8 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { LuChevronRight } from "react-icons/lu";
+import { LuChevronDown, LuChevronRight } from "react-icons/lu";
+import PurchaseOrderItemSelectorSubItem from "./PurchaseOrderItemSelectorSubItem";
 
 export type PurchaseOrderItemSelectorItemProps = {
   po: Serialized<QueryOrdersWithUnmanufacturedItemsDto>;
@@ -49,24 +50,30 @@ export default function PurchaseOrderItemSelectorItem(
     <CheckboxCard.Root>
       <CheckboxCard.HiddenInput />
       <CheckboxCard.Control>
-        <CheckboxCard.Content>
-          <CheckboxCard.Label>
-            Đơn Hàng: {props.po.purchaseOrder.code}, Khách Hàng:{" "}
-            {props.po.purchaseOrder.customer?.code}
-          </CheckboxCard.Label>
-          <CheckboxCard.Description>
-            <HStack>
-              <Text>
-                Ngày Đặt:{" "}
-                {formatDateToDDMMYYYY(props.po.purchaseOrder.orderDate)}
-              </Text>
-              <Text>
-                Ngày Giao:{" "}
-                {(minDate === maxDate) ? minDate : `${minDate} đến ${maxDate}`}
-              </Text>
-            </HStack>
-          </CheckboxCard.Description>
-
+        <CheckboxCard.Content
+          flexDir={"row"}
+          justifyContent={"space-between"}
+          gap={3}
+        >
+          <Box>
+            <CheckboxCard.Label>
+              {`Đơn Hàng: ${props.po.purchaseOrder.code}, Khách Hàng: ${props.po.purchaseOrder.customer?.code}`}
+            </CheckboxCard.Label>
+            <CheckboxCard.Description>
+              <HStack>
+                <Text>
+                  Ngày Đặt:{" "}
+                  {formatDateToDDMMYYYY(props.po.purchaseOrder.orderDate)}
+                </Text>
+                <Text>
+                  Ngày Giao:{" "}
+                  {(minDate === maxDate)
+                    ? minDate
+                    : `${minDate} đến ${maxDate}`}
+                </Text>
+              </HStack>
+            </CheckboxCard.Description>
+          </Box>
           <Text>
             {`${subpoCount} PO con, ${poiCount} PO item`}
           </Text>
@@ -80,54 +87,34 @@ export default function PurchaseOrderItemSelectorItem(
             display="flex"
             gap="2"
             alignItems="center"
+            asChild
           >
             <HStack>
-              <Box transition="transform 0.2s">
-                <LuChevronRight />
-              </Box>
+              <Button variant="outline" size="sm" flexGrow={1}>
+                <Collapsible.Context>
+                  {(api) => (api.open ? "Show Less" : "Show More")}
+                </Collapsible.Context>
+                <Collapsible.Indicator
+                  transition="transform 0.2s"
+                  _open={{ transform: "rotate(180deg)" }}
+                >
+                  <LuChevronDown />
+                </Collapsible.Indicator>
+              </Button>
             </HStack>
           </Collapsible.Trigger>
           <Collapsible.Content>
             <Stack padding="4" borderWidth="1px">
+              {props.po.subPurchaseOrders.map((subpo) => (
+                <PurchaseOrderItemSelectorSubItem
+                  key={subpo.subPurchaseOrder.code}
+                  subpo={subpo}
+                />
+              ))}
             </Stack>
           </Collapsible.Content>
         </Collapsible.Root>
       </CheckboxCard.Addon>
     </CheckboxCard.Root>
-  );
-
-  return (
-    <Box border="md" backgroundColor={"gray.50"}>
-      <Collapsible.Root>
-        <Collapsible.Trigger
-          paddingY="3"
-          display="flex"
-          gap="2"
-          alignItems="center"
-        >
-          <HStack>
-            <Text>Đơn Hàng: {props.po.purchaseOrder.code}</Text>
-            <Text>Khách Hàng: {props.po.purchaseOrder.customer?.code}</Text>
-            <Text>
-              Ngày Đặt: {formatDateToDDMMYYYY(props.po.purchaseOrder.orderDate)}
-            </Text>
-            <Text>
-              Ngày Giao:{" "}
-              {(minDate === maxDate) ? minDate : `${minDate} đến ${maxDate}`}
-            </Text>
-            <Text>
-              {`${subpoCount} PO con, ${poiCount} PO item`}
-            </Text>
-            <Box transition="transform 0.2s">
-              <LuChevronRight />
-            </Box>
-          </HStack>
-        </Collapsible.Trigger>
-        <Collapsible.Content>
-          <Stack padding="4" borderWidth="1px">
-          </Stack>
-        </Collapsible.Content>
-      </Collapsible.Root>
-    </Box>
   );
 }
