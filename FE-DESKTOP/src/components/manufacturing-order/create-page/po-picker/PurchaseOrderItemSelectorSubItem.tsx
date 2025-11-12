@@ -6,7 +6,7 @@ import {
 } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { Button, Group, HStack } from "@chakra-ui/react";
 
-export default function PurchaseOrderItemListGroupTypeControl() {
+export default function PurchaseOrderItemSelectorSubItem() {
   const { groupType } = useManufacturingPageState();
   const dispatch = useManufacturingPageDispatch();
 
@@ -22,14 +22,14 @@ export default function PurchaseOrderItemListGroupTypeControl() {
               payload: "PO",
             })}
         >
-          Gộp theo PO
+          Theo trang
         </Button>
         <Button
           colorPalette={"teal"}
           variant={groupType === "POI" ? "solid" : "outline"}
           onClick={() => dispatch({ type: "SET_GROUP_TYPE", payload: "POI" })}
         >
-          Không gộp
+          Không phân trang
         </Button>
       </Group>
     </HStack>

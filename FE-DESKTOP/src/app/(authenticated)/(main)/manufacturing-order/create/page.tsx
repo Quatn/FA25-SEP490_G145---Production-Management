@@ -1,17 +1,20 @@
+import { ManufacturingOrderCreatePageComponents as CreatePage } from "@/components/manufacturing-order/create-page/components";
+import { ManufacturingOrderCreatePageProvider } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { Box, Stack, Text } from "@chakra-ui/react";
 
 export default function PurchaseOrderCreatePage() {
   return (
-    <Box
-      m={5}
-      p={2}
-      flexGrow={1}
-      boxSizing={"border-box"}
-      rounded={"sm"}
-    >
-      <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-        Create Manufacturing order
-      </Text>
+    <ManufacturingOrderCreatePageProvider>
+      <Box
+        m={5}
+        p={2}
+        flexGrow={1}
+        boxSizing={"border-box"}
+        rounded={"sm"}
+      >
+        <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
+          Create Manufacturing order
+        </Text>
 
         <Box
           m={5}
@@ -29,6 +32,11 @@ export default function PurchaseOrderCreatePage() {
               <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
                 PO Picker
               </Text>
+              <Box>
+                <CreatePage.SearchBar />
+              </Box>
+              <CreatePage.GroupTypeControl />
+              <CreatePage.ItemSelector />
             </Stack>
           </Box>
 
@@ -39,6 +47,7 @@ export default function PurchaseOrderCreatePage() {
           >
           </Box>
         </Box>
-    </Box>
+      </Box>
+    </ManufacturingOrderCreatePageProvider>
   );
 }
