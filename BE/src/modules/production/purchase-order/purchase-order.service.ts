@@ -1,13 +1,21 @@
 import { Injectable } from "@nestjs/common";
-import { PurchaseOrder } from "../schemas/purchase-order.schema";
+import {
+  PurchaseOrder,
+  PurchaseOrderSchema,
+} from "../schemas/purchase-order.schema";
 import { Model } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
 import { PurchaseOrderItem } from "../schemas/purchase-order-item.schema";
 import { ordersWithUnmanufacturedItemsLeanPipe } from "./aggregate-pipes/orders-with-unmanufactured-items";
 import {
-  QueryOrdersWithUnmanufacturedItemsDto,
+  QueryOrdersWithUnmanufacturedItemsResponseDto,
 } from "./dto/query-orders-with-unmanufactured-items.dto";
+import {
+  SubPurchaseOrder,
+  SubPurchaseOrderSchema,
+} from "../schemas/sub-purchase-order.schema";
+import { Customer } from "../schemas/customer.schema";
 
 @Injectable()
 export class PurchaseOrderService {
@@ -18,6 +26,9 @@ export class PurchaseOrderService {
     @InjectModel(
       PurchaseOrderItem.name,
     ) private readonly purchaseOrderItemModel: Model<PurchaseOrderItem>,
+    @InjectModel(
+      Customer.name,
+    ) private readonly customerModel: Model<Customer>,
   ) {}
 
   async findAll() {
@@ -66,14 +77,21 @@ export class PurchaseOrderService {
   async queryOrdersWithUnmanufacturedItems({
     page,
     limit,
+    search,
   }: {
     page: number;
     limit: number;
-  }): Promise<PaginatedList<QueryOrdersWithUnmanufacturedItemsDto>> {
-    // temp
+    search: string;
+  }): Promise<PaginatedList<QueryOrdersWithUnmanufacturedItemsResponseDto>> {
     const data = await this.purchaseOrderItemModel.aggregate(
-      ordersWithUnmanufacturedItemsLeanPipe(1, 20, "AI"),
+      ordersWithUnmanufacturedItemsLeanPipe(1, 20, search),
     );
+
+    await this.customerModel.populate(data, [
+      { path: "purchaseOrder.customer" },
+    ]);
+
+    // console.log(populatedData)
 
     // temp
     const totalItems = 0;
@@ -88,7 +106,7 @@ export class PurchaseOrderService {
       totalPages,
       hasNextPage,
       hasPrevPage,
-      data: data as QueryOrdersWithUnmanufacturedItemsDto[],
+      data: data as QueryOrdersWithUnmanufacturedItemsResponseDto[],
     };
   }
 }

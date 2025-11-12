@@ -3,7 +3,16 @@ import { SubPurchaseOrder } from "../../schemas/sub-purchase-order.schema";
 import { ManufacturingOrder } from "../../schemas/manufacturing-order.schema";
 import { PurchaseOrder } from "../../schemas/purchase-order.schema";
 import { PurchaseOrderItem } from "../../schemas/purchase-order-item.schema";
-import { Pagination } from "@/common/dto/pagination.dto";
+import { PageRequest } from "@/common/dto/page.request.dto";
+import { IsOptional } from "class-validator";
+import { Type } from "class-transformer";
+
+export class QueryOrdersWithUnmanufacturedItemsRequestDto extends PageRequest {
+  @ApiProperty({ required: false, default: "" })
+  @IsOptional()
+  @Type(() => String)
+  search: string = "";
+}
 
 class Base {
   @ApiProperty()
@@ -23,7 +32,7 @@ class SubPurchaseOrderRes extends Base {
   purchaseOrderItems: PurchaseOrderItemRes[];
 }
 
-export class QueryOrdersWithUnmanufacturedItemsDto extends Base {
+export class QueryOrdersWithUnmanufacturedItemsResponseDto extends Base {
   subPurchaseOrders: SubPurchaseOrderRes[];
   purchaseOrder: PurchaseOrder;
 }
