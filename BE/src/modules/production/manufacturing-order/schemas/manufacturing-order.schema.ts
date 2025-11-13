@@ -4,6 +4,7 @@ import { BaseSchema } from "@/common/schemas/base.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
 import { PurchaseOrderItem } from "@/modules/purchase-order-item/schemas/purchase-order-item.schema"; // import schema PO Item
 import { ManufacturingOrderProcess } from "../../manufacturing-order-process/schemas/manufacturing-order-process.schema"; // Import schema MOP mới
+import { CorrugatorProcess } from "@/modules/corrugator-process/schemas/corrugator-process.schema";
 
 export enum OrderStatus {
   NOTSTARTED = "NOTSTARTED",
@@ -45,14 +46,21 @@ export class ManufacturingOrder extends BaseSchema {
   ])
   processes: ManufacturingOrderProcess[]; // Hoặc `Types.ObjectId[]`
 
+  @Prop({
+    required: true, // Quy trình sóng là bắt buộc
+    type: Types.ObjectId,
+    ref: CorrugatorProcess.name,
+  })
+  corrugatorProcess: CorrugatorProcess;
+
   @Prop({ required: true })
   manufacturingDate: Date;
 
   @Prop({ required: false })
   requestedDatetime: Date;
 
-  @Prop({ required: true })
-  corrugatorLine: string; // Giữ nguyên từ file của bạn
+  @Prop({ required: true, type: Number })
+  corrugatorLine: number;
 
   @Prop({ required: true })
   manufacturedAmount: number; // Đây có thể là tổng số lượng hoàn thành cuối cùng

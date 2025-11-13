@@ -7,6 +7,8 @@ import { ManufacturingOrderProcessModule } from "./manufacturing-order-process/m
 import { PurchaseOrderItemModule } from "../purchase-order-item/purchase-order-item.module";
 import { WareModule } from "../ware/ware.module";
 
+import { CorrugatorProcessModule } from "@/modules/corrugator-process/corrugator-process.module";
+
 @Module({
   imports: [
     // Bổ sung các module còn thiếu
@@ -15,14 +17,18 @@ import { WareModule } from "../ware/ware.module";
     ManufacturingOrderProcessModule,
     PurchaseOrderItemModule,
     WareModule,
+
+    CorrugatorProcessModule,
   ],
-  
+
   exports: [
     ManufacturingOrderModule,
     ManufacturingProcessModule,
     ManufacturingOrderProcessModule,
     PurchaseOrderItemModule,
     WareModule,
-  ]
+
+    CorrugatorProcessModule,
+  ],
 })
 export class ProductionModule {}

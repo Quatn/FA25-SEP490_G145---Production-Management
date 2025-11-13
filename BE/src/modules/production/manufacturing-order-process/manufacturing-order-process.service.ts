@@ -9,16 +9,20 @@ import { InjectModel } from "@nestjs/mongoose";
 import {
   ManufacturingOrderProcess,
   ManufacturingOrderProcessDocument,
+  ProcessStatus, // <-- IMPORT ProcessStatus
 } from "./schemas/manufacturing-order-process.schema";
 import {
   ManufacturingOrder,
   ManufacturingOrderDocument,
+  OrderStatus, // <-- IMPORT OrderStatus
 } from "../manufacturing-order/schemas/manufacturing-order.schema";
-// Import schema PO Item để lấy 'amount' mục tiêu
 import { PurchaseOrderItemDocument } from "../../purchase-order-item/schemas/purchase-order-item.schema";
 import { UpdateManufacturingOrderProcessDto } from "./dto/update-manufacturing-order-process.dto";
-import { OrderStatus } from "../manufacturing-order/schemas/manufacturing-order.schema";
-import { ProcessStatus } from "./schemas/manufacturing-order-process.schema";
+import {
+  CorrugatorProcess,
+  CorrugatorProcessDocument,
+  CorrugatorProcessStatus,
+} from "@/modules/corrugator-process/schemas/corrugator-process.schema";
 
 @Injectable()
 export class ManufacturingOrderProcessService {
@@ -28,6 +32,9 @@ export class ManufacturingOrderProcessService {
 
     @InjectModel(ManufacturingOrder.name)
     private readonly moModel: Model<ManufacturingOrderDocument>,
+
+    @InjectModel(CorrugatorProcess.name)
+    private readonly corrugatorProcessModel: Model<CorrugatorProcessDocument>,
   ) {}
 
   /**
@@ -48,7 +55,7 @@ export class ManufacturingOrderProcessService {
     const originalStatus = targetProcess.status;
     const originalAmount = targetProcess.manufacturedAmount;
 
-    // (Giữ nguyên) Ràng buộc: Không cập nhật số lượng khi PAUSED/CANCELLED/COMPLETED
+    // Ràng buộc: Không cập nhật số lượng khi PAUSED/CANCELLED/COMPLETED
     if (
       (originalStatus === ProcessStatus.PAUSED ||
         originalStatus === ProcessStatus.CANCELLED ||
@@ -60,16 +67,17 @@ export class ManufacturingOrderProcessService {
       );
     }
 
-    // 2. Lấy MO cha VÀ PO Item liên quan
+    // 2. Lấy MO cha, PO Item, VÀ Quy trình sóng
     const parentMO = await this.moModel
       .findById(targetProcess.manufacturingOrder)
-      .populate("purchaseOrderItem");
+      .populate("purchaseOrderItem")
+      .populate("corrugatorProcess"); // <-- THAY ĐỔI: Thêm populate corrugatorProcess
 
     if (!parentMO) {
       throw new NotFoundException("Không tìm thấy Lệnh sản xuất cha.");
     }
 
-    // (Giữ nguyên) Lấy số lượng mục tiêu từ PO Item
+    // Lấy số lượng mục tiêu từ PO Item
     const poItem = parentMO.purchaseOrderItem as PurchaseOrderItemDocument;
     if (!poItem) {
       throw new NotFoundException(
@@ -77,17 +85,25 @@ export class ManufacturingOrderProcessService {
       );
     }
     const targetAmount = poItem.amount;
-    const maxAllowedAmount = targetAmount * 1.1;
-    const hardCapAmount = targetAmount * 1.2;
+    // <-- THAY ĐỔI: Đã xóa maxAllowedAmount (110%) và hardCapAmount (120%)
 
-    // (Giữ nguyên) Lấy tất cả công đoạn con
+    // Lấy Quy trình sóng
+    const corrugatorProcess =
+      parentMO.corrugatorProcess as CorrugatorProcessDocument; // <-- THAY ĐỔI: Lấy corrugatorProcess
+    if (!corrugatorProcess) {
+      throw new NotFoundException(
+        "Không tìm thấy Quy trình sóng (Corrugator Process) liên kết với MO này.",
+      );
+    }
+
+    // Lấy tất cả công đoạn con
     const allProcesses = (
       await this.mopModel.find({
         manufacturingOrder: parentMO._id,
       })
     ).sort((a, b) => a.processNumber - b.processNumber);
 
-    // (Giữ nguyên) Ràng buộc: MO ở NOTSTARTED
+    // Ràng buộc: MO ở NOTSTARTED
     if (
       parentMO.overallStatus === OrderStatus.NOTSTARTED &&
       newStatusFromDto &&
@@ -98,7 +114,25 @@ export class ManufacturingOrderProcessService {
       );
     }
 
-    // 3. --- ÁP DỤNG RÀNG BUỘC CŨ (Kiểm tra công đoạn trước) ---
+    // 2.5. --- THAY ĐỔI: RÀNG BUỘC MỚI (YÊU CẦU 3) ---
+    // MOP#1 chỉ được chạy khi Quy trình Sóng đang chạy
+    const isTryingToRun =
+      newStatusFromDto === ProcessStatus.RUNNING ||
+      (manufacturedAmount !== undefined &&
+        manufacturedAmount > 0 &&
+        targetProcess.status === ProcessStatus.NOTSTARTED);
+
+    if (targetProcess.processNumber === 1 && isTryingToRun) {
+      if (corrugatorProcess.status !== CorrugatorProcessStatus.RUNNING) {
+        throw new ForbiddenException(
+          'Không thể bắt đầu công đoạn 1 khi Quy trình sóng (Corrugator) chưa ở trạng thái "RUNNING".',
+        );
+      }
+    }
+    // --- HẾT THAY ĐỔI (2.5) ---
+
+    // 3. ÁP DỤNG RÀNG BUỘC CŨ (Kiểm tra công đoạn trước)
+    // (Logic này giữ nguyên: công đoạn sau phải chờ công đoạn trước RUNNING hoặc COMPLETED)
     if (
       manufacturedAmount !== undefined &&
       manufacturedAmount > originalAmount
@@ -108,40 +142,36 @@ export class ManufacturingOrderProcessService {
           (p) => p.processNumber === targetProcess.processNumber - 1,
         );
 
-        // --- THAY ĐỔI: Cho phép RUNNING hoặc COMPLETED ---
         if (
           !previousProcess ||
           (previousProcess.status !== ProcessStatus.RUNNING &&
-            previousProcess.status !== ProcessStatus.COMPLETED) // <-- ĐÃ THÊM COMPLETED
+            previousProcess.status !== ProcessStatus.COMPLETED)
         ) {
           throw new ForbiddenException(
-            'Công đoạn trước chưa ở trạng thái "Chạy" hoặc "Hoàn thành". Không thể cập nhật số lượng.', // <-- Cập nhật thông báo lỗi
+            'Công đoạn trước chưa ở trạng thái "Chạy" hoặc "Hoàn thành". Không thể cập nhật số lượng.',
           );
         }
-        // --- HẾT THAY ĐỔI ---
       }
     }
 
     // 4. --- LOGIC CẬP NHẬT TRẠNG THÁI & SỐ LƯỢNG ---
-    // (Toàn bộ logic bên dưới được giữ nguyên)
 
     let newCalculatedStatus = originalStatus;
     let newAmount = manufacturedAmount ?? originalAmount;
-    let amountDrivenStatus: ProcessStatus | null = null; 
+    let amountDrivenStatus: ProcessStatus | null = null;
 
-    // A. Xử lý logic tự động dựa trên SỐ LƯỢNG (nếu được cung cấp)
+    // A. Xử lý logic tự động dựa trên SỐ LƯỢNG
     if (manufacturedAmount !== undefined) {
-      
-      // 1. Tự động VƯỢT MỨC (check 110%)
-      if (newAmount > maxAllowedAmount) {
-        amountDrivenStatus = ProcessStatus.OVERCOMPLETED;
-      } 
-      
+      // 1. <-- THAY ĐỔI: Đã xóa logic tự động VƯỢT MỨC (OVERCOMPLETED)
+
       // 2. Tự động CHẠY
-      else if (newAmount > 0) {
-         if (originalStatus === ProcessStatus.NOTSTARTED || originalStatus === ProcessStatus.OVERCOMPLETED) {
-            amountDrivenStatus = ProcessStatus.RUNNING;
-         }
+      if (newAmount > 0) {
+        if (
+          originalStatus === ProcessStatus.NOTSTARTED
+          // <-- THAY ĐỔI: Đã xóa || originalStatus === ProcessStatus.OVERCOMPLETED
+        ) {
+          amountDrivenStatus = ProcessStatus.RUNNING;
+        }
       }
 
       if (amountDrivenStatus) {
@@ -149,10 +179,8 @@ export class ManufacturingOrderProcessService {
       }
     }
 
-
-    // B. Xử lý logic thủ công dựa trên TRẠNG THÁI (nếu được cung cấp)
+    // B. Xử lý logic thủ công dựa trên TRẠNG THÁI
     if (newStatusFromDto) {
-      
       if (newStatusFromDto === ProcessStatus.RUNNING) {
         if (newAmount <= 0) {
           throw new BadRequestException(
@@ -160,57 +188,52 @@ export class ManufacturingOrderProcessService {
           );
         }
         newCalculatedStatus = ProcessStatus.RUNNING;
-      } 
-      else if (newStatusFromDto === ProcessStatus.NOTSTARTED) {
+      } else if (newStatusFromDto === ProcessStatus.NOTSTARTED) {
         if (newAmount > 0) {
           throw new ForbiddenException(
             "Không thể chuyển về 'NOTSTARTED' khi đã có số lượng sản xuất.",
           );
         }
         newCalculatedStatus = ProcessStatus.NOTSTARTED;
-      } 
-      else if (newStatusFromDto === ProcessStatus.PAUSED) {
-        const canPause = newCalculatedStatus === ProcessStatus.RUNNING || originalStatus === ProcessStatus.RUNNING;
+      } else if (newStatusFromDto === ProcessStatus.PAUSED) {
+        // Allow PAUSED transition from RUNNING OR from CANCELLED (user requested PAUSED <-> CANCELLED)
+        const canPause =
+          newCalculatedStatus === ProcessStatus.RUNNING ||
+          originalStatus === ProcessStatus.RUNNING ||
+          originalStatus === ProcessStatus.CANCELLED;
         if (!canPause) {
           throw new ForbiddenException(
-            `Chỉ có thể chuyển sang 'PAUSED' từ trạng thái 'RUNNING'.`,
+            `Chỉ có thể chuyển sang 'PAUSED' từ trạng thái 'RUNNING' hoặc từ 'CANCELLED'.`,
           );
         }
         newCalculatedStatus = ProcessStatus.PAUSED;
-      } 
-      else if (newStatusFromDto === ProcessStatus.CANCELLED) {
-        throw new ForbiddenException(
-          "Không thể cập nhật trạng thái sang 'CANCELLED' qua hàm này.",
-        );
-      } 
+      } else if (newStatusFromDto === ProcessStatus.CANCELLED) {
+        // Allow CANCELLED when coming from PAUSED (and permit idempotent CANCELLED)
+        if (
+          originalStatus !== ProcessStatus.PAUSED &&
+          originalStatus !== ProcessStatus.CANCELLED
+        ) {
+          throw new ForbiddenException(
+            `Chỉ có thể chuyển sang 'CANCELLED' từ trạng thái 'PAUSED' (hoặc nếu đã là 'CANCELLED').`,
+          );
+        }
+        newCalculatedStatus = ProcessStatus.CANCELLED;
+      }
       // Hoàn thành thủ công
       else if (newStatusFromDto === ProcessStatus.COMPLETED) {
         // Yêu cầu 1: (>= 100%)
         if (newAmount < targetAmount) {
-           throw new BadRequestException(
-             `Không thể hoàn thành thủ công khi số lượng (${newAmount}) chưa đạt mục tiêu (${targetAmount}).`
-           );
+          throw new BadRequestException(
+            `Không thể hoàn thành thủ công khi số lượng (${newAmount}) chưa đạt mục tiêu (${targetAmount}).`,
+          );
         }
-        
-        // Yêu cầu 2: (<= 120%)
-        if (newAmount > hardCapAmount) {
-           throw new BadRequestException(
-             `Không thể hoàn thành do số lượng (${newAmount}) vượt quá 20% mức cho phép (${hardCapAmount}).`
-           );
-        }
-        
+        // <-- THAY ĐỔI: Đã xóa Yêu cầu 2 (check 120% hardCapAmount)
+
         newCalculatedStatus = ProcessStatus.COMPLETED;
       }
-      // Vượt mức thủ công (check 110%)
-      else if (newStatusFromDto === ProcessStatus.OVERCOMPLETED) {
-         if (newAmount <= maxAllowedAmount) {
-           throw new BadRequestException(
-             `Số lượng (${newAmount}) chưa vượt quá 110% (${maxAllowedAmount}) để set 'Vượt mức'.`
-           );
-         }
-         newCalculatedStatus = ProcessStatus.OVERCOMPLETED;
-      }
+      // <-- THAY ĐỔI: Đã xóa toàn bộ logic 'else if (newStatusFromDto === ProcessStatus.OVERCOMPLETED)'
       else {
+        // Áp dụng các trạng thái khác nếu có (ví dụ: CUSTOM)
         newCalculatedStatus = newStatusFromDto;
       }
     }
@@ -220,14 +243,14 @@ export class ManufacturingOrderProcessService {
     targetProcess.manufacturedAmount = newAmount;
     await targetProcess.save();
 
-    // (Giữ nguyên) RÀNG BUỘC (3) - PAUSED DÂY CHUYỀN
+    // RÀNG BUỘC (3) - PAUSED DÂY CHUYỀN (Giữ nguyên)
     if (
       targetProcess.status === ProcessStatus.PAUSED &&
       originalStatus !== ProcessStatus.PAUSED
     ) {
       const subsequentProcessIds = allProcesses
         .filter((p) => p.processNumber > targetProcess.processNumber)
-        .map((p) => p._id); 
+        .map((p) => p._id);
 
       if (subsequentProcessIds.length > 0) {
         await this.mopModel.updateMany(
@@ -237,7 +260,33 @@ export class ManufacturingOrderProcessService {
       }
     }
 
-    // (Giữ nguyên) LOGIC CẬP NHẬT TRẠNG THÁI TỔNG THỂ (MO)
+    // Nếu chuyển sang CANCELLED thì đồng bộ các công đoạn sau là CANCELLED
+    if (
+      targetProcess.status === ProcessStatus.CANCELLED &&
+      originalStatus !== ProcessStatus.CANCELLED
+    ) {
+      const subsequentProcessIds = allProcesses
+        .filter((p) => p.processNumber > targetProcess.processNumber)
+        .map((p) => p._id);
+
+      if (subsequentProcessIds.length > 0) {
+        await this.mopModel.updateMany(
+          { _id: { $in: subsequentProcessIds } },
+          { $set: { status: ProcessStatus.CANCELLED } },
+        );
+      }
+
+      // Nếu là công đoạn #1, đồng bộ trạng thái MO
+      if (targetProcess.processNumber === 1) {
+        parentMO.overallStatus = OrderStatus.CANCELLED;
+        await parentMO.save();
+      }
+    }
+
+    // LOGIC CẬP NHẬT TRẠNG THÁI TỔNG THỂ (MO)
+    // <-- THAY ĐỔI: Logic này chỉ chạy khi MOP#1 chạy, nhưng MOP#1 chỉ chạy khi Sóng chạy,
+    // vậy nên logic Sóng chạy -> MO chạy đã được xử lý ở corrugator-process.service.ts
+    // Tuy nhiên, chúng ta vẫn cần logic này phòng trường hợp Sóng chạy rồi nhưng MOP#1 chưa chạy.
     if (
       targetProcess.processNumber === 1 &&
       targetProcess.status === ProcessStatus.RUNNING &&
@@ -247,25 +296,25 @@ export class ManufacturingOrderProcessService {
       await parentMO.save();
     }
 
-    // (Giữ nguyên) LOGIC CẬP NHẬT: TỰ ĐỘNG HOÀN THÀNH (hoặc VƯỢT MỨC) MO
+    // LOGIC CẬP NHẬT: TỰ ĐỘNG HOÀN THÀNH MO
+    // <-- THAY ĐỔI: Đã CẬP NHẬT logic hoàn thành
     const updatedProcesses = await this.mopModel.find({
       manufacturingOrder: parentMO._id,
     });
 
-    const allDone = updatedProcesses.every(
-      (p) => p.status === ProcessStatus.COMPLETED || p.status === ProcessStatus.OVERCOMPLETED,
+    const allMOPsDone = updatedProcesses.every(
+      (p) => p.status === ProcessStatus.COMPLETED, // <-- Chỉ check COMPLETED
     );
 
-    if (allDone) {
-      const anyOvercompleted = updatedProcesses.some(
-        (p) => p.status === ProcessStatus.OVERCOMPLETED,
-      );
+    // 2. Lấy và kiểm tra Corrugator Process
+    // (Chúng ta đã lấy 'corrugatorProcess' ở trên)
+    const isCorrugatorDone =
+      corrugatorProcess.status === CorrugatorProcessStatus.COMPLETED; // <-- Chỉ check COMPLETED
 
-      if (anyOvercompleted) {
-        parentMO.overallStatus = OrderStatus.OVERCOMPLETED;
-      } else {
-        parentMO.overallStatus = OrderStatus.COMPLETED;
-      }
+    // 3. Kiểm tra điều kiện hoàn thành tổng thể
+    if (allMOPsDone && isCorrugatorDone) {
+      // <-- THAY ĐỔI: Logic đơn giản hóa
+      parentMO.overallStatus = OrderStatus.COMPLETED;
       await parentMO.save();
     }
 

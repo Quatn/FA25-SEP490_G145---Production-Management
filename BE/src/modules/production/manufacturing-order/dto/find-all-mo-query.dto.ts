@@ -9,8 +9,18 @@ export class FindAllMoQueryDto {
 
   // 2. Filter theo corrugatorLine
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  corrugatorLine?: number;
+
+  @IsOptional()
   @IsString()
-  corrugatorLine?: string; // Giả sử corrugatorLine là string (hoặc ID)
+  overallStatus?: string;
+
+  // 2.1. Filter theo trạng thái quy trình sóng
+  @IsOptional()
+  @IsString()
+  corrugatorProcessStatus?: string;
 
   // 3. Filter theo ngày sản xuất (manufacturingDate)
   @IsOptional()
