@@ -14,6 +14,8 @@ import {
 import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
 import { ApiResponseWith } from "@/common/decorators/swagger-response-docs";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
+import { PurchaseOrderItemService } from "../purchase-order-item/purchase-order-item.service";
+import { QueryListFullDetailsPurchaseOrderItemByIdsRequestDto } from "../purchase-order-item/dto/query-list-full-details-by-ids.dto";
 
 @Controller("manufacturing-order")
 // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -23,7 +25,10 @@ import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
   FullDetailManufacturingOrderDto,
 )
 export class ManufacturingOrderController {
-  constructor(private moService: ManufacturingOrderService) { }
+  constructor(
+    private moService: ManufacturingOrderService,
+    private poiService: PurchaseOrderItemService,
+  ) { }
 
   // @UseGuards(JwtAuthGuard)
   @Get("list-all")
@@ -61,6 +66,24 @@ export class ManufacturingOrderController {
     @Query() query: QueryListManufacturingOrderRequestDto,
   ): Promise<QueryListManufacturingOrderResponseDto> {
     const docs = await this.moService.queryListFullDetails(query);
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
+    };
+  }
+
+  @Get("draft-orders-by-poi-ids")
+  @ApiOperation({ summary: "Query fully populated manufacturing orders" })
+  @ApiResponseWith(FullDetailManufacturingOrderDto, { paginated: true })
+  async draftOrderByPoisIds(
+    @Query() query: QueryListFullDetailsPurchaseOrderItemByIdsRequestDto,
+  ): Promise<BaseResponse<FullDetailManufacturingOrderDto[]>> {
+    const pois = await this.poiService.queryListFullDetailsByIds(query);
+
+    const docs = await this.moService.draftOrderByFullDetailsPois({
+      purchaseOrderItems: pois,
+    });
     return {
       success: true,
       message: "Fetch successful",

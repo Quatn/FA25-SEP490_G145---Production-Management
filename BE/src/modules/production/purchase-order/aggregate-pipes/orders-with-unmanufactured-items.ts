@@ -265,10 +265,16 @@ export const ordersWithUnmanufacturedItemsLeanPipe = (
     {
       $match: {
         $or: [
-          { code: { $regex: searchTerm, $options: "i" } }, // if PO item has a 'code'
+          { code: { $regex: searchTerm, $options: "i" } },
           { "purchaseOrder.code": { $regex: searchTerm, $options: "i" } },
           {
             "subPurchaseOrders.subPurchaseOrder.code": {
+              $regex: searchTerm,
+              $options: "i",
+            },
+          },
+          {
+            "subPurchaseOrders.purchaseOrderItems.code": {
               $regex: searchTerm,
               $options: "i",
             },
