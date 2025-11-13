@@ -1,13 +1,15 @@
 "use client";
 
 import {
-  useManufacturingPageDispatch,
-  useManufacturingPageState,
+  ManufacturingOrderCreatePageTreeNode,
+  useManufacturingOrderCreatePageDispatch,
+  useManufacturingOrderCreatePageState,
 } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { useQueryOrdersWithUnmanufacturedItemsQuery } from "@/service/api/purchaseOrderApiSlice";
 import {
   Box,
   Button,
+  Center,
   Group,
   HStack,
   Skeleton,
@@ -17,10 +19,14 @@ import {
 import check from "check-types";
 import { CiWarning } from "react-icons/ci";
 import PurchaseOrderItemSelectorItem from "./PurchaseOrderItemSelectorItem";
+import Link from "next/link";
+import { RiFolderOpenLine } from "react-icons/ri";
+import { useMemo } from "react";
 
 export default function PurchaseOrderItemSelector() {
-  const { groupType, page, limit, search } = useManufacturingPageState();
-  const dispatch = useManufacturingPageDispatch();
+  const { groupType, page, limit, search } =
+    useManufacturingOrderCreatePageState();
+  const dispatch = useManufacturingOrderCreatePageDispatch();
 
   const {
     data: queryResponse,
@@ -30,29 +36,74 @@ export default function PurchaseOrderItemSelector() {
 
   const orderPaginatedList = queryResponse?.data;
 
+  const treeStructure: ManufacturingOrderCreatePageTreeNode[] | undefined =
+    useMemo(() => {
+      return orderPaginatedList?.data.map((po) => {
+        return {
+          id: po.purchaseOrder._id,
+          name: po.purchaseOrder.code,
+          children: po.subPurchaseOrders.map((subpo) => {
+            return {
+              id: subpo.subPurchaseOrder._id,
+              name: subpo.subPurchaseOrder.code,
+              children: subpo.purchaseOrderItems.map((poi) => {
+                return {
+                  id: poi._id,
+                  name: poi.code,
+                };
+              }),
+            };
+          }),
+        };
+      });
+    }, [orderPaginatedList]);
+
   if (isFetchingList) {
     return <Skeleton width={"full"} height={"full"} />;
   }
 
   if (
-    fetchError || queryResponse?.success == false ||
-    !check.array(orderPaginatedList?.data)
+    fetchError || !(queryResponse?.success == true) ||
+    !check.array(orderPaginatedList?.data) || check.undefined(treeStructure)
   ) {
     return (
-      <Stack py={4} alignItems={"center"}>
-        <CiWarning color={"red"} size={"10rem"} />
-        {fetchError && <Text>{JSON.stringify(fetchError)}</Text>}
-      </Stack>
+      <Center py={4} flexGrow={1}>
+        <Stack>
+          <CiWarning color={"red"} size={"10rem"} />
+          {fetchError && <Text>{JSON.stringify(fetchError)}</Text>}
+        </Stack>
+      </Center>
     );
   }
 
   const poCount = orderPaginatedList.data.length;
+
+  if (poCount < 1) {
+    return (
+      <Center py={4} flexGrow={1}>
+        <Stack alignItems={"center"}>
+          <RiFolderOpenLine color={"gray"} size={"10rem"} />
+          <Text textAlign={"center"}>
+            {check.nonEmptyString(search)
+              ? "Tất cả PO bị ẩn đi bởi bộ lọc"
+              : "Không có PO nào chưa có lệnh sản xuất"}
+          </Text>
+          <Link href="/purchase-order/create">
+            <Center>
+              <Button colorPalette={"cyan"} size={"sm"}>Tạo PO</Button>
+            </Center>
+          </Link>
+        </Stack>
+      </Center>
+    );
+  }
+
   const poisCount = orderPaginatedList.data.map((po) =>
     po.manufacturedItemCount + po.unmanufacturedItemCount
-  ).reduce((acc, i) => acc + i);
+  ).reduce((acc, i) => acc + i, 0);
   const unmannufacturedPoisCount = orderPaginatedList.data.map((po) =>
     po.unmanufacturedItemCount
-  ).reduce((acc, i) => acc + i);
+  ).reduce((acc, i) => acc + i, 0);
 
   return (
     <Box>
@@ -65,6 +116,7 @@ export default function PurchaseOrderItemSelector() {
           <PurchaseOrderItemSelectorItem
             key={order.purchaseOrder._id}
             po={order}
+            tree={treeStructure}
           />
         ))}
       </Stack>

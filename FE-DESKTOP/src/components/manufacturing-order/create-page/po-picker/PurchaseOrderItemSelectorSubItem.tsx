@@ -1,8 +1,9 @@
 "use client";
 
 import {
-  useManufacturingPageDispatch,
-  useManufacturingPageState,
+  ManufacturingOrderCreatePageTreeNode,
+  useManufacturingOrderCreatePageDispatch,
+  useManufacturingOrderCreatePageState,
 } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { QueryOrdersWithUnmanufacturedItemsDto_SubPurchaseOrder } from "@/types/DTO/purchase-order/query-orders-with-unmanufactured-items";
 import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
@@ -21,18 +22,34 @@ import PurchaseOrderItemPickerTable from "./PurchaseOrderItemTable";
 
 export type PurchaseOrderItemSelectorSubItemProps = {
   subpo: Serialized<QueryOrdersWithUnmanufacturedItemsDto_SubPurchaseOrder>;
+  tree: ManufacturingOrderCreatePageTreeNode[];
 };
 
 export default function PurchaseOrderItemSelectorSubItem(
   props: PurchaseOrderItemSelectorSubItemProps,
 ) {
-  const { groupType } = useManufacturingPageState();
-  const dispatch = useManufacturingPageDispatch();
+  const { groupType, checkedOrderNodes, indeterminateOrderNodes } =
+    useManufacturingOrderCreatePageState();
+  const dispatch = useManufacturingOrderCreatePageDispatch();
+
+  const orderId = props.subpo.subPurchaseOrder._id;
+  const checked = checkedOrderNodes[orderId] || false;
+  const indeterminate = indeterminateOrderNodes[orderId] ||
+    false;
+
+  const handleToggle = () =>
+    dispatch({
+      type: "TOGGLE_ORDER_TREE_NODE",
+      payload: { id: orderId, tree: props.tree },
+    });
 
   const poiCount = props.subpo.purchaseOrderItems.length;
 
   return (
-    <CheckboxCard.Root>
+    <CheckboxCard.Root
+      checked={indeterminate ? "indeterminate" : checked}
+      onCheckedChange={() => handleToggle()}
+    >
       <CheckboxCard.HiddenInput />
       <CheckboxCard.Control>
         <CheckboxCard.Content
@@ -80,6 +97,7 @@ export default function PurchaseOrderItemSelectorSubItem(
           <Collapsible.Content>
             <PurchaseOrderItemPickerTable
               items={props.subpo.purchaseOrderItems}
+              tree={props.tree}
             />
           </Collapsible.Content>
         </Collapsible.Root>

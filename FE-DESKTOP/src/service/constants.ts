@@ -7,6 +7,7 @@ export const AUTH_URL = "/auth";
 export const USER_URL = "/user";
 export const PRODUCTION_ORDER_URL = "/production-order";
 export const PURCHASE_ORDER_URL = "/purchase-order";
+export const PURCHASE_ORDER_ITEM_URL = "/purchase-order-item";
 export const PRODUCT_URL = "/product";
 export const WARE_URL = "/ware";
 export const MANUFACTURING_ORDER_URL = "/manufacturing-order";

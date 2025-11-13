@@ -1,69 +1,55 @@
 "use client";
 
 import {
-  ManufacturingTableTabType,
-  useManufacturingTableDispatch,
-  useManufacturingTableState,
-} from "@/context/manufacturing-order/manufacturingOrderTableContext";
-import {
-  useGetFullDetailManufacturingOrdersQuery,
-} from "@/service/api/manufacturingOrderApiSlice";
+  PurchaseOrderItemPickerTabType,
+  useManufacturingOrderCreatePageDispatch,
+  useManufacturingOrderCreatePageState,
+} from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import {
   Box,
   BoxProps,
   Button,
-  Grid,
-  GridItem,
+  Group,
+  HStack,
   Table,
   TableRootProps,
   Tabs,
   TabsRootProps,
   Text,
 } from "@chakra-ui/react";
-import check from "check-types";
+import { useState } from "react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
-import { manufacturingOrderTableColumnsByTabs } from "./tableDefinition";
-import { useOptionalManufacturingDialogDispatch } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
-import { useEffect } from "react";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
+import { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
+import { useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
+import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { manufacturingOrderTableColumnsByTabs } from "@/components/manufacturing-order/full-detail-table/tableDefinition";
+import check from "check-types";
 
-export type ManufacturingOrderTableProps = {
+type TableProps = {
   rootProps?: BoxProps;
   tabsRootProps?: TabsRootProps;
   tableRootProps?: TableRootProps;
 };
 
-export default function ManufacturingOrderTable(
-  props: ManufacturingOrderTableProps,
+export default function CreatePageManufacturingOrderTable(
+  props: TableProps,
 ) {
-  const {
-    page,
-    limit,
-    tab,
-    search,
-    hoveredRowId,
-    selectedOrderId,
-    pinnedOrderIds,
-  } = useManufacturingTableState();
-  const dispatch = useManufacturingTableDispatch();
+  const { groupType, selectedPOIsIds } = useManufacturingOrderCreatePageState();
+  const dispatch = useManufacturingOrderCreatePageDispatch();
 
-  const {
-    data: fullDetailMOPaginatedResponse,
-    error: fetchError,
-    isLoading: isFetchingList,
-  } = useGetFullDetailManufacturingOrdersQuery({ page, limit });
-
-  const dialogDispatch = useOptionalManufacturingDialogDispatch();
-
+  const [tab, setTab] = useState<ManufacturingTableTabType>("all");
   const columnsForTab = manufacturingOrderTableColumnsByTabs[tab] ?? [];
 
-  const moPaginatedList = fullDetailMOPaginatedResponse?.data;
+  const {
+    data: fullDetailMOsResponse,
+    error: fetchError,
+    isLoading: isFetchingList,
+  } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
+    ids: selectedPOIsIds,
+  });
 
-  useEffect(() => {
-    dispatch({
-      type: "SET_TOTAL_ITEMS",
-      payload: moPaginatedList ? moPaginatedList.totalItems : 0,
-    });
-  }, [dispatch, moPaginatedList, moPaginatedList?.totalItems]);
+  const moPaginatedList = fullDetailMOsResponse?.data;
 
   if (isFetchingList) {
     return <Text>Loading table</Text>;
@@ -81,11 +67,7 @@ export default function ManufacturingOrderTable(
     <Box mt={3} {...props.rootProps}>
       <Tabs.Root
         value={tab}
-        onValueChange={(e) =>
-          dispatch({
-            type: "SET_TAB",
-            payload: e.value as ManufacturingTableTabType,
-          })}
+        onValueChange={(e) => setTab(e.value as ManufacturingTableTabType)}
         {...props.tabsRootProps}
       >
         <Tabs.List ms="200px">
@@ -185,15 +167,11 @@ export default function ManufacturingOrderTable(
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {moPaginatedList.data.map((item) => (
+            {moPaginatedList?.map((item) => (
               <Table.Row
-                key={item._id}
+                key={item.code}
                 bg={"gray.50"}
                 h="50px"
-                onMouseEnter={() =>
-                  dispatch({ type: "SET_HOVERED_ROW_ID", payload: item._id })}
-                onMouseLeave={() =>
-                  dispatch({ type: "SET_HOVERED_ROW_ID", payload: null })}
               >
                 <Table.Cell minW="100px" w="100px" left="0" data-sticky>
                   {item.manufacturingDirective}
@@ -209,30 +187,6 @@ export default function ManufacturingOrderTable(
                 {columnsForTab.map((col) => (
                   <Table.Cell key={col.key}>{col.render(item)}</Table.Cell>
                 ))}
-                <Table.Cell
-                  w="120px"
-                  border="none"
-                  bg="none"
-                >
-                  {hoveredRowId === item._id && (
-                    <>
-                      {dialogDispatch &&
-                        (
-                          <Button
-                            size="xs"
-                            colorPalette={"blue"}
-                            onClick={() =>
-                              dialogDispatch({
-                                type: "OPEN_DIALOG_WITH_ORDER",
-                                payload: item,
-                              })}
-                          >
-                            Chi tiết
-                          </Button>
-                        )}
-                    </>
-                  )}
-                </Table.Cell>
               </Table.Row>
             ))}
           </Table.Body>

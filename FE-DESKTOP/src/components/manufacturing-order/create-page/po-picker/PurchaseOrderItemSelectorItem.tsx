@@ -1,8 +1,9 @@
 "use client";
 
 import {
-  useManufacturingPageDispatch,
-  useManufacturingPageState,
+  ManufacturingOrderCreatePageTreeNode,
+  useManufacturingOrderCreatePageDispatch,
+  useManufacturingOrderCreatePageState,
 } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { QueryOrdersWithUnmanufacturedItemsDto } from "@/types/DTO/purchase-order/query-orders-with-unmanufactured-items";
 import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
@@ -14,22 +15,37 @@ import {
   CheckboxCard,
   Collapsible,
   Group,
+  Highlight,
   HStack,
   Stack,
   Text,
 } from "@chakra-ui/react";
 import { LuChevronDown, LuChevronRight } from "react-icons/lu";
 import PurchaseOrderItemSelectorSubItem from "./PurchaseOrderItemSelectorSubItem";
+import check from "check-types";
 
 export type PurchaseOrderItemSelectorItemProps = {
   po: Serialized<QueryOrdersWithUnmanufacturedItemsDto>;
+  tree: ManufacturingOrderCreatePageTreeNode[];
 };
 
 export default function PurchaseOrderItemSelectorItem(
   props: PurchaseOrderItemSelectorItemProps,
 ) {
-  const { groupType } = useManufacturingPageState();
-  const dispatch = useManufacturingPageDispatch();
+  const { groupType, search, checkedOrderNodes, indeterminateOrderNodes } =
+    useManufacturingOrderCreatePageState();
+  const dispatch = useManufacturingOrderCreatePageDispatch();
+
+  const orderId = props.po.purchaseOrder._id;
+  const checked = checkedOrderNodes[orderId] || false;
+  const indeterminate = indeterminateOrderNodes[orderId] ||
+    false;
+
+  const handleToggle = () =>
+    dispatch({
+      type: "TOGGLE_ORDER_TREE_NODE",
+      payload: { id: orderId, tree: props.tree },
+    });
 
   const dates = props.po.subPurchaseOrders.map((subpo) =>
     new Date(subpo.subPurchaseOrder.deliveryDate)
@@ -47,7 +63,10 @@ export default function PurchaseOrderItemSelectorItem(
   ).reduce((acc, i) => acc + i);
 
   return (
-    <CheckboxCard.Root>
+    <CheckboxCard.Root
+      checked={indeterminate ? "indeterminate" : checked}
+      onCheckedChange={() => handleToggle()}
+    >
       <CheckboxCard.HiddenInput />
       <CheckboxCard.Control>
         <CheckboxCard.Content
@@ -57,7 +76,33 @@ export default function PurchaseOrderItemSelectorItem(
         >
           <Box>
             <CheckboxCard.Label>
-              {`Đơn Hàng: ${props.po.purchaseOrder.code}, Khách Hàng: ${props.po.purchaseOrder.customer?.code}`}
+              <Text>
+                Đơn Hàng:{"  "}
+                <Highlight
+                  ignoreCase
+                  matchAll
+                  query={search}
+                  styles={{
+                    bg: "yellow.subtle",
+                    color: "orange.fg",
+                  }}
+                >
+                  {props.po.purchaseOrder.code}
+                </Highlight>
+              </Text>
+              <Text>
+                , Khách Hàng:{"  "}
+                <Highlight
+                  ignoreCase
+                  matchAll
+                  query={search}
+                  styles={{ bg: "yellow.subtle", color: "orange.fg" }}
+                >
+                  {check.assigned(props.po.purchaseOrder.customer)
+                    ? props.po.purchaseOrder.customer!.code
+                    : ""}
+                </Highlight>
+              </Text>
             </CheckboxCard.Label>
             <CheckboxCard.Description>
               <HStack>
@@ -109,6 +154,7 @@ export default function PurchaseOrderItemSelectorItem(
                 <PurchaseOrderItemSelectorSubItem
                   key={subpo.subPurchaseOrder.code}
                   subpo={subpo}
+                  tree={props.tree}
                 />
               ))}
             </Stack>

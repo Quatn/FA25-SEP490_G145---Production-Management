@@ -1,9 +1,10 @@
 "use client";
 
 import {
+  ManufacturingOrderCreatePageTreeNode,
   PurchaseOrderItemPickerTabType,
-  useManufacturingPageDispatch,
-  useManufacturingPageState,
+  useManufacturingOrderCreatePageDispatch,
+  useManufacturingOrderCreatePageState,
 } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import {
   Box,
@@ -26,13 +27,25 @@ type TableProps = {
   tabsRootProps?: TabsRootProps;
   tableRootProps?: TableRootProps;
   items: Serialized<PurchaseOrderItem>[];
+  tree: ManufacturingOrderCreatePageTreeNode[];
 };
 
 export default function PurchaseOrderItemPickerTable(
   props: TableProps,
 ) {
-  const { groupType } = useManufacturingPageState();
-  const dispatch = useManufacturingPageDispatch();
+  const { groupType, checkedOrderNodes } =
+    useManufacturingOrderCreatePageState();
+  const dispatch = useManufacturingOrderCreatePageDispatch();
+
+  const getChecked = (id: string) => {
+    return checkedOrderNodes[id] || false;
+  };
+
+  const handleToggle = (id: string) =>
+    dispatch({
+      type: "TOGGLE_ORDER_TREE_NODE",
+      payload: { id, tree: props.tree },
+    });
 
   const [tab, setTab] = useState<PurchaseOrderItemPickerTabType>("all");
   const columnsForTab = purchaseOrderItemTableColumnsByTabs[tab] ?? [];

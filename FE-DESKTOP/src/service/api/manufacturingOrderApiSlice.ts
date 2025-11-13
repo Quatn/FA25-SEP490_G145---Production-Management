@@ -6,6 +6,7 @@ import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { PageResponse } from "@/types/DTO/PageResponse";
 import { createApiEndpoint } from "@/utils/endpointFactory";
 import { MANUFACTURING_ORDER_URL } from "../constants";
+import { BaseResponse } from "@/types/DTO/BaseResponse";
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -36,10 +37,23 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
       mockFn: ({ page = 1, limit = 20 }) =>
         mockManufacturingOrderQuery({ page, limit }),
     }),
+
+    getDraftFullDetailManufacturingOrdersByPoiIds: createApiEndpoint<
+      BaseResponse<Serialized<ManufacturingOrder>[]>,
+      { ids: string[] }
+    >(builder, {
+      query: ({ ids }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/draft-orders-by-poi-ids`,
+        method: "GET",
+        params: { ids },
+        credentials: "include",
+      }),
+    }),
   }),
 });
 
 export const {
   useGetManufacturingOrdersQuery,
   useGetFullDetailManufacturingOrdersQuery,
+  useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery,
 } = manufacturingOrderApiSlice;

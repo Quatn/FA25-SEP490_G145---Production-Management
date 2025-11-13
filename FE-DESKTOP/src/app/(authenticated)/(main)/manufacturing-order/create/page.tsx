@@ -26,25 +26,31 @@ export default function PurchaseOrderCreatePage() {
             py={5}
             rounded={"md"}
             backgroundColor={"gray.100"}
-            minH={"80vh"}
           >
-            <Stack height={"full"} gapY={2}>
-              <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
+            <Stack
+              height={"full"}
+              overflowY={"hidden"}
+              minH={"50vh"}
+              maxH={"95vh"}
+            >
+              <Text fontWeight={"semibold"} color={"blackAlpha.800"} mb={2}>
                 PO Picker
               </Text>
-              <Box>
+              <Box mb={2}>
                 <CreatePage.SearchBar />
               </Box>
               <CreatePage.GroupTypeControl />
-              <CreatePage.ItemSelector />
+              <Box flexGrow={1} overflowY={"auto"}>
+                <CreatePage.ItemSelector />
+              </Box>
             </Stack>
           </Box>
 
           <Box
             p={3}
             mt={5}
-            rounded={"md"}
           >
+            <CreatePage.SelectedOrderDetailsContainer />
           </Box>
         </Box>
       </Box>
