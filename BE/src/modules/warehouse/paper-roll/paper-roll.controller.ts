@@ -133,4 +133,16 @@ export class PaperRollController {
       data: null,
     };
   }
+
+  // new endpoint in paper-roll.controller.ts
+  @Get("list-deleted")
+  @ApiOperation({ summary: "List soft-deleted paper rolls" })
+  async findDeleted(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+  ): Promise<BaseResponse<PaginatedList<any>>> {
+    // call a service method that directly queries the collection with { isDeleted: true }
+    const docs = await this.prService.findDeleted(page, limit);
+    return { success: true, message: "Fetch deleted", data: docs };
+  }
 }

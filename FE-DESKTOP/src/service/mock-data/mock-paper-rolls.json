@@ -1,7 +1,7 @@
 [
-  { "paperRollId": "R1", "name": "K/VT/100/170/VT2A", "paperTypeId": "PT1", "weight": 156, "receivingDate": "2023-12-30" },
-  { "paperRollId": "R2", "name": "H/LE/165/230/LE9A", "paperTypeId": "PT2", "weight": 1739, "receivingDate": "2023-12-30" },
-  { "paperRollId": "R3", "name": "T/VT/120/170/VT16A", "paperTypeId": "PT1", "weight": 995, "receivingDate": "2023-12-30" },
-  { "paperRollId": "R4", "name": "K/PD/900/200/PD19A", "paperTypeId": "PT3", "weight": 400, "receivingDate": "2023-12-30" },
-  { "paperRollId": "R5", "name": "K/PD/900/200/PD22A", "paperTypeId": "PT3", "weight": 620, "receivingDate": "2023-12-30" }
+  { "paperRollId": "R1", "paperSupplierId": "K/VT/100/170/VT2A", "paperTypeId": "PT1", "weight": 156, "receivingDate": "2023-12-30" },
+  { "paperRollId": "R2", "paperSupplierId": "H/LE/165/230/LE9A", "paperTypeId": "PT2", "weight": 1739, "receivingDate": "2023-12-30" },
+  { "paperRollId": "R3", "paperSupplierId": "T/VT/120/170/VT16A", "paperTypeId": "PT1", "weight": 995, "receivingDate": "2023-12-30" },
+  { "paperRollId": "R4", "paperSupplierId": "K/PD/900/200/PD19A", "paperTypeId": "PT3", "weight": 400, "receivingDate": "2023-12-30" },
+  { "paperRollId": "R5", "paperSupplierId": "K/PD/900/200/PD22A", "paperTypeId": "PT3", "weight": 620, "receivingDate": "2023-12-30" }
 ]

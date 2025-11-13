@@ -23,7 +23,7 @@ export class PaperRoll extends BaseSchema {
   @Prop({ required: true })
   receivingDate: Date;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   note: string;
 
 }

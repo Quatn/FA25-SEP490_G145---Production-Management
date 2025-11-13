@@ -13,4 +13,6 @@ export const MANUFACTURING_ORDER_URL = "/manufacturing-order";
 export const PAPER_SUPPLIER_URL = '/paper-supplier';
 export const PAPER_COLOR_URL = '/paper-color';
 export const PAPER_TYPE_URL = '/paper-type';
+export const PAPER_ROLL_URL = "/paper-roll";
+export const PAPER_ROLL_TRANSACTION_URL = "/paper-roll-transaction";
 

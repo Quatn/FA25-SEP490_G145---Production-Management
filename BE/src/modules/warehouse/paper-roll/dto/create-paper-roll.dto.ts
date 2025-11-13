@@ -17,13 +17,13 @@ export class CreatePaperRollDto {
     @IsMongoId({ message: 'paperTypeId must be a valid MongoDB ObjectId' })
     paperTypeId: string;
 
-    @ApiProperty({
-        example: 1,
-        description: 'Sequence number of the paper roll',
-    })
-    @IsNumber({}, { message: 'sequenceNumber must be a number' })
-    @Min(1, { message: 'sequenceNumber must be greater than 0' })
-    sequenceNumber: number;
+    // @ApiProperty({
+    //     example: 1,
+    //     description: 'Sequence number of the paper roll',
+    // })
+    // @IsNumber({}, { message: 'sequenceNumber must be a number' })
+    // @Min(1, { message: 'sequenceNumber must be greater than 0' })
+    // sequenceNumber: number;
 
     @ApiProperty({
         example: 1000,
