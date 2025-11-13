@@ -1,8 +1,10 @@
 import ManufacturingOrderTracking from "@/components/manufacturing-order/tracking/ManufacturingOrderTracking";
-export default function ProductManagement() {
+import MOTrackingNew from "@/components/manufacturing-order/tracking/MOTrackingNew";
+export default function TrackingManufacturingOrder() {
   return (
     <>
-      <ManufacturingOrderTracking />
+      <MOTrackingNew />
+      {/* <ManufacturingOrderTracking /> */}
     </>
   );
 }
