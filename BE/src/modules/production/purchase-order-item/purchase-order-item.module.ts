@@ -3,7 +3,7 @@ import { MongooseModule } from "@nestjs/mongoose";
 import {
   PurchaseOrderItem,
   PurchaseOrderItemSchema,
-} from "./schemas/purchase-order-item.schema";
+} from "../schemas/purchase-order-item.schema";
 
 @Module({
   imports: [

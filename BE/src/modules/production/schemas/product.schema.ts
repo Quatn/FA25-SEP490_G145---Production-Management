@@ -2,7 +2,7 @@ import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
 import { BaseSchema } from "@/common/schemas/base.schema";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
-import { Ware } from "@/modules/ware/schemas/ware.schema";
+import { Ware } from "@/modules/production/schemas/ware.schema";
 
 export enum ProductType {
   Lot = "Lót",

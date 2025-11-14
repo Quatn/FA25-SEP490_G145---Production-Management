@@ -12,19 +12,19 @@ import {
   CorrugatorProcess,
   CorrugatorProcessDocument,
   CorrugatorProcessStatus,
-} from "./schemas/corrugator-process.schema";
+} from "../schemas/corrugator-process.schema";
 import {
   ManufacturingOrder,
   ManufacturingOrderDocument,
   OrderStatus,
-} from "@/modules/production/manufacturing-order/schemas/manufacturing-order.schema";
+} from "@/modules/production/schemas/manufacturing-order.schema";
 // <-- THÊM MỚI: Import MOP và PO Item
 import {
   ManufacturingOrderProcess,
   ManufacturingOrderProcessDocument,
   ProcessStatus,
-} from "@/modules/production/manufacturing-order-process/schemas/manufacturing-order-process.schema";
-import { PurchaseOrderItemDocument } from "@/modules/purchase-order-item/schemas/purchase-order-item.schema";
+} from "@/modules/production/schemas/manufacturing-order-process.schema";
+import { PurchaseOrderItemDocument } from "@/modules/production/schemas/purchase-order-item.schema";
 // <-- THÊM MỚI: Import DTO (Giả sử bạn tạo DTO này)
 import { UpdateCorrugatorProcessDto } from "./dto/update-corrugator-process.dto";
 import { UpdateManyCorrugatorProcessesDto } from "./dto/update-many-corrugator-processes.dto";

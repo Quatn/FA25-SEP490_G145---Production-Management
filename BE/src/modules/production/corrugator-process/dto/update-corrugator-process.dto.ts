@@ -1,7 +1,7 @@
 // src/modules/production/corrugator-process/dto/update-corrugator-process.dto.ts
 
 import { IsEnum, IsNumber, IsOptional, Min } from 'class-validator';
-import { CorrugatorProcessStatus } from '../schemas/corrugator-process.schema';
+import { CorrugatorProcessStatus } from '../../schemas/corrugator-process.schema';
 
 /**
  * DTO (Data Transfer Object) để cập nhật

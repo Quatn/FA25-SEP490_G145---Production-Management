@@ -4,9 +4,9 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CorrugatorProcessController } from './corrugator-process.controller';
 import { CorrugatorProcessService } from './corrugator-process.service';
-import { CorrugatorProcess, CorrugatorProcessSchema } from './schemas/corrugator-process.schema';
-import { ManufacturingOrder, ManufacturingOrderSchema } from '@/modules/production/manufacturing-order/schemas/manufacturing-order.schema';
-import { ManufacturingOrderProcess, ManufacturingOrderProcessSchema } from '../production/manufacturing-order-process/schemas/manufacturing-order-process.schema';
+import { CorrugatorProcess, CorrugatorProcessSchema } from '../schemas/corrugator-process.schema';
+import { ManufacturingOrder, ManufacturingOrderSchema } from '@/modules/production/schemas/manufacturing-order.schema';
+import { ManufacturingOrderProcess, ManufacturingOrderProcessSchema } from '../schemas/manufacturing-order-process.schema';
 
 @Module({
   imports: [

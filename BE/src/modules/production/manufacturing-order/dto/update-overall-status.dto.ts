@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEnum } from "class-validator";
-import { OrderStatus } from "../schemas/manufacturing-order.schema";
+import { OrderStatus } from "../../schemas/manufacturing-order.schema";
 
 export class UpdateOverallStatusDto {
   @ApiProperty({

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { FilterQuery, Model } from "mongoose";
-import { Ware, WareDocument } from "./schemas/ware.schema";
+import { Ware, WareDocument } from "../schemas/ware.schema";
 
 @Injectable()
 export class WareService {

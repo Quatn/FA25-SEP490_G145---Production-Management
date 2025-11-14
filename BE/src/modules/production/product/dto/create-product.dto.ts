@@ -8,7 +8,7 @@ import {
   IsString,
   IsMongoId,
 } from "class-validator";
-import { ProductType } from "../schemas/product.schema";
+import { ProductType } from "../../schemas/product.schema";
 
 export class CreateProductDto {
   @ApiProperty()

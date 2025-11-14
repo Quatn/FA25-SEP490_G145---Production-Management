@@ -5,16 +5,16 @@ import { ManufacturingOrderProcessService } from "./manufacturing-order-process.
 import {
   ManufacturingOrderProcess,
   ManufacturingOrderProcessSchema,
-} from "./schemas/manufacturing-order-process.schema";
+} from "../schemas/manufacturing-order-process.schema";
 import {
   ManufacturingOrder,
   ManufacturingOrderSchema,
-} from "../manufacturing-order/schemas/manufacturing-order.schema"; // Import MO
+} from "../schemas/manufacturing-order.schema"; // Import MO
 
 import {
   CorrugatorProcess,
   CorrugatorProcessSchema,
-} from "@/modules/corrugator-process/schemas/corrugator-process.schema";
+} from "../schemas/corrugator-process.schema";
 
 @Module({
   imports: [

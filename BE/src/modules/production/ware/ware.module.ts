@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
-import { Ware, WareSchema } from "./schemas/ware.schema";
+import { Ware, WareSchema } from "../schemas/ware.schema";
 import { WareService } from "./ware.service";
 import { WareController } from "./ware.controller";
 

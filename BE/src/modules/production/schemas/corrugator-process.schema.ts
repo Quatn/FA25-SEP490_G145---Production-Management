@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { BaseSchema } from "@/common/schemas/base.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
-import { ManufacturingOrder } from "../../production/manufacturing-order/schemas/manufacturing-order.schema";
+import { ManufacturingOrder } from "../../production/schemas/manufacturing-order.schema";
 
 export enum CorrugatorProcessStatus {
   NOTSTARTED = "NOTSTARTED",

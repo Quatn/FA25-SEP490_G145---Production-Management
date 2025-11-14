@@ -5,14 +5,14 @@ import {
   ManufacturingOrder,
   ManufacturingOrderDocument,
   OrderStatus, 
-} from "./schemas/manufacturing-order.schema";
+} from "../schemas/manufacturing-order.schema";
 import { CreateManufacturingOrderRequestDto } from "./dto/create-order-request.dto";
 import { UpdateOverallStatusDto } from "./dto/update-overall-status.dto";
-import { ProcessStatus } from "../manufacturing-order-process/schemas/manufacturing-order-process.schema";
+import { ProcessStatus } from "../schemas/manufacturing-order-process.schema";
 import {
   ManufacturingOrderProcessDocument,
   ManufacturingOrderProcess,
-} from "../manufacturing-order-process/schemas/manufacturing-order-process.schema";
+} from "../schemas/manufacturing-order-process.schema";
 import { FindAllMoQueryDto } from "./dto/find-all-mo-query.dto";
 
 // <-- THAY ĐỔI: Import schema và status của Corrugator Process
@@ -20,7 +20,7 @@ import {
   CorrugatorProcess,
   CorrugatorProcessDocument,
   CorrugatorProcessStatus,
-} from "../../corrugator-process/schemas/corrugator-process.schema";
+} from "../schemas/corrugator-process.schema";
 
 @Injectable()
 export class ManufacturingOrderService {

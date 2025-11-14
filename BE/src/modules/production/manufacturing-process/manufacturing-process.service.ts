@@ -4,7 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import {
   ManufacturingProcess,
   ManufacturingProcessDocument,
-} from './schemas/manufacturing-process.schema';
+} from '../schemas/manufacturing-process.schema';
 
 @Injectable()
 export class ManufacturingProcessService {

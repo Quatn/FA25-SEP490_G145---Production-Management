@@ -3,7 +3,7 @@ import { ApiOperation } from '@nestjs/swagger';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { ManufacturingOrderProcessService } from './manufacturing-order-process.service';
 import { UpdateManufacturingOrderProcessDto } from './dto/update-manufacturing-order-process.dto';
-import { ManufacturingOrderProcess } from './schemas/manufacturing-order-process.schema';
+import { ManufacturingOrderProcess } from '../schemas/manufacturing-order-process.schema';
 
 @Controller('manufacturing-order-process')
 export class ManufacturingOrderProcessController {

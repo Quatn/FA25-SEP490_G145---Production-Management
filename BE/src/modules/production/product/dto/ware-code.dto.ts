@@ -10,7 +10,7 @@ import {
 import {
   WareUsageType,
   WareManufacturingProcessType,
-} from "../../ware/schemas/ware.schema";
+} from "../../schemas/ware.schema";
 
 export class WareCodeDto {
   @ApiProperty()

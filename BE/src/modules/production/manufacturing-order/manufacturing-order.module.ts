@@ -5,12 +5,12 @@ import { MongooseModule } from "@nestjs/mongoose";
 import {
   ManufacturingOrder,
   ManufacturingOrderSchema,
-} from "./schemas/manufacturing-order.schema";
+} from "../schemas/manufacturing-order.schema";
 import {
   ManufacturingOrderProcess,
   ManufacturingOrderProcessSchema,
-} from "../manufacturing-order-process/schemas/manufacturing-order-process.schema"; // Import MOP schema
-import { CorrugatorProcess, CorrugatorProcessSchema } from "@/modules/corrugator-process/schemas/corrugator-process.schema";
+} from "../schemas/manufacturing-order-process.schema"; // Import MOP schema
+import { CorrugatorProcess, CorrugatorProcessSchema } from "../schemas/corrugator-process.schema";
 
 @Module({
   imports: [

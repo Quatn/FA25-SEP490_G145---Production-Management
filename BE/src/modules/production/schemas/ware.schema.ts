@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { BaseSchema } from "@/common/schemas/base.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
-import { ManufacturingProcess } from "@/modules/production/manufacturing-process/schemas/manufacturing-process.schema";
+import { ManufacturingProcess } from "./manufacturing-process.schema";
 
 export enum WareUsageType {
   Lot = "Lót",

@@ -1,7 +1,7 @@
 // src/modules/corrugator-process/dto/update-many-corrugator-processes.dto.ts
 
 import { IsArray, IsEnum, IsMongoId } from 'class-validator';
-import { CorrugatorProcessStatus } from '../schemas/corrugator-process.schema';
+import { CorrugatorProcessStatus } from '../../schemas/corrugator-process.schema';
 
 /**
  * DTO để cập nhật trạng thái cho nhiều quy trình sóng cùng lúc

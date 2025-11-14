@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsEnum, IsOptional, Min } from 'class-validator';
-import { ProcessStatus } from '../schemas/manufacturing-order-process.schema';
+import { ProcessStatus } from '../../schemas/manufacturing-order-process.schema';
 
 export class UpdateManufacturingOrderProcessDto {
   @ApiProperty({

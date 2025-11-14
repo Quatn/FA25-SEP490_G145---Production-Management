@@ -12,7 +12,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { ProductService } from "./product.service";
-import { ProductType } from "./schemas/product.schema";
+import { ProductType } from "../schemas/product.schema";
 
 @Controller("products")
 @ApiTags("Products")

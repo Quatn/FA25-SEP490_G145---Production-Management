@@ -2,9 +2,9 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { BaseSchema } from "@/common/schemas/base.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
-import { PurchaseOrderItem } from "@/modules/purchase-order-item/schemas/purchase-order-item.schema"; // import schema PO Item
-import { ManufacturingOrderProcess } from "../../manufacturing-order-process/schemas/manufacturing-order-process.schema"; // Import schema MOP mới
-import { CorrugatorProcess } from "@/modules/corrugator-process/schemas/corrugator-process.schema";
+import { PurchaseOrderItem } from "@/modules/production/schemas/purchase-order-item.schema"; // import schema PO Item
+import { ManufacturingOrderProcess } from "./manufacturing-order-process.schema"; // Import schema MOP mới
+import { CorrugatorProcess } from "./corrugator-process.schema";
 
 export enum OrderStatus {
   NOTSTARTED = "NOTSTARTED",

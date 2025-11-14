@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import {
   ManufacturingProcess,
   ManufacturingProcessSchema,
-} from './schemas/manufacturing-process.schema';
+} from '../schemas/manufacturing-process.schema';
 import { ManufacturingProcessService } from './manufacturing-process.service';
 
 @Module({

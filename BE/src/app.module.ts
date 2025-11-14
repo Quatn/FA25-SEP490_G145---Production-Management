@@ -12,8 +12,8 @@ import { DatabaseModule } from "./database/database.module";
 import { CommonServicesModule } from "./common/services/services.module";
 import { ProductionModule } from './modules/production/production.module';
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
-import { ProductModule } from "./modules/product/product.module";
-import { WareModule } from "./modules/ware/ware.module";
+import { ProductModule } from "./modules/production/product/product.module";
+import { WareModule } from "./modules/production/ware/ware.module";
 
 @ApiBearerAuth("access-token")
 @Module({

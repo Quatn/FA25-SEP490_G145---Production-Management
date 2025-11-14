@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { BaseSchema } from "@/common/schemas/base.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
-import { Ware } from "../../ware/schemas/ware.schema"; // Import Schema Ware
+import { Ware } from "./ware.schema"; // Import Schema Ware
 
 export enum ProcessStatus {
   NOTSTARTED = "NOTSTARTED", // Chờ

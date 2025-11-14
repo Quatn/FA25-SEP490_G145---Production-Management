@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { BaseSchema } from "@/common/schemas/base.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
-import { ManufacturingProcess } from "../../manufacturing-process/schemas/manufacturing-process.schema"; // Import "từ điển" công đoạn
+import { ManufacturingProcess } from "./manufacturing-process.schema"; // Import "từ điển" công đoạn
 
 // Định nghĩa các trạng thái cho một công đoạn
 export enum ProcessStatus {

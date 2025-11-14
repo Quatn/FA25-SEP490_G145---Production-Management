@@ -7,7 +7,7 @@ import { CorrugatorProcessService } from './corrugator-process.service';
 import { CorrugatorProcessesDto } from './dto/corrugator-processes.dto';
 import { UpdateCorrugatorProcessDto } from './dto/update-corrugator-process.dto';
 import { UpdateManyCorrugatorProcessesDto } from './dto/update-many-corrugator-processes.dto';
-import { CorrugatorProcess } from './schemas/corrugator-process.schema';
+import { CorrugatorProcess } from '../schemas/corrugator-process.schema';
 
 @Controller('corrugator-process')
 export class CorrugatorProcessController {

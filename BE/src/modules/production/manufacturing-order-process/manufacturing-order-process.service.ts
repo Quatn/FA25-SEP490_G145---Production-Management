@@ -10,19 +10,19 @@ import {
   ManufacturingOrderProcess,
   ManufacturingOrderProcessDocument,
   ProcessStatus, // <-- IMPORT ProcessStatus
-} from "./schemas/manufacturing-order-process.schema";
+} from "../schemas/manufacturing-order-process.schema";
 import {
   ManufacturingOrder,
   ManufacturingOrderDocument,
   OrderStatus, // <-- IMPORT OrderStatus
-} from "../manufacturing-order/schemas/manufacturing-order.schema";
-import { PurchaseOrderItemDocument } from "../../purchase-order-item/schemas/purchase-order-item.schema";
+} from "../schemas/manufacturing-order.schema";
+import { PurchaseOrderItemDocument } from "../schemas/purchase-order-item.schema";
 import { UpdateManufacturingOrderProcessDto } from "./dto/update-manufacturing-order-process.dto";
 import {
   CorrugatorProcess,
   CorrugatorProcessDocument,
   CorrugatorProcessStatus,
-} from "@/modules/corrugator-process/schemas/corrugator-process.schema";
+} from "../schemas/corrugator-process.schema";
 
 @Injectable()
 export class ManufacturingOrderProcessService {
