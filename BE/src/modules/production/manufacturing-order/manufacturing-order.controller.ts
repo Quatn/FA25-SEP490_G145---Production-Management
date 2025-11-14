@@ -5,7 +5,7 @@ import { BaseResponse } from "@/common/dto/response.dto";
 import {
   ManufacturingOrder,
   ManufacturingOrderDocument,
-} from "../schemas/manufacturing-order.schema";
+} from "./schemas/manufacturing-order.schema";
 import { CreateManufacturingOrderRequestDto } from "./dto/create-order-request.dto";
 
 @Controller("manufacturing-order")

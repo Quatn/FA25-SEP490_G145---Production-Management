@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Model } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
-import { ManufacturingOrder } from "../schemas/manufacturing-order.schema";
+import { ManufacturingOrder } from "./schemas/manufacturing-order.schema";
 import { CreateManufacturingOrderRequestDto } from "./dto/create-order-request.dto";
 import { UpdateManufacturingOrderRequestDto } from "./dto/update-order-request.dto";
 
