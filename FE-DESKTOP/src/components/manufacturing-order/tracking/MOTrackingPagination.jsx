@@ -18,7 +18,7 @@ export default function MOTrackingPagination({
     isFetching,
   } = paginationInfo;
 
-  const limitOptions = [1, 2, 3, 4]; // Lấy từ file gốc của bạn
+  const limitOptions = [5, 10, 15, 20]; // Lấy từ file gốc của bạn
 
   // Tính toán rangeDisplay
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * limit + 1;

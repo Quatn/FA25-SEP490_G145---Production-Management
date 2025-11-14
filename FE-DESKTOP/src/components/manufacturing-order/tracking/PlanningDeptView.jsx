@@ -23,6 +23,8 @@ export default function PlanningDeptView({ data, isLoading, isFetching }) {
     return null;
   }
 
+  console.log(data);
+
   return (
     <div
       className="d-block d-lg-flex"
@@ -68,13 +70,19 @@ export default function PlanningDeptView({ data, isLoading, isFetching }) {
             {data.map((item) => {
               const rowStyles = getRowStyles(item);
               const ware = item?.purchaseOrderItem?.ware;
+              const customer =
+                item?.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder
+                  ?.customer;
 
               return (
                 <tr key={item.id}>
                   <td className="text-center" style={{ ...rowStyles }}>
                     {item?.code || "-"}
                   </td>
-                  <td style={{ ...rowStyles }}>{ware?.code || "-"}</td>
+                  <td className="text-center" style={{ ...rowStyles }}>
+                    {customer?.code || "-"}
+                  </td>
+                  <td style={{ ...rowStyles, width: "150px" }}>{ware?.code || "-"}</td>
                   <td className="text-center" style={{ ...rowStyles }}>
                     {typeof ware?.fluteCombination === "object" &&
                     ware?.fluteCombination?.code
@@ -83,7 +91,7 @@ export default function PlanningDeptView({ data, isLoading, isFetching }) {
                       ? "-"
                       : "-"}
                   </td>
-                  <td className="text-center" style={{ ...rowStyles }}>
+                  {/* <td className="text-center" style={{ ...rowStyles }}>
                     {ware?.wareLength || "-"}
                   </td>
                   <td className="text-center" style={{ ...rowStyles }}>
@@ -91,12 +99,12 @@ export default function PlanningDeptView({ data, isLoading, isFetching }) {
                   </td>
                   <td className="text-center" style={{ ...rowStyles }}>
                     {ware?.wareHeight || "-"}
-                  </td>
+                  </td> */}
                   <td
                     className="text-center"
                     style={{
-                      ...rowStyles,
                       ...AMOUNT_CELL_STYLE,
+                      ...rowStyles,
                     }}
                   >
                     {formatNumber(item?.purchaseOrderItem?.amount)}
@@ -105,10 +113,10 @@ export default function PlanningDeptView({ data, isLoading, isFetching }) {
                     {getStatus(item?.overallStatus)}
                   </td>
                   <td className="text-center" style={{ ...rowStyles }}>
-                    {formatShortDate(item?.requestedDatetime)}
+                    {formatShortDate(item?.manufacturingDate)}
                   </td>
                   <td className="text-center" style={{ ...rowStyles }}>
-                    {formatShortDate(item?.manufacturingDate)}
+                    {formatShortDate(item?.requestedDatetime)}
                   </td>
                 </tr>
               );
@@ -178,8 +186,8 @@ export default function PlanningDeptView({ data, isLoading, isFetching }) {
                   </td>
                   <td
                     style={{
-                      ...rowStyles,
                       ...(item?.corrugatorLine === 5 ? AMOUNT_CELL_STYLE : {}),
+                      ...rowStyles,
                     }}
                   >
                     {item?.corrugatorLine === 5
@@ -199,8 +207,8 @@ export default function PlanningDeptView({ data, isLoading, isFetching }) {
                   </td>
                   <td
                     style={{
-                      ...rowStyles,
                       ...(item?.corrugatorLine === 7 ? AMOUNT_CELL_STYLE : {}),
+                      ...rowStyles,
                     }}
                   >
                     {item?.corrugatorLine === 7
@@ -220,13 +228,11 @@ export default function PlanningDeptView({ data, isLoading, isFetching }) {
                         <td style={rowStyles}>
                           {pitem?.processDefinition?.name || "-"}
                         </td>
-                        <td style={rowStyles}>
-                          {getStatus(pitem?.status)}
-                        </td>
+                        <td style={rowStyles}>{getStatus(pitem?.status)}</td>
                         <td
                           style={{
-                            ...rowStyles,
                             ...(hasAmount ? AMOUNT_CELL_STYLE : {}),
+                            ...rowStyles,
                           }}
                         >
                           {hasAmount

@@ -227,7 +227,7 @@ const normalizePurchaseOrderItem = (poItem: any) => {
 
   return {
     id: poItem._id ?? poItem.id,
-    subPurchaseOrderId: poItem.subPurchaseOrderId,
+    subPurchaseOrder: poItem.subPurchaseOrder,
     amount: poItem.amount,
     longitudinalCutCount: poItem.longitudinalCutCount,
     runningLength: poItem.runningLength,

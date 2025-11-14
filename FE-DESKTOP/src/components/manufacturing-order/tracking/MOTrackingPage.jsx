@@ -10,18 +10,19 @@ import MOTrackingFilters from "./MOTrackingFilters";
 import MOTrackingPagination from "./MOTrackingPagination";
 import PlanningDeptView from "./PlanningDeptView";
 import CorrugatorDeptView from "./CorrugatorDeptView";
+import CoverterDeptView from "./CoverterDeptView";
 
 export default function MOTrackingPage() {
   // --- STATE ---
   const [activeTab, setActiveTab] = useState("planning"); // State cho tab
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(1);
+  const [limit, setLimit] = useState(5);
   const [filters, setFilters] = useState({
     searchTerm: "",
     overallStatusFilter: "all",
     fluteCombinationFilter: "all",
     corrugatorLineFilter: "all",
-    customerFilter: "",
+    customerFilter: "all",
     manufacturingDateFrom: "",
     manufacturingDateTo: "",
   });
@@ -43,7 +44,7 @@ export default function MOTrackingPage() {
       ...(filters.corrugatorLineFilter !== "all"
         ? { corrugatorLine: Number(filters.corrugatorLineFilter) }
         : {}),
-      ...(filters.customerFilter.trim()
+      ...(filters.customerFilter.trim() !== "all"
         ? { customer: filters.customerFilter.trim() }
         : {}),
       ...(filters.manufacturingDateFrom
@@ -165,7 +166,7 @@ export default function MOTrackingPage() {
         </Tab>
 
         <Tab eventKey="finishing" title="Bộ Phận Chế Biến">
-          <CorrugatorDeptView
+          <CoverterDeptView
             data={rawDataList}
             isLoading={isLoading}
             isFetching={isFetching}

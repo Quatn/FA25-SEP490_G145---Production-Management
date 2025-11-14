@@ -29,7 +29,7 @@ export default function MOTrackingFilters({
     <Form className="mb-4 p-3 border rounded shadow-sm bg-light">
       <Row className="mb-3">
         {/* Search */}
-        <Col xs={12} md={3} className="mb-3 mb-md-0">
+        <Col xs={12} md={4} className="mb-3 mb-md-0">
           <Form.Group>
             <Form.Label className="fw-bold">Tìm kiếm</Form.Label>
             <div className="d-flex align-items-center border rounded bg-white">
@@ -45,24 +45,6 @@ export default function MOTrackingFilters({
                 style={{ border: "none", boxShadow: "none" }}
               />
             </div>
-          </Form.Group>
-        </Col>
-
-        {/* Status Filter */}
-        <Col xs={12} md={2} className="mb-3 mb-md-0">
-          <Form.Group>
-            <Form.Label className="fw-bold">Trạng thái</Form.Label>
-            <Form.Select
-              name="overallStatusFilter"
-              value={filters.overallStatusFilter}
-              onChange={handleInputChange}
-            >
-              <option value="all">-- Tất cả --</option>
-              <option value="NOTSTARTED">Chờ</option>
-              <option value="RUNNING">Chạy</option>
-              <option value="COMPLETED">Hoàn Thành</option>
-              <option value="CANCELLED">Hủy</option>
-            </Form.Select>
           </Form.Group>
         </Col>
 
@@ -86,6 +68,75 @@ export default function MOTrackingFilters({
           </Form.Group>
         </Col>
 
+        {/* Manufacturing Date From */}
+        <Col xs={12} md={3} className="mb-3 mb-md-0">
+          <Form.Group>
+            <Form.Label className="fw-bold">Ngày Nhận (Từ)</Form.Label>
+            <Form.Control
+              type="date"
+              name="manufacturingDateFrom"
+              value={filters.manufacturingDateFrom}
+              onChange={handleInputChange}
+            />
+          </Form.Group>
+        </Col>
+
+        {/* Manufacturing Date To */}
+        <Col xs={12} md={3} className="mb-3 mb-md-0">
+          <Form.Group>
+            <Form.Label className="fw-bold">Ngày Nhận (Đến)</Form.Label>
+            <Form.Control
+              type="date"
+              name="manufacturingDateTo"
+              value={filters.manufacturingDateTo}
+              onChange={handleInputChange}
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row className="mb-3 mb-md-0">
+        {/* Khách hàng (Customer) Filter */}
+        <Col xs={12} md={4} className="mb-3 mb-md-0">
+          <Form.Group>
+            <Form.Label className="fw-bold">Khách hàng</Form.Label>
+            <Form.Select
+              name="customerFilter"
+              value={filters.customerFilter || "all"}
+              onChange={handleInputChange}
+              disabled={isLoadingCustomer}
+            >
+              <option value="all">-- Tất cả --</option>
+              {customers.map((customer) => (
+                <option
+                  key={customer._id || customer.id}
+                  value={customer._id || customer.id}
+                >
+                  {customer.code} - {customer.name}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+        </Col>
+
+        {/* Status Filter */}
+        <Col xs={12} md={2} className="mb-3 mb-md-0">
+          <Form.Group>
+            <Form.Label className="fw-bold">Trạng thái</Form.Label>
+            <Form.Select
+              name="overallStatusFilter"
+              value={filters.overallStatusFilter}
+              onChange={handleInputChange}
+            >
+              <option value="all">-- Tất cả --</option>
+              <option value="NOTSTARTED">Chờ</option>
+              <option value="RUNNING">Chạy</option>
+              <option value="COMPLETED">Hoàn Thành</option>
+              <option value="CANCELLED">Hủy</option>
+            </Form.Select>
+          </Form.Group>
+        </Col>
+
         {/* Dàn (CorrugatorLine) Filter */}
         <Col xs={12} md={2} className="mb-3 mb-md-0">
           <Form.Group>
@@ -99,52 +150,6 @@ export default function MOTrackingFilters({
               <option value="5">Dàn 5L</option>
               <option value="7">Dàn 7L</option>
             </Form.Select>
-          </Form.Group>
-        </Col>
-
-        {/* Khách hàng (Customer) Filter */}
-        <Col xs={12} md={2} className="mb-3 mb-md-0">
-          <Form.Group>
-            <Form.Label className="fw-bold">Khách hàng</Form.Label>
-            <Form.Select
-              name="customerFilter"
-              value={filters.customerFilter || "all"}
-              onChange={handleInputChange}
-              disabled={isLoadingCustomer}
-            >
-              <option value="all">-- Tất cả --</option>
-              {customers.map((customer) => (
-                <option key={customer._id || customer.id} value={customer._id || customer.id}>
-                  {customer.code} - {customer.name}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-        </Col>
-
-        {/* Manufacturing Date From */}
-        <Col xs={12} md={2} className="mb-3 mb-md-0">
-          <Form.Group>
-            <Form.Label className="fw-bold">Ngày Nhận (Từ)</Form.Label>
-            <Form.Control
-              type="date"
-              name="manufacturingDateFrom"
-              value={filters.manufacturingDateFrom}
-              onChange={handleInputChange}
-            />
-          </Form.Group>
-        </Col>
-
-        {/* Manufacturing Date To */}
-        <Col xs={12} md={2} className="mb-3 mb-md-0">
-          <Form.Group>
-            <Form.Label className="fw-bold">Ngày Nhận (Đến)</Form.Label>
-            <Form.Control
-              type="date"
-              name="manufacturingDateTo"
-              value={filters.manufacturingDateTo}
-              onChange={handleInputChange}
-            />
           </Form.Group>
         </Col>
 

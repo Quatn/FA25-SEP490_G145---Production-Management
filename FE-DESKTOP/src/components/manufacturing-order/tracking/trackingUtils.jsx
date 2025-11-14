@@ -10,8 +10,6 @@ export const formatNumber = (num) => {
   export const getRowStyles = (item) => {
     const baseStyle = {
       fontWeight: "500",
-      color: "#000000",
-      textDecoration: "none",
       backgroundColor: "white",
     };
   
@@ -83,18 +81,19 @@ export const formatNumber = (num) => {
   // --- HẰNG SỐ (CONSTANTS) ---
   
   export const SCROLL_HEADER_BG = "#e3f2fd";
-  export const AMOUNT_CELL_STYLE = { textDecoration: "underline", fontWeight: "600" };
+  export const AMOUNT_CELL_STYLE = { textDecoration: "underline", fontWeight: "600", color: "red" };
   
   // Header cho bảng cố định (Tab Kế Hoạch)
   export const FIXED_HEADERS = [
     "Lệnh SX",
+    "Khách hàng",
     "Mã Hàng",
     "Sóng",
-    "Dài/Khổ",
-    "Rộng/CD",
-    "Cao",
+    // "Dài",
+    // "Rộng",
+    // "Cao",
     "SL",
     "Trạng thái",
-    "Ngày Giao",
     "Ngày Nhận",
+    "Ngày Giao",
   ];
