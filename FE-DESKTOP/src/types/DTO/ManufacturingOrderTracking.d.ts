@@ -89,6 +89,8 @@ export type PurchaseOrderItemPopulatedDTO = {
   id: string;
   subPurchaseOrderId?: string;
   amount?: number;
+  longitudinalCutCount?: number;
+  runningLength?: number;
   ware?: WareDTO;
   numberOfBlanks?: number;
   totalVolume?: number;

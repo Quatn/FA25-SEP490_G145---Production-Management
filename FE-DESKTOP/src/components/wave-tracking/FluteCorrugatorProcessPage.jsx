@@ -16,6 +16,7 @@ import {
   useGetManufacturingOrderTrackingQuery,
   useRunCorrugatorProcessesMutation,
   useUpdateCorrugatorProcessMutation,
+  useUpdateManyCorrugatorProcessesMutation,
 } from "@/service/api/trackingManufacturingOrderApiSlice";
 
 // Hàm format số lượng thành định dạng 1.500
@@ -128,16 +129,15 @@ export default function FluteCorrugatorProcessPage() {
   const [pendingLimit, setPendingLimit] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [corrugatorLineFilter, setCorrugatorLineFilter] = useState("all");
+  const [paperWidthFilter, setPaperWidthFilter] = useState("");
   const [selectedMoIds, setSelectedMoIds] = useState(new Set());
+  const [selectedProcessIds, setSelectedProcessIds] = useState(new Set()); // Lưu các process IDs được chọn trong bảng active
+  const [selectedStatusForUpdate, setSelectedStatusForUpdate] = useState(""); // Trạng thái được chọn để cập nhật
+  const [isUpdatingStatusMode, setIsUpdatingStatusMode] = useState(false); // Mode cập nhật trạng thái
   const [stepAmount, setStepAmount] = useState(100);
   const [toasts, setToasts] = useState([]);
 
-  // --- STATE LƯU THAY ĐỔI TẠM THỜI ---
-  // Lưu các thay đổi số lượng (Đã SX) chưa bấm "Lưu"
-  // Dạng { corrugatorProcessId: newAmount }
   const [pendingAmounts, setPendingAmounts] = useState({});
-  // Lưu các thay đổi trạng thái chưa bấm "Lưu"
-  // Dạng { corrugatorProcessId: newStatus }
   const [pendingStatuses, setPendingStatuses] = useState({});
 
   // --- BUILD QUERY ARGS ---
@@ -149,8 +149,11 @@ export default function FluteCorrugatorProcessPage() {
       ...(corrugatorLineFilter !== "all"
         ? { corrugatorLine: Number(corrugatorLineFilter) }
         : {}),
+      ...(paperWidthFilter.trim() && !isNaN(Number(paperWidthFilter))
+        ? { paperWidth: Number(paperWidthFilter) }
+        : {}),
     }),
-    [searchTerm, corrugatorLineFilter]
+    [searchTerm, corrugatorLineFilter, paperWidthFilter]
   );
 
   // --- FETCH DATA ---
@@ -298,6 +301,8 @@ export default function FluteCorrugatorProcessPage() {
     useRunCorrugatorProcessesMutation();
   const [updateCorrugatorProcess, { isLoading: isUpdating }] =
     useUpdateCorrugatorProcessMutation();
+  const [updateManyCorrugatorProcesses, { isLoading: isUpdatingMany }] =
+    useUpdateManyCorrugatorProcessesMutation();
 
   // --- PAGINATION INFO ---
   const activeTotalPages = Math.ceil(activeTotalItems / activeLimit) || 1;
@@ -372,6 +377,82 @@ export default function FluteCorrugatorProcessPage() {
       console.error("Error running processes:", error);
       showToast(
         error.data?.message || "Có lỗi xảy ra khi chuyển trạng thái",
+        "danger"
+      );
+    }
+  };
+
+  // Handler cho việc chọn process trong bảng active
+  const handleSelectAllActive = (checked) => {
+    if (checked) {
+      const allProcessIds = activeProcesses
+        .map((item) => item.corrugatorProcess?.id)
+        .filter((id) => id);
+      setSelectedProcessIds(new Set(allProcessIds));
+    } else {
+      setSelectedProcessIds(new Set());
+    }
+  };
+
+  const handleSelectActiveItem = (processId, checked) => {
+    const newSelected = new Set(selectedProcessIds);
+    if (checked) {
+      newSelected.add(processId);
+    } else {
+      newSelected.delete(processId);
+    }
+    setSelectedProcessIds(newSelected);
+  };
+
+  // Handler để bật mode cập nhật trạng thái
+  const handleStartUpdateStatus = () => {
+    if (selectedProcessIds.size === 0) {
+      showToast("Vui lòng chọn ít nhất một quy trình sóng", "danger");
+      return;
+    }
+    setIsUpdatingStatusMode(true);
+    setSelectedStatusForUpdate("");
+  };
+
+  // Handler để hủy mode cập nhật trạng thái
+  const handleCancelUpdateStatus = () => {
+    setIsUpdatingStatusMode(false);
+    setSelectedStatusForUpdate("");
+  };
+
+  // Handler cho việc xác nhận và update nhiều quy trình cùng lúc
+  const handleConfirmUpdateManyStatus = async () => {
+    if (selectedProcessIds.size === 0) {
+      showToast("Vui lòng chọn ít nhất một quy trình sóng", "danger");
+      return;
+    }
+
+    if (!selectedStatusForUpdate) {
+      showToast("Vui lòng chọn trạng thái", "danger");
+      return;
+    }
+
+    try {
+      const result = await updateManyCorrugatorProcesses({
+        processIds: Array.from(selectedProcessIds),
+        status: selectedStatusForUpdate,
+      }).unwrap();
+      setSelectedProcessIds(new Set());
+      setIsUpdatingStatusMode(false);
+      setSelectedStatusForUpdate("");
+      showToast(
+        `Đã cập nhật ${result.successCount} quy trình sóng. ${
+          result.failedCount > 0
+            ? `${result.failedCount} quy trình thất bại.`
+            : ""
+        }`,
+        result.failedCount > 0 ? "warning" : "success"
+      );
+      refetch();
+    } catch (error) {
+      console.error("Error updating processes:", error);
+      showToast(
+        error.data?.message || "Có lỗi xảy ra khi cập nhật trạng thái",
         "danger"
       );
     }
@@ -460,39 +541,51 @@ export default function FluteCorrugatorProcessPage() {
   const handleClearFilters = () => {
     setSearchTerm("");
     setCorrugatorLineFilter("all");
+    setPaperWidthFilter("");
     setActivePage(1);
     setPendingPage(1);
-    setSelectedMoIds(new Set());
   };
 
   // --- TABLE HEADERS ---
   const TABLE_HEADERS_ACTIVE = [
+    "", // Checkbox column
     "Lệnh SX",
-    "Mã Hàng",
     "Sóng",
-    "Dài/Khổ",
-    "Rộng/CD",
-    "Cao",
-    "SL",
+    // "Dài/Khổ",
+    // "Rộng/CD",
+    // "Cao",
+    "Khổ gia công",
+    "Cắt dài gia công",
+    "Nắp/ Cánh SP",
+    "Lề biên",
+    "Part SX",
+    "Tấm chặt",
+    "Mét SX",
     "Trạng thái", // Sẽ là dropdown
     "Đã SX",
     "Lưu", // Thay "Hành động"
     "Ngày Nhận",
     "Khổ giấy",
+    "Giấy mặt SP",
   ];
 
   const TABLE_HEADERS_PENDING = [
     "Lệnh SX",
-    "Mã Hàng",
     "Sóng",
     "Dài/Khổ",
     "Rộng/CD",
     "Cao",
-    "SL",
-    "Trạng thái",
-    "Đã SX",
+    "Khổ gia công",
+    "Cắt dài gia công",
+    "Nắp/ Cánh SP",
+    "Lề biên",
+    "Part SX",
+    "Tấm chặt",
+    // "Trạng thái",
+    // "Đã SX",
     "Ngày Nhận",
     "Khổ giấy",
+    "Giấy mặt SP",
   ];
 
   const amountCellStyle = { textDecoration: "underline", fontWeight: "600" };
@@ -716,7 +809,7 @@ export default function FluteCorrugatorProcessPage() {
           </Col>
 
           {/* Corrugator Line Filter */}
-          <Col xs={12} md={3} className="mb-3 mb-md-0">
+          <Col xs={12} md={2} className="mb-3 mb-md-0">
             <Form.Group>
               <Form.Label className="fw-bold">Dàn</Form.Label>
               <Form.Select
@@ -741,8 +834,25 @@ export default function FluteCorrugatorProcessPage() {
             </Form.Group>
           </Col>
 
+          {/* Paper Width Filter */}
+          <Col xs={12} md={2} className="mb-3 mb-md-0">
+            <Form.Group>
+              <Form.Label className="fw-bold">Khổ giấy</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Nhập khổ giấy..."
+                value={paperWidthFilter}
+                onChange={(e) => {
+                  setPaperWidthFilter(e.target.value);
+                  setActivePage(1);
+                  setPendingPage(1);
+                }}
+              />
+            </Form.Group>
+          </Col>
+
           {/* Step Amount */}
-          <Col xs={12} md={3} className="mb-3 mb-md-0">
+          <Col xs={12} md={2} className="mb-3 mb-md-0">
             <Form.Group>
               <Form.Label className="fw-bold">Bước nhảy</Form.Label>
               <Form.Control
@@ -785,11 +895,74 @@ export default function FluteCorrugatorProcessPage() {
           <h4 className="fw-bold mb-0">
             Quy trình sóng đang chạy/Dừng/Hoàn thành
           </h4>
-          {renderLimitSelector(
-            activeLimit,
-            handleActiveLimitChange,
-            isFetching
-          )}
+          <div className="d-flex align-items-center gap-2">
+            {selectedProcessIds.size > 0 ? (
+              <>
+                {isUpdatingStatusMode ? (
+                  <>
+                    <Form.Select
+                      size="sm"
+                      value={selectedStatusForUpdate}
+                      onChange={(e) => setSelectedStatusForUpdate(e.target.value)}
+                      disabled={isUpdatingMany}
+                      style={{ width: "180px" }}
+                    >
+                      <option value="">Chọn trạng thái...</option>
+                      <option value="RUNNING">Chạy</option>
+                      <option value="PAUSED">Dừng</option>
+                      <option value="CANCELLED">Hủy</option>
+                      <option value="COMPLETED">Hoàn thành</option>
+                    </Form.Select>
+                    <Button
+                      variant="success"
+                      size="sm"
+                      onClick={handleConfirmUpdateManyStatus}
+                      disabled={isUpdatingMany || !selectedStatusForUpdate}
+                    >
+                      <i className="bi bi-check-circle me-2"></i>
+                      Xác nhận
+                    </Button>
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={handleCancelUpdateStatus}
+                      disabled={isUpdatingMany}
+                    >
+                      <i className="bi bi-x-circle me-2"></i>
+                      Hủy
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleStartUpdateStatus}
+                    >
+                      <i className="bi bi-pencil-square me-2"></i>
+                      Cập nhật trạng thái
+                    </Button>
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => setSelectedProcessIds(new Set())}
+                    >
+                      <i className="bi bi-x-circle me-2"></i>
+                      Bỏ chọn ({selectedProcessIds.size})
+                    </Button>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                {renderLimitSelector(
+                  activeLimit,
+                  handleActiveLimitChange,
+                  isFetching
+                )}
+              </>
+            )}
+          </div>
         </div>
         {!isFetching && activeProcesses.length > 0 ? (
           <>
@@ -817,7 +990,25 @@ export default function FluteCorrugatorProcessPage() {
                   }}
                 >
                   <tr>
-                    {TABLE_HEADERS_ACTIVE.map((header) => (
+                    <th style={{ width: "50px" }}>
+                      <Form.Check
+                        type="checkbox"
+                        checked={
+                          activeProcesses.length > 0 &&
+                          selectedProcessIds.size ===
+                            activeProcesses.filter(
+                              (item) => item.corrugatorProcess?.id
+                            ).length &&
+                          activeProcesses.every(
+                            (item) =>
+                              !item.corrugatorProcess?.id ||
+                              selectedProcessIds.has(item.corrugatorProcess.id)
+                          )
+                        }
+                        onChange={(e) => handleSelectAllActive(e.target.checked)}
+                      />
+                    </th>
+                    {TABLE_HEADERS_ACTIVE.slice(1).map((header) => (
                       <th key={header} style={{ fontSize: "13.5px" }}>
                         {header}
                       </th>
@@ -853,18 +1044,44 @@ export default function FluteCorrugatorProcessPage() {
                       pendingAmounts[processId] !== undefined ||
                       pendingStatuses[processId] !== undefined;
 
+                    const isProcessSelected = selectedProcessIds.has(processId);
+
                     return (
-                      <tr key={item.id} className="align-middle">
+                      <tr
+                        key={item.id}
+                        className="align-middle"
+                        style={{
+                          ...rowStyles,
+                          ...(isProcessSelected
+                            ? {
+                                backgroundColor: "#bbdefb",
+                                fontWeight: "600",
+                              }
+                            : {}),
+                        }}
+                      >
+                        <td className="text-center">
+                          <Form.Check
+                            type="checkbox"
+                            checked={isProcessSelected}
+                            onChange={(e) =>
+                              handleSelectActiveItem(processId, e.target.checked)
+                            }
+                          />
+                        </td>
                         <td className="text-center" style={{ ...rowStyles }}>
                           {item?.code || "-"}
                         </td>
-                        <td style={{ ...rowStyles, minWidth: "150px" }}>
+                        {/* <td style={{ ...rowStyles, minWidth: "150px" }}>
                           {ware?.code || "-"}
-                        </td>
-                        <td className="text-center" style={{ ...rowStyles }}>
+                        </td> */}
+                        <td
+                          className="text-center"
+                          style={{ ...rowStyles, color: "red" }}
+                        >
                           {ware?.fluteCombinationCode || "-"}
                         </td>
-                        <td className="text-center" style={{ ...rowStyles }}>
+                        {/* <td className="text-center" style={{ ...rowStyles }}>
                           {ware?.wareLength || "-"}
                         </td>
                         <td className="text-center" style={{ ...rowStyles }}>
@@ -872,15 +1089,46 @@ export default function FluteCorrugatorProcessPage() {
                         </td>
                         <td className="text-center" style={{ ...rowStyles }}>
                           {ware?.wareHeight || "-"}
+                        </td> */}
+                        <td className="text-center" style={{ ...rowStyles }}>
+                          {ware?.blankWidth || "-"}
+                        </td>
+                        <td className="text-center" style={{ ...rowStyles }}>
+                          {ware?.blankLength || "-"}
+                        </td>
+                        <td className="text-center" style={{ ...rowStyles }}>
+                          {ware?.flapLength || "-"}
+                        </td>
+                        <td className="text-center" style={{ ...rowStyles }}>
+                          {ware?.margin || "-"}
+                        </td>
+                        <td className="text-center" style={{ ...rowStyles }}>
+                          {ware?.crossCutCount || "-"}
+                        </td>
+
+                        <td
+                          className="text-center"
+                          style={{
+                            ...rowStyles,
+                            ...amountCellStyle,
+                            color: "red",
+                          }}
+                        >
+                          {formatNumber(
+                            item?.purchaseOrderItem?.longitudinalCutCount
+                          )}
                         </td>
                         <td
                           className="text-center"
                           style={{
                             ...rowStyles,
                             ...amountCellStyle,
+                            color: "red",
                           }}
                         >
-                          {formatNumber(item?.purchaseOrderItem?.amount)}
+                          {formatNumber(
+                            item?.purchaseOrderItem?.runningLength
+                          )}
                         </td>
 
                         {/* --- CỘT TRẠNG THÁI (DROPDOWN) --- */}
@@ -904,7 +1152,7 @@ export default function FluteCorrugatorProcessPage() {
                               borderColor: hasPendingChanges
                                 ? "#0d6efd"
                                 : "default",
-                                // minWidth: "90px"
+                              // minWidth: "90px"
                             }}
                           >
                             {EDITABLE_STATUSES.map((status) => (
@@ -996,20 +1244,26 @@ export default function FluteCorrugatorProcessPage() {
                         {/* --- CỘT LƯU --- */}
                         <td
                           className="text-center"
-                          style={{ ...rowStyles, minWidth: "80px" }}
+                          style={{ ...rowStyles, minWidth: "100px" }}
                         >
                           <Button
-                            variant={
-                              hasPendingChanges
-                                ? "primary"
-                                : "outline-secondary"
-                            }
+                            variant={hasPendingChanges ? "success" : "outline-secondary"}
                             size="sm"
                             onClick={() => handleSave(processId)}
                             disabled={!hasPendingChanges || isUpdating}
+                            className="d-flex align-items-center justify-content-center gap-1"
+                            style={{
+                              minWidth: "90px",
+                              fontWeight: hasPendingChanges ? 600 : 400,
+                              boxShadow: hasPendingChanges
+                                ? "0 2px 4px rgba(25, 135, 84, 0.3)"
+                                : "none",
+                              transition: "all 0.2s ease",
+                            }}
                             title="Lưu thay đổi"
                           >
                             <i className="bi bi-save-fill"></i>
+                            {hasPendingChanges && <span>Lưu</span>}
                           </Button>
                         </td>
 
@@ -1025,7 +1279,15 @@ export default function FluteCorrugatorProcessPage() {
                             color: "red",
                           }}
                         >
-                          {item?.purchaseOrderItem?.ware?.paperSize || "-"}
+                          {ware?.paperWidth || "-"}
+                        </td>
+                        <td
+                          className="text-center"
+                          style={{
+                            ...rowStyles,
+                          }}
+                        >
+                          {ware?.faceLayerPaperType || "-"}
                         </td>
                       </tr>
                     );
@@ -1047,7 +1309,7 @@ export default function FluteCorrugatorProcessPage() {
         ) : (
           !isFetching && (
             <div className="text-muted text-center p-4 border rounded">
-              Không có quy trình sóng đang chạy/dừng/hoàn thành.
+              Không có quy trình sóng đang chạy
             </div>
           )
         )}
@@ -1153,10 +1415,13 @@ export default function FluteCorrugatorProcessPage() {
                         <td className="text-center" style={{ ...rowStyles }}>
                           {item?.code || "-"}
                         </td>
-                        <td style={{ ...rowStyles, minWidth: "150px" }}>
+                        {/* <td style={{ ...rowStyles, minWidth: "150px" }}>
                           {ware?.code || "-"}
-                        </td>
-                        <td className="text-center" style={{ ...rowStyles }}>
+                        </td> */}
+                        <td
+                          className="text-center"
+                          style={{ ...rowStyles, color: "red" }}
+                        >
                           {ware?.fluteCombinationCode || "-"}
                         </td>
                         <td className="text-center" style={{ ...rowStyles }}>
@@ -1168,21 +1433,39 @@ export default function FluteCorrugatorProcessPage() {
                         <td className="text-center" style={{ ...rowStyles }}>
                           {ware?.wareHeight || "-"}
                         </td>
+                        <td className="text-center" style={{ ...rowStyles }}>
+                          {ware?.blankWidth || "-"}
+                        </td>
+                        <td className="text-center" style={{ ...rowStyles }}>
+                          {ware?.blankLength || "-"}
+                        </td>
+                        <td className="text-center" style={{ ...rowStyles }}>
+                          {ware?.flapLength || "-"}
+                        </td>
+                        <td className="text-center" style={{ ...rowStyles }}>
+                          {ware?.margin || "-"}
+                        </td>
+                        <td className="text-center" style={{ ...rowStyles }}>
+                          {ware?.crossCutCount || "-"}
+                        </td>
                         <td
                           className="text-center"
                           style={{
                             ...rowStyles,
                             ...amountCellStyle,
+                            color: "red",
                           }}
                         >
-                          {formatNumber(item?.purchaseOrderItem?.amount)}
+                          {formatNumber(
+                            item?.purchaseOrderItem?.longitudinalCutCount
+                          )}
                         </td>
-                        <td className="text-center" style={{ ...rowStyles }}>
+                        {/* <td className="text-center" style={{ ...rowStyles }}>
                           {corrugatorProcess
                             ? getStatus(corrugatorProcess.status)
                             : "Chờ"}
-                        </td>
-                        <td
+                        </td> */}
+                        {/* <td
                           className="text-center"
                           style={{
                             ...rowStyles,
@@ -1192,7 +1475,7 @@ export default function FluteCorrugatorProcessPage() {
                           {corrugatorProcess
                             ? formatNumber(corrugatorProcess.manufacturedAmount)
                             : "0"}
-                        </td>
+                        </td> */}
                         <td className="text-center" style={{ ...rowStyles }}>
                           {formatShortDate(item?.manufacturingDate)}
                         </td>
@@ -1204,7 +1487,10 @@ export default function FluteCorrugatorProcessPage() {
                             color: "red",
                           }}
                         >
-                          {item?.purchaseOrderItem?.ware?.paperSize || "-"}
+                          {ware?.paperWidth || "-"}
+                        </td>
+                        <td className="text-center" style={{ ...rowStyles }}>
+                          {ware?.faceLayerPaperType || "-"}
                         </td>
                       </tr>
                     );

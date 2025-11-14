@@ -52,6 +52,7 @@ export type TrackingListQueryParams = {
   manufacturingDateTo?: string;
   requestedDateFrom?: string;
   requestedDateTo?: string;
+  paperWidth?: number;
 };
 
 export type UpdateManufacturingOrderStatusPayload = {
@@ -75,6 +76,11 @@ export type UpdateCorrugatorProcessPayload = {
 
 export type RunCorrugatorProcessesPayload = {
   moIds: string[];
+};
+
+export type UpdateManyCorrugatorProcessesPayload = {
+  processIds: string[];
+  status: "RUNNING" | "PAUSED" | "CANCELLED" | "COMPLETED";
 };
 
 const normalizeCorrugatorProcess = (
@@ -176,9 +182,20 @@ const normalizePurchaseOrderItem = (poItem: any) => {
               updatedAt: proc.updatedAt,
             }))
           : undefined,
-        typeOfPrinter: poItem.ware.typeOfPrinter,
+        paperWidth: poItem.ware.paperWidth,
+        blankWidth: poItem.ware.blankWidth,
+        blankLength: poItem.ware.blankLength,
+        flapLength: poItem.ware.flapLength,
+        margin: poItem.ware.margin,
+        crossCutCount: poItem.ware.crossCutCount,
+        faceLayerPaperType: poItem.ware.faceLayerPaperType,
+        EFlutePaperType: poItem.ware.EFlutePaperType,
+        BFlutePaperType: poItem.ware.BFlutePaperType,
+        CFlutePaperType: poItem.ware.CFlutePaperType,
+        BCFlutePaperType: poItem.ware.BCFlutePaperType,
+        EBFlutePaperType: poItem.ware.EBFlutePaperType,
         printColors: poItem.ware.printColors,
-        paperSize: poItem.ware.paperSize,
+        typeOfPrinter: poItem.ware.typeOfPrinter,
         note: poItem.ware.note,
         recalcFlag: poItem.ware.recalcFlag,
         createdAt: poItem.ware.createdAt,
@@ -190,6 +207,8 @@ const normalizePurchaseOrderItem = (poItem: any) => {
     id: poItem._id ?? poItem.id,
     subPurchaseOrderId: poItem.subPurchaseOrderId,
     amount: poItem.amount,
+    longitudinalCutCount: poItem.longitudinalCutCount,
+    runningLength: poItem.runningLength,
     ware: normalizedWare,
     numberOfBlanks: poItem.numberOfBlanks,
     totalVolume: poItem.totalVolume,
@@ -261,6 +280,7 @@ const buildQueryParams = ({
   requestedDateTo,
   overallStatus,
   corrugatorProcessStatus,
+  paperWidth,
 }: TrackingListQueryParams) => {
   const params: Record<string, string | number> = { page, limit };
 
@@ -288,6 +308,9 @@ const buildQueryParams = ({
   }
   if (corrugatorProcessStatus?.trim()) {
     params.corrugatorProcessStatus = corrugatorProcessStatus.trim();
+  }
+  if (paperWidth !== undefined && paperWidth !== null) {
+    params.paperWidth = paperWidth;
   }
 
   return params;
@@ -512,6 +535,29 @@ export const trackingManufacturingOrderApiSlice = apiSlice.injectEndpoints({
         return tags;
       },
     }),
+
+    updateManyCorrugatorProcesses: builder.mutation<
+      { successCount: number; failedCount: number; errors: string[] },
+      UpdateManyCorrugatorProcessesPayload
+    >({
+      query: ({ processIds, status }) => ({
+        url: `/corrugator-process/update-many`,
+        method: "PATCH",
+        body: { processIds, status },
+        credentials: "include",
+      }),
+      transformResponse: (response: BaseResponse<{
+        successCount: number;
+        failedCount: number;
+        errors: string[];
+      }>) => response.data,
+      invalidatesTags: (_, error) => {
+        if (error) {
+          return [];
+        }
+        return [{ type: "ManufacturingOrderTracking", id: "LIST" }];
+      },
+    }),
   }),
 });
 
@@ -522,4 +568,5 @@ export const {
   useUpdateManufacturingOrderProcessMutation,
   useUpdateCorrugatorProcessMutation,
   useRunCorrugatorProcessesMutation,
+  useUpdateManyCorrugatorProcessesMutation,
 } = trackingManufacturingOrderApiSlice;
