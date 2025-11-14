@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { PurchaseOrder } from "../schemas/purchase-order.schema";
 import { Model } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
@@ -6,6 +6,11 @@ import { PaginatedList } from "@/common/dto/paginated-list.dto";
 import { PurchaseOrderItem } from "../schemas/purchase-order-item.schema";
 import { ordersWithUnmanufacturedItemsPopulatedPipe } from "./aggregate-pipes/orders-with-unmanufactured-items-populated";
 import { ordersWithUnmanufacturedItemsLeanPipe } from "./aggregate-pipes/orders-with-unmanufactured-items-lean";
+import { CreatePurchaseOrderDto } from "./dto/create-purchase-order.dto";
+import { UpdatePurchaseOrderDto } from "./dto/update-purchase-order.dto";
+import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
+
+type SoftPurchaseOrder = PurchaseOrder & SoftDeleteDocument;
 
 @Injectable()
 export class PurchaseOrderService {
@@ -16,7 +21,7 @@ export class PurchaseOrderService {
     @InjectModel(
       PurchaseOrderItem.name,
     ) private readonly purchaseOrderItemModel: Model<PurchaseOrderItem>,
-  ) {}
+  ) { }
 
   async findAll() {
     return await this.purchaseOrderModel.find();
@@ -176,5 +181,57 @@ export class PurchaseOrderService {
       hasPrevPage,
       data,
     };
+  }
+
+  async create(dto: CreatePurchaseOrderDto): Promise<PurchaseOrder> {
+    // transform date
+    const payload: any = {
+      ...dto,
+      orderDate: new Date(dto.orderDate),
+    };
+
+    const doc = new this.purchaseOrderModel(payload);
+    try {
+      const saved = await doc.save();
+      return saved;
+    } catch (err: any) {
+      // re-throw to let controller / global handler format
+      throw err;
+    }
+  }
+
+  async findOne(id: string): Promise<PurchaseOrder> {
+    const doc = await this.purchaseOrderModel.findById(id);
+    if (!doc) throw new NotFoundException(`Purchase order ${id} not found`);
+    return doc;
+  }
+
+  async updateOne(id: string, dto: UpdatePurchaseOrderDto): Promise<PurchaseOrder> {
+    const payload: any = { ...dto };
+    if (dto.orderDate) payload.orderDate = new Date(dto.orderDate as any);
+
+    const updated = await this.purchaseOrderModel.findByIdAndUpdate(id, payload, { new: true });
+    if (!updated) throw new NotFoundException(`Purchase order ${id} not found`);
+    return updated;
+  }
+
+  async softDelete(id: string) {
+    const doc = await this.purchaseOrderModel.findById(id) as SoftPurchaseOrder;
+    if (!doc) throw new NotFoundException("Purchase order not found");
+    await doc.softDelete();
+    return { success: true };
+  }
+
+  async restore(id: string) {
+    const doc = await this.purchaseOrderModel.findById(id) as SoftPurchaseOrder;
+    if (!doc) throw new NotFoundException("Purchase order not found");
+    await doc.restore();
+    return { success: true };
+  }
+
+  async removeHard(id: string) {
+    const result = await this.purchaseOrderModel.findByIdAndDelete(id);
+    if (!result) throw new NotFoundException("Purchase order not found");
+    return { success: true };
   }
 }
