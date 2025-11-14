@@ -2,13 +2,15 @@ import { apiSlice } from "./apiSlice";
 import { PRODUCT_URL } from "../constants";
 import { PaginatedList } from "@/types/DTO/Response";
 import { Product } from "@/types/Product";
+import { createApiEndpoint } from "@/utils/endpointFactory";
+import { PageResponse } from "@/types/DTO/PageResponse";
 
 type GetProductListParams = {
   page?: number;
   limit?: number;
   search?: string;
   productType?: string;
-  customerCode?: string;
+  customer?: string; // Changed from customerCode to customer (ObjectId)
 };
 
 export const productApiSlice = apiSlice.injectEndpoints({
@@ -17,7 +19,7 @@ export const productApiSlice = apiSlice.injectEndpoints({
       PaginatedList<Serialized<Product>>,
       GetProductListParams
     >({
-      query: ({ page = 1, limit = 20, search, productType, customerCode }) => ({
+      query: ({ page = 1, limit = 20, search, productType, customer }) => ({
         url: `${PRODUCT_URL}/`,
         method: "GET",
         params: {
@@ -25,7 +27,7 @@ export const productApiSlice = apiSlice.injectEndpoints({
           limit,
           ...(search ? { search } : {}),
           ...(productType ? { productType } : {}),
-          ...(customerCode ? { customerCode } : {}),
+          ...(customer ? { customer } : {}),
         },
         credentials: "include",
       }),

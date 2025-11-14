@@ -82,6 +82,102 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
+      // {
+      //   id: "product",
+      //   name: "Product Management",
+      //   children: [
+      //     {
+      //       id: "product-list",
+      //       name: "Product List",
+      //       href: "/products",
+      //       children: [],
+      //     },
+      //   ],
+      // },
+      {
+        id: "paper-supplier",
+        name: "Paper Supplier",
+        children: [
+          {
+            id: "paper-supplier-list",
+            name: "Paper Supplier List",
+            href: "/paper-supplier",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "paper-color",
+        name: "Paper Color",
+        children: [
+          {
+            id: "paper-color-list",
+            name: "Paper Color List",
+            href: "/paper-color",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "paper-type",
+        name: "Paper Type",
+        children: [
+          {
+            id: "paper-type-list",
+            name: "Paper Type List",
+            href: "/paper-type",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "ware-manufacturing-process-type",
+        name: "Ware Manufacturing Process Type",
+        children: [
+          {
+            id: "ware-manufacturing-process-type-list",
+            name: "Ware Manufacturing Process Type List",
+            href: "/ware-manufacturing-process-type",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "ware-finishing-process-type",
+        name: "Ware Finishing Process Type",
+        children: [
+          {
+            id: "ware-finishing-process-type-list",
+            name: "Ware Finishing Process Type List",
+            href: "/ware-finishing-process-type",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "product-type",
+        name: "Product Type",
+        children: [
+          {
+            id: "product-type-list",
+            name: "Product Type List",
+            href: "/product-type",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "flute-combination",
+        name: "Flute Combination",
+        children: [
+          {
+            id: "flute-combination-list",
+            name: "Flute Combination List",
+            href: "/flute-combination",
+            children: [],
+          },
+        ],
+      },
     ],
   },
 });
@@ -112,9 +208,10 @@ export default function MainLayout({
       <SimpleGrid
         columns={{ base: 1, sm: 5, md: 5 }}
         gap={{ base: "24px", md: "40px" }}
+        overflowY={"hidden"}
         flexGrow={1}
       >
-        <GridItem colSpan={{ base: 1, sm: 2, md: 1 }}>
+        <GridItem colSpan={{ base: 1, sm: 2, md: 1 }} overflowY={"auto"}>
           <Sidebar.Root>
             <Sidebar.Header>
               <Input
@@ -137,7 +234,7 @@ export default function MainLayout({
             </Sidebar.Body>
           </Sidebar.Root>
         </GridItem>
-        <GridItem colSpan={{ base: 1, sm: 3, md: 4 }}>
+        <GridItem colSpan={{ base: 1, sm: 3, md: 4 }} overflowY={"auto"}>
           <main
             style={{ height: "100%", display: "flex", flexDirection: "column" }}
           >

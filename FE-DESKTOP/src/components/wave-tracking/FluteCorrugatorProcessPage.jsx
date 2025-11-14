@@ -72,7 +72,7 @@ const getRowStyles = (item) => {
       };
     case "CANCELLED":
       return {
-        ...baseGaseStyle,
+        ...baseStyle,
         backgroundColor: "#fbe6e8",
         textDecoration: "line-through",
         color: "#c62828",
@@ -218,7 +218,7 @@ export default function FluteCorrugatorProcessPage() {
         corrugatorStatus === "COMPLETED" ||
         // Hiển thị cả những trạng thái đang được thay đổi tạm thời
         Object.keys(pendingStatuses).includes(
-          String(item.corrugatorProcess?.id)
+          String(item.corrugatorProcess?._id || item.corrugatorProcess?.id)
         )
       );
     });
@@ -263,7 +263,7 @@ export default function FluteCorrugatorProcessPage() {
           corrugatorStatus === "PAUSED" ||
           corrugatorStatus === "COMPLETED" ||
           Object.keys(pendingStatuses).includes(
-            String(item.corrugatorProcess?.id)
+            String(item.corrugatorProcess?._id || item.corrugatorProcess?.id)
           )
         )
       );
@@ -289,7 +289,7 @@ export default function FluteCorrugatorProcessPage() {
           corrugatorStatus === "PAUSED" ||
           corrugatorStatus === "COMPLETED" ||
           Object.keys(pendingStatuses).includes(
-            String(item.corrugatorProcess?.id)
+            String(item.corrugatorProcess?._id || item.corrugatorProcess?.id)
           )
         )
       );
@@ -386,7 +386,9 @@ export default function FluteCorrugatorProcessPage() {
   const handleSelectAllActive = (checked) => {
     if (checked) {
       const allProcessIds = activeProcesses
-        .map((item) => item.corrugatorProcess?.id)
+        .map(
+          (item) => item.corrugatorProcess?._id || item.corrugatorProcess?.id
+        )
         .filter((id) => id);
       setSelectedProcessIds(new Set(allProcessIds));
     } else {
@@ -903,7 +905,9 @@ export default function FluteCorrugatorProcessPage() {
                     <Form.Select
                       size="sm"
                       value={selectedStatusForUpdate}
-                      onChange={(e) => setSelectedStatusForUpdate(e.target.value)}
+                      onChange={(e) =>
+                        setSelectedStatusForUpdate(e.target.value)
+                      }
                       disabled={isUpdatingMany}
                       style={{ width: "180px" }}
                     >
@@ -997,15 +1001,22 @@ export default function FluteCorrugatorProcessPage() {
                           activeProcesses.length > 0 &&
                           selectedProcessIds.size ===
                             activeProcesses.filter(
-                              (item) => item.corrugatorProcess?.id
+                              (item) =>
+                                item.corrugatorProcess?._id ||
+                                item.corrugatorProcess?.id
                             ).length &&
-                          activeProcesses.every(
-                            (item) =>
-                              !item.corrugatorProcess?.id ||
-                              selectedProcessIds.has(item.corrugatorProcess.id)
-                          )
+                          activeProcesses.every((item) => {
+                            const processId =
+                              item.corrugatorProcess?._id ||
+                              item.corrugatorProcess?.id;
+                            return (
+                              !processId || selectedProcessIds.has(processId)
+                            );
+                          })
                         }
-                        onChange={(e) => handleSelectAllActive(e.target.checked)}
+                        onChange={(e) =>
+                          handleSelectAllActive(e.target.checked)
+                        }
                       />
                     </th>
                     {TABLE_HEADERS_ACTIVE.slice(1).map((header) => (
@@ -1027,7 +1038,8 @@ export default function FluteCorrugatorProcessPage() {
 
                     if (!corrugatorProcess) return null; // Không hiển thị nếu không có process
 
-                    const processId = corrugatorProcess.id;
+                    const processId =
+                      corrugatorProcess._id || corrugatorProcess.id;
 
                     // Lấy số lượng: ưu tiên state tạm thời, nếu không có thì lấy từ API
                     const currentAmount =
@@ -1065,7 +1077,10 @@ export default function FluteCorrugatorProcessPage() {
                             type="checkbox"
                             checked={isProcessSelected}
                             onChange={(e) =>
-                              handleSelectActiveItem(processId, e.target.checked)
+                              handleSelectActiveItem(
+                                processId,
+                                e.target.checked
+                              )
                             }
                           />
                         </td>
@@ -1079,7 +1094,12 @@ export default function FluteCorrugatorProcessPage() {
                           className="text-center"
                           style={{ ...rowStyles, color: "red" }}
                         >
-                          {ware?.fluteCombinationCode || "-"}
+                          {typeof ware?.fluteCombination === "object" &&
+                          ware?.fluteCombination?.code
+                            ? ware.fluteCombination.code
+                            : typeof ware?.fluteCombination === "string"
+                            ? "-"
+                            : "-"}
                         </td>
                         {/* <td className="text-center" style={{ ...rowStyles }}>
                           {ware?.wareLength || "-"}
@@ -1126,9 +1146,7 @@ export default function FluteCorrugatorProcessPage() {
                             color: "red",
                           }}
                         >
-                          {formatNumber(
-                            item?.purchaseOrderItem?.runningLength
-                          )}
+                          {formatNumber(item?.purchaseOrderItem?.runningLength)}
                         </td>
 
                         {/* --- CỘT TRẠNG THÁI (DROPDOWN) --- */}
@@ -1247,7 +1265,11 @@ export default function FluteCorrugatorProcessPage() {
                           style={{ ...rowStyles, minWidth: "100px" }}
                         >
                           <Button
-                            variant={hasPendingChanges ? "success" : "outline-secondary"}
+                            variant={
+                              hasPendingChanges
+                                ? "success"
+                                : "outline-secondary"
+                            }
                             size="sm"
                             onClick={() => handleSave(processId)}
                             disabled={!hasPendingChanges || isUpdating}
@@ -1422,7 +1444,12 @@ export default function FluteCorrugatorProcessPage() {
                           className="text-center"
                           style={{ ...rowStyles, color: "red" }}
                         >
-                          {ware?.fluteCombinationCode || "-"}
+                          {typeof ware?.fluteCombination === "object" &&
+                          ware?.fluteCombination?.code
+                            ? ware.fluteCombination.code
+                            : typeof ware?.fluteCombination === "string"
+                            ? "-"
+                            : "-"}
                         </td>
                         <td className="text-center" style={{ ...rowStyles }}>
                           {ware?.wareLength || "-"}

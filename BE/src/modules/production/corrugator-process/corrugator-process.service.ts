@@ -1,5 +1,3 @@
-// src/modules/production/corrugator-process/corrugator-process.service.ts
-
 import {
   Injectable,
   BadRequestException,
@@ -25,6 +23,7 @@ import {
   ProcessStatus,
 } from "@/modules/production/schemas/manufacturing-order-process.schema";
 import { PurchaseOrderItemDocument } from "@/modules/production/schemas/purchase-order-item.schema";
+import { isRefPopulated } from "@/common/utils/populate-check";
 // <-- THÊM MỚI: Import DTO (Giả sử bạn tạo DTO này)
 import { UpdateCorrugatorProcessDto } from "./dto/update-corrugator-process.dto";
 import { UpdateManyCorrugatorProcessesDto } from "./dto/update-many-corrugator-processes.dto";
@@ -108,12 +107,12 @@ export class CorrugatorProcessService {
       throw new NotFoundException("Không tìm thấy Lệnh sản xuất cha.");
     }
 
-    const poItem = parentMO.purchaseOrderItem as PurchaseOrderItemDocument;
-    if (!poItem) {
+    if (!isRefPopulated(parentMO.purchaseOrderItem)) {
       throw new NotFoundException(
         "Không tìm thấy PO Item liên kết với Lệnh sản xuất này.",
       );
     }
+    const poItem = parentMO.purchaseOrderItem as unknown as PurchaseOrderItemDocument;
     const targetAmount = poItem.longitudinalCutCount; // Sử dụng tấm chặt thay vì amount
     const maxAmountForCompletion = targetAmount * 1.1; // Yêu cầu 5: <= 110%
 
@@ -285,12 +284,12 @@ export class CorrugatorProcessService {
           }
 
           // Kiểm tra số lượng
-          const poItem = parentMO.purchaseOrderItem as PurchaseOrderItemDocument;
-          if (!poItem) {
+          if (!isRefPopulated(parentMO.purchaseOrderItem)) {
             throw new NotFoundException(
               "Không tìm thấy PO Item liên kết với Lệnh sản xuất này.",
             );
           }
+          const poItem = parentMO.purchaseOrderItem as unknown as PurchaseOrderItemDocument;
           const targetAmount = poItem.longitudinalCutCount;
           const maxAmountForCompletion = targetAmount * 1.1;
 

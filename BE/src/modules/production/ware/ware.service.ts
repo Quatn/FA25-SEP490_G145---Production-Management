@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { FilterQuery, Model } from "mongoose";
 import { Ware, WareDocument } from "../schemas/ware.schema";
@@ -25,13 +25,19 @@ export class WareService {
       const regex = new RegExp(options.search, "i");
       filter.$or = [
         { code: regex },
-        { fluteCombinationCode: regex },
+        // Note: Search in populated fields requires aggregation pipeline
+        // For now, searching only in ware fields
       ];
     }
 
     const [data, total] = await Promise.all([
       this.wareModel
         .find(filter)
+        .populate("fluteCombination")
+        .populate("wareManufacturingProcessType")
+        .populate("printColors")
+        .populate("finishingProcesses")
+        .populate("manufacturingProcesses")
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
@@ -43,9 +49,16 @@ export class WareService {
   }
 
   async findOneById(id: string): Promise<Ware> {
-    const doc = await this.wareModel.findById(id).exec();
+    const doc = await this.wareModel
+      .findById(id)
+      .populate("fluteCombination")
+      .populate("wareManufacturingProcessType")
+      .populate("printColors")
+      .populate("finishingProcesses")
+      .populate("manufacturingProcesses")
+      .exec();
     if (!doc) {
-      throw new Error("Ware not found");
+      throw new NotFoundException("Ware not found");
     }
     return doc;
   }

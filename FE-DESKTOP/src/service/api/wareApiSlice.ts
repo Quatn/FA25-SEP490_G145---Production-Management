@@ -4,26 +4,35 @@ import {
   mockWaresQuery,
   mockWaresQueryByCodes,
 } from "../mock-data/functions/mock-catalog-crud";
-import { PaginatedList, QueryResponse } from "@/types/DTO/Response";
 import { Ware } from "@/types/Ware";
+import { createApiEndpoint } from "@/utils/endpointFactory";
+import { PageResponse } from "@/types/DTO/PageResponse";
+import { PaginatedList, QueryResponse } from "@/types/DTO/Response";
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+
+type GetWaresParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+};
 
 export const wareApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getWares: builder.query({
+    getWares: builder.query<PaginatedList<Ware>, GetWaresParams>({
       ...(USE_MOCK_DATA
         ? {
           queryFn: async (
-            { page, limit }: { page: number; limit: number },
+            { page = 1, limit = 20 }: GetWaresParams,
           ): Promise<
-            QueryResponse<PaginatedList<Ware>>
+            QueryResponse<PaginatedList<Ware>, FetchBaseQueryError>
           > => {
             try {
               const data = await mockWaresQuery({
-                page,
-                limit,
+                page: page || 1,
+                limit: limit || 20,
               });
               return {
-                data,
+                data: data as unknown as PaginatedList<Ware>,
               };
             } catch (err) {
               return {
@@ -36,10 +45,14 @@ export const wareApiSlice = apiSlice.injectEndpoints({
           },
         }
         : {
-          query: ({ page = 1, limit = 20 }) => ({
+          query: ({ page = 1, limit = 20, search }) => ({
             url: `${WARE_URL}/`,
             method: "GET",
-            params: { page, limit },
+            params: {
+              page,
+              limit,
+              ...(search ? { search } : {}),
+            },
             credentials: "include",
           }),
           transformResponse: (response: {
@@ -62,45 +75,35 @@ export const wareApiSlice = apiSlice.injectEndpoints({
         }),
     }),
 
-    getWaresByCodes: builder.query({
-      ...(USE_MOCK_DATA
-        ? {
-          queryFn: async (
-            { page, limit, codes }: {
-              page: number;
-              limit: number;
-              codes: string[];
-            },
-          ): Promise<
-            QueryResponse<PaginatedList<Ware>>
-          > => {
-            try {
-              const data = await mockWaresQueryByCodes({
-                page,
-                limit,
-                codes,
-              });
-              return {
-                data,
-              };
-            } catch (err) {
-              return {
-                error: {
-                  status: "CUSTOM_ERROR",
-                  error: (err as Error).message,
-                },
-              };
-            }
-          },
+    // Note: This endpoint may not exist in backend yet
+    getWaresByCodes: builder.query<
+      PaginatedList<Ware>,
+      { page?: number; limit?: number; codes: string[] }
+    >({
+      queryFn: async ({ page = 1, limit = 20, codes }): Promise<
+        QueryResponse<PaginatedList<Ware>, FetchBaseQueryError>
+      > => {
+        if (USE_MOCK_DATA) {
+          try {
+            const data = await mockWaresQueryByCodes({ page, limit, codes });
+            return { data: data as unknown as PaginatedList<Ware> };
+          } catch (err) {
+            return {
+              error: {
+                status: "CUSTOM_ERROR",
+                error: (err as Error).message,
+              } as unknown as FetchBaseQueryError,
+            };
+          }
         }
-        : {
-          query: ({ codes = [], page = 1, limit = 20 }) => ({
-            url: `${WARE_URL}/`,
-            method: "GET",
-            params: { codes, page, limit },
-            credentials: "include",
-          }),
-        }),
+        // TODO: Implement real API call when backend endpoint is available
+        return {
+          error: {
+            status: "CUSTOM_ERROR",
+            error: "Endpoint not implemented",
+          } as unknown as FetchBaseQueryError,
+        };
+      },
     }),
   }),
 });

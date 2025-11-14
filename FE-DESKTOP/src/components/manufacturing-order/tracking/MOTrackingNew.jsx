@@ -364,7 +364,11 @@ export default function MOTrackingNew() {
                       </td>
                       <td style={{ ...rowStyles }}>{ware?.code || "-"}</td>
                       <td className="text-center" style={{ ...rowStyles }}>
-                        {ware?.fluteCombinationCode || "-"}
+                        {typeof ware?.fluteCombination === "object" && ware?.fluteCombination?.code
+                          ? ware.fluteCombination.code
+                          : typeof ware?.fluteCombination === "string"
+                          ? "-"
+                          : "-"}
                       </td>
                       <td className="text-center" style={{ ...rowStyles }}>
                         {ware?.wareLength || "-"}

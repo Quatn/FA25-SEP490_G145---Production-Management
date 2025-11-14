@@ -17,6 +17,7 @@ import {
   OrderStatus, // <-- IMPORT OrderStatus
 } from "../schemas/manufacturing-order.schema";
 import { PurchaseOrderItemDocument } from "../schemas/purchase-order-item.schema";
+import { isRefPopulated } from "@/common/utils/populate-check";
 import { UpdateManufacturingOrderProcessDto } from "./dto/update-manufacturing-order-process.dto";
 import {
   CorrugatorProcess,
@@ -78,23 +79,23 @@ export class ManufacturingOrderProcessService {
     }
 
     // Lấy số lượng mục tiêu từ PO Item
-    const poItem = parentMO.purchaseOrderItem as PurchaseOrderItemDocument;
-    if (!poItem) {
+    if (!isRefPopulated(parentMO.purchaseOrderItem)) {
       throw new NotFoundException(
         "Không tìm thấy PO Item liên kết với Lệnh sản xuất này.",
       );
     }
+    const poItem = parentMO.purchaseOrderItem as unknown as PurchaseOrderItemDocument;
     const targetAmount = poItem.amount;
     // <-- THAY ĐỔI: Đã xóa maxAllowedAmount (110%) và hardCapAmount (120%)
 
     // Lấy Quy trình sóng
-    const corrugatorProcess =
-      parentMO.corrugatorProcess as CorrugatorProcessDocument; // <-- THAY ĐỔI: Lấy corrugatorProcess
-    if (!corrugatorProcess) {
+    if (!isRefPopulated(parentMO.corrugatorProcess)) {
       throw new NotFoundException(
-        "Không tìm thấy Quy trình sóng (Corrugator Process) liên kết với MO này.",
+        "Không tìm thấy Quy trình sóng liên kết với Lệnh sản xuất này.",
       );
     }
+    const corrugatorProcess =
+      parentMO.corrugatorProcess as unknown as CorrugatorProcessDocument; // <-- THAY ĐỔI: Lấy corrugatorProcess
 
     // Lấy tất cả công đoạn con
     const allProcesses = (

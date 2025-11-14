@@ -2,8 +2,8 @@ import { Controller, Get, Query, Param } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { WareService } from "./ware.service";
 
-@Controller("wares")
-@ApiTags("Wares")
+@Controller("ware")
+@ApiTags("Ware")
 export class WareController {
   constructor(private readonly wareService: WareService) {}
 

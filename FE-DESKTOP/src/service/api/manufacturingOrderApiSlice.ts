@@ -1,94 +1,71 @@
 import { apiSlice } from "./apiSlice";
-import { MANUFACTURING_ORDER_URL, USE_MOCK_DATA } from "../constants";
 import {
-  mockFullDetailManufacturingOrderQuery,
   mockManufacturingOrderQuery,
 } from "../mock-data/functions/mock-manufacturing-orders-crud";
-import { FullDetailManufacturingOrderDTO } from "@/types/DTO/FullDetailManufactureOrder";
-import { PaginatedList, QueryResponse } from "@/types/DTO/Response";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { PageResponse } from "@/types/DTO/PageResponse";
+import { createApiEndpoint } from "@/utils/endpointFactory";
+import { MANUFACTURING_ORDER_URL } from "../constants";
+import { BaseResponse } from "@/types/DTO/BaseResponse";
+import {
+  CreateManyManufacturingOrdersRequestDto,
+  CreateManyManufacturingOrdersResponseDto,
+} from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getManufacturingOrders: builder.query<
-      PaginatedList<Serialized<ManufacturingOrder>>,
+    getManufacturingOrders: createApiEndpoint<
+      PageResponse<Serialized<ManufacturingOrder>>,
       { page: number; limit: number }
-    >({
-      ...(USE_MOCK_DATA
-        ? {
-          queryFn: async (
-            { page, limit }: { page: number; limit: number },
-          ): Promise<
-            QueryResponse<PaginatedList<Serialized<ManufacturingOrder>>>
-          > => {
-            try {
-              const data = await mockManufacturingOrderQuery({
-                page,
-                limit,
-              });
-
-              return {
-                data,
-              };
-            } catch (err) {
-              return {
-                error: {
-                  status: "CUSTOM_ERROR",
-                  error: (err as Error).message,
-                },
-              };
-            }
-          },
-        }
-        : {
-          query: ({ page = 1, limit = 20 }) => ({
-            url: `${MANUFACTURING_ORDER_URL}/`,
-            method: "GET",
-            params: { page, limit },
-            credentials: "include",
-          }),
-        }),
+    >(builder, {
+      query: ({ page, limit }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/query/full-details`,
+        method: "GET",
+        params: { page, limit },
+        credentials: "include",
+      }),
+      providesTags: ["ManufacturingOrder"],
+      // mockFn: ({ page = 1, limit = 20 }) => mockManufacturingOrderQuery({ page, limit }),
     }),
 
-    getFullDetailManufacturingOrders: builder.query<
-      PaginatedList<Serialized<FullDetailManufacturingOrderDTO>>,
+    getFullDetailManufacturingOrders: createApiEndpoint<
+      PageResponse<Serialized<ManufacturingOrder>>,
       { page: number; limit: number }
+    >(builder, {
+      query: ({ page, limit }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/query/full-details`,
+        method: "GET",
+        params: { page, limit },
+        credentials: "include",
+      }),
+      providesTags: ["ManufacturingOrder"],
+      // mockFn: ({ page = 1, limit = 20 }) => mockManufacturingOrderQuery({ page, limit }),
+    }),
+
+    getDraftFullDetailManufacturingOrdersByPoiIds: createApiEndpoint<
+      BaseResponse<Serialized<ManufacturingOrder>[]>,
+      { ids: string[] }
+    >(builder, {
+      query: ({ ids }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/draft-orders-by-poi-ids`,
+        method: "GET",
+        params: { ids },
+        credentials: "include",
+      }),
+      providesTags: ["ManufacturingOrder"],
+    }),
+
+    createManyManufacturingOrders: builder.mutation<
+      CreateManyManufacturingOrdersResponseDto,
+      CreateManyManufacturingOrdersRequestDto
     >({
-      ...(USE_MOCK_DATA
-        ? {
-          queryFn: async (
-            { page, limit }: { page: number; limit: number },
-          ): Promise<
-            QueryResponse<PaginatedList<Serialized<FullDetailManufacturingOrderDTO>>>
-          > => {
-            try {
-              const data = await mockFullDetailManufacturingOrderQuery({
-                page,
-                limit,
-              });
-
-              return {
-                data,
-              };
-
-            } catch (err) {
-              return {
-                error: {
-                  status: "CUSTOM_ERROR",
-                  error: (err as Error).message,
-                },
-              };
-            }
-          },
-        }
-        : {
-          query: ({ page = 1, limit = 20 }) => ({
-            url: `${MANUFACTURING_ORDER_URL}/full-detail`,
-            method: "GET",
-            params: { page, limit },
-            credentials: "include",
-          }),
-        }),
+      query: (body) => ({
+        url: `${MANUFACTURING_ORDER_URL}/create-many`,
+        method: "POST",
+        body,
+        credentials: "include",
+      }),
+      invalidatesTags: ["ManufacturingOrder"],
     }),
   }),
 });
@@ -96,4 +73,5 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
 export const {
   useGetManufacturingOrdersQuery,
   useGetFullDetailManufacturingOrdersQuery,
+  useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery,
 } = manufacturingOrderApiSlice;

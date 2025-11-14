@@ -1,4 +1,6 @@
 import { Module } from "@nestjs/common";
+import { PurchaseOrderItemController } from "./purchase-order-item.controller";
+import { PurchaseOrderItemService } from "./purchase-order-item.service";
 import { MongooseModule } from "@nestjs/mongoose";
 import {
   PurchaseOrderItem,
@@ -11,7 +13,9 @@ import {
       { name: PurchaseOrderItem.name, schema: PurchaseOrderItemSchema },
     ]),
   ],
-  exports: [MongooseModule],
+
+  controllers: [PurchaseOrderItemController],
+  providers: [PurchaseOrderItemService],
+  exports: [PurchaseOrderItemService],
 })
 export class PurchaseOrderItemModule {}
-

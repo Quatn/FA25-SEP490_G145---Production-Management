@@ -1,10 +1,19 @@
+import {
+  IsDate,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsArray,
+} from "class-validator";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument, Types } from "mongoose";
-import { BaseSchema } from "@/common/schemas/base.schema";
+import mongoose, { HydratedDocument, Types } from "mongoose";
+import { BaseDenormalizedSchema } from "@/common/schemas/base.denormalized.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
-import { PurchaseOrderItem } from "@/modules/production/schemas/purchase-order-item.schema"; // import schema PO Item
-import { ManufacturingOrderProcess } from "./manufacturing-order-process.schema"; // Import schema MOP mới
+import { ManufacturingOrderProcess } from "./manufacturing-order-process.schema";
 import { CorrugatorProcess } from "./corrugator-process.schema";
+import { PurchaseOrderItem } from "./purchase-order-item.schema";
+import { ApiProperty } from "@nestjs/swagger";
 
 export enum OrderStatus {
   NOTSTARTED = "NOTSTARTED",
@@ -16,20 +25,13 @@ export enum OrderStatus {
 }
 
 @Schema({ timestamps: true })
-export class ManufacturingOrder extends BaseSchema {
+export class ManufacturingOrder extends BaseDenormalizedSchema {
+  @ApiProperty()
   @Prop({ required: true, unique: true })
+  @IsString()
   code: string;
 
-  // Thay đổi từ `purchaseOrderItemCode: string`
-  // Giờ đây chúng ta liên kết trực tiếp để populate
-  @Prop({
-    required: true,
-    type: Types.ObjectId,
-    ref: PurchaseOrderItem.name, // Giả sử tên schema của PO Item là 'PurchaseOrderItem'
-  })
-  purchaseOrderItem: PurchaseOrderItem;
-
-  // Thêm trạng thái tổng thể cho MO
+  @ApiProperty({ enum: OrderStatus })
   @Prop({
     required: true,
     enum: OrderStatus,
@@ -37,42 +39,92 @@ export class ManufacturingOrder extends BaseSchema {
   })
   overallStatus: OrderStatus;
 
-  // Thêm liên kết tới các công đoạn con
-  @Prop([
-    {
-      type: Types.ObjectId,
-      ref: ManufacturingOrderProcess.name, // Ref tới schema MOP (sẽ tạo ở bước 3)
-    },
-  ])
-  processes: ManufacturingOrderProcess[]; // Hoặc `Types.ObjectId[]`
-
+  @ApiProperty({
+    type: [String],
+    description: "List of ManufacturingOrderProcess ObjectIds",
+  })
   @Prop({
-    required: true, // Quy trình sóng là bắt buộc
+    type: [{ type: Types.ObjectId, ref: ManufacturingOrderProcess.name }],
+    required: true,
+    default: [],
+  })
+  @IsArray()
+  @IsMongoId({ each: true })
+  processes: Types.ObjectId[];
+
+  @ApiProperty({
+    description: "Corrugator Process ObjectId",
+    type: String,
+  })
+  @Prop({
+    required: true,
     type: Types.ObjectId,
     ref: CorrugatorProcess.name,
   })
-  corrugatorProcess: CorrugatorProcess;
+  @IsMongoId()
+  corrugatorProcess: Types.ObjectId;
 
+  @ApiProperty({
+    type: String,
+    description: "ObjectId normally, populated PurchaseOrderItem when populated",
+  })
+  @Prop({
+    required: true,
+    unique: true,
+    type: Types.ObjectId,
+    ref: PurchaseOrderItem.name,
+  })
+  @IsMongoId()
+  purchaseOrderItem: Types.ObjectId;
+
+  @ApiProperty()
   @Prop({ required: true })
+  @IsDate()
   manufacturingDate: Date;
 
-  @Prop({ required: false })
-  requestedDatetime: Date;
+  @ApiProperty()
+  @Prop({ type: Date, default: null })
+  @IsOptional()
+  @IsDate()
+  manufacturingDateAdjustment?: Date | null;
 
-  @Prop({ required: true, type: Number })
+  @ApiProperty()
+  @Prop({ type: Date, default: null })
+  @IsOptional()
+  @IsDate()
+  requestedDatetime?: Date | null;
+
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
   corrugatorLine: number;
 
+  @ApiProperty()
+  @Prop({ type: Number, default: null })
+  @IsOptional()
+  @IsNumber()
+  corrugatorLineAdjustment?: number | null;
+
+  @ApiProperty()
   @Prop({ required: true })
-  manufacturedAmount: number; // Đây có thể là tổng số lượng hoàn thành cuối cùng
+  @IsNumber()
+  manufacturedAmount: number;
 
-  @Prop({ required: false })
-  manufacturingDirective: string;
+  @ApiProperty()
+  @Prop({ type: String, default: null })
+  @IsOptional()
+  @IsString()
+  manufacturingDirective?: string | null;
 
-  @Prop({ required: false, default: "" })
-  note: string;
+  @ApiProperty()
+  @Prop({ default: "" })
+  @IsOptional()
+  @IsString()
+  note?: string;
 }
 
-export type ManufacturingOrderDocument = HydratedDocument<ManufacturingOrder>;
+export type ManufacturingOrderDocument =
+  HydratedDocument<ManufacturingOrder>;
 
 export const ManufacturingOrderSchema =
   SchemaFactory.createForClass(ManufacturingOrder).plugin(softDeletePlugin);

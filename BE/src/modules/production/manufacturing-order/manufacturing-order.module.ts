@@ -9,14 +9,17 @@ import {
 import {
   ManufacturingOrderProcess,
   ManufacturingOrderProcessSchema,
-} from "../schemas/manufacturing-order-process.schema"; // Import MOP schema
-import { CorrugatorProcess, CorrugatorProcessSchema } from "../schemas/corrugator-process.schema";
+} from "../schemas/manufacturing-order-process.schema";
+import {
+  CorrugatorProcess,
+  CorrugatorProcessSchema,
+} from "../schemas/corrugator-process.schema";
+import { PurchaseOrderItemModule } from "../purchase-order-item/purchase-order-item.module";
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: ManufacturingOrder.name, schema: ManufacturingOrderSchema },
-      // Thêm MOP schema vào imports
       {
         name: ManufacturingOrderProcess.name,
         schema: ManufacturingOrderProcessSchema,
@@ -26,8 +29,10 @@ import { CorrugatorProcess, CorrugatorProcessSchema } from "../schemas/corrugato
         schema: CorrugatorProcessSchema,
       },
     ]),
+    PurchaseOrderItemModule,
   ],
   controllers: [ManufacturingOrderController],
   providers: [ManufacturingOrderService],
+  exports: [ManufacturingOrderService],
 })
 export class ManufacturingOrderModule {}

@@ -61,7 +61,7 @@ export default function ProductList() {
       ...(productTypeFilter !== "all"
         ? { productType: productTypeFilter }
         : {}),
-      ...(customerFilter !== "all" ? { customerCode: customerFilter } : {}),
+      ...(customerFilter !== "all" ? { customer: customerFilter } : {}),
     }),
     [page, limit, searchTerm, productTypeFilter, customerFilter]
   );
@@ -91,8 +91,8 @@ export default function ProductList() {
   const filteredAddItemCodeModalItems = useMemo(() => {
     if (!productToUpdateWareCodes) return [];
 
-    // Get existing wareCodes IDs
-    const existingIds = (productToUpdateWareCodes.wareCodes || [])
+    // Get existing wares IDs
+    const existingIds = (productToUpdateWareCodes.wares || [])
       .map((item) => {
         if (typeof item === "string") {
           return item;
@@ -118,7 +118,20 @@ export default function ProductList() {
   const customerOptions = useMemo(
     () =>
       Array.from(
-        new Set([...products.map((p) => p.customerCode).filter(Boolean)])
+        new Set(
+          products
+            .map((p) => {
+              // Handle customer as ObjectId string or populated Customer object
+              if (typeof p.customer === "string") {
+                return p.customer;
+              }
+              if (p.customer && typeof p.customer === "object") {
+                return p.customer._id || p.customer.id || p.customer.code;
+              }
+              return null;
+            })
+            .filter(Boolean)
+        )
       ),
     [products]
   );
@@ -138,15 +151,15 @@ export default function ProductList() {
   }, []);
 
   const emptyProduct = {
-    id: "",
-    customerCode: "",
-    productName: "",
+    code: "",
+    name: "",
+    customer: "",
     description: "",
     productLength: 0,
     productWidth: 0,
     productHeight: 0,
-    productType: "Bộ",
-    wareCodes: [],
+    productType: "",
+    wares: [],
   };
 
   // 🔹 Hàm mở modal chính (Thêm/Sửa Sản phẩm)
@@ -154,10 +167,10 @@ export default function ProductList() {
     if (product) {
       setEditingProduct({
         ...product,
-        wareCodes: product.wareCodes ? [...product.wareCodes] : [],
+        wares: product.wares ? [...product.wares] : [],
       });
     } else {
-      setEditingProduct({ ...emptyProduct, wareCodes: [] });
+      setEditingProduct({ ...emptyProduct, wares: [] });
     }
     setModalSearchTerm("");
   };
@@ -189,8 +202,8 @@ export default function ProductList() {
   const handleAddItemCodeToProduct = async () => {
     if (!productToUpdateWareCodes || !selectedItemCodeId) return;
 
-    // Get existing wareCodes IDs
-    const existingWareCodesIds = (productToUpdateWareCodes.wareCodes || []).map(
+    // Get existing wares IDs
+    const existingWaresIds = (productToUpdateWareCodes.wares || []).map(
       (item) => {
         if (typeof item === "string") {
           return item;
@@ -203,18 +216,31 @@ export default function ProductList() {
     );
 
     // Add the new selected item ID (assuming selectedItemCodeId is a Ware _id)
-    const updatedWareCodesIds = [...existingWareCodesIds, selectedItemCodeId];
+    const updatedWaresIds = [...existingWaresIds, selectedItemCodeId];
+
+    // Extract customer ID (can be ObjectId string or Customer object)
+    const customerId =
+      typeof productToUpdateWareCodes.customer === "string"
+        ? productToUpdateWareCodes.customer
+        : productToUpdateWareCodes.customer?._id ||
+          productToUpdateWareCodes.customer?.id ||
+          "";
 
     const payload = {
-      id: productToUpdateWareCodes.id?.trim() ?? "",
-      customerCode: productToUpdateWareCodes.customerCode?.trim() ?? "",
-      productName: productToUpdateWareCodes.productName?.trim() ?? "",
+      code: productToUpdateWareCodes.code?.trim() ?? "",
+      name: productToUpdateWareCodes.name?.trim() ?? "",
+      customer: customerId,
       description: productToUpdateWareCodes.description ?? "",
       productLength: Number(productToUpdateWareCodes.productLength) || 0,
       productWidth: Number(productToUpdateWareCodes.productWidth) || 0,
       productHeight: Number(productToUpdateWareCodes.productHeight) || 0,
-      productType: productToUpdateWareCodes.productType,
-      wareCodes: updatedWareCodesIds,
+      productType:
+        typeof productToUpdateWareCodes.productType === "string"
+          ? productToUpdateWareCodes.productType
+          : productToUpdateWareCodes.productType?._id ||
+            productToUpdateWareCodes.productType?.id ||
+            "",
+      wares: updatedWaresIds,
     };
 
     try {
@@ -241,14 +267,14 @@ export default function ProductList() {
       !window.confirm(
         `Bạn có chắc chắn muốn xóa mã hàng ${
           itemCode || itemCodeId
-        } khỏi sản phẩm ${product.id} không?`
+        } khỏi sản phẩm ${product.code || product._id} không?`
       )
     ) {
       return;
     }
 
     // Filter out the removed ware code by comparing IDs
-    const updatedWareCodesIds = (product.wareCodes || [])
+    const updatedWaresIds = (product.wares || [])
       .map((item) => {
         if (typeof item === "string") {
           return item;
@@ -263,16 +289,25 @@ export default function ProductList() {
         return String(id) !== String(itemCodeId);
       });
 
+    // Extract customer ID (can be ObjectId string or Customer object)
+    const customerId =
+      typeof product.customer === "string"
+        ? product.customer
+        : product.customer?._id || product.customer?.id || "";
+
     const payload = {
-      id: product.id?.trim() ?? "",
-      customerCode: product.customerCode?.trim() ?? "",
-      productName: product.productName?.trim() ?? "",
+      code: product.code?.trim() ?? "",
+      name: product.name?.trim() ?? "",
+      customer: customerId,
       description: product.description ?? "",
       productLength: Number(product.productLength) || 0,
       productWidth: Number(product.productWidth) || 0,
       productHeight: Number(product.productHeight) || 0,
-      productType: product.productType,
-      wareCodes: updatedWareCodesIds,
+      productType:
+        typeof product.productType === "string"
+          ? product.productType
+          : product.productType?._id || product.productType?.id || "",
+      wares: updatedWaresIds,
     };
 
     try {
@@ -305,25 +340,12 @@ export default function ProductList() {
     }
   };
 
-  const getUsageBadgeVariant = (usageType) => {
-    switch (usageType) {
-      case "Thùng":
-        return "success"; // xanh lá
-      case "Lót":
-        return "primary"; // xanh dương
-      case "Đế":
-        return "warning"; // vàng
-      default:
-        return "secondary";
-    }
-  };
-
   // 1. Thêm/Cập nhật Sản phẩm (Create/Update)
   const handleSaveProduct = async () => {
     if (!editingProduct) return;
 
-    // Convert wareCodes to array of ObjectId strings
-    const wareCodesIds = (editingProduct.wareCodes || []).map((item) => {
+    // Convert wares to array of ObjectId strings
+    const waresIds = (editingProduct.wares || []).map((item) => {
       if (typeof item === "string") {
         return item; // Already an ID string
       }
@@ -333,21 +355,35 @@ export default function ProductList() {
       return item;
     });
 
+    // Extract customer ID (can be ObjectId string or Customer object)
+    const customerId =
+      typeof editingProduct.customer === "string"
+        ? editingProduct.customer
+        : editingProduct.customer?._id || editingProduct.customer?.id || "";
+
+    // Extract productType ID (can be ObjectId string or ProductType object)
+    const productTypeId =
+      typeof editingProduct.productType === "string"
+        ? editingProduct.productType
+        : editingProduct.productType?._id ||
+          editingProduct.productType?.id ||
+          "";
+
     const payload = {
-      id: editingProduct.id?.trim() ?? "",
-      customerCode: editingProduct.customerCode?.trim() ?? "",
-      productName: editingProduct.productName?.trim() ?? "",
+      code: editingProduct.code?.trim() ?? "",
+      name: editingProduct.name?.trim() ?? "",
+      customer: customerId,
       description: editingProduct.description ?? "",
       productLength: Number(editingProduct.productLength) || 0,
       productWidth: Number(editingProduct.productWidth) || 0,
       productHeight: Number(editingProduct.productHeight) || 0,
-      productType: editingProduct.productType,
+      productType: productTypeId,
       //sẽ thêm sau
       // image: "",
-      wareCodes: wareCodesIds,
+      wares: waresIds,
     };
 
-    if (!payload.id || !payload.customerCode || !payload.productName) {
+    if (!payload.code || !payload.customer || !payload.name) {
       window.alert("Vui lòng nhập mã sản phẩm, khách hàng và tên sản phẩm.");
       return;
     }
@@ -549,7 +585,7 @@ export default function ProductList() {
                 justifyContent: "center",
               }}
               title="Xóa"
-              onClick={() => handleDeleteProduct(product._id, product.id)}
+              onClick={() => handleDeleteProduct(product._id, product.code)}
             >
               <i className="bi bi-trash3"></i>
             </Button>
@@ -583,7 +619,7 @@ export default function ProductList() {
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <div className="d-flex align-items-center gap-3">
                     <h5 style={{ marginBottom: 0 }}>
-                      {product.productName} 📦
+                      {product.name || product.productName} 📦
                     </h5>
                   </div>
                 </div>
@@ -629,7 +665,14 @@ export default function ProductList() {
                       <small style={{ color: "#6b7280" }}>
                         Type: <br />
                       </small>{" "}
-                      <strong>{product.productType}</strong>
+                      <strong>
+                        {typeof product.productType === "object" &&
+                        product.productType?.name
+                          ? product.productType.name
+                          : typeof product.productType === "string"
+                          ? product.productType
+                          : "-"}
+                      </strong>
                     </div>
                   </Col>
                   <Col xs={12} sm={4}>
@@ -644,7 +687,14 @@ export default function ProductList() {
                       <small style={{ color: "#6b7280" }}>
                         Customer: <br />
                       </small>{" "}
-                      <strong>{product.customerCode}</strong>
+                      <strong>
+                        {typeof product.customer === "object" &&
+                        product.customer?.code
+                          ? product.customer.code
+                          : typeof product.customer === "string"
+                          ? product.customer
+                          : "-"}
+                      </strong>
                     </div>
                   </Col>
                 </Row>
@@ -656,7 +706,7 @@ export default function ProductList() {
                     size="sm"
                     onClick={() => toggleCollapse(product._id)}
                   >
-                    Hiển thị mã hàng ({product.wareCodes?.length ?? 0}){" "}
+                    Hiển thị mã hàng ({product.wares?.length ?? 0}){" "}
                     <i
                       className={`bi ${
                         openIds.includes(product._id)
@@ -668,7 +718,7 @@ export default function ProductList() {
 
                   <Collapse in={openIds.includes(product._id)}>
                     <div style={{ marginTop: "10px" }}>
-                      {(product.wareCodes ?? []).map((item) => {
+                      {(product.wares ?? []).map((item) => {
                         // Handle both Ware objects (populated) and string IDs
                         const ware =
                           typeof item === "object" && item !== null
@@ -679,12 +729,17 @@ export default function ProductList() {
                             ? item
                             : ware?._id || ware?.id;
                         const wareCode = ware?.code || "";
-                        const wareUsageType = ware?.wareUsageType || "";
                         const wareLength = ware?.wareLength || 0;
                         const wareWidth = ware?.wareWidth || 0;
                         const wareHeight = ware?.wareHeight || null;
+                        // Handle fluteCombination as ObjectId string or populated FluteCombination object
                         const fluteCombination =
-                          ware?.fluteCombinationCode || "";
+                          typeof ware?.fluteCombination === "object" &&
+                          ware?.fluteCombination?.code
+                            ? ware.fluteCombination.code
+                            : typeof ware?.fluteCombination === "string"
+                            ? "-"
+                            : "-";
                         const paperSize = ware?.paperWidth || 0;
 
                         if (!ware && typeof item === "string") {
@@ -741,9 +796,6 @@ export default function ProductList() {
                                 >
                                   {wareCode}
                                 </div>
-                                <Badge bg={getUsageBadgeVariant(wareUsageType)}>
-                                  {wareUsageType}
-                                </Badge>
                               </div>
                               <div style={{ fontSize: "12px" }}>
                                 Kích thước: {wareLength}×{wareWidth}
@@ -985,62 +1037,73 @@ export default function ProductList() {
                     <Form.Label>Mã sản phẩm</Form.Label>
                     <Form.Control
                       type="text"
-                      value={editingProduct.id}
+                      value={editingProduct.code || ""}
                       onChange={(e) =>
                         setEditingProduct({
                           ...editingProduct,
-                          id: e.target.value,
+                          code: e.target.value,
                         })
                       }
                       placeholder="VD: VN-BOX-999"
                     />
                   </Form.Group>
                 </Col>
+
                 <Col md={4}>
                   <Form.Group>
-                    <Form.Label>Mã khách hàng</Form.Label>
+                    <Form.Label>Khách hàng (ObjectId)</Form.Label>
                     <Form.Control
                       type="text"
-                      value={editingProduct.customerCode}
+                      value={
+                        typeof editingProduct.customer === "string"
+                          ? editingProduct.customer
+                          : editingProduct.customer?._id ||
+                            editingProduct.customer?.id ||
+                            ""
+                      }
                       onChange={(e) =>
                         setEditingProduct({
                           ...editingProduct,
-                          customerCode: e.target.value,
+                          customer: e.target.value,
                         })
                       }
-                      placeholder="VD: AROMA"
+                      placeholder="VD: Customer ObjectId"
                     />
                   </Form.Group>
                 </Col>
                 <Col md={4}>
                   <Form.Group>
-                    <Form.Label>Loại sản phẩm</Form.Label>
-                    <Form.Select
-                      value={editingProduct.productType}
+                    <Form.Label>Loại sản phẩm (ObjectId)</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={
+                        typeof editingProduct.productType === "string"
+                          ? editingProduct.productType
+                          : editingProduct.productType?._id ||
+                            editingProduct.productType?.id ||
+                            ""
+                      }
                       onChange={(e) =>
                         setEditingProduct({
                           ...editingProduct,
                           productType: e.target.value,
                         })
                       }
-                    >
-                      <option value="Bộ">Bộ</option>
-                      <option value="Lót">Lót</option>
-                      <option value="Thùng">Thùng</option>
-                    </Form.Select>
+                      placeholder="VD: ProductType ObjectId"
+                    />
                   </Form.Group>
                 </Col>
               </Row>
 
               <Form.Group className="mb-3">
-                <Form.Label>Tên sản phẩm</Form.Label>
+                <Form.Label>Tên sản phẩm </Form.Label>
                 <Form.Control
                   type="text"
-                  value={editingProduct.productName}
+                  value={editingProduct.name}
                   onChange={(e) =>
                     setEditingProduct({
                       ...editingProduct,
-                      productName: e.target.value,
+                      name: e.target.value,
                     })
                   }
                   placeholder="VD: Thùng carton 5 lớp Aroma"
@@ -1142,100 +1205,98 @@ export default function ProductList() {
                   </div>
                 ) : (
                   /* 🚨 Logic đã khôi phục */
-                    filteredModalItems.map((item) => {
-                     const itemId = item._id || item.id;
-                     // Check if item is already selected by comparing IDs
-                     const isSelected = (editingProduct.wareCodes || []).some(
-                       (i) => {
-                         const existingId =
-                           typeof i === "string" ? i : (i?._id || i?.id);
-                         return String(existingId) === String(itemId);
-                       }
-                     );
-                     return (
-                       <Card
-                         key={itemId}
-                         onMouseEnter={(e) => {
-                           e.currentTarget.style.transform = "translateY(-2px)";
-                           e.currentTarget.style.zIndex = "10";
-                         }}
-                         onMouseLeave={(e) => {
-                           e.currentTarget.style.borderColor = "#e5e7eb";
-                           e.currentTarget.style.boxShadow = "";
-                           e.currentTarget.style.transform = "translateY(0)";
-                           e.currentTarget.style.zIndex = "1";
-                         }}
-                         style={{
-                           background: isSelected ? "#e6f7ff" : "#f9fafb",
-                           padding: "8px",
-                           borderRadius: "8px",
-                           marginBottom: "10px",
-                           cursor: "pointer",
-                           transition: "all 0.2s ease",
-                           boxShadow: isSelected
-                             ? "0 4px 8px rgba(0, 0, 0, 0.1)"
-                             : "none",
-                         }}
-                         onClick={() => {
-                           let updated = editingProduct.wareCodes || [];
-                           if (isSelected) {
-                             // Remove by filtering out the matching ID
-                             updated = updated.filter((i) => {
-                               const existingId =
-                                 typeof i === "string"
-                                   ? i
-                                   : (i?._id || i?.id);
-                               return String(existingId) !== String(itemId);
-                             });
-                           } else {
-                             // Add the item _id
-                             updated = [...updated, item._id];
-                           }
-                           setEditingProduct({
-                             ...editingProduct,
-                             wareCodes: updated,
-                           });
-                         }}
-                       >
-                         <Card.Body className="py-2 px-3">
-                           <div
-                             style={{
-                               display: "flex",
-                               alignItems: "center",
-                               justifyContent: "space-between",
-                             }}
-                           >
-                             <div
-                               style={{
-                                 fontSize: "14px",
-                                 fontWeight: 600,
-                                 color: "#1f2937",
-                               }}
-                             >
-                               {item.code}
-                             </div>
-                             <Badge
-                               bg={getUsageBadgeVariant(item.wareUsageType)}
-                             >
-                               {item.wareUsageType}
-                             </Badge>
-                           </div>
-                           <div style={{ fontSize: "13px", color: "#6c757d" }}>
-                             Kích thước: {item.wareLength}×{item.wareWidth}
-                             {item.wareHeight ? `×${item.wareHeight}` : ""} cm | 
-                             Sóng:{" "}
-                             <span className="text-primary fw-semibold">
-                               {item.fluteCombinationCode || "N/A"}
-                             </span>{" "}
-                             | Khổ giấy:{" "}
-                             <span className="text-danger fw-semibold">
-                               {item.paperWidth || "N/A"}
-                             </span>
-                           </div>
-                         </Card.Body>
-                       </Card>
-                     );
-                   })
+                  filteredModalItems.map((item) => {
+                    const itemId = item._id || item.id;
+                    // Check if item is already selected by comparing IDs
+                    const isSelected = (editingProduct.wares || []).some(
+                      (i) => {
+                        const existingId =
+                          typeof i === "string" ? i : i?._id || i?.id;
+                        return String(existingId) === String(itemId);
+                      }
+                    );
+                    return (
+                      <Card
+                        key={itemId}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(-2px)";
+                          e.currentTarget.style.zIndex = "10";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = "#e5e7eb";
+                          e.currentTarget.style.boxShadow = "";
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.zIndex = "1";
+                        }}
+                        style={{
+                          background: isSelected ? "#e6f7ff" : "#f9fafb",
+                          padding: "8px",
+                          borderRadius: "8px",
+                          marginBottom: "10px",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          boxShadow: isSelected
+                            ? "0 4px 8px rgba(0, 0, 0, 0.1)"
+                            : "none",
+                        }}
+                        onClick={() => {
+                          let updated = editingProduct.wares || [];
+                          if (isSelected) {
+                            // Remove by filtering out the matching ID
+                            updated = updated.filter((i) => {
+                              const existingId =
+                                typeof i === "string" ? i : i?._id || i?.id;
+                              return String(existingId) !== String(itemId);
+                            });
+                          } else {
+                            // Add the item _id
+                            updated = [...updated, item._id];
+                          }
+                          setEditingProduct({
+                            ...editingProduct,
+                            wares: updated,
+                          });
+                        }}
+                      >
+                        <Card.Body className="py-2 px-3">
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "14px",
+                                fontWeight: 600,
+                                color: "#1f2937",
+                              }}
+                            >
+                              {item.code}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: "13px", color: "#6c757d" }}>
+                            Kích thước: {item.wareLength}×{item.wareWidth}
+                            {item.wareHeight ? `×${item.wareHeight}` : ""} cm |
+                            Sóng:{" "}
+                            <span className="text-primary fw-semibold">
+                              {typeof item.fluteCombination === "object" &&
+                              item.fluteCombination?.code
+                                ? item.fluteCombination.code
+                                : typeof item.fluteCombination === "string"
+                                ? "N/A"
+                                : "N/A"}
+                            </span>{" "}
+                            | Khổ giấy:{" "}
+                            <span className="text-danger fw-semibold">
+                              {item.paperWidth || "N/A"}
+                            </span>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    );
+                  })
                 )}
               </div>
             </Form>
@@ -1357,9 +1418,6 @@ export default function ProductList() {
                       >
                         {item.code}
                       </div>
-                      <Badge bg={getUsageBadgeVariant(item.wareUsageType)}>
-                        {item.wareUsageType}
-                      </Badge>
                     </div>
                     <Row style={{ fontSize: "13px", color: "#4b5563" }}>
                       <Col xs={12} md={6}>
@@ -1373,7 +1431,12 @@ export default function ProductList() {
                         <div className="mb-2">
                           <strong>Sóng:</strong>{" "}
                           <span style={{ color: "blue", fontWeight: 500 }}>
-                            {item.fluteCombinationCode || "N/A"}
+                            {typeof item.fluteCombination === "object" &&
+                            item.fluteCombination?.code
+                              ? item.fluteCombination.code
+                              : typeof item.fluteCombination === "string"
+                              ? "N/A"
+                              : "N/A"}
                           </span>
                         </div>
                         <div className="mb-2">
@@ -1384,7 +1447,12 @@ export default function ProductList() {
                         </div>
                         <div className="mb-2">
                           <strong>Loại Chế Biến:</strong>{" "}
-                          {item.wareManufacturingProcessType || "N/A"}
+                          {typeof item.wareManufacturingProcessType === "object"
+                            ? item.wareManufacturingProcessType?.name || "N/A"
+                            : typeof item.wareManufacturingProcessType ===
+                              "string"
+                            ? "N/A"
+                            : "N/A"}
                         </div>
                       </Col>
                     </Row>

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useGetProductsQuery } from "@/service/api/productApiSlice";
 import { Product } from "@/types/Product";
@@ -8,25 +8,20 @@ import ProductSelectionBoxItem from "./ProductSelectionBoxItem";
 
 export default function ProductSelectionBox() {
   const {
-    data: rawProducts,
+    data: productPaginatedResponse,
     error: queryErrors,
     isLoading: querying,
   } = useGetProductsQuery({ page: 1, limit: 20 });
+
+  const products: Product[] | undefined = productPaginatedResponse?.data;
 
   if (querying) {
     return <Text>Loading list</Text>;
   }
 
-  if (queryErrors || check.undefined(rawProducts)) {
+  if (queryErrors || check.undefined(products)) {
     return <Text>Error loading list</Text>;
   }
-
-  // const products: Product[] = rawProducts.map((raw) => ({
-  //   ...raw
-  //   // Lọc và xử lý biến nếu cần
-  // }));
-
-  const products = rawProducts
 
   return (
     <Box>

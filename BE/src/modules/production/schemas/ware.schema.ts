@@ -1,110 +1,233 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument, Types } from "mongoose";
-import { BaseSchema } from "@/common/schemas/base.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import mongoose, { HydratedDocument } from "mongoose";
+import { FluteCombination } from "./flute-combination.schema";
+import { WareManufacturingProcessType } from "./ware-manufacturing-process-type.schema";
+import { BaseDenormalizedSchema } from "@/common/schemas/base.denormalized.schema";
+import {
+  IsArray,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from "class-validator";
+import { PrintColor } from "./print-color.schema";
+import { WareFinishingProcessType } from "./ware-finishing-process-type.schema";
+import { Optional } from "@nestjs/common";
+import { ApiProperty } from "@nestjs/swagger";
 import { ManufacturingProcess } from "./manufacturing-process.schema";
 
-export enum WareUsageType {
-  Lot = "Lót",
-  Vach = "Vách",
-  De = "Đế",
-  Thung = "Thùng",
-}
-
-export enum WareManufacturingProcessType {
-  Lien = "Liền",
-  Tam = "Tấm",
-  Ghep = "Ghép",
-}
-
-
 @Schema({ timestamps: true })
-export class Ware extends BaseSchema {
+export class Ware extends BaseDenormalizedSchema {
+  @ApiProperty()
   @Prop({ required: true, unique: true })
-  code: string; // Ví dụ: "dt-pad-65x50"
+  @IsString()
+  code: string;
 
-  @Prop({ required: true, default: 0 })
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
   unitPrice: number;
 
-  @Prop({ required: false })
-  fluteCombinationCode: string; // Ví dụ: "5BC"
+  @ApiProperty()
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: FluteCombination.name,
+  })
+  fluteCombination: mongoose.Types.ObjectId | FluteCombination;
 
-  @Prop({ required: true, enum: WareUsageType })
-  wareUsageType: WareUsageType;
-
+  @ApiProperty()
   @Prop({ required: true })
-  wareWidth: number; // Kích thước
+  @IsNumber()
+  wareWidth: number;
 
+  @ApiProperty()
   @Prop({ required: true })
-  wareLength: number; // Kích thước
+  @Optional()
+  @IsNumber()
+  wareLength: number;
 
-  @Prop({ required: false })
-  wareHeight: number; // Kích thước (nếu có)
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: null })
+  @IsOptional()
+  @IsNumber()
+  wareHeight: number | null;
 
-  @Prop({ required: true, enum: WareManufacturingProcessType })
-  wareManufacturingProcessType: WareManufacturingProcessType;
+  @ApiProperty()
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: WareManufacturingProcessType.name,
+  })
+  @IsMongoId()
+  wareManufacturingProcessType:
+    | mongoose.Types.ObjectId
+    | WareManufacturingProcessType;
 
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: null })
+  @IsOptional()
+  @IsNumber()
+  warePerBlankAdjustment: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: null })
+  @IsOptional()
+  @IsNumber()
+  flapAdjustment: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: null })
+  @IsOptional()
+  @IsNumber()
+  flapOverlapAdjustment: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: null })
+  @IsOptional()
+  @IsNumber()
+  crossCutCountAdjustment: number | null;
+
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
+  warePerBlank: number;
+
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
+  blankWidth: number;
+
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
+  blankLength: number;
+
+  @ApiProperty()
+  @Prop({ required: true, type: Number, default: null })
+  @IsOptional()
+  @IsNumber()
+  flapLength: number | null;
+
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
+  margin: number;
+
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
+  paperWidth: number;
+
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
+  crossCutCount: number;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsString()
+  faceLayerPaperType: string | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsString()
+  EFlutePaperType: string | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsString()
+  EBLinerLayerPaperType: string | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsString()
+  BFlutePaperType: string | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsString()
+  BACLinerLayerPaperType: string | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsString()
+  ACFlutePaperType: string | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsString()
+  backLayerPaperType: string | null;
+
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
+  volume: number;
+
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
+  warePerSet: number;
+
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
+  warePerCombinedSet: number;
+
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
+  horizontalWareSplit: number;
+
+  @ApiProperty()
+  @Prop({
+    required: true,
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: PrintColor.name }],
+  })
+  @IsArray()
+  printColors: mongoose.Types.ObjectId[] | PrintColor[];
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsString()
+  typeOfPrinter: string | null;
+
+  @ApiProperty()
   @Prop({
     type: [
       {
-        type: Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: WareFinishingProcessType.name,
+      },
+    ],
+  })
+  finishingProcesses: mongoose.Types.ObjectId[] | WareFinishingProcessType[];
+
+  @ApiProperty()
+  @Prop({
+    type: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
         ref: ManufacturingProcess.name,
       },
     ],
-    default: [],
-  }) // Danh sách các công đoạn mà mã hàng này yêu cầu
-  manufacturingProcesses: Types.ObjectId[];
+  })
+  manufacturingProcesses: mongoose.Types.ObjectId[] | ManufacturingProcess[];
 
-  @Prop({ required: false })
-  typeOfPrinter: string; // Ví dụ: "Máy 6 màu"
-
-  @Prop({ required: false, default: [] })
-  printColors: string[];
-
-  @Prop({ required: true, default: 900 }) //Khổ giấy
-  paperWidth: number;
-
-  @Prop({ required: true, default: 0 }) //Khổ gia công
-  blankWidth: number;
-
-  @Prop({ required: true, default: 0 }) //Cắt dài gia công
-  blankLength: number;
-
-  @Prop({ required: true, default: 900 }) //Nắp/ Cánh SP
-  flapLength: number;
-
-  @Prop({ required: true, default: 900 }) //Lề biên
-  margin: number;
-
-  @Prop({ required: true, default: 1 }) //Part SX
-  crossCutCount: number;
-
-  @Prop({ required: true, default: "" }) //Giấy mặt SP // sẽ là ref sau này
-  faceLayerPaperType: string;
-
-  @Prop({ required: true, default: "" }) //Giấy sóng E
-  EFlutePaperType: string;
-
-  @Prop({ required: true, default: "" }) //Giấy lớp giữa sóng E và sóng B
-  EBLinerLayerPaperType: string;
-
-  @Prop({ required: true, default: "" }) //Giấy sóng B
-  BFlutePaperType: string;
-
-  @Prop({ required: true, default: "" }) //Giấy lớp giữa sóng B và sóng A/C
-  BACLinerLayerPaperType: string;
-
-  @Prop({ required: true, default: "" }) //Giấy sóng A/C
-  ACFlutePaperType: string;
-
-  @Prop({ required: true, default: "" }) //Giấy đáy SP
-  backLayerPaperType: string;
-
+  @ApiProperty()
   @Prop({ required: false, default: "" })
-  note: string;
-
-  @Prop({ required: false, default: true })
-  recalcFlag: boolean;
+  @IsOptional()
+  @IsString()
+  note: string = "";
 }
 
 export type WareDocument = HydratedDocument<Ware>;

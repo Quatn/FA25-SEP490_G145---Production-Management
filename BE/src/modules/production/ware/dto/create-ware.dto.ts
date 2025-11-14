@@ -1,0 +1,191 @@
+import { ApiProperty } from "@nestjs/swagger";
+import {
+  IsArray,
+  IsMongoId,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from "class-validator";
+
+export class CreateWareDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  code: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  unitPrice: number;
+
+  @ApiProperty({ description: "FluteCombination ObjectId" })
+  @IsMongoId()
+  @IsNotEmpty()
+  fluteCombination: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  wareWidth: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  wareLength: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  wareHeight?: number | null;
+
+  @ApiProperty({ description: "WareManufacturingProcessType ObjectId" })
+  @IsMongoId()
+  @IsNotEmpty()
+  wareManufacturingProcessType: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  warePerBlankAdjustment?: number | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  flapAdjustment?: number | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  flapOverlapAdjustment?: number | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  crossCutCountAdjustment?: number | null;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  warePerBlank: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  blankWidth: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  blankLength: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  flapLength?: number | null;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  margin: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  paperWidth: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  crossCutCount: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  faceLayerPaperType?: string | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  EFlutePaperType?: string | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  EBLinerLayerPaperType?: string | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  BFlutePaperType?: string | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  BACLinerLayerPaperType?: string | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  ACFlutePaperType?: string | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  backLayerPaperType?: string | null;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  volume: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  warePerSet: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  warePerCombinedSet: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  horizontalWareSplit: number;
+
+  @ApiProperty({ type: [String], description: "Array of PrintColor ObjectIds" })
+  @IsArray()
+  @IsMongoId({ each: true })
+  @IsNotEmpty()
+  printColors: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  typeOfPrinter?: string | null;
+
+  @ApiProperty({
+    type: [String],
+    description: "Array of WareFinishingProcessType ObjectIds",
+  })
+  @IsArray()
+  @IsMongoId({ each: true })
+  @IsOptional()
+  finishingProcesses?: string[];
+
+  @ApiProperty({
+    type: [String],
+    description: "Array of ManufacturingProcess ObjectIds",
+  })
+  @IsArray()
+  @IsMongoId({ each: true })
+  @IsOptional()
+  manufacturingProcesses?: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  note?: string;
+}
+

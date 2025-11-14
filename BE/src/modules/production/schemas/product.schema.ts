@@ -1,66 +1,93 @@
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
 import { BaseSchema } from "@/common/schemas/base.schema";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument, Types } from "mongoose";
+import mongoose, { HydratedDocument, Types } from "mongoose";
 import { Ware } from "@/modules/production/schemas/ware.schema";
-
-export enum ProductType {
-  Lot = "Lót",
-  Vach = "Vách",
-  De = "Đế",
-  Thung = "Thùng",
-  Bo = "Bộ",
-}
+import { Customer } from "./customer.schema";
+import {
+  IsArray,
+  IsMongoId,
+  IsOptional,
+  IsString,
+} from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { ProductType } from "./product-type.schema";
 
 @Schema({ timestamps: true })
 export class Product extends BaseSchema {
-  //Product Code
-  @Prop({ required: true })
-  id: string;
 
-  //Sẽ ref khi có Customer schema hiện tại sẽ là name customer
-  @Prop({ required: true })
-  customerCode: string;
 
-  //Tên sản phẩm
-  @Prop({ required: true })
-  productName: string;
-
+  @ApiProperty()
   @Prop({ required: true })
   productLength: number;
 
+  @ApiProperty()
   @Prop({ required: true })
   productWidth: number;
 
+  @ApiProperty()
   @Prop({ required: false, default: 0 })
   productHeight: number;
 
-  @Prop({ required: false, default: "" })
-  description: string;
-
-  //Loại sản phẩm
-  @Prop({ required: true, enum: ProductType })
-  productType: ProductType;
-
-  @Prop({ required: false, default: "" })
-  image: string;
-
+  // Loại sản phẩm
+  @ApiProperty()
   @Prop({
-    type: [
-      {
-        type: Types.ObjectId,
-        ref: Ware.name,
-      },
-    ],
-    default: [],
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: ProductType.name,
   })
-  wareCodes: Types.ObjectId[];
+
+  @IsMongoId()
+  productType: Types.ObjectId
+
+  @ApiProperty()
+  @Prop({ required: true, unique: true })
+  @IsString()
+  code: string;
+  
+  // Tên sản phẩm
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsString()
+  name: string;
+
+  @ApiProperty()
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: Customer.name,
+  })
+  @IsMongoId()
+  customer: Types.ObjectId;
+
+  @ApiProperty()
+  @Prop({ default: "" })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty()
+  @Prop({ type: String, default: null })
+  @IsOptional()
+  @IsString()
+  image?: string | null;
+
+  @ApiProperty()
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: Ware.name }],
+    required: true,
+  })
+  @IsArray()
+  @IsMongoId({ each: true })
+  wares: Types.ObjectId[];
+
+  @ApiProperty()
+  @Prop({ default: "" })
+  @IsOptional()
+  @IsString()
+  note?: string;
 }
 
 export type ProductDocument = HydratedDocument<Product>;
 export const ProductSchema =
   SchemaFactory.createForClass(Product).plugin(softDeletePlugin);
-
-// Nếu cần đảm bảo wareCode unique toàn collection (không trùng giữa các Product),
-// uncomment dòng dưới. Lưu ý: index này sẽ index mỗi element trong array wareCodes
-// ProductSchema.index({ "wareCodes.wareCode": 1 }, { unique: true, sparse: true });

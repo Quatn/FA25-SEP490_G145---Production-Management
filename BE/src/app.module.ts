@@ -14,6 +14,8 @@ import { ProductionModule } from './modules/production/production.module';
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { ProductModule } from "./modules/production/product/product.module";
 import { WareModule } from "./modules/production/ware/ware.module";
+import { PaperTypeModule } from "./modules/warehouse/paper-type/paper-type.module";
+import { ProductTypeModule } from "./modules/production/product-type/product-type.module";
 
 @ApiBearerAuth("access-token")
 @Module({
@@ -32,6 +34,8 @@ import { WareModule } from "./modules/production/ware/ware.module";
     WarehouseModule,
     ProductModule,
     WareModule,
+    PaperTypeModule,
+    ProductTypeModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],

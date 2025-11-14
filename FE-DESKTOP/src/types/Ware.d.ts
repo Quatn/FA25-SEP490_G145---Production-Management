@@ -1,20 +1,27 @@
-export type Ware = {
-  _id?: string;
-  id?: string;
+import { FluteCombination } from "./FluteCombination";
+import { PrintColor } from "./PrintColor";
+import { WareFinishingProcessType } from "./WareFinishingProcessType";
+import { WareManufacturingProcessType } from "./WareManufacturingProcessType";
+import { ManufacturingProcess } from "./ManufacturingProcess";
+
+export interface Ware extends BaseSchema {
   code: string;
   unitPrice: number;
-  fluteCombinationCode: string;
+  // fluteCombination can be ObjectId (string) when not populated, or FluteCombination object when populated
+  fluteCombination: string | FluteCombination;
   wareWidth: number;
   wareLength: number;
   wareHeight: number | null;
-  wareUsageType: string;
-  wareManufacturingProcessType: string;
+  // wareManufacturingProcessType can be ObjectId (string) when not populated, or WareManufacturingProcessType object when populated
+  wareManufacturingProcessType: string | WareManufacturingProcessType;
+  warePerBlankAdjustment: number | null;
   flapAdjustment: number | null;
   flapOverlapAdjustment: number | null;
+  crossCutCountAdjustment: number | null;
   warePerBlank: number;
   blankWidth: number;
   blankLength: number;
-  flapLength: number;
+  flapLength: number | null;
   margin: number;
   paperWidth: number;
   crossCutCount: number;
@@ -29,12 +36,12 @@ export type Ware = {
   warePerSet: number;
   warePerCombinedSet: number;
   horizontalWareSplit: number;
-  printColors: string[];
+  printColors: string[] | PrintColor[];
   typeOfPrinter: string | null;
-  manufacturingProcesses: string[];
+  finishingProcesses: string[] | WareFinishingProcessType[];
+  manufacturingProcesses: string[] | ManufacturingProcess[];
   note: string;
   recalcFlag: boolean;
-  isDeleted?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-};
+}
+
+  

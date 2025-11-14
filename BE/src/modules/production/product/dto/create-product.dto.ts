@@ -1,30 +1,33 @@
 import { ApiProperty } from "@nestjs/swagger";
 import {
   IsArray,
-  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   IsMongoId,
 } from "class-validator";
-import { ProductType } from "../../schemas/product.schema";
 
 export class CreateProductDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  id: string;
+  code: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  customerCode: string;
+  name: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
   productName: string;
+
+  @ApiProperty()
+  @IsMongoId()
+  @IsNotEmpty()
+  customer: string;
 
   @ApiProperty({ required: false })
   @IsString()
@@ -49,12 +52,18 @@ export class CreateProductDto {
   @IsString()
   image?: string;
 
-  @ApiProperty({ enum: ProductType })
-  @IsEnum(ProductType)
-  productType: ProductType;
+  @ApiProperty({ description: "ProductType ObjectId" })
+  @IsMongoId()
+  @IsNotEmpty()
+  productType: string;
 
   @ApiProperty({ type: [String], description: "Array of Ware ObjectIds" })
   @IsArray()
   @IsMongoId({ each: true })
-  wareCodes: string[];
+  wares: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  note?: string;
 }

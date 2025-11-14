@@ -1,18 +1,18 @@
-export type ProductType = "Lót" | "Vách" | "Đế" | "Thùng" | "Bộ";
+import { Customer } from "./Customer";
 import { Ware } from "./Ware";
+import { ProductType } from "./ProductType";
+import { BaseSchema } from "@/common/schemas/base.schema"; 
 
-export interface Product {
-  _id: string;
-  id: string;
-  customerCode: string;
-  productName: string;
-  description: string;
+export interface Product extends BaseSchema {
   productLength: number;
   productWidth: number;
-  productHeight?: number;
-  image?: string;
+  productHeight: number; 
   productType: ProductType;
-  wareCodes: Ware[] | string[]; // Can be populated Ware objects or ObjectId strings
-  createdAt?: string;
-  updatedAt?: string;
+  code: string;
+  name: string;
+  customer: Customer;
+  description: string;
+  image: string | null;
+  wares: Ware[];
+  note: string;
 }

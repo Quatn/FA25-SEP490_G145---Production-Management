@@ -7,10 +7,7 @@ import {
   IsOptional,
   IsString,
 } from "class-validator";
-import {
-  WareUsageType,
-  WareManufacturingProcessType,
-} from "../../schemas/ware.schema";
+import { WareManufacturingProcessType } from "../../schemas/ware-manufacturing-process-type.schema";
 
 export class WareCodeDto {
   @ApiProperty()
@@ -50,11 +47,10 @@ export class WareCodeDto {
   @IsNumber()
   paperWidth: number;
 
-  @ApiProperty({ enum: WareManufacturingProcessType, description: "Kiểu gia công" })
+  @ApiProperty({
+    enum: WareManufacturingProcessType,
+    description: "Kiểu gia công",
+  })
   @IsEnum(WareManufacturingProcessType)
   processingType: WareManufacturingProcessType;
-
-  @ApiProperty({ enum: WareUsageType, description: "Loại" })
-  @IsEnum(WareUsageType)
-  wareUsageType: WareUsageType;
 }

@@ -1,57 +1,151 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument, Types } from "mongoose";
-import { BaseSchema } from "@/common/schemas/base.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
-import { Ware } from "./ware.schema"; // Import Schema Ware
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import {
+  IsEnum,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from "class-validator";
+import mongoose, { HydratedDocument } from "mongoose";
+import { SubPurchaseOrder } from "./sub-purchase-order.schema";
+import { Ware } from "./ware.schema";
+import { BaseDenormalizedSchema } from "@/common/schemas/base.denormalized.schema";
+import { ApiProperty } from "@nestjs/swagger";
+import { PurchaseOrderStatus } from "./purchase-order.schema";
 
-export enum ProcessStatus {
-  NOTSTARTED = "NOTSTARTED", // Chờ
-  RUNNING = "RUNNING", // Chạy
-  COMPLETED = "COMPLETED", // Hoàn thành
-  PAUSED = "PAUSED", // Tạm dừng
-  CANCELLED = "CANCELLED", // Hủy
+export enum PurchaseOrderItemStatus {
+  PendingApproval = "PENDINGAPPROVAL",
+  Approved = "APPROVED",
+  Scheduled = "SCHEDULED",
+  OnHold = "ONHOLD",
+  Cancelled = "CANCELLED",
+  InProduction = "INPRODUCTION",
+  Paused = "PAUSED",
+  FinishedProduction = "FINISHEDPRODUCTION",
+  QualityCheck = "QUALITYCHECK",
+  Completed = "COMPLETED",
 }
 
 @Schema({ timestamps: true })
-export class PurchaseOrderItem extends BaseSchema {
-  @Prop({ required: true })
-  subPurchaseOrderId: string; // Liên kết tới PO cha (nếu cần)
+export class PurchaseOrderItem extends BaseDenormalizedSchema {
+  @ApiProperty()
+  @Prop({ required: true, unique: true })
+  @IsString()
+  code: string;
 
-  @Prop({ required: true })
-  amount: number; // Số lượng cần sản xuất
-
-  @Prop({ required: true })
-  longitudinalCutCount: number; // Tấm chặt
-
-  @Prop({ required: true })
-  runningLength: number; // Mét dài
-
-  // LIÊN KẾT TỚI WARE (MÃ HÀNG)
-  // Thay thế trường `wareCode: string` bằng ref
+  @ApiProperty()
   @Prop({
     required: true,
-    type: Types.ObjectId,
-    ref: Ware.name, // Liên kết tới Model Ware
+    type: mongoose.Schema.Types.ObjectId,
+    ref: SubPurchaseOrder.name,
   })
-  ware: Ware;
+  @IsMongoId()
+  subPurchaseOrder: mongoose.Types.ObjectId | SubPurchaseOrder;
 
-  @Prop({ required: true, default: 0 })
-  numberOfBlanks: number;
+  @ApiProperty()
+  @Prop({
+    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: Ware.name,
+  })
+  @IsMongoId()
+  ware: mongoose.Types.ObjectId | Ware;
 
-  @Prop({ required: true, default: 0 })
-  totalVolume: number;
+  @ApiProperty()
+  @Prop({ required: true })
+  @IsNumber()
+  amount: number;
 
-  @Prop({ required: true, default: 0 })
-  totalWeight: number;
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  numberOfBlanks: number = 0;
 
-  @Prop({ required: true, default: "NOTSTARTED", enum: ProcessStatus })
-  status: ProcessStatus; // Trạng thái của PO Item
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  longitudinalCutCount: number = 0;
 
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  runningLength: number = 0;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  faceLayerPaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  EFlutePaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  EBLinerLayerPaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  BFlutePaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  BACLinerLayerPaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  ACFlutePaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  backLayerPaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  totalVolume: number = 0;
+
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  totalWeight: number = 0;
+
+  @ApiProperty({
+    default: PurchaseOrderItemStatus.PendingApproval,
+    enum: PurchaseOrderStatus,
+  })
+  @Prop({
+    required: true,
+    enum: PurchaseOrderItemStatus,
+    default: PurchaseOrderItemStatus.PendingApproval,
+  })
+  @IsEnum(PurchaseOrderItemStatus)
+  status: PurchaseOrderItemStatus;
+
+  @ApiProperty()
   @Prop({ required: false, default: "" })
-  note: string;
-
-  @Prop({ required: false, default: true })
-  recalcFlag: boolean;
+  @IsOptional()
+  @IsString()
+  note: string = "";
 }
 
 export type PurchaseOrderItemDocument = HydratedDocument<PurchaseOrderItem>;

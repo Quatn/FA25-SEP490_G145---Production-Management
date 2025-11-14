@@ -13,7 +13,17 @@ export class ProductService {
 
   async create(payload: CreateProductDto): Promise<Product> {
     const created = await this.productModel.create(payload);
-    const populated = await this.productModel.findById(created._id).populate("wareCodes").exec();
+    const populated = await this.productModel
+      .findById(created._id)
+      .populate({
+        path: "wares",
+        populate: {
+          path: "manufacturingProcesses",
+        },
+      })
+      .populate("customer")
+      .populate("productType")
+      .exec();
     if (!populated) {
       throw new NotFoundException("Failed to create product");
     }
@@ -25,11 +35,10 @@ export class ProductService {
     limit?: number;
     search?: string;
     productType?: string;
-    customerCode?: string;
+    customer?: string;
   }): Promise<{ data: Product[]; total: number; page: number; limit: number }> {
     const page = Math.max(1, Number(options.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(options.limit) || 10));
-    // const limit = 3;
 
     const filter: FilterQuery<ProductDocument> = {
       isDeleted: false,
@@ -38,23 +47,29 @@ export class ProductService {
     if (options.productType) {
       filter.productType = options.productType;
     }
-    if (options.customerCode) {
-      filter.customerCode = options.customerCode;
+    if (options.customer) {
+      filter.customer = options.customer;
     }
     if (options.search) {
       const regex = new RegExp(options.search, "i");
       filter.$or = [
-        { id: regex }, // product code
+        { code: regex }, // product code
+        { name: regex },
         { productName: regex },
-        // Note: Search in wareCodes.code requires aggregation pipeline
-        // For now, searching only in product fields
       ];
     }
 
     const [data, total] = await Promise.all([
       this.productModel
         .find(filter)
-        .populate("wareCodes")
+        .populate({
+          path: "wares",
+          populate: {
+            path: "manufacturingProcesses",
+          },
+        })
+        .populate("customer")
+        .populate("productType")
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
@@ -66,7 +81,17 @@ export class ProductService {
   }
 
   async findOneById(id: string): Promise<Product> {
-    const doc = await this.productModel.findById(id).populate("wareCodes").exec();
+    const doc = await this.productModel
+      .findById(id)
+      .populate({
+        path: "wares",
+        populate: {
+          path: "manufacturingProcesses",
+        },
+      })
+      .populate("customer")
+      .populate("productType")
+      .exec();
     if (!doc) {
       throw new NotFoundException("Product not found");
     }
@@ -74,13 +99,30 @@ export class ProductService {
   }
 
   async findOneByCode(productCode: string): Promise<Product | null> {
-    return this.productModel.findOne({ id: productCode }).populate("wareCodes").exec();
+    return this.productModel
+      .findOne({ code: productCode })
+      .populate({
+        path: "wares",
+        populate: {
+          path: "manufacturingProcesses",
+        },
+      })
+      .populate("customer")
+      .populate("productType")
+      .exec();
   }
 
   async update(id: string, payload: UpdateProductDto): Promise<Product> {
     const updated = await this.productModel
       .findByIdAndUpdate(id, payload, { new: true })
-      .populate("wareCodes")
+      .populate({
+        path: "wares",
+        populate: {
+          path: "manufacturingProcesses",
+        },
+      })
+      .populate("customer")
+      .populate("productType")
       .exec();
     if (!updated) {
       throw new NotFoundException("Product not found");

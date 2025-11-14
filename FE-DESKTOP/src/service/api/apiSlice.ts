@@ -1,17 +1,39 @@
-import { fetchBaseQuery, createApi } from "@reduxjs/toolkit/query/react";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { BASE_URL } from "../constants";
+import { EndpointBuilder } from "@reduxjs/toolkit/query";
 
 const baseQuery = fetchBaseQuery({ baseUrl: BASE_URL, credentials: "include" });
 
+const tagTypes = [
+  "User",
+  "Auth",
+  "PaperSupplier",
+  "PaperColor",
+  "PaperType",
+  "ManufacturingOrder",
+  "ManufacturingOrderTracking",
+  "ManufacturingOrderProcess",
+  "CorrugatorProcess",
+  "WareManufacturingProcessType",
+  "WareFinishingProcessType",
+  "ProductType",
+  "FluteCombination",
+  "PaperRoll",
+  "PaperRollTransaction",
+  "Product",
+  "Ware",
+];
+
 export const apiSlice = createApi({
   baseQuery,
-  tagTypes: [
-    "User",
-    "Auth",
-    "Product",
-    "ManufacturingOrderTracking",
-    "ManufacturingOrderProcess",
-    "CorrugatorProcess",
-  ],
+  tagTypes,
   endpoints: () => ({}),
 });
+
+export type ApiBaseQuery = typeof baseQuery;
+
+export type ApiBuilder = EndpointBuilder<
+  ApiBaseQuery,
+  typeof tagTypes[number],
+  "api"
+>;

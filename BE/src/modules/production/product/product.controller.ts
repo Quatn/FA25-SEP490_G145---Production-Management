@@ -12,10 +12,9 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { ProductService } from "./product.service";
-import { ProductType } from "../schemas/product.schema";
 
-@Controller("products")
-@ApiTags("Products")
+@Controller("product")
+@ApiTags("Product")
 // @ApiBearerAuth("access-token")
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
@@ -29,21 +28,21 @@ export class ProductController {
   @Get()
   @ApiOperation({
     summary:
-      "List products with pagination, search and filters (customerCode, productType)",
+      "List products with pagination, search and filters (customer ObjectId, productType ObjectId)",
   })
   findAll(
     @Query("page") page?: string,
     @Query("limit") limit?: string,
     @Query("search") search?: string,
-    @Query("productType") productType?: ProductType | string,
-    @Query("customerCode") customerCode?: string,
+    @Query("productType") productType?: string,
+    @Query("customer") customer?: string,
   ) {
     return this.productService.findAll({
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
       search,
       productType,
-      customerCode,
+      customer,
     });
   }
 
