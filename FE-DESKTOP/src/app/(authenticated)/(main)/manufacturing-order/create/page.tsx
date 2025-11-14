@@ -50,6 +50,7 @@ export default function PurchaseOrderCreatePage() {
             p={3}
             mt={5}
           >
+            <CreatePage.SelectedOrdersCounter />
             <CreatePage.SelectedOrderDetailsContainer />
           </Box>
         </Box>

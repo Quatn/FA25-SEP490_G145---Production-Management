@@ -1,16 +1,14 @@
 "use client";
 
 import {
-  PurchaseOrderItemPickerTabType,
   useManufacturingOrderCreatePageDispatch,
   useManufacturingOrderCreatePageState,
 } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import {
   Box,
   BoxProps,
-  Button,
-  Group,
-  HStack,
+  Center,
+  Stack,
   Table,
   TableRootProps,
   Tabs,
@@ -19,10 +17,8 @@ import {
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
-import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
-import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { manufacturingOrderTableColumnsByTabs } from "@/components/manufacturing-order/full-detail-table/tableDefinition";
 import check from "check-types";
 
@@ -48,6 +44,19 @@ export default function CreatePageManufacturingOrderTable(
   } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
     ids: selectedPOIsIds,
   });
+
+  if (selectedPOIsIds.length < 1) {
+    return (
+      <Center>
+        <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
+          <Stack alignItems={"center"}>
+            <Text>Các lệnh sẽ được tạo sẽ được hiển thị ở đây</Text>
+            <Text>Hãy chọn PO Item bên trên</Text>
+          </Stack>
+        </Box>
+      </Center>
+    );
+  }
 
   const moPaginatedList = fullDetailMOsResponse?.data;
 

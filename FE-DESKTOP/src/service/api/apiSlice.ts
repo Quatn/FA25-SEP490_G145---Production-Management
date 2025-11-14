@@ -10,6 +10,7 @@ const tagTypes = [
   "PaperSupplier",
   "PaperColor",
   "PaperType",
+  "ManufacturingOrder",
   "WareManufacturingProcessType",
   "WareFinishingProcessType",
   "ProductType",

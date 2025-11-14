@@ -32,8 +32,6 @@ interface PageState {
   search: string;
   groupType: GroupType;
   tab: TabType;
-  selectedPOsIds: string[];
-  selectedSPOsIds: string[];
   selectedIdsTree: Record<string, Record<string, string[]>>;
   checkedOrderNodes: Record<string, boolean>;
   indeterminateOrderNodes: Record<string, boolean>;
@@ -115,15 +113,6 @@ type PageAction =
   | { type: "SET_SEARCH"; payload: string }
   | { type: "SET_GROUP_TYPE"; payload: GroupType }
   | { type: "SET_TAB"; payload: TabType }
-  | { type: "SET_SELECTED_PO_IDS"; payload: POTreeActionPayload[] }
-  | { type: "SELECT_PO"; payload: POTreeActionPayload }
-  | { type: "DESELECT_PO"; payload: POTreeActionPayload }
-  | { type: "SET_SELECTED_SPO_IDS"; payload: SPOTreeActionPayload[] }
-  | { type: "SELECT_SPO"; payload: SPOTreeActionPayload }
-  | { type: "DESELECT_SPO"; payload: SPOTreeActionPayload }
-  | { type: "SET_SELECTED_POI_IDS"; payload: string[] }
-  | { type: "SELECT_POI"; payload: string }
-  | { type: "DESELECT_POI"; payload: string }
   | {
     type: "TOGGLE_ORDER_TREE_NODE";
     payload: { id: string; tree: TreeNode[] };
@@ -137,8 +126,6 @@ const initialState: PageState = {
   search: "",
   groupType: "PO",
   tab: "selectedOrderDetails",
-  selectedPOsIds: [],
-  selectedSPOsIds: [],
   selectedIdsTree: {},
   checkedOrderNodes: {},
   indeterminateOrderNodes: {},

@@ -21,11 +21,12 @@ export function createApiEndpoint<
   builder: ApiBuilder,
   config: {
     query: (args: TArgs) => FetchArgs;
+    providesTags?: string[];
     mockFn?: (args: TArgs) => Promise<TData>;
     transform?: (response: TData) => TData;
   },
 ): QueryDefinition<TArgs, ApiBaseQuery, string, TData, string> {
-  const { query, mockFn, transform } = config;
+  const { query, mockFn, transform, providesTags } = config;
 
   if (USE_MOCK_DATA && mockFn) {
     return builder.query<TData, TArgs>({
@@ -47,6 +48,7 @@ export function createApiEndpoint<
 
   return builder.query<TData, TArgs>({
     query,
+    providesTags,
     transformResponse: (response: TData) => {
       return transform ? transform(response) : response;
     },
