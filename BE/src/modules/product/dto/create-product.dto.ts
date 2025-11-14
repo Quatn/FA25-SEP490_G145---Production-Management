@@ -1,5 +1,4 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
 import {
   IsArray,
   IsEnum,
@@ -7,9 +6,8 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  ValidateNested,
+  IsMongoId,
 } from "class-validator";
-import { WareCodeDto } from "./ware-code.dto";
 import { ProductType } from "../schemas/product.schema";
 
 export class CreateProductDto {
@@ -55,9 +53,8 @@ export class CreateProductDto {
   @IsEnum(ProductType)
   productType: ProductType;
 
-  @ApiProperty({ type: [WareCodeDto] })
+  @ApiProperty({ type: [String], description: "Array of Ware ObjectIds" })
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => WareCodeDto)
-  wareCodes: WareCodeDto[];
+  @IsMongoId({ each: true })
+  wareCodes: string[];
 }

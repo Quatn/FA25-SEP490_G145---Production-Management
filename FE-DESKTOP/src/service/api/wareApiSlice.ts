@@ -42,6 +42,23 @@ export const wareApiSlice = apiSlice.injectEndpoints({
             params: { page, limit },
             credentials: "include",
           }),
+          transformResponse: (response: {
+            data: Ware[];
+            page: number;
+            limit: number;
+            total: number;
+          }): PaginatedList<Ware> => {
+            const totalPages = Math.max(1, Math.ceil((response.total || 0) / (response.limit || 1)));
+            return {
+              data: response.data,
+              page: response.page,
+              limit: response.limit,
+              totalItems: response.total,
+              totalPages,
+              hasNextPage: response.page < totalPages,
+              hasPrevPage: response.page > 1,
+            };
+          },
         }),
     }),
 

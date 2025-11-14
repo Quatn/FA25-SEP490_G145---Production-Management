@@ -1,19 +1,5 @@
-export type ProcessingType = "Liền" | "Tấm" | "Ghép";
-export type WareUsageType = "Lót" | "Vách" | "Đế" | "Thùng";
 export type ProductType = "Lót" | "Vách" | "Đế" | "Thùng" | "Bộ";
-
-export interface WareCode {
-  id: number;
-  wareCode: string;
-  customerCode: string;
-  fluteCombination: string;
-  wareLength: number;
-  wareWidth: number;
-  wareHeight?: number;
-  paperSize: number;
-  processingType: ProcessingType;
-  wareUsageType: WareUsageType;
-}
+import { Ware } from "./Ware";
 
 export interface Product {
   _id: string;
@@ -26,7 +12,7 @@ export interface Product {
   productHeight?: number;
   image?: string;
   productType: ProductType;
-  wareCodes: WareCode[];
+  wareCodes: Ware[] | string[]; // Can be populated Ware objects or ObjectId strings
   createdAt?: string;
   updatedAt?: string;
 }

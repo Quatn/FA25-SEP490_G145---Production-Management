@@ -8,6 +8,6 @@ export const USER_URL = "/user";
 export const PRODUCTION_ORDER_URL = "/production-order";
 export const PURCHASE_ORDER_URL = "/purchase-order";
 export const PRODUCT_URL = `${BASE_URL}/products`;
-export const WARE_URL = "/ware";
+export const WARE_URL = "/wares";
 export const MANUFACTURING_ORDER_URL = "/manufacturing-order";
 
