@@ -13,6 +13,7 @@ import { CommonServicesModule } from "./common/services/services.module";
 import { ProductionModule } from './modules/production/production.module';
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { ProductModule } from "./modules/product/product.module";
+import { WareModule } from "./modules/ware/ware.module";
 
 @ApiBearerAuth("access-token")
 @Module({
@@ -30,6 +31,7 @@ import { ProductModule } from "./modules/product/product.module";
     ProductionModule,
     WarehouseModule,
     ProductModule,
+    WareModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],

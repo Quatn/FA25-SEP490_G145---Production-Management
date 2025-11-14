@@ -4,6 +4,20 @@ import { BaseSchema } from "@/common/schemas/base.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
 import { ManufacturingProcess } from "@/modules/production/manufacturing-process/schemas/manufacturing-process.schema";
 
+export enum WareUsageType {
+  Lot = "Lót",
+  Vach = "Vách",
+  De = "Đế",
+  Thung = "Thùng",
+}
+
+export enum WareManufacturingProcessType {
+  Lien = "Liền",
+  Tam = "Tấm",
+  Ghep = "Ghép",
+}
+
+
 @Schema({ timestamps: true })
 export class Ware extends BaseSchema {
   @Prop({ required: true, unique: true })
@@ -15,6 +29,9 @@ export class Ware extends BaseSchema {
   @Prop({ required: false })
   fluteCombinationCode: string; // Ví dụ: "5BC"
 
+  @Prop({ required: true, enum: WareUsageType })
+  wareUsageType: WareUsageType;
+
   @Prop({ required: true })
   wareWidth: number; // Kích thước
 
@@ -24,8 +41,8 @@ export class Ware extends BaseSchema {
   @Prop({ required: false })
   wareHeight: number; // Kích thước (nếu có)
 
-  @Prop({ required: true })
-  wareManufacturingProcessType: string; // Ví dụ: "Tấm", "Liền"
+  @Prop({ required: true, enum: WareManufacturingProcessType })
+  wareManufacturingProcessType: WareManufacturingProcessType;
 
   @Prop({
     type: [
