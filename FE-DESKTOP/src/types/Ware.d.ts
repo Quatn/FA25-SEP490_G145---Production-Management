@@ -1,11 +1,13 @@
 export type Ware = {
-  id: string;
+  _id?: string;
+  id?: string;
   code: string;
   unitPrice: number;
   fluteCombinationCode: string;
   wareWidth: number;
   wareLength: number;
   wareHeight: number | null;
+  wareUsageType: string;
   wareManufacturingProcessType: string;
   flapAdjustment: number | null;
   flapOverlapAdjustment: number | null;
@@ -31,4 +33,8 @@ export type Ware = {
   typeOfPrinter: string | null;
   manufacturingProcesses: string[];
   note: string;
+  recalcFlag: boolean;
+  isDeleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
