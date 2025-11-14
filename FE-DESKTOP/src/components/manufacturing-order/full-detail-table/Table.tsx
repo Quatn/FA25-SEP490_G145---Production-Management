@@ -26,14 +26,6 @@ import { manufacturingOrderTableColumnsByTabs } from "./tableDefinition";
 import { useOptionalManufacturingDialogDispatch } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { useEffect } from "react";
 
-const items = [
-  { id: 1, name: "Laptop", category: "Electronics", price: 999.99 },
-  { id: 2, name: "Coffee Maker", category: "Home Appliances", price: 49.99 },
-  { id: 3, name: "Desk Chair", category: "Furniture", price: 150.0 },
-  { id: 4, name: "Smartphone", category: "Electronics", price: 799.99 },
-  { id: 5, name: "Headphones", category: "Accessories", price: 199.99 },
-];
-
 export type ManufacturingOrderTableProps = {
   rootProps?: BoxProps;
   tabsRootProps?: TabsRootProps;
@@ -63,8 +55,6 @@ export default function ManufacturingOrderTable(
   const dialogDispatch = useOptionalManufacturingDialogDispatch();
 
   const columnsForTab = manufacturingOrderTableColumnsByTabs[tab] ?? [];
-
-  console.log(fullDetailMOPaginatedResponse);
 
   const moPaginatedList = fullDetailMOPaginatedResponse?.data;
 

@@ -5,9 +5,12 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
 import { ConfigService } from "@nestjs/config";
 import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
+import { NestExpressApplication } from "@nestjs/platform-express";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Not now
+  // app.set("query parser", "extended");
 
   app.use(cookieParser());
 

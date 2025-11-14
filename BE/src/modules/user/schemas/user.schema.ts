@@ -18,7 +18,7 @@ export class User extends BaseSchema {
   @Prop({ required: true })
   password: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, enum: UserRole })
   @IsEnum(UserRole)
   role: UserRole;
 }

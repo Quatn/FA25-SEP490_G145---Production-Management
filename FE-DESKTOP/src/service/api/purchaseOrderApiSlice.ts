@@ -2,6 +2,9 @@ import { apiSlice } from "./apiSlice";
 import { BaseResponse, PaginatedList } from "@/types/DTO/Response";
 import { PurchaseOrder as ServerPO } from "@/types/PurchaseOrder"; // adapt if needed
 import { PURCHASE_ORDER_URL } from "../constants";
+import { createApiEndpoint } from "@/utils/endpointFactory";
+import { PageResponse } from "@/types/DTO/PageResponse";
+import { QueryOrdersWithUnmanufacturedItemsDto } from "@/types/DTO/purchase-order/query-orders-with-unmanufactured-items";
 
 export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -40,6 +43,18 @@ export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
       query: (id) => ({ url: `${PURCHASE_ORDER_URL}/delete-soft/${id}`, method: "DELETE", credentials: "include" }),
       invalidatesTags: [{ type: "PurchaseOrder", id: "LIST" }],
     }),
+
+    queryOrdersWithUnmanufacturedItems: createApiEndpoint<
+      PageResponse<Serialized<QueryOrdersWithUnmanufacturedItemsDto>>,
+      { page: number; limit: number; search: string }
+    >(builder, {
+      query: ({ page, limit, search }) => ({
+        url: `${PURCHASE_ORDER_URL}/query/not-fully-scheduled`,
+        method: "GET",
+        params: { page, limit, search },
+        credentials: "include",
+      }),
+    }),
   }),
 });
 
@@ -49,4 +64,5 @@ export const {
   useCreatePurchaseOrderMutation,
   useUpdatePurchaseOrderMutation,
   useDeletePurchaseOrderMutation,
+  useQueryOrdersWithUnmanufacturedItemsQuery,
 } = purchaseOrderApiSlice;

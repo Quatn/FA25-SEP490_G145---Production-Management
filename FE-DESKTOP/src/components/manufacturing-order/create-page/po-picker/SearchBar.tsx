@@ -1,16 +1,16 @@
 "use client";
 
 import {
-  useManufacturingPageDispatch,
-  useManufacturingPageState,
+  useManufacturingOrderCreatePageDispatch,
+  useManufacturingOrderCreatePageState,
 } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { Input, InputGroup } from "@chakra-ui/react";
 import { ChangeEvent, useEffect, useState } from "react";
 import { LuSearch } from "react-icons/lu";
 
 export default function PurchaseOrderItemSearchBar() {
-  const { search } = useManufacturingPageState();
-  const dispatch = useManufacturingPageDispatch();
+  const { search } = useManufacturingOrderCreatePageState();
+  const dispatch = useManufacturingOrderCreatePageDispatch();
 
   const [localSearch, setLocalSearch] = useState(search);
 

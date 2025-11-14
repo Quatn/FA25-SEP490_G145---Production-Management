@@ -1,18 +1,30 @@
 import { Injectable } from "@nestjs/common";
-import { Model } from "mongoose";
+import mongoose, { Model } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import {
   ManufacturingOrder,
+  ManufacturingOrderDocument,
   ManufacturingOrderSchema,
 } from "../schemas/manufacturing-order.schema";
-import { CreateManufacturingOrderRequestDto } from "./dto/create-order-request.dto";
+import {
+  AssembledCreateManufacturingOrderRequestDto,
+  CreateManufacturingOrderRequestDto,
+} from "./dto/create-order-request.dto";
 import { UpdateManufacturingOrderRequestDto } from "./dto/update-order-request.dto";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
 import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
-import { PurchaseOrderItemSchema } from "../schemas/purchase-order-item.schema";
+import {
+  PurchaseOrderItem,
+  PurchaseOrderItemSchema,
+} from "../schemas/purchase-order-item.schema";
 import { SubPurchaseOrderSchema } from "../schemas/sub-purchase-order.schema";
 import { PurchaseOrderSchema } from "../schemas/purchase-order.schema";
 import { Ware, WareSchema } from "../schemas/ware.schema";
+import { MOCodeGenerator } from "./business-logics/mo-code-generator";
+import { getManufacturingDate } from "./business-logics/mo-manufacturing-date-getter";
+import { FullDetailPurchaseOrderItemDto } from "../purchase-order-item/dto/full-details-orders.dto";
+import { getCorrugatorLine } from "./business-logics/mo-corrugator-line-getter";
+import { CreateResult } from "@/common/dto/create-result.dto";
 
 @Injectable()
 export class ManufacturingOrderService {
@@ -63,6 +75,16 @@ export class ManufacturingOrderService {
       hasPrevPage,
       data,
     };
+  }
+
+  async getLastOrder() {
+    const order = await this.manufacturingOrderModel.find().limit(1).sort({
+      code: -1,
+    });
+    if (order.length < 1) {
+      throw Error("Cannot get last order since no orders exist in the system");
+    }
+    return order[0];
   }
 
   async queryListFullDetails({
@@ -135,9 +157,87 @@ export class ManufacturingOrderService {
     };
   }
 
+  async draftOrderByFullDetailsPois({
+    purchaseOrderItems,
+  }: {
+    purchaseOrderItems: FullDetailPurchaseOrderItemDto[];
+  }): Promise<FullDetailManufacturingOrderDto[]> {
+    const lastOrder = await this.getLastOrder()
+      .then((order) => order)
+      .catch(() => undefined);
+    const codeGenerator = new MOCodeGenerator(lastOrder?.code);
+
+    const mos: FullDetailManufacturingOrderDto[] = purchaseOrderItems.map(
+      (poi, index) => ({
+        code: codeGenerator.getCode(index),
+        purchaseOrderItem: poi,
+        manufacturingDate: getManufacturingDate(
+          poi.subPurchaseOrder.deliveryDate,
+          poi.subPurchaseOrder.purchaseOrder.customer.code,
+        ),
+        manufacturingDateAdjustment: null,
+        requestedDatetime: null,
+        corrugatorLine: getCorrugatorLine(
+          poi.ware.fluteCombination.code,
+          poi.subPurchaseOrder.purchaseOrder.customer.code,
+        ),
+        corrugatorLineAdjustment: null,
+        manufacturedAmount: 0,
+        manufacturingDirective: "",
+        note: "",
+        recalculateFlag: false,
+        isDeleted: false,
+      }),
+    );
+
+    return mos;
+  }
+
   async createOne(dto: CreateManufacturingOrderRequestDto) {
     const doc = new this.manufacturingOrderModel(dto);
     return await doc.save();
+  }
+
+  async createMany(
+    dtos: AssembledCreateManufacturingOrderRequestDto[],
+  ): Promise<CreateResult<{ codes: string[] }>> {
+    const lastOrder = await this.getLastOrder()
+      .then((order) => order)
+      .catch(() => undefined);
+    const codeGenerator = new MOCodeGenerator(lastOrder?.code);
+
+    const mos: ManufacturingOrder[] = dtos.map((poi, index) => ({
+      code: codeGenerator.getCode(index),
+      purchaseOrderItem: poi.purchaseOrderItemId,
+      manufacturingDate: getManufacturingDate(
+        poi.purchaseOrderItem.subPurchaseOrder.deliveryDate,
+        poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
+      ),
+      manufacturingDateAdjustment: null,
+      requestedDatetime: null,
+      corrugatorLine: getCorrugatorLine(
+        poi.purchaseOrderItem.ware.fluteCombination.code,
+        poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
+      ),
+      corrugatorLineAdjustment: null,
+      manufacturedAmount: 0,
+      manufacturingDirective: "",
+      note: "",
+      recalculateFlag: false,
+      isDeleted: false,
+    }));
+
+    const result = await this.manufacturingOrderModel.create(mos);
+
+    // TODO: create finishing processes
+
+    return {
+      requestedAmount: dtos.length,
+      createdAmount: result.length,
+      echo: {
+        codes: result.map((item) => item.code),
+      },
+    };
   }
 
   // TODO

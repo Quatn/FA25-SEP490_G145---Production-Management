@@ -16,5 +16,6 @@ import {
 
   controllers: [PurchaseOrderItemController],
   providers: [PurchaseOrderItemService],
+  exports: [PurchaseOrderItemService],
 })
 export class PurchaseOrderItemModule {}

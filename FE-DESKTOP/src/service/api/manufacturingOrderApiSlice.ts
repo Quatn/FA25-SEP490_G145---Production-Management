@@ -6,6 +6,11 @@ import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { PageResponse } from "@/types/DTO/PageResponse";
 import { createApiEndpoint } from "@/utils/endpointFactory";
 import { MANUFACTURING_ORDER_URL } from "../constants";
+import { BaseResponse } from "@/types/DTO/BaseResponse";
+import {
+  CreateManyManufacturingOrdersRequestDto,
+  CreateManyManufacturingOrdersResponseDto,
+} from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -19,8 +24,8 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
         params: { page, limit },
         credentials: "include",
       }),
-      mockFn: ({ page = 1, limit = 20 }) =>
-        mockManufacturingOrderQuery({ page, limit }),
+      providesTags: ["ManufacturingOrder"],
+      // mockFn: ({ page = 1, limit = 20 }) => mockManufacturingOrderQuery({ page, limit }),
     }),
 
     getFullDetailManufacturingOrders: createApiEndpoint<
@@ -33,8 +38,34 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
         params: { page, limit },
         credentials: "include",
       }),
-      mockFn: ({ page = 1, limit = 20 }) =>
-        mockManufacturingOrderQuery({ page, limit }),
+      providesTags: ["ManufacturingOrder"],
+      // mockFn: ({ page = 1, limit = 20 }) => mockManufacturingOrderQuery({ page, limit }),
+    }),
+
+    getDraftFullDetailManufacturingOrdersByPoiIds: createApiEndpoint<
+      BaseResponse<Serialized<ManufacturingOrder>[]>,
+      { ids: string[] }
+    >(builder, {
+      query: ({ ids }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/draft-orders-by-poi-ids`,
+        method: "GET",
+        params: { ids },
+        credentials: "include",
+      }),
+      providesTags: ["ManufacturingOrder"],
+    }),
+
+    createManyManufacturingOrders: builder.mutation<
+      CreateManyManufacturingOrdersResponseDto,
+      CreateManyManufacturingOrdersRequestDto
+    >({
+      query: (body) => ({
+        url: `${MANUFACTURING_ORDER_URL}/create-many`,
+        method: "POST",
+        body,
+        credentials: "include",
+      }),
+      invalidatesTags: ["ManufacturingOrder"],
     }),
   }),
 });
@@ -42,4 +73,5 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
 export const {
   useGetManufacturingOrdersQuery,
   useGetFullDetailManufacturingOrdersQuery,
+  useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery,
 } = manufacturingOrderApiSlice;

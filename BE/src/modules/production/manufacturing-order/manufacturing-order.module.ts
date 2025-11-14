@@ -6,12 +6,14 @@ import {
   ManufacturingOrder,
   ManufacturingOrderSchema,
 } from "../schemas/manufacturing-order.schema";
+import { PurchaseOrderItemModule } from "../purchase-order-item/purchase-order-item.module";
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: ManufacturingOrder.name, schema: ManufacturingOrderSchema },
     ]),
+    PurchaseOrderItemModule,
   ],
   controllers: [ManufacturingOrderController],
   providers: [ManufacturingOrderService],

@@ -40,7 +40,7 @@ export class SubPurchaseOrder extends BaseSchema {
     ref: PurchaseOrder.name,
   })
   @IsMongoId()
-  purchaseOrder: mongoose.Schema.Types.ObjectId | PurchaseOrder;
+  purchaseOrder: mongoose.Types.ObjectId | PurchaseOrder;
 
   @ApiProperty()
   @Prop({
@@ -49,7 +49,7 @@ export class SubPurchaseOrder extends BaseSchema {
     ref: Product.name,
   })
   @IsMongoId()
-  product: mongoose.Schema.Types.ObjectId | Product;
+  product: mongoose.Types.ObjectId | Product;
 
   @ApiProperty()
   @Prop({ required: true })

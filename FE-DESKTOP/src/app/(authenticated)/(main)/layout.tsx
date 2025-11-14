@@ -112,6 +112,54 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
+      {
+        id: "ware-manufacturing-process-type",
+        name: "Ware Manufacturing Process Type",
+        children: [
+          {
+            id: "ware-manufacturing-process-type-list",
+            name: "Ware Manufacturing Process Type List",
+            href: "/ware-manufacturing-process-type",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "ware-finishing-process-type",
+        name: "Ware Finishing Process Type",
+        children: [
+          {
+            id: "ware-finishing-process-type-list",
+            name: "Ware Finishing Process Type List",
+            href: "/ware-finishing-process-type",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "product-type",
+        name: "Product Type",
+        children: [
+          {
+            id: "product-type-list",
+            name: "Product Type List",
+            href: "/product-type",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "flute-combination",
+        name: "Flute Combination",
+        children: [
+          {
+            id: "flute-combination-list",
+            name: "Flute Combination List",
+            href: "/flute-combination",
+            children: [],
+          },
+        ],
+      },
     ],
   },
 });

@@ -1,4 +1,5 @@
 import { FluteCombination } from "./FluteCombination";
+import { PrintColor } from "./PrintColor";
 import { WareFinishingProcessType } from "./WareFinishingProcessType";
 import { WareManufacturingProcessType } from "./WareManufacturingProcessType";
 
@@ -34,7 +35,7 @@ export interface Ware extends BaseSchema {
 
   fluteCombination?: FluteCombination;
   wareManufacturingProcessType?: WareManufacturingProcessType;
-  printColors?: string[];
+  printColors?: PrintColor[];
   typeOfPrinter?: string | null;
   finishingProcesses: WareFinishingProcessType[];
 }

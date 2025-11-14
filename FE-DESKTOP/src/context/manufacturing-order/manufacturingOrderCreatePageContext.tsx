@@ -6,9 +6,24 @@ type TabType =
   | "materialRequirementSummary"
   | "excessWareInventorySummary";
 
+type TableTabType =
+  | "all"
+  | "ware"
+  | "manufacture"
+  | "layers"
+  | "notes"
+  | "weight"
+  | "processes";
+
 type GroupType =
   | "PO"
   | "POI";
+
+export interface TreeNode {
+  id: string;
+  name: string;
+  children?: TreeNode[];
+}
 
 interface PageState {
   page: number;
@@ -17,6 +32,78 @@ interface PageState {
   search: string;
   groupType: GroupType;
   tab: TabType;
+  selectedIdsTree: Record<string, Record<string, string[]>>;
+  checkedOrderNodes: Record<string, boolean>;
+  indeterminateOrderNodes: Record<string, boolean>;
+  selectedPOIsIds: string[];
+}
+
+type POTreeActionPayload = {
+  poId: string;
+  spoTree: Record<string, string[]>;
+};
+
+type SPOTreeActionPayload = {
+  spoId: string;
+  poiIds: string[];
+};
+
+const getNodeById = (tree: TreeNode[], id: string): TreeNode | undefined => {
+  for (const node of tree) {
+    if (node.id === id) return node;
+    if (node.children) {
+      const found = getNodeById(node.children, id);
+      if (found) return found;
+    }
+  }
+};
+
+const getAllDescendants = (node: TreeNode): string[] => {
+  if (!node.children) return [node.id];
+  return [node.id, ...node.children.flatMap(getAllDescendants)];
+};
+
+const getLeafNodes = (node: TreeNode): string[] => {
+  if (!node.children) return [node.id];
+  return node.children.flatMap(getLeafNodes);
+};
+
+const findParentId = (
+  tree: TreeNode[],
+  childId: string,
+  parentId: string | null = null,
+): string | null => {
+  for (const node of tree) {
+    if (node.id === childId) return parentId;
+    if (node.children) {
+      const found = findParentId(node.children, childId, node.id);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+function updateAncestors(
+  tree: TreeNode[],
+  id: string,
+  state: PageState,
+): PageState {
+  const parentId = findParentId(tree, id);
+  if (!parentId) return state;
+
+  const parent = getNodeById(tree, parentId);
+  if (!parent || !parent.children) return state;
+
+  const childrenIds = parent.children.map((c) => c.id);
+  const allChecked = childrenIds.every((cid) => state.checkedOrderNodes[cid]);
+  const someChecked = childrenIds.some((cid) =>
+    state.checkedOrderNodes[cid] || state.indeterminateOrderNodes[cid]
+  );
+
+  state.checkedOrderNodes[parentId] = allChecked;
+  state.indeterminateOrderNodes[parentId] = !allChecked && someChecked;
+
+  return updateAncestors(tree, parentId, state);
 }
 
 type PageAction =
@@ -26,6 +113,10 @@ type PageAction =
   | { type: "SET_SEARCH"; payload: string }
   | { type: "SET_GROUP_TYPE"; payload: GroupType }
   | { type: "SET_TAB"; payload: TabType }
+  | {
+    type: "TOGGLE_ORDER_TREE_NODE";
+    payload: { id: string; tree: TreeNode[] };
+  }
   | { type: "RESET" };
 
 const initialState: PageState = {
@@ -35,6 +126,10 @@ const initialState: PageState = {
   search: "",
   groupType: "PO",
   tab: "selectedOrderDetails",
+  selectedIdsTree: {},
+  checkedOrderNodes: {},
+  indeterminateOrderNodes: {},
+  selectedPOIsIds: [],
 };
 
 function pageReducer(state: PageState, action: PageAction): PageState {
@@ -51,6 +146,49 @@ function pageReducer(state: PageState, action: PageAction): PageState {
       return { ...state, groupType: action.payload };
     case "SET_TAB":
       return { ...state, tab: action.payload };
+    case "TOGGLE_ORDER_TREE_NODE":
+      const { id, tree } = action.payload;
+      const node = getNodeById(tree, id);
+      if (!node) return state;
+
+      const isChecked = !state.checkedOrderNodes[id];
+      const newState: PageState = {
+        ...state,
+        checkedOrderNodes: { ...state.checkedOrderNodes },
+        indeterminateOrderNodes: { ...state.indeterminateOrderNodes },
+        selectedPOIsIds: [...state.selectedPOIsIds],
+      };
+
+      // If parent or grandparent
+      if (node.children && node.children.length > 0) {
+        const descendantIds = getAllDescendants(node);
+        descendantIds.forEach((descId) => {
+          newState.checkedOrderNodes[descId] = isChecked;
+          newState.indeterminateOrderNodes[descId] = false;
+        });
+
+        const leafIds = getLeafNodes(node);
+        if (isChecked) {
+          newState.selectedPOIsIds = Array.from(
+            new Set([...newState.selectedPOIsIds, ...leafIds]),
+          );
+        } else {
+          newState.selectedPOIsIds = newState.selectedPOIsIds.filter((id) =>
+            !leafIds.includes(id)
+          );
+        }
+      } else {
+        // It's a child
+        newState.checkedOrderNodes[id] = isChecked;
+        if (isChecked) newState.selectedPOIsIds.push(id);
+        else {
+          newState.selectedPOIsIds = newState.selectedPOIsIds.filter((
+            c,
+          ) => c !== id);
+        }
+      }
+      // Update ancestors recursively
+      return updateAncestors(tree, id, newState);
     case "RESET":
       return initialState;
     default:
@@ -76,7 +214,7 @@ export function ManufacturingOrderCreatePageProvider(
   );
 }
 
-export function useManufacturingPageState() {
+export function useManufacturingOrderCreatePageState() {
   const context = useContext(PageStateContext);
   if (context === undefined) {
     throw new Error(
@@ -86,7 +224,7 @@ export function useManufacturingPageState() {
   return context;
 }
 
-export function useManufacturingPageDispatch() {
+export function useManufacturingOrderCreatePageDispatch() {
   const context = useContext(PageDispatchContext);
   if (context === undefined) {
     throw new Error(
@@ -96,4 +234,8 @@ export function useManufacturingPageDispatch() {
   return context;
 }
 
-export type ManufacturingPageTabType = TabType;
+export type ManufacturingCreatePageTabType = TabType;
+export type PurchaseOrderItemPickerTabType = TableTabType;
+export type ManufacturingCreatePagePOTreeActionPayload = POTreeActionPayload;
+export type ManufacturingCreatePagekPOTreeActionPayload = SPOTreeActionPayload;
+export type ManufacturingOrderCreatePageTreeNode = TreeNode;

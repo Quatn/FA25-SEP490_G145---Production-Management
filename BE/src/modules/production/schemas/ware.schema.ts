@@ -34,7 +34,7 @@ export class Ware extends BaseDenormalizedSchema {
     type: mongoose.Schema.Types.ObjectId,
     ref: FluteCombination.name,
   })
-  fluteCombination: mongoose.Schema.Types.ObjectId | FluteCombination;
+  fluteCombination: mongoose.Types.ObjectId | FluteCombination;
 
   @ApiProperty()
   @Prop({ required: true })
@@ -61,7 +61,7 @@ export class Ware extends BaseDenormalizedSchema {
   })
   @IsMongoId()
   wareManufacturingProcessType:
-    | mongoose.Schema.Types.ObjectId
+    | mongoose.Types.ObjectId
     | WareManufacturingProcessType;
 
   @ApiProperty()
@@ -192,7 +192,7 @@ export class Ware extends BaseDenormalizedSchema {
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: PrintColor.name }],
   })
   @IsArray()
-  printColors: mongoose.Schema.Types.ObjectId[] | PrintColor[];
+  printColors: mongoose.Types.ObjectId[] | PrintColor[];
 
   @ApiProperty()
   @Prop({ required: false, type: String, default: null })
@@ -208,7 +208,7 @@ export class Ware extends BaseDenormalizedSchema {
     }],
   })
   finishingProcesses:
-    | mongoose.Schema.Types.ObjectId[]
+    | mongoose.Types.ObjectId[]
     | WareFinishingProcessType[];
 
   @ApiProperty()

@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  useManufacturingPageDispatch,
-  useManufacturingPageState,
+  useManufacturingOrderCreatePageDispatch,
+  useManufacturingOrderCreatePageState,
 } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { Button, Group, HStack } from "@chakra-ui/react";
 
 export default function PurchaseOrderItemListGroupTypeControl() {
-  const { groupType } = useManufacturingPageState();
-  const dispatch = useManufacturingPageDispatch();
+  const { groupType } = useManufacturingOrderCreatePageState();
+  const dispatch = useManufacturingOrderCreatePageDispatch();
 
   return (
     <HStack>
@@ -22,14 +22,14 @@ export default function PurchaseOrderItemListGroupTypeControl() {
               payload: "PO",
             })}
         >
-          Theo trang
+          Gộp theo PO
         </Button>
         <Button
           colorPalette={"teal"}
           variant={groupType === "POI" ? "solid" : "outline"}
           onClick={() => dispatch({ type: "SET_GROUP_TYPE", payload: "POI" })}
         >
-          Không phân trang
+          Không gộp
         </Button>
       </Group>
     </HStack>

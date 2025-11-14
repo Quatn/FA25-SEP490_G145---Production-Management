@@ -11,16 +11,17 @@ import {
 import mongoose, { HydratedDocument, Types } from "mongoose";
 import { PurchaseOrderItem } from "./purchase-order-item.schema";
 import { ApiProperty, getSchemaPath } from "@nestjs/swagger";
+import { BaseDenormalizedSchema } from "@/common/schemas/base.denormalized.schema";
 
 @Schema({ timestamps: true })
-export class ManufacturingOrder extends BaseSchema {
+export class ManufacturingOrder extends BaseDenormalizedSchema {
   @ApiProperty()
   @Prop({ required: true, unique: true })
   @IsString()
   code: string;
 
   @ApiProperty({
-    type: mongoose.Schema.Types.ObjectId,
+    type: mongoose.Types.ObjectId,
     description: "ObjectId by default, PurchaseOrderItem when populated",
   })
   @Prop({
@@ -30,7 +31,7 @@ export class ManufacturingOrder extends BaseSchema {
     ref: PurchaseOrderItem.name,
   })
   @IsMongoId()
-  purchaseOrderItem: mongoose.Schema.Types.ObjectId | PurchaseOrderItem;
+  purchaseOrderItem: mongoose.Types.ObjectId | PurchaseOrderItem;
 
   @ApiProperty()
   @Prop({ required: true })
@@ -41,12 +42,24 @@ export class ManufacturingOrder extends BaseSchema {
   @Prop({ required: true, type: Date, default: null })
   @IsOptional()
   @IsDate()
+  manufacturingDateAdjustment: Date | null;
+
+  @ApiProperty()
+  @Prop({ required: true, type: Date, default: null })
+  @IsOptional()
+  @IsDate()
   requestedDatetime: Date | null;
 
   @ApiProperty()
   @Prop({ required: true })
-  @IsString()
-  corrugatorLine: string;
+  @IsNumber()
+  corrugatorLine: number;
+
+  @ApiProperty()
+  @Prop({ required: true, type: Number, default: null })
+  @IsOptional()
+  @IsNumber()
+  corrugatorLineAdjustment: number | null;
 
   @ApiProperty()
   @Prop({ required: true })

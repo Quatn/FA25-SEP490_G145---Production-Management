@@ -12,6 +12,7 @@ import { SubPurchaseOrder } from "./sub-purchase-order.schema";
 import { Ware } from "./ware.schema";
 import { BaseDenormalizedSchema } from "@/common/schemas/base.denormalized.schema";
 import { ApiProperty } from "@nestjs/swagger";
+import { PurchaseOrderStatus } from "./purchase-order.schema";
 
 export enum PurchaseOrderItemStatus {
   PendingApproval = "PENDINGAPPROVAL",
@@ -40,7 +41,7 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
     ref: SubPurchaseOrder.name,
   })
   @IsMongoId()
-  subPurchaseOrder: mongoose.Schema.Types.ObjectId | SubPurchaseOrder;
+  subPurchaseOrder: mongoose.Types.ObjectId | SubPurchaseOrder;
 
   @ApiProperty()
   @Prop({
@@ -49,7 +50,7 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
     ref: Ware.name,
   })
   @IsMongoId()
-  ware: mongoose.Schema.Types.ObjectId | Ware;
+  ware: mongoose.Types.ObjectId | Ware;
 
   @ApiProperty()
   @Prop({ required: true })
@@ -128,7 +129,10 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
   @IsNumber()
   totalWeight: number = 0;
 
-  @ApiProperty({ default: PurchaseOrderItemStatus.PendingApproval })
+  @ApiProperty({
+    default: PurchaseOrderItemStatus.PendingApproval,
+    enum: PurchaseOrderStatus,
+  })
   @Prop({
     required: true,
     enum: PurchaseOrderItemStatus,

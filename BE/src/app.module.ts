@@ -13,6 +13,7 @@ import { CommonServicesModule } from "./common/services/services.module";
 import { ProductionModule } from './modules/production/production.module';
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { PaperTypeModule } from "./modules/warehouse/paper-type/paper-type.module";
+import { ProductTypeModule } from "./modules/production/product-type/product-type.module";
 
 @ApiBearerAuth("access-token")
 @Module({
@@ -30,6 +31,7 @@ import { PaperTypeModule } from "./modules/warehouse/paper-type/paper-type.modul
     ProductionModule,
     WarehouseModule,
     PaperTypeModule,
+    ProductTypeModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],

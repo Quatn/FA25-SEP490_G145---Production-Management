@@ -35,7 +35,7 @@ export class PurchaseOrder extends BaseSchema {
     ref: Customer.name,
   })
   @IsOptional()
-  customer: mongoose.Schema.Types.ObjectId | Customer;
+  customer: mongoose.Types.ObjectId | Customer;
 
   @ApiProperty()
   @Prop({ required: true })
@@ -45,7 +45,7 @@ export class PurchaseOrder extends BaseSchema {
   @ApiProperty()
   @Prop({ required: true })
   @IsString()
-  deliveryAdress: string;
+  deliveryAddress: string;
 
   @ApiProperty()
   @Prop({ required: true })
