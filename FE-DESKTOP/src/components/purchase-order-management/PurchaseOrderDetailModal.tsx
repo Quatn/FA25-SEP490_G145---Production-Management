@@ -3,6 +3,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import type { PurchaseOrder, SubPO, POItem } from "@/types/PurchaseOrderTypes";
+import { useGetAllCustomersQuery } from "@/service/api/customerApiSlice";
 
 type Props = {
   po: PurchaseOrder | null;
@@ -32,14 +33,33 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
 }) => {
   const [local, setLocal] = useState<PurchaseOrder | null>(null);
 
-  // initialize local state from prop
+  // customers list
+  const { data: customerResp } = useGetAllCustomersQuery();
+  const customers: any[] = (() => {
+    if (!customerResp) return [];
+    if (Array.isArray(customerResp)) return customerResp;
+    if (Array.isArray((customerResp as any).data))
+      return (customerResp as any).data;
+    return [];
+  })();
+
   useEffect(() => {
     if (!po) {
       setLocal(null);
       return;
     }
     // deep clone so we don't mutate parent data
-    setLocal(JSON.parse(JSON.stringify(po)));
+    // ensure we preserve customerId if present
+    const clone = JSON.parse(JSON.stringify(po)) as any;
+    // If incoming PO had `customer` populated object, try to set customerId
+    if (
+      !clone.customerId &&
+      clone.customer &&
+      typeof clone.customer !== "string"
+    ) {
+      clone.customerId = clone.customer._id ?? clone.customer;
+    }
+    setLocal(clone);
   }, [po]);
 
   // compute totals from local state
@@ -71,6 +91,35 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
     });
   };
 
+  // header handlers
+  const onFieldChange = (field: keyof PurchaseOrder, value: any) => {
+    setLocal((curr) => {
+      if (!curr) return curr;
+      const copy = JSON.parse(JSON.stringify(curr));
+      (copy as any)[field] = value;
+      return copy;
+    });
+  };
+
+  // customer selection handler (stores id into customerId)
+  const handleCustomerSelect = (customerId: string) => {
+    setLocal((curr) => {
+      if (!curr) return curr;
+      const copy = JSON.parse(JSON.stringify(curr));
+      copy.customerId = customerId || undefined;
+      // keep a human readable label in customer for display
+      const c = customers.find((x) => {
+        const id = x._id?.$oid ?? x._id ?? x;
+        return String(id) === String(customerId);
+      });
+      copy.customer = c
+        ? c.name ?? c.code ?? String(customerId)
+        : String(customerId);
+      return copy;
+    });
+  };
+
+  // Sub-PO and item helpers (same logic as before)
   const handleAddSubPO = () => {
     if (!local) return;
     const newSub: SubPO = {
@@ -221,53 +270,142 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
 
   if (!local) return null;
 
+  // derive selectedCustomerId for control
+  const selectedCustomerId = (() => {
+    const c = (local as any).customerId ?? local.customer;
+    if (!c) return "";
+    if (typeof c === "string") return c;
+    return c._id?.$oid ?? c._id ?? "";
+  })();
+
   return (
     <div className="modal-backdrop" style={{ display: "block" }}>
       <div className="modal" role="dialog" style={{ display: "block" }}>
         <div className="modal-dialog modal-xl">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title">PO: {local.poNumber}</h5>
+              <h5 className="modal-title">PO: {local.poNumber || "(new)"}</h5>
               <button className="btn-close" onClick={onClose} />
             </div>
 
             <div className="modal-body">
-              {/* Header info */}
+              {/* Header form (editable) */}
               <div style={{ marginBottom: 12 }}>
                 <table className="table table-borderless">
                   <tbody>
                     <tr>
                       <th style={{ width: 180 }}>PO Number</th>
-                      <td>{local.poNumber}</td>
-                      <th style={{ width: 180 }}>Date</th>
-                      <td>{local.poDate}</td>
-                    </tr>
-                    <tr>
-                      <th>Customer</th>
-                      <td>{local.customer}</td>
-                      <th>Phone / Email</th>
                       <td>
-                        {local.phone} / {local.email}
+                        <input
+                          className="form-control"
+                          value={local.poNumber ?? ""}
+                          onChange={(e) =>
+                            onFieldChange("poNumber" as any, e.target.value)
+                          }
+                        />
+                      </td>
+
+                      <th style={{ width: 180 }}>Date</th>
+                      <td>
+                        <input
+                          className="form-control"
+                          type="date"
+                          value={
+                            local.poDate
+                              ? typeof local.poDate === "string"
+                                ? local.poDate.slice(0, 10)
+                                : new Date(local.poDate)
+                                    .toISOString()
+                                    .slice(0, 10)
+                              : ""
+                          }
+                          onChange={(e) =>
+                            onFieldChange("poDate" as any, e.target.value)
+                          }
+                        />
                       </td>
                     </tr>
+
                     <tr>
-                      <th>Tax Template</th>
-                      <td>{local.taxTemplate}</td>
-                      <th>PO Type</th>
-                      <td>{local.poType}</td>
+                      <th>Customer</th>
+                      <td>
+                        <select
+                          className="form-select"
+                          value={selectedCustomerId ?? ""}
+                          onChange={(e) => handleCustomerSelect(e.target.value)}
+                        >
+                          <option value="">-- Select Customer --</option>
+                          {customers.map((c: any) => {
+                            const id = c._id?.$oid ?? c._id ?? c;
+                            const label = c.name ?? c.code ?? String(id);
+                            return (
+                              <option key={id} value={id}>
+                                {label}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </td>
+
+                      <th>Phone / Email</th>
+                      <td>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input
+                            className="form-control"
+                            placeholder="Phone"
+                            value={local.phone ?? ""}
+                            onChange={(e) =>
+                              onFieldChange("phone" as any, e.target.value)
+                            }
+                          />
+                          <input
+                            className="form-control"
+                            placeholder="Email"
+                            value={local.email ?? ""}
+                            onChange={(e) =>
+                              onFieldChange("email" as any, e.target.value)
+                            }
+                          />
+                        </div>
+                      </td>
                     </tr>
+
                     <tr>
-                      <th>Style</th>
-                      <td>{local.style}</td>
-                      <th>Style Details</th>
-                      <td>{local.styleDetails}</td>
+                      <th>Delivery Address</th>
+                      <td>
+                        <input
+                          className="form-control"
+                          value={local.address ?? ""}
+                          onChange={(e) =>
+                            onFieldChange("address" as any, e.target.value)
+                          }
+                        />
+                      </td>
+
+                      <th>Payment Terms</th>
+                      <td>
+                        <input
+                          className="form-control"
+                          value={local.taxTemplate ?? ""}
+                          onChange={(e) =>
+                            onFieldChange("taxTemplate" as any, e.target.value)
+                          }
+                        />
+                      </td>
                     </tr>
-                    {/* <tr>
-                      <th>Totals</th>
-                      <td>{totals.items} items</td>
-                      <th>Total Value</th>
-                      <td>{totals.value}</td>
-                    </tr> */}
+
+                    <tr>
+                      <th>Note</th>
+                      <td colSpan={3}>
+                        <input
+                          className="form-control"
+                          value={local.notes ?? ""}
+                          onChange={(e) =>
+                            onFieldChange("notes" as any, e.target.value)
+                          }
+                        />
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -408,7 +546,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                                   <td>
                                     <input
                                       className="form-control form-control-sm"
-                                      value={it.description}
+                                      value={it.description ?? ""}
                                       onChange={(e) =>
                                         handleChangeItemField(
                                           s.id,
@@ -424,7 +562,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                                   <td>
                                     <input
                                       className="form-control form-control-sm"
-                                      value={it.uom}
+                                      value={it.uom ?? ""}
                                       onChange={(e) =>
                                         handleChangeItemField(
                                           s.id,
@@ -466,29 +604,11 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                                     />
                                   </td>
                                   <td style={{ textAlign: "right" }}>
-                                    {Number(
-                                      it.total ??
-                                        it.unitPrice ??
-                                        0 * it.quantity
-                                    ).toLocaleString()}
+                                    {Number(it.total ?? 0).toLocaleString()}
                                   </td>
 
                                   <td>
                                     <div style={{ display: "flex", gap: 6 }}>
-                                      {/* <button
-                                        className="btn btn-outline-secondary btn-sm"
-                                        onClick={() => {
-                                          // quick mark as Done
-                                          handleChangeItemField(
-                                            s.id,
-                                            it.id,
-                                            "status",
-                                            "Done"
-                                          );
-                                        }}
-                                      >
-                                        Mark Done
-                                      </button> */}
                                       <button
                                         className="btn btn-danger btn-sm"
                                         onClick={() =>
@@ -503,7 +623,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                               ))}
                               {(s.items || []).length === 0 && (
                                 <tr>
-                                  <td colSpan={7} className="text-muted">
+                                  <td colSpan={9} className="text-muted">
                                     No items yet
                                   </td>
                                 </tr>

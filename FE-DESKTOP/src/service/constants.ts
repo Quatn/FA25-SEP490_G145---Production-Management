@@ -15,4 +15,5 @@ export const PAPER_COLOR_URL = '/paper-color';
 export const PAPER_TYPE_URL = '/paper-type';
 export const PAPER_ROLL_URL = "/paper-roll";
 export const PAPER_ROLL_TRANSACTION_URL = "/paper-roll-transaction";
+export const CUSTOMER_URL = "/customer";
 

@@ -3,17 +3,65 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import type { PurchaseOrder, SubPO, POItem } from "@/types/PurchaseOrderTypes";
-import { mockPurchaseOrdersQuery } from "@/service/mock-data/functions/paper-an-renamelater/mock-purchase-orders-crud";
 import PurchaseOrderDetailModal from "./PurchaseOrderDetailModal";
 import ProductSelectorModal, { ProductCard } from "./SubPOSelectorModal";
+import {
+  useGetPurchaseOrdersQuery,
+  useCreatePurchaseOrderMutation,
+  useUpdatePurchaseOrderMutation,
+  useDeletePurchaseOrderMutation,
+} from "@/service/api/purchaseOrderApiSlice";
 
-/**
- * PurchaseOrderList with inline SubPO / POItem editor shown for every PO (always visible).
- * Now integrated with ProductSelectorModal: "Tạo Sub-PO" opens product selection popup.
- */
+/* ... same helper functions, normalizeServerPo updated to capture customer id ... */
 
 function makeId(prefix = "") {
   return `${prefix}${Date.now()}${Math.floor(Math.random() * 9000 + 1000)}`;
+}
+
+function normalizeServerPo(raw: any): PurchaseOrder {
+  const id = raw._id?.$oid ?? raw._id ?? raw.id ?? String(Math.random());
+  // extract customer id (may be populated object or raw id)
+  let customerId: string | undefined = undefined;
+  let customerName = "";
+  if (raw.customer) {
+    if (typeof raw.customer === "string") {
+      customerId = raw.customer;
+      customerName = "";
+    } else if (raw.customer._id || raw.customer.$oid) {
+      customerId = raw.customer._id?.$oid ?? raw.customer._id ?? raw.customer;
+      customerName = raw.customer.name ?? "";
+    } else {
+      // fallback: populated object
+      customerId = raw.customer;
+      customerName = "";
+    }
+  }
+
+  return {
+    id,
+    poNumber: raw.code ?? "",
+    poDate:
+      raw.orderDate && typeof raw.orderDate === "string"
+        ? raw.orderDate.slice(0, 10)
+        : raw.orderDate
+        ? new Date(raw.orderDate).toISOString().slice(0, 10)
+        : "",
+    customer: customerName || raw.customer?.name || "",
+    customerId,
+    address: raw.deliveryAdress ?? "",
+    phone: raw.customer?.contactNumber ?? raw.phone ?? "",
+    email: raw.customer?.email ?? raw.email ?? "",
+    taxTemplate: (raw as any).paymentTerms ?? "",
+    poType: (raw as any).poType ?? "",
+    style: (raw as any).style ?? "",
+    styleDetails: (raw as any).styleDetails ?? "",
+    status: raw.status ?? "",
+    subPOs: raw.subPOs ?? [],
+    totalItems: (raw as any).totalItems ?? 0,
+    totalValue: (raw as any).totalValue ?? 0,
+    notes: raw.note ?? raw.notes ?? "",
+    createdBy: (raw as any).createdBy ?? "",
+  } as any;
 }
 
 const SearchInput: React.FC<{
@@ -29,31 +77,41 @@ const SearchInput: React.FC<{
 );
 
 const PurchaseOrderList: React.FC = () => {
-  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [query, setQuery] = useState<string>("");
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
 
-  // state for product selector
+  // product selector modal (local-only)
   const [productModalOpenForPo, setProductModalOpenForPo] = useState<{
     open: boolean;
     poId?: string;
   }>({ open: false });
 
+  // api hooks
+  const {
+    data: poResp,
+    isLoading,
+    error,
+    refetch,
+  } = useGetPurchaseOrdersQuery({
+    page: 1,
+    limit: 200,
+    search: "",
+  });
+
+  const [createPo] = useCreatePurchaseOrderMutation();
+  const [updatePo] = useUpdatePurchaseOrderMutation();
+  const [deletePo] = useDeletePurchaseOrderMutation();
+
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+
   useEffect(() => {
-    (async () => {
-      const res: any = await mockPurchaseOrdersQuery({});
-      // accept multiple shapes
-      let payload: any[] = [];
-      if (res) {
-        if (Array.isArray(res)) payload = res;
-        else if (Array.isArray(res.data)) payload = res.data;
-        else if (Array.isArray(res.data?.purchaseOrders))
-          payload = res.data.purchaseOrders;
-        else if (Array.isArray(res.data?.data)) payload = res.data.data;
-      }
-      setOrders(payload || []);
-    })();
-  }, []);
+    const payload = poResp?.data?.data ?? poResp?.data ?? [];
+    if (Array.isArray(payload)) {
+      setOrders(payload.map(normalizeServerPo));
+    } else {
+      setOrders([]);
+    }
+  }, [poResp]);
 
   const filtered = useMemo(() => {
     const q = (query || "").trim().toLowerCase();
@@ -65,8 +123,8 @@ const PurchaseOrderList: React.FC = () => {
     );
   }, [orders, query]);
 
-  // update a single PO by id
-  const updatePO = (
+  // local updater: keeps inline edits local until user saves via modal
+  const updatePOLocal = (
     poId: string,
     updater: (po: PurchaseOrder) => PurchaseOrder
   ) => {
@@ -77,57 +135,75 @@ const PurchaseOrderList: React.FC = () => {
     );
   };
 
-  // create subPOs + items from selected products
-  const handleCreateSubPOsFromProducts = (
-    poId: string | undefined,
-    selectedProducts: ProductCard[]
-  ) => {
-    if (!poId) return;
-    updatePO(poId, (po) => {
-      po.subPOs = po.subPOs || [];
-      for (const prod of selectedProducts) {
-        const newSubId = makeId("sub-");
-        const newSub: SubPO = {
-          id: newSubId,
-          poId: po.id,
-          title: `${prod.product_code} • ${prod.product_name}`,
-          status: "Open",
-          items: [],
-          // metadata copied from product
-          productType: prod.product_type,
-          customerCode: prod.customer_code,
-          size: [prod.length ?? "", prod.width ?? "", prod.height ?? ""].join(
-            "×"
-          ),
-        };
-
-        // map item_codes -> PO items; description taken from product.description
-        newSub.items = (prod.item_codes || []).map((it) => {
-          const newItem: POItem = {
-            id: makeId("item-"),
-            subPOId: newSubId,
-            sku: it.product_code,
-            // set description from Product (not item_code) so user sees product description
-            description: prod.description ?? "",
-            uom: "PCS",
-            unitPrice: 0,
-            quantity: 0,
-            total: 0,
-            status: "Pending",
-            // initial wave/grammage taken from item code if present
-            waveType: it.wave_type,
-            grammage: it.paper_size,
-          };
-          return newItem;
-        });
-
-        po.subPOs.push(newSub);
-      }
-      return po;
-    });
+  const handleCreateNewPO = () => {
+    const newPo: PurchaseOrder = {
+      id: makeId("local-"),
+      poNumber: "",
+      poDate: new Date().toISOString().slice(0, 10),
+      customer: "",
+      customerId: undefined,
+      address: "",
+      phone: "",
+      email: "",
+      taxTemplate: "",
+      poType: "",
+      style: "",
+      styleDetails: "",
+      status: "DRAFT",
+      subPOs: [],
+      totalItems: 0,
+      totalValue: 0,
+      notes: "",
+      createdBy: "",
+    } as any;
+    setSelected(newPo);
   };
 
-  // existing inline subPO & item functions (add/remove/edit) - kept as before
+  const handleSaveFromModal = async (updated: PurchaseOrder) => {
+    try {
+      const payload: any = {
+        code: updated.poNumber,
+        orderDate: updated.poDate,
+        deliveryAdress: updated.address,
+        paymentTerms: updated.taxTemplate,
+        note: updated.notes,
+      };
+      // attach customer ObjectId if present
+      if ((updated as any).customerId) {
+        payload.customer = (updated as any).customerId;
+      } else if (updated.customer && typeof updated.customer === "string") {
+        // if user typed a name and didn't select an id, don't send customer
+      }
+      if (!updated.id || String(updated.id).startsWith("local-")) {
+        await createPo(payload).unwrap();
+      } else {
+        await updatePo({ id: updated.id, body: payload }).unwrap();
+      }
+      await refetch();
+      setSelected(null);
+    } catch (err: any) {
+      console.error("Save PO failed", err);
+      alert(
+        "Save failed: " + (err?.data?.message || err?.message || "unknown")
+      );
+    }
+  };
+
+  const handleDeleteFromList = async (po: PurchaseOrder) => {
+    if (!po?.id) return;
+    if (!confirm("Delete this Purchase Order?")) return;
+    try {
+      await deletePo(po.id).unwrap();
+      await refetch();
+    } catch (err: any) {
+      console.error("Delete failed", err);
+      alert(
+        "Delete failed: " + (err?.data?.message || err?.message || "unknown")
+      );
+    }
+  };
+
+  // Inline subPO helpers preserved (local-only)...
   const handleAddSubPO = (poId: string) => {
     const newSub: SubPO = {
       id: makeId("sub-"),
@@ -139,7 +215,7 @@ const PurchaseOrderList: React.FC = () => {
       customerCode: "",
       size: "",
     };
-    updatePO(poId, (po) => {
+    updatePOLocal(poId, (po) => {
       po.subPOs = po.subPOs || [];
       po.subPOs.push(newSub);
       return po;
@@ -148,14 +224,14 @@ const PurchaseOrderList: React.FC = () => {
 
   const handleRemoveSubPO = (poId: string, subId: string) => {
     if (!confirm("Remove this sub-PO?")) return;
-    updatePO(poId, (po) => {
+    updatePOLocal(poId, (po) => {
       po.subPOs = (po.subPOs || []).filter((s) => s.id !== subId);
       return po;
     });
   };
 
   const handleChangeSubTitle = (poId: string, subId: string, value: string) => {
-    updatePO(poId, (po) => {
+    updatePOLocal(poId, (po) => {
       (po.subPOs || []).forEach((s) => {
         if (s.id === subId) s.title = value;
       });
@@ -168,7 +244,7 @@ const PurchaseOrderList: React.FC = () => {
     subId: string,
     value: string
   ) => {
-    updatePO(poId, (po) => {
+    updatePOLocal(poId, (po) => {
       (po.subPOs || []).forEach((s) => {
         if (s.id === subId) s.status = value;
       });
@@ -176,13 +252,12 @@ const PurchaseOrderList: React.FC = () => {
     });
   };
 
-  // <-- NEW handlers to edit productType, customerCode, size -->
   const handleChangeSubProductType = (
     poId: string,
     subId: string,
     value: string
   ) => {
-    updatePO(poId, (po) => {
+    updatePOLocal(poId, (po) => {
       (po.subPOs || []).forEach((s) => {
         if (s.id === subId) (s as any).productType = value;
       });
@@ -195,7 +270,7 @@ const PurchaseOrderList: React.FC = () => {
     subId: string,
     value: string
   ) => {
-    updatePO(poId, (po) => {
+    updatePOLocal(poId, (po) => {
       (po.subPOs || []).forEach((s) => {
         if (s.id === subId) (s as any).customerCode = value;
       });
@@ -204,16 +279,14 @@ const PurchaseOrderList: React.FC = () => {
   };
 
   const handleChangeSubSize = (poId: string, subId: string, value: string) => {
-    updatePO(poId, (po) => {
+    updatePOLocal(poId, (po) => {
       (po.subPOs || []).forEach((s) => {
         if (s.id === subId) (s as any).size = value;
       });
       return po;
     });
   };
-  // <-- end new handlers -->
 
-  // items operations
   const handleAddItem = (poId: string, subId: string) => {
     const newItem: POItem = {
       id: makeId("item-"),
@@ -226,7 +299,7 @@ const PurchaseOrderList: React.FC = () => {
       total: 0,
       status: "Pending",
     };
-    updatePO(poId, (po) => {
+    updatePOLocal(poId, (po) => {
       const s = (po.subPOs || []).find((x) => x.id === subId);
       if (!s) {
         po.subPOs = po.subPOs || [];
@@ -236,7 +309,10 @@ const PurchaseOrderList: React.FC = () => {
           title: "Auto",
           status: "Open",
           items: [newItem],
-        });
+          productType: "Bộ",
+          customerCode: "",
+          size: "",
+        } as any);
       } else {
         s.items = s.items || [];
         s.items.push(newItem);
@@ -247,7 +323,7 @@ const PurchaseOrderList: React.FC = () => {
 
   const handleRemoveItem = (poId: string, subId: string, itemId: string) => {
     if (!confirm("Remove this item?")) return;
-    updatePO(poId, (po) => {
+    updatePOLocal(poId, (po) => {
       const s = (po.subPOs || []).find((x) => x.id === subId);
       if (s) s.items = (s.items || []).filter((it) => it.id !== itemId);
       return po;
@@ -261,7 +337,7 @@ const PurchaseOrderList: React.FC = () => {
     field: keyof POItem,
     value: any
   ) => {
-    updatePO(poId, (po) => {
+    updatePOLocal(poId, (po) => {
       const s = (po.subPOs || []).find((x) => x.id === subId);
       if (s) {
         const it = (s.items || []).find((i) => i.id === itemId);
@@ -303,10 +379,7 @@ const PurchaseOrderList: React.FC = () => {
           marginBottom: 12,
         }}
       >
-        <button
-          className="btn btn-outline-primary"
-          onClick={() => alert("Tạo PO - not implemented")}
-        >
+        <button className="btn btn-outline-primary" onClick={handleCreateNewPO}>
           Tạo PO
         </button>
         <button
@@ -324,7 +397,9 @@ const PurchaseOrderList: React.FC = () => {
       </div>
 
       <div>
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="text-muted">Loading purchase orders...</div>
+        ) : filtered.length === 0 ? (
           <div className="text-muted">No purchase orders found</div>
         ) : (
           filtered.map((po) => {
@@ -372,6 +447,12 @@ const PurchaseOrderList: React.FC = () => {
                           onClick={() => setSelected(po)}
                         >
                           View detail
+                        </button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => handleDeleteFromList(po)}
+                        >
+                          Delete
                         </button>
                       </div>
                     </div>
@@ -515,7 +596,7 @@ const PurchaseOrderList: React.FC = () => {
                             </button>
                           </div>
 
-                          {/* items */}
+                          {/* items ... (unchanged) */}
                           <div style={{ marginTop: 6 }}>
                             <div style={{ marginBottom: 6 }}>
                               <button
@@ -580,7 +661,6 @@ const PurchaseOrderList: React.FC = () => {
                                         />
                                       </td>
 
-                                      {/* Sóng editable */}
                                       <td>
                                         <input
                                           className="form-control form-control-sm"
@@ -597,7 +677,6 @@ const PurchaseOrderList: React.FC = () => {
                                         />
                                       </td>
 
-                                      {/* Khổ (grammage) editable */}
                                       <td>
                                         <input
                                           className="form-control form-control-sm"
@@ -691,7 +770,6 @@ const PurchaseOrderList: React.FC = () => {
                                       </td>
                                     </tr>
                                   ))}
-                                  {/* when empty, update colSpan to match the number of columns (9 columns here) */}
                                   {(s.items || []).length === 0 && (
                                     <tr>
                                       <td colSpan={9} className="text-muted">
@@ -718,16 +796,50 @@ const PurchaseOrderList: React.FC = () => {
         )}
       </div>
 
-      {/* Product selector modal (scoped to PO id) */}
       <ProductSelectorModal
         show={productModalOpenForPo.open}
         onHide={() => setProductModalOpenForPo({ open: false })}
         onConfirm={(selectedProducts: ProductCard[]) => {
-          // create subPOs & items under the selected PO
-          handleCreateSubPOsFromProducts(
-            productModalOpenForPo.poId,
-            selectedProducts
-          );
+          const poId = productModalOpenForPo.poId;
+          if (!poId) {
+            setProductModalOpenForPo({ open: false });
+            return;
+          }
+          updatePOLocal(poId, (po) => {
+            po.subPOs = po.subPOs || [];
+            for (const prod of selectedProducts) {
+              const newSubId = makeId("sub-");
+              const newSub: SubPO = {
+                id: newSubId,
+                poId: po.id,
+                title: `${prod.product_code} • ${prod.product_name}`,
+                status: "Open",
+                items: [],
+                productType: prod.product_type,
+                customerCode: prod.customer_code,
+                size: [
+                  prod.length ?? "",
+                  prod.width ?? "",
+                  prod.height ?? "",
+                ].join("×"),
+              };
+              newSub.items = (prod.item_codes || []).map((it) => ({
+                id: makeId("item-"),
+                subPOId: newSubId,
+                sku: it.product_code,
+                description: prod.description ?? "",
+                uom: "PCS",
+                unitPrice: 0,
+                quantity: 0,
+                total: 0,
+                status: "Pending",
+                waveType: it.wave_type,
+                grammage: it.paper_size,
+              }));
+              po.subPOs.push(newSub);
+            }
+            return po;
+          });
           setProductModalOpenForPo({ open: false });
         }}
       />
@@ -735,12 +847,8 @@ const PurchaseOrderList: React.FC = () => {
       <PurchaseOrderDetailModal
         po={selected}
         onClose={() => setSelected(null)}
-        onSave={(updatedPo: PurchaseOrder) => {
-          setOrders((prev) =>
-            prev.map((p) => (p.id === updatedPo.id ? updatedPo : p))
-          );
-          setSelected(null);
-        }}
+        onSave={handleSaveFromModal}
+        onOpenSubPOSelector={() => {}}
       />
     </div>
   );
