@@ -20,6 +20,12 @@ export class PurchaseOrderItem extends BaseSchema {
   @Prop({ required: true })
   amount: number; // Số lượng cần sản xuất
 
+  @Prop({ required: true })
+  longitudinalCutCount: number; // Tấm chặt
+
+  @Prop({ required: true })
+  runningLength: number; // Mét dài
+
   // LIÊN KẾT TỚI WARE (MÃ HÀNG)
   // Thay thế trường `wareCode: string` bằng ref
   @Prop({

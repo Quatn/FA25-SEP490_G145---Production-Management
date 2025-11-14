@@ -44,7 +44,13 @@ export class FindAllMoQueryDto {
   @IsDate()
   req_date_to?: Date;
 
-  // 5. Phân trang
+  // 5. Filter theo khổ giấy (paperWidth)
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  paperWidth?: number;
+
+  // 6. Phân trang
   @IsOptional()
   @Type(() => Number)
   @IsNumber()

@@ -27,6 +27,7 @@ import {
 import { PurchaseOrderItemDocument } from "@/modules/purchase-order-item/schemas/purchase-order-item.schema";
 // <-- THÊM MỚI: Import DTO (Giả sử bạn tạo DTO này)
 import { UpdateCorrugatorProcessDto } from "./dto/update-corrugator-process.dto";
+import { UpdateManyCorrugatorProcessesDto } from "./dto/update-many-corrugator-processes.dto";
 
 @Injectable()
 export class CorrugatorProcessService {
@@ -113,7 +114,7 @@ export class CorrugatorProcessService {
         "Không tìm thấy PO Item liên kết với Lệnh sản xuất này.",
       );
     }
-    const targetAmount = poItem.amount;
+    const targetAmount = poItem.longitudinalCutCount; // Sử dụng tấm chặt thay vì amount
     const maxAmountForCompletion = targetAmount * 1.1; // Yêu cầu 5: <= 110%
 
     // 3. Xử lý logic cập nhật
@@ -241,5 +242,142 @@ export class CorrugatorProcessService {
     // (Kiểm tra logic hoàn thành tổng thể MO đã có trong mop.service.ts)
 
     return targetProcess;
+  }
+
+  /**
+   * Cập nhật trạng thái cho nhiều quy trình sóng cùng lúc
+   * Cho phép RUNNING, PAUSED, CANCELLED, COMPLETED
+   */
+  async updateManyProcesses(
+    dto: UpdateManyCorrugatorProcessesDto,
+  ): Promise<{ successCount: number; failedCount: number; errors: string[] }> {
+    const { processIds, status: newStatus } = dto;
+
+    const processObjectIds = processIds.map((id) => new Types.ObjectId(id));
+    const processes = await this.corrugatorProcessModel.find({
+      _id: { $in: processObjectIds },
+    }).populate({
+      path: "manufacturingOrder",
+      populate: { path: "purchaseOrderItem" },
+    });
+
+    if (processes.length === 0) {
+      throw new NotFoundException("Không tìm thấy quy trình sóng nào.");
+    }
+
+    let successCount = 0;
+    let failedCount = 0;
+    const errors: string[] = [];
+
+    // Xử lý từng process
+    for (const process of processes) {
+      try {
+        const originalStatus = process.status;
+        const parentMO = process.manufacturingOrder as ManufacturingOrderDocument;
+
+        // Validate chuyển đổi trạng thái
+        if (newStatus === CorrugatorProcessStatus.COMPLETED) {
+          // COMPLETED: chỉ cho phép từ RUNNING và phải đủ số lượng
+          if (originalStatus !== CorrugatorProcessStatus.RUNNING) {
+            throw new ForbiddenException(
+              `Chỉ có thể chuyển sang 'COMPLETED' từ trạng thái 'RUNNING'.`,
+            );
+          }
+
+          // Kiểm tra số lượng
+          const poItem = parentMO.purchaseOrderItem as PurchaseOrderItemDocument;
+          if (!poItem) {
+            throw new NotFoundException(
+              "Không tìm thấy PO Item liên kết với Lệnh sản xuất này.",
+            );
+          }
+          const targetAmount = poItem.longitudinalCutCount;
+          const maxAmountForCompletion = targetAmount * 1.1;
+
+          if (process.manufacturedAmount < targetAmount) {
+            throw new BadRequestException(
+              `Không thể hoàn thành khi số lượng (${process.manufacturedAmount}) chưa đạt mục tiêu (${targetAmount}).`,
+            );
+          }
+          if (process.manufacturedAmount > maxAmountForCompletion) {
+            throw new BadRequestException(
+              `Không thể hoàn thành do số lượng (${process.manufacturedAmount}) vượt quá 110% cho phép (${maxAmountForCompletion.toFixed(0)}).`,
+            );
+          }
+        } else if (newStatus === CorrugatorProcessStatus.RUNNING) {
+          // RUNNING: chỉ cho phép từ PAUSED, CANCELLED, hoặc NOTSTARTED (nếu có số lượng > 0)
+          if (
+            originalStatus === CorrugatorProcessStatus.COMPLETED ||
+            (originalStatus === CorrugatorProcessStatus.NOTSTARTED &&
+              process.manufacturedAmount <= 0)
+          ) {
+            throw new ForbiddenException(
+              `Không thể chuyển từ '${originalStatus}' sang 'RUNNING'.`,
+            );
+          }
+        } else if (
+          newStatus === CorrugatorProcessStatus.PAUSED ||
+          newStatus === CorrugatorProcessStatus.CANCELLED
+        ) {
+          // PAUSED/CANCELLED: không cho phép từ NOTSTARTED hoặc COMPLETED
+          if (
+            originalStatus === CorrugatorProcessStatus.NOTSTARTED ||
+            originalStatus === CorrugatorProcessStatus.COMPLETED
+          ) {
+            throw new ForbiddenException(
+              `Không thể chuyển từ '${originalStatus}' sang '${newStatus}'.`,
+            );
+          }
+        }
+
+        // Cập nhật trạng thái
+        process.status = newStatus;
+        await process.save();
+
+        // Đồng bộ với MO và MOPs
+        if (parentMO) {
+          // Đồng bộ MO status
+          if (
+            newStatus === CorrugatorProcessStatus.PAUSED ||
+            newStatus === CorrugatorProcessStatus.CANCELLED
+          ) {
+            parentMO.overallStatus =
+              newStatus === CorrugatorProcessStatus.PAUSED
+                ? OrderStatus.PAUSED
+                : OrderStatus.CANCELLED;
+            await parentMO.save();
+
+            // Đồng bộ MOPs
+            const mopStatusToSet =
+              newStatus === CorrugatorProcessStatus.PAUSED
+                ? ProcessStatus.PAUSED
+                : ProcessStatus.CANCELLED;
+            await this.mopModel.updateMany(
+              { manufacturingOrder: parentMO._id },
+              { $set: { status: mopStatusToSet } },
+            );
+          } else if (newStatus === CorrugatorProcessStatus.COMPLETED) {
+            // COMPLETED: đồng bộ MO status
+            parentMO.overallStatus = OrderStatus.COMPLETED;
+            await parentMO.save();
+          } else if (
+            newStatus === CorrugatorProcessStatus.RUNNING &&
+            parentMO.overallStatus === OrderStatus.NOTSTARTED
+          ) {
+            parentMO.overallStatus = OrderStatus.RUNNING;
+            await parentMO.save();
+          }
+        }
+
+        successCount++;
+      } catch (error) {
+        failedCount++;
+        errors.push(
+          `Process ${process._id}: ${error.message || "Lỗi không xác định"}`,
+        );
+      }
+    }
+
+    return { successCount, failedCount, errors };
   }
 }

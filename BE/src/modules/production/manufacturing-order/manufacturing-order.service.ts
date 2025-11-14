@@ -52,6 +52,7 @@ export class ManufacturingOrderService {
       req_date_to,
       overallStatus,
       corrugatorProcessStatus,
+      paperWidth,
     } = queryDto;
 
     const skip = (page - 1) * limit;
@@ -91,6 +92,36 @@ export class ManufacturingOrderService {
     // 3. Xây dựng pipeline aggregate
     const pipeline: any[] = [
       { $match: filter },
+      // Lookup purchaseOrderItem để filter theo ware.paperWidth
+      {
+        $lookup: {
+          from: "purchaseorderitems",
+          localField: "purchaseOrderItem",
+          foreignField: "_id",
+          as: "purchaseOrderItemData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$purchaseOrderItemData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      // Lookup ware để filter theo paperWidth
+      {
+        $lookup: {
+          from: "wares",
+          localField: "purchaseOrderItemData.ware",
+          foreignField: "_id",
+          as: "wareData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$wareData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       // Lookup corrugatorProcess để filter theo status
       {
         $lookup: {
@@ -107,6 +138,15 @@ export class ManufacturingOrderService {
         },
       },
     ];
+
+    // Filter theo paperWidth nếu có
+    if (paperWidth !== undefined && paperWidth !== null && !isNaN(Number(paperWidth))) {
+      pipeline.push({
+        $match: {
+          "wareData.paperWidth": Number(paperWidth),
+        },
+      });
+    }
 
     // Filter theo corrugatorProcessStatus nếu có
     if (corrugatorProcessStatus) {
@@ -156,12 +196,40 @@ export class ManufacturingOrderService {
       { $limit: limit }
     );
 
-    // Tính lại total sau khi filter corrugatorProcessStatus
+    // Tính lại total sau khi filter corrugatorProcessStatus và paperWidth
     let total = await this.moModel.countDocuments(filter);
-    if (corrugatorProcessStatus) {
-      // Nếu có filter corrugatorProcessStatus, cần count lại sau khi lookup
-      const countPipeline = [
+    if (corrugatorProcessStatus || (paperWidth !== undefined && paperWidth !== null)) {
+      // Nếu có filter corrugatorProcessStatus hoặc paperWidth, cần count lại sau khi lookup
+      const countPipeline: any[] = [
         { $match: filter },
+        {
+          $lookup: {
+            from: "purchaseorderitems",
+            localField: "purchaseOrderItem",
+            foreignField: "_id",
+            as: "purchaseOrderItemData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$purchaseOrderItemData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: "wares",
+            localField: "purchaseOrderItemData.ware",
+            foreignField: "_id",
+            as: "wareData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$wareData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
         {
           $lookup: {
             from: "corrugatorprocesses",
@@ -176,13 +244,27 @@ export class ManufacturingOrderService {
             preserveNullAndEmptyArrays: true,
           },
         },
-        {
+      ];
+
+      // Thêm filter paperWidth nếu có
+      if (paperWidth !== undefined && paperWidth !== null && !isNaN(Number(paperWidth))) {
+        countPipeline.push({
+          $match: {
+            "wareData.paperWidth": Number(paperWidth),
+          },
+        });
+      }
+
+      // Thêm filter corrugatorProcessStatus nếu có
+      if (corrugatorProcessStatus) {
+        countPipeline.push({
           $match: {
             "corrugatorProcessData.status": corrugatorProcessStatus,
           },
-        },
-        { $count: "total" },
-      ];
+        });
+      }
+
+      countPipeline.push({ $count: "total" });
       const countResult = await this.moModel.aggregate(countPipeline).exec();
       total = countResult[0]?.total || 0;
     }

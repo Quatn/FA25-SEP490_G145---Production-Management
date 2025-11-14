@@ -6,6 +6,7 @@ import { BaseResponse } from '@/common/dto/response.dto';
 import { CorrugatorProcessService } from './corrugator-process.service';
 import { CorrugatorProcessesDto } from './dto/corrugator-processes.dto';
 import { UpdateCorrugatorProcessDto } from './dto/update-corrugator-process.dto';
+import { UpdateManyCorrugatorProcessesDto } from './dto/update-many-corrugator-processes.dto';
 import { CorrugatorProcess } from './schemas/corrugator-process.schema';
 
 @Controller('corrugator-process')
@@ -19,6 +20,19 @@ export class CorrugatorProcessController {
     return {
       success: true,
       message: `Đã cập nhật ${result.modifiedCount} quy trình sóng sang trạng thái RUNNING.`,
+      data: result,
+    };
+  }
+
+  @Patch('update-many')
+  @ApiOperation({ summary: 'Cập nhật trạng thái cho nhiều quy trình sóng cùng lúc' })
+  async updateMany(
+    @Body() dto: UpdateManyCorrugatorProcessesDto,
+  ): Promise<BaseResponse<any>> {
+    const result = await this.cpService.updateManyProcesses(dto);
+    return {
+      success: true,
+      message: `Đã cập nhật ${result.successCount} quy trình sóng. ${result.failedCount > 0 ? `${result.failedCount} quy trình thất bại.` : ''}`,
       data: result,
     };
   }
