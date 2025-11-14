@@ -1,6 +1,13 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsDate, IsNumber, IsOptional, IsString } from "class-validator";
+import {
+  IsDate,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from "class-validator";
 import mongoose from "mongoose";
+import { FullDetailPurchaseOrderItemDto } from "../../purchase-order-item/dto/full-details-orders.dto";
 
 export class CreateManufacturingOrderRequestDto {
   @ApiProperty({
@@ -8,8 +15,8 @@ export class CreateManufacturingOrderRequestDto {
     description:
       "Code of the PO Item the order attachs with, must be unique since an PO Item can only be used to create one order",
   })
-  @IsString()
-  purchaseOrderItemCode: mongoose.Types.ObjectId;
+  @IsMongoId()
+  purchaseOrderItemId: mongoose.Types.ObjectId;
 
   @ApiProperty()
   @IsOptional()
@@ -35,4 +42,8 @@ export class CreateManufacturingOrderRequestDto {
   @IsOptional()
   @IsString()
   note: string = "";
+}
+
+export class AssembledCreateManufacturingOrderRequestDto extends CreateManufacturingOrderRequestDto {
+  purchaseOrderItem: FullDetailPurchaseOrderItemDto;
 }

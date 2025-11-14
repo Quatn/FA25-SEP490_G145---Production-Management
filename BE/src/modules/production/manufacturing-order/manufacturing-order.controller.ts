@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { ManufacturingOrderService } from "./manufacturing-order.service";
 import { ApiExtraModels, ApiOperation } from "@nestjs/swagger";
 import { BaseResponse } from "@/common/dto/response.dto";
@@ -6,7 +14,10 @@ import {
   ManufacturingOrder,
   ManufacturingOrderDocument,
 } from "../schemas/manufacturing-order.schema";
-import { CreateManufacturingOrderRequestDto } from "./dto/create-order-request.dto";
+import {
+  AssembledCreateManufacturingOrderRequestDto,
+  CreateManufacturingOrderRequestDto,
+} from "./dto/create-order-request.dto";
 import {
   QueryListManufacturingOrderRequestDto,
   QueryListManufacturingOrderResponseDto,
@@ -16,7 +27,10 @@ import { ApiResponseWith } from "@/common/decorators/swagger-response-docs";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { PurchaseOrderItemService } from "../purchase-order-item/purchase-order-item.service";
 import { QueryListFullDetailsPurchaseOrderItemByIdsRequestDto } from "../purchase-order-item/dto/query-list-full-details-by-ids.dto";
-import { CreateManyManufacturingOrdersRequestDto } from "./dto/create-many-orders.dto";
+import {
+  CreateManyManufacturingOrdersRequestDto,
+  CreateManyManufacturingOrdersResponseDto,
+} from "./dto/create-many-orders.dto";
 import mongoose from "mongoose";
 
 @Controller("manufacturing-order")
@@ -112,14 +126,24 @@ export class ManufacturingOrderController {
   @ApiResponseWith(FullDetailManufacturingOrderDto)
   async createMany(
     @Body() body: CreateManyManufacturingOrdersRequestDto,
-  ): Promise<BaseResponse<FullDetailManufacturingOrderDto[]>> {
-    const ids = body.orders.map((order) => order.purchaseOrderItemCode);
+  ): Promise<CreateManyManufacturingOrdersResponseDto> {
+    const ids = body.orders.map((order) => order.purchaseOrderItemId);
 
     const pois = await this.poiService.queryListFullDetailsByIds({ ids: ids });
 
-    const docs = await this.moService.draftOrderByFullDetailsPois({
-      purchaseOrderItems: pois,
-    });
+    if (body.orders.length !== pois.length) {
+      throw new BadRequestException(
+        `Length mismatch between the amount of manufacturing orders to create and the amount of purchase purchase order items found: ${body.orders.length} vs ${pois.length}. Is is possible that some manufacturing order's purchaseOrderItemCode did not point to real or non-deleted purchase order items`,
+      );
+    }
+
+    const assembledDto: AssembledCreateManufacturingOrderRequestDto[] =
+      body.orders.map((mo, i) => ({
+        ...mo,
+        purchaseOrderItem: pois[i],
+      }));
+
+    const docs = await this.moService.createMany(assembledDto);
     return {
       success: true,
       message: "Fetch successful",
