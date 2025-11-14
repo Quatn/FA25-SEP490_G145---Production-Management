@@ -28,25 +28,27 @@ export class OrderFinishingProcess extends BaseSchema {
   code: string;
 
   @ApiProperty({
-    type: mongoose.Schema.Types.ObjectId,
+    type: mongoose.Types.ObjectId,
     description: "ObjectId by default, ManufacturingOrder when populated",
   })
   @Prop({
     unique: true,
+    type: mongoose.Schema.Types.ObjectId,
     ref: ManufacturingOrder.name,
   })
-  manufacturingOrder: mongoose.Schema.Types.ObjectId | ManufacturingOrder;
+  manufacturingOrder: mongoose.Types.ObjectId | ManufacturingOrder;
 
   @ApiProperty({
-    type: mongoose.Schema.Types.ObjectId,
+    type: mongoose.Types.ObjectId,
     description: "ObjectId by default, WareFinishingProcessType when populated",
   })
   @Prop({
     unique: true,
+    type: mongoose.Schema.Types.ObjectId,
     ref: WareFinishingProcessType.name,
   })
   wareManufacturingProcessType:
-    | mongoose.Schema.Types.ObjectId
+    | mongoose.Types.ObjectId
     | WareFinishingProcessType;
 
   @ApiProperty()

@@ -21,7 +21,7 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   code: string;
 
   @ApiProperty({
-    type: mongoose.Schema.Types.ObjectId,
+    type: mongoose.Types.ObjectId,
     description: "ObjectId by default, PurchaseOrderItem when populated",
   })
   @Prop({
@@ -31,7 +31,7 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
     ref: PurchaseOrderItem.name,
   })
   @IsMongoId()
-  purchaseOrderItem: mongoose.Schema.Types.ObjectId | PurchaseOrderItem;
+  purchaseOrderItem: mongoose.Types.ObjectId | PurchaseOrderItem;
 
   @ApiProperty()
   @Prop({ required: true })

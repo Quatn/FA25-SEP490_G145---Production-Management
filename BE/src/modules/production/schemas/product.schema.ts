@@ -26,7 +26,7 @@ export class Product extends BaseSchema {
     ref: Customer.name,
   })
   @IsMongoId()
-  customer: mongoose.Schema.Types.ObjectId | Customer;
+  customer: mongoose.Types.ObjectId | Customer;
 
   @ApiProperty()
   @Prop({ required: false, default: "" })
@@ -46,7 +46,7 @@ export class Product extends BaseSchema {
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: Ware.name }],
   })
   @IsArray()
-  wares: mongoose.Schema.Types.ObjectId[] | Ware[];
+  wares: mongoose.Types.ObjectId[] | Ware[];
 
   @ApiProperty()
   @Prop({ required: false, default: "" })

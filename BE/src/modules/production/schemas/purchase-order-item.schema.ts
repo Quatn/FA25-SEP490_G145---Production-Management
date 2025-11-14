@@ -41,7 +41,7 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
     ref: SubPurchaseOrder.name,
   })
   @IsMongoId()
-  subPurchaseOrder: mongoose.Schema.Types.ObjectId | SubPurchaseOrder;
+  subPurchaseOrder: mongoose.Types.ObjectId | SubPurchaseOrder;
 
   @ApiProperty()
   @Prop({
@@ -50,7 +50,7 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
     ref: Ware.name,
   })
   @IsMongoId()
-  ware: mongoose.Schema.Types.ObjectId | Ware;
+  ware: mongoose.Types.ObjectId | Ware;
 
   @ApiProperty()
   @Prop({ required: true })
