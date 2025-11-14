@@ -45,7 +45,7 @@ export class PurchaseOrder extends BaseSchema {
   @ApiProperty()
   @Prop({ required: true })
   @IsString()
-  deliveryAdress: string;
+  deliveryAddress: string;
 
   @ApiProperty()
   @Prop({ required: true })

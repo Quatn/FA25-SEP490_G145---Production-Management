@@ -1,39 +1,37 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsDate, IsNumber, IsOptional, IsString } from "class-validator";
+import mongoose from "mongoose";
 
 export class CreateManufacturingOrderRequestDto {
-  // TODO: change to ref
   @ApiProperty({
     example: "TA-ĐH 03-01-01",
     description:
       "Code of the PO Item the order attachs with, must be unique since an PO Item can only be used to create one order",
   })
   @IsString()
-  purchaseOrderItemCode: string;
+  purchaseOrderItemCode: mongoose.Types.ObjectId;
 
-
-  @ApiProperty({
-    example: new Date("2025-11-01"),
-    description: "Date and time that the order is required to finish",
-  })
+  @ApiProperty()
   @IsOptional()
   @IsDate()
-  requestedDatetime: Date;
+  manufacturingDateAdjustment: Date | null;
 
-  @ApiProperty({ example: "7", description: "Add desc later" })
-  @IsNumber()
-  corrugatorLine: number;
+  @ApiProperty()
+  @IsOptional()
+  @IsDate()
+  requestedDatetime: Date | null;
 
-  @ApiProperty({ example: 1000, description: "Add desc later" })
+  @ApiProperty()
+  @IsOptional()
   @IsNumber()
-  manufacturedAmount: number;
+  corrugatorLineAdjustment: number | null;
 
   @ApiProperty({ example: "", description: "Add desc later" })
   @IsOptional()
   @IsString()
-  manufacturingDirective: string;
+  manufacturingDirective: string | null;
 
-  @ApiProperty({ example: 1000, description: "Add desc later" })
+  @ApiProperty()
   @IsOptional()
   @IsString()
   note: string = "";

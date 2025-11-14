@@ -16,6 +16,8 @@ import { ApiResponseWith } from "@/common/decorators/swagger-response-docs";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { PurchaseOrderItemService } from "../purchase-order-item/purchase-order-item.service";
 import { QueryListFullDetailsPurchaseOrderItemByIdsRequestDto } from "../purchase-order-item/dto/query-list-full-details-by-ids.dto";
+import { CreateManyManufacturingOrdersRequestDto } from "./dto/create-many-orders.dto";
+import mongoose from "mongoose";
 
 @Controller("manufacturing-order")
 // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -102,6 +104,26 @@ export class ManufacturingOrderController {
       success: true,
       message: "Fetch successul",
       data: result,
+    };
+  }
+
+  @Post("create-many")
+  @ApiOperation({ summary: "Query fully populated manufacturing orders" })
+  @ApiResponseWith(FullDetailManufacturingOrderDto)
+  async createMany(
+    @Body() body: CreateManyManufacturingOrdersRequestDto,
+  ): Promise<BaseResponse<FullDetailManufacturingOrderDto[]>> {
+    const ids = body.orders.map((order) => order.purchaseOrderItemCode);
+
+    const pois = await this.poiService.queryListFullDetailsByIds({ ids: ids });
+
+    const docs = await this.moService.draftOrderByFullDetailsPois({
+      purchaseOrderItems: pois,
+    });
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
     };
   }
 }

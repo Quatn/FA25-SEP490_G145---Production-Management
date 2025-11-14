@@ -193,6 +193,11 @@ export class ManufacturingOrderService {
     return await doc.save();
   }
 
+  async createMany(dto: CreateManufacturingOrderRequestDto) {
+    const doc = new this.manufacturingOrderModel(dto);
+    return await doc.save();
+  }
+
   // TODO
   async updateOne(dto: UpdateManufacturingOrderRequestDto) {
     // const doc = new this.manufacturingOrderModel(dto);
