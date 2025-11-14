@@ -64,6 +64,8 @@ export class ManufacturingOrderService {
       overallStatus,
       corrugatorProcessStatus,
       paperWidth,
+      customer,
+      fluteCombination,
     } = queryDto;
 
     const skip = (page - 1) * limit;
@@ -103,7 +105,7 @@ export class ManufacturingOrderService {
     // 3. Xây dựng pipeline aggregate
     const pipeline: any[] = [
       { $match: filter },
-      // Lookup purchaseOrderItem để filter theo ware.paperWidth
+      // Lookup purchaseOrderItem để filter theo ware.paperWidth và lấy subPurchaseOrder
       {
         $lookup: {
           from: "purchaseorderitems",
@@ -133,6 +135,21 @@ export class ManufacturingOrderService {
           preserveNullAndEmptyArrays: true,
         },
       },
+      // Lookup fluteCombination để filter theo loại sóng
+      {
+        $lookup: {
+          from: "flutecombinations",
+          localField: "wareData.fluteCombination",
+          foreignField: "_id",
+          as: "fluteCombinationData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$fluteCombinationData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       // Lookup corrugatorProcess để filter theo status
       {
         $lookup: {
@@ -148,6 +165,51 @@ export class ManufacturingOrderService {
           preserveNullAndEmptyArrays: true,
         },
       },
+      // Lookup subPurchaseOrder để filter theo customer
+      {
+        $lookup: {
+          from: "subpurchaseorders",
+          localField: "purchaseOrderItemData.subPurchaseOrder",
+          foreignField: "_id",
+          as: "subPurchaseOrderData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$subPurchaseOrderData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      // Lookup purchaseOrder để filter theo customer
+      {
+        $lookup: {
+          from: "purchaseorders",
+          localField: "subPurchaseOrderData.purchaseOrder",
+          foreignField: "_id",
+          as: "purchaseOrderData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$purchaseOrderData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      // Lookup customer từ purchaseOrder
+      {
+        $lookup: {
+          from: "customers",
+          localField: "purchaseOrderData.customer",
+          foreignField: "_id",
+          as: "customerData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$customerData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
     ];
 
     // Filter theo paperWidth nếu có
@@ -156,7 +218,7 @@ export class ManufacturingOrderService {
         $match: {
           "wareData.paperWidth": Number(paperWidth),
         },
-      });
+      } as any);
     }
 
     // Filter theo corrugatorProcessStatus nếu có
@@ -165,7 +227,25 @@ export class ManufacturingOrderService {
         $match: {
           "corrugatorProcessData.status": corrugatorProcessStatus,
         },
-      });
+      } as any);
+    }
+
+    // Filter theo customer nếu có
+    if (customer) {
+      pipeline.push({
+        $match: {
+          "purchaseOrderData.customer": new mongoose.Types.ObjectId(customer),
+        },
+      } as any);
+    }
+
+    // Filter theo fluteCombination nếu có
+    if (fluteCombination) {
+      pipeline.push({
+        $match: {
+          "wareData.fluteCombination": new mongoose.Types.ObjectId(fluteCombination),
+        },
+      } as any);
     }
 
     // Tiếp tục với sort và pagination
@@ -207,9 +287,9 @@ export class ManufacturingOrderService {
       { $limit: limit }
     );
 
-    // Tính lại total sau khi filter corrugatorProcessStatus và paperWidth
+    // Tính lại total sau khi filter corrugatorProcessStatus, paperWidth, customer, và fluteCombination
     let total = await this.manufacturingOrderModel.countDocuments(filter);
-    if (corrugatorProcessStatus || (paperWidth !== undefined && paperWidth !== null)) {
+    if (corrugatorProcessStatus || (paperWidth !== undefined && paperWidth !== null) || customer || fluteCombination) {
       // Nếu có filter corrugatorProcessStatus hoặc paperWidth, cần count lại sau khi lookup
       const countPipeline: any[] = [
         { $match: filter },
@@ -241,6 +321,21 @@ export class ManufacturingOrderService {
             preserveNullAndEmptyArrays: true,
           },
         },
+        // Lookup fluteCombination để filter theo loại sóng
+        {
+          $lookup: {
+            from: "flutecombinations",
+            localField: "wareData.fluteCombination",
+            foreignField: "_id",
+            as: "fluteCombinationData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$fluteCombinationData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
         {
           $lookup: {
             from: "corrugatorprocesses",
@@ -252,6 +347,51 @@ export class ManufacturingOrderService {
         {
           $unwind: {
             path: "$corrugatorProcessData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        // Lookup subPurchaseOrder để filter theo customer
+        {
+          $lookup: {
+            from: "subpurchaseorders",
+            localField: "purchaseOrderItemData.subPurchaseOrder",
+            foreignField: "_id",
+            as: "subPurchaseOrderData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$subPurchaseOrderData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        // Lookup purchaseOrder để filter theo customer
+        {
+          $lookup: {
+            from: "purchaseorders",
+            localField: "subPurchaseOrderData.purchaseOrder",
+            foreignField: "_id",
+            as: "purchaseOrderData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$purchaseOrderData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        // Lookup customer từ purchaseOrder
+        {
+          $lookup: {
+            from: "customers",
+            localField: "purchaseOrderData.customer",
+            foreignField: "_id",
+            as: "customerData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$customerData",
             preserveNullAndEmptyArrays: true,
           },
         },
@@ -275,6 +415,24 @@ export class ManufacturingOrderService {
         });
       }
 
+      // Thêm filter customer nếu có
+      if (customer) {
+        countPipeline.push({
+          $match: {
+            "purchaseOrderData.customer": new mongoose.Types.ObjectId(customer),
+          },
+        });
+      }
+
+      // Thêm filter fluteCombination nếu có
+      if (fluteCombination) {
+        countPipeline.push({
+          $match: {
+            "wareData.fluteCombination": new mongoose.Types.ObjectId(fluteCombination),
+          },
+        });
+      }
+
       countPipeline.push({ $count: "total" });
       const countResult = await this.manufacturingOrderModel.aggregate(countPipeline).exec();
       total = countResult[0]?.total || 0;
@@ -282,15 +440,42 @@ export class ManufacturingOrderService {
 
     const aggregatedData = await this.manufacturingOrderModel.aggregate(pipeline).exec();
 
-    // ... (Giữ nguyên logic populate) ...
+    // Sử dụng schema paths để populate đúng cách (tương tự purchase-order-item.service.ts)
+    const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
+    const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
+    const warePath = PurchaseOrderItemSchema.path("ware");
+    const fluteCombinationPath = WareSchema.path("fluteCombination");
+    const manufacturingProcessesPath = WareSchema.path("manufacturingProcesses");
+    const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
+    const productPath = SubPurchaseOrderSchema.path("product");
+    const customerPath = PurchaseOrderSchema.path("customer");
+
+    // Populate các field gốc từ aggregated data
     const data = await this.manufacturingOrderModel.populate(aggregatedData, [
       { path: "corrugatorProcess" },
       {
-        path: "purchaseOrderItem",
-        populate: {
-          path: "ware",
-          populate: { path: "manufacturingProcesses" },
-        },
+        path: poiPath.path,
+        populate: [
+          {
+            path: warePath.path,
+            populate: [
+              { path: fluteCombinationPath.path },
+              { path: manufacturingProcessesPath.path },
+            ],
+          },
+          {
+            path: subpoPath.path,
+            populate: [
+              {
+                path: poPath.path,
+                populate: { path: customerPath.path },
+              },
+              {
+                path: productPath.path,
+              },
+            ],
+          },
+        ],
       },
       {
         path: "processes",

@@ -13,6 +13,7 @@ import { WareManufacturingProcessTypeModule } from './ware-manufacturing-process
 import { WareFinishingProcessTypeModule } from "./ware-finishing-process-type/ware-finishing-process-type.module";
 import { ProductTypeModule } from './product-type/product-type.module';
 import { FluteCombinationModule } from './flute-combination/flute-combination.module';
+import { CustomerModule } from "./customer/customer.module";
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { FluteCombinationModule } from './flute-combination/flute-combination.mo
     ...(process.env.NODE_ENV === "development" ? [ProductionDevModule] : []),
     ProductTypeModule,
     FluteCombinationModule,
+    CustomerModule,
   ],
 })
 export class ProductionModule {}

@@ -50,7 +50,17 @@ export class FindAllMoQueryDto {
   @IsNumber()
   paperWidth?: number;
 
-  // 6. Phân trang
+  // 6. Filter theo customer (ObjectId)
+  @IsOptional()
+  @IsString()
+  customer?: string;
+
+  // 6.1. Filter theo loại sóng (fluteCombination ObjectId)
+  @IsOptional()
+  @IsString()
+  fluteCombination?: string;
+
+  // 7. Phân trang
   @IsOptional()
   @Type(() => Number)
   @IsNumber()

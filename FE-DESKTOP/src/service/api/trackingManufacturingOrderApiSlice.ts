@@ -53,6 +53,8 @@ export type TrackingListQueryParams = {
   requestedDateFrom?: string;
   requestedDateTo?: string;
   paperWidth?: number;
+  customer?: string;
+  fluteCombination?: string;
 };
 
 export type UpdateManufacturingOrderStatusPayload = {
@@ -159,12 +161,32 @@ const normalizePurchaseOrderItem = (poItem: any) => {
     return undefined;
   }
 
+  // Normalize fluteCombination: có thể là ObjectId string hoặc populated object
+  const normalizedFluteCombination = poItem.ware?.fluteCombination
+    ? typeof poItem.ware.fluteCombination === "object" &&
+      poItem.ware.fluteCombination !== null
+      ? {
+          id: poItem.ware.fluteCombination._id ?? poItem.ware.fluteCombination.id,
+          code: poItem.ware.fluteCombination.code,
+          description: poItem.ware.fluteCombination.description,
+          note: poItem.ware.fluteCombination.note,
+          createdAt: poItem.ware.fluteCombination.createdAt,
+          updatedAt: poItem.ware.fluteCombination.updatedAt,
+        }
+      : poItem.ware.fluteCombination // Nếu là string ObjectId, giữ nguyên
+    : undefined;
+
   const normalizedWare = poItem.ware
     ? {
         id: poItem.ware._id ?? poItem.ware.id,
         code: poItem.ware.code,
         unitPrice: poItem.ware.unitPrice,
-        fluteCombinationCode: poItem.ware.fluteCombinationCode,
+        fluteCombinationCode:
+          typeof poItem.ware.fluteCombination === "object" &&
+          poItem.ware.fluteCombination !== null
+            ? poItem.ware.fluteCombination.code
+            : poItem.ware.fluteCombinationCode, // Fallback nếu không có populated object
+        fluteCombination: normalizedFluteCombination, // Thêm object fluteCombination
         wareWidth: poItem.ware.wareWidth,
         wareLength: poItem.ware.wareLength,
         wareHeight: poItem.ware.wareHeight,
@@ -281,6 +303,8 @@ const buildQueryParams = ({
   overallStatus,
   corrugatorProcessStatus,
   paperWidth,
+  customer,
+  fluteCombination,
 }: TrackingListQueryParams) => {
   const params: Record<string, string | number> = { page, limit };
 
@@ -311,6 +335,12 @@ const buildQueryParams = ({
   }
   if (paperWidth !== undefined && paperWidth !== null) {
     params.paperWidth = paperWidth;
+  }
+  if (customer?.trim()) {
+    params.customer = customer.trim();
+  }
+  if (fluteCombination?.trim()) {
+    params.fluteCombination = fluteCombination.trim();
   }
 
   return params;

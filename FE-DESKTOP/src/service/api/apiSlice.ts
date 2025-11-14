@@ -22,6 +22,7 @@ const tagTypes = [
   "PaperRollTransaction",
   "Product",
   "Ware",
+  "Customer",
 ];
 
 export const apiSlice = createApi({

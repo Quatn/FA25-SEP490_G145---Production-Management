@@ -55,11 +55,22 @@ export type CorrugatorProcessDTO = {
   updatedAt?: string;
 };
 
+export type FluteCombinationDTO = {
+  id: string;
+  code: string;
+  description?: string;
+  note?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type WareDTO = {
   id: string;
   code: string;
   unitPrice?: number;
   fluteCombinationCode?: string;
+  // fluteCombination can be either an ObjectId string or populated FluteCombination object
+  fluteCombination?: string | FluteCombinationDTO;
   wareWidth?: number;
   wareLength?: number;
   wareHeight?: number;
