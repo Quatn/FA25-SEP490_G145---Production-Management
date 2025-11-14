@@ -15,8 +15,7 @@ export default function Home() {
           </Link>
         </Box>
       </main>
-      <footer>
-      </footer>
+      <footer></footer>
     </Flex>
   );
 }

@@ -15,6 +15,8 @@ const tagTypes = [
   "WareFinishingProcessType",
   "ProductType",
   "FluteCombination",
+  "PaperRoll",
+  "PaperRollTransaction",
 ];
 
 export const apiSlice = createApi({

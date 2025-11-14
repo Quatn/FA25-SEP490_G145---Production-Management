@@ -26,6 +26,9 @@ export class PaperRollTransaction extends BaseSchema {
     @Prop({ required: true })
     timeStamp: Date;
 
+    @Prop({ required: false })
+    inCharge?: string;
+
 }
 
 export type PaperRollTransactionDocument = HydratedDocument<PaperRollTransaction>;

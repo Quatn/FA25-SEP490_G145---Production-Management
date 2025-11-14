@@ -285,4 +285,25 @@ export class PaperRollService {
     if (!result) throw new NotFoundException("Paper type not found");
     return { success: true };
   }
+
+  async findDeleted(page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    // directly query the collection with an explicit filter (this bypasses pre 'find' if you use collection)
+    const filter = { isDeleted: true };
+    const [data, totalCount] = await Promise.all([
+      this.PaperRollModel.find(filter).skip(skip).limit(limit).populate([{ path: 'paperTypeId', populate: { path: 'paperColorId' } }, { path: 'paperSupplierId' }]).lean().exec(),
+      this.PaperRollModel.countDocuments(filter),
+    ]);
+    const totalPages = Math.ceil((totalCount || 0) / limit);
+    return {
+      data,
+      page,
+      limit,
+      totalItems: totalCount,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
+
 }

@@ -1,0 +1,5 @@
+[
+  { "paperTypeId": "PT1", "supplierId": "S1", "colorId": "C1", "widthId": "W1", "grammageId": "G2", "name": "K/VT/900/150" },
+  { "paperTypeId": "PT2", "supplierId": "S2", "colorId": "C1", "widthId": "W2", "grammageId": "G3", "name": "H/LE/950/170" },
+  { "paperTypeId": "PT3", "supplierId": "S3", "colorId": "C3", "widthId": "W1", "grammageId": "G1", "name": "K/PD/900/120" }
+]
