@@ -14,6 +14,7 @@ import { WareManufacturingProcessTypeModule } from './ware-manufacturing-process
 import { WareFinishingProcessTypeModule } from "./ware-finishing-process-type/ware-finishing-process-type.module";
 import { ProductTypeModule } from './product-type/product-type.module';
 import { FluteCombinationModule } from './flute-combination/flute-combination.module';
+import { PrintColorModule } from './print-color/print-color.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { FluteCombinationModule } from './flute-combination/flute-combination.mo
     ProductTypeModule,
     FluteCombinationModule,
     CustomerModule,
+    PrintColorModule,
   ],
 })
 export class ProductionModule {}

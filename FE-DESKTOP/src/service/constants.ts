@@ -22,4 +22,6 @@ export const FLUTE_COMBINATION_URL = "/flute-combination";
 export const PAPER_ROLL_URL = "/paper-roll";
 export const PAPER_ROLL_TRANSACTION_URL = "/paper-roll-transaction";
 export const CUSTOMER_URL = "/customer";
-export const SUB_PURCHASE_ORDER_URL = "/sub-purchase-order"
+export const SUB_PURCHASE_ORDER_URL = "/sub-purchase-order";
+export const PRINT_COLOR_URL = "/print-color";
+export const MANUFACTURING_PROCESS_URL = "/manufacturing-process"

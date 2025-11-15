@@ -11,7 +11,7 @@ export class ManufacturingProcessService {
   constructor(
     @InjectModel(ManufacturingProcess.name)
     private readonly processModel: Model<ManufacturingProcessDocument>,
-  ) {}
+  ) { }
 
   // Hàm ví dụ để tạo dữ liệu ban đầu
   async createInitialData(data: Partial<ManufacturingProcess>[]) {
@@ -22,8 +22,13 @@ export class ManufacturingProcessService {
     }
     return [];
   }
-  
-  async findAll() {
-    return this.processModel.find().exec();
+
+  // async findAll() {
+  //   return this.processModel.find().exec();
+  // }
+
+  async findAll(): Promise<ManufacturingProcessDocument[]> {
+    const docs = await this.processModel.find({}).sort({ code: 1 }).exec();
+    return docs;
   }
 }

@@ -28,6 +28,8 @@ const tagTypes = [
   "Ware",
   "Customer",
   "SubPurchaseOrder",
+  "PrintColor",
+  "ManufacturingProcess",
 ];
 
 export const apiSlice = createApi({

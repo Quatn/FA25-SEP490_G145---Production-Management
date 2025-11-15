@@ -7,7 +7,7 @@ import {
 import { Ware } from "@/types/Ware";
 import { createApiEndpoint } from "@/utils/endpointFactory";
 import { PageResponse } from "@/types/DTO/PageResponse";
-import { PaginatedList, QueryResponse } from "@/types/DTO/Response";
+import { BaseResponse, PaginatedList, QueryResponse } from "@/types/DTO/Response";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
 type GetWaresParams = {
@@ -105,10 +105,46 @@ export const wareApiSlice = apiSlice.injectEndpoints({
         };
       },
     }),
+
+    getAllWares: builder.query<BaseResponse<any[]>, void>({
+      query: () => ({ url: `${WARE_URL}/list-all`, method: "GET", credentials: "include" }),
+      providesTags: ["Ware"],
+    }),
+    getWareDetail: builder.query<BaseResponse<any>, { id: string }>({
+      query: ({ id }) => ({ url: `${WARE_URL}/detail/${id}`, method: "GET", credentials: "include" }),
+      providesTags: (res, err, arg) => [{ type: "Ware", id: arg.id }],
+    }),
+    createWare: builder.mutation<BaseResponse<any>, any>({
+      query: (body) => ({ url: `${WARE_URL}/create`, method: "POST", body, credentials: "include" }),
+      invalidatesTags: ["Ware"],
+    }),
+    updateWare: builder.mutation<BaseResponse<any>, { id: string; data: any }>({
+      query: ({ id, data }) => ({ url: `${WARE_URL}/update/${id}`, method: "PATCH", body: data, credentials: "include" }),
+      invalidatesTags: ["Ware"],
+    }),
+    deleteWare: builder.mutation<BaseResponse<any>, { id: string }>({
+      query: ({ id }) => ({ url: `${WARE_URL}/delete-soft/${id}`, method: "DELETE", credentials: "include" }),
+      invalidatesTags: ["Ware"],
+    }),
+    restoreWare: builder.mutation<BaseResponse<any>, { id: string }>({
+      query: ({ id }) => ({ url: `${WARE_URL}/restore/${id}`, method: "PATCH", credentials: "include" }),
+      invalidatesTags: ["Ware"],
+    }),
+    getDeletedWares: builder.query<BaseResponse<PaginatedList<any>>, { page?: number; limit?: number }>({
+      query: ({ page = 1, limit = 100 }) => ({ url: `${WARE_URL}/list-deleted`, method: "GET", params: { page, limit }, credentials: "include" }),
+      providesTags: ["Ware"],
+    }),
   }),
 });
 
 export const {
   useGetWaresQuery,
   useGetWaresByCodesQuery,
+  useGetAllWaresQuery,
+  useGetWareDetailQuery,
+  useCreateWareMutation,
+  useUpdateWareMutation,
+  useDeleteWareMutation,
+  useRestoreWareMutation,
+  useGetDeletedWaresQuery,
 } = wareApiSlice;
