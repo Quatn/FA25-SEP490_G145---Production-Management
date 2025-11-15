@@ -67,6 +67,15 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["ManufacturingOrder"],
     }),
+
+    getAllManufacturingOrders: builder.query<{ success: boolean; message: string; data: ManufacturingOrder[] }, void>({
+                query: () => ({
+                    url: `${MANUFACTURING_ORDER_URL}/list-all`,
+                    method: "GET",
+                    credentials: "include",
+                }),
+                providesTags: ["ManufacturingOrder"],
+            }),
   }),
 });
 
@@ -74,4 +83,5 @@ export const {
   useGetManufacturingOrdersQuery,
   useGetFullDetailManufacturingOrdersQuery,
   useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery,
+  useGetAllManufacturingOrdersQuery,
 } = manufacturingOrderApiSlice;

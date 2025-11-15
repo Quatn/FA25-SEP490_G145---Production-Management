@@ -21,3 +21,5 @@ export const PRODUCT_TYPE_URL = "/product-type";
 export const FLUTE_COMBINATION_URL = "/flute-combination";
 export const PAPER_ROLL_URL = "/paper-roll";
 export const PAPER_ROLL_TRANSACTION_URL = "/paper-roll-transaction";
+export const SEMI_FINISHED_GOOD_URL = "/semi-finished-good";
+export const SEMI_FINISHED_GOOD_TRANSACTION_URL = "/semi-finished-good-transaction";

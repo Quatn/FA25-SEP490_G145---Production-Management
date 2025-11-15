@@ -4,8 +4,10 @@ import { PaperColorModule } from './paper-color/paper-color.module';
 import { PaperTypeModule } from './paper-type/paper-type.module';
 import { PaperRollModule } from './paper-roll/paper-roll.module';
 import { PaperRollTransactionModule } from './paper-roll-transaction/paper-roll-transaction.module';
+import { SemiFinishedGoodModule } from './semi-finished-good/semi-finished-good.module';
+import { SemiFinishedGoodTransactionModule } from './semi-finished-good-transaction/semi-finished-good-transaction.module';
 
 @Module({
-  imports: [PaperSupplierModule, PaperColorModule, PaperTypeModule, PaperRollModule, PaperRollTransactionModule]
+  imports: [PaperSupplierModule, PaperColorModule, PaperTypeModule, PaperRollModule, PaperRollTransactionModule, SemiFinishedGoodModule, SemiFinishedGoodTransactionModule]
 })
 export class WarehouseModule {}
