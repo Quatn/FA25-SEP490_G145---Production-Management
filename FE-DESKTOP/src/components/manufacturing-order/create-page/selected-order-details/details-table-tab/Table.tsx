@@ -87,6 +87,7 @@ export default function CreatePageManufacturingOrderTable(
       manufacturingDateAdjustment: null,
       manufacturingDirective: null,
       requestedDatetime: null,
+      amount: order.purchaseOrderItem!.amount,
       note: "",
     }))
   }

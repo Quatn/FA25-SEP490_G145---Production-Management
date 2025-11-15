@@ -5,7 +5,7 @@ export interface ManufacturingOrder extends BaseSchema {
   manufacturingDate: Date;
   requestedDatetime: Date;
   corrugatorLine: number;
-  manufacturedAmount: number;
+  amount: number;
   manufacturingDirective: string | null;
   note: string;
 

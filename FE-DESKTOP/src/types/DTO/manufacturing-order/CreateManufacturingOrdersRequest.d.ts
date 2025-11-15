@@ -4,5 +4,6 @@ export class CreateManufacturingOrderRequestDto {
   requestedDatetime: Date | null;
   corrugatorLineAdjustment: number | null;
   manufacturingDirective: string | null;
+  amount: number;
   note: string;
 }
