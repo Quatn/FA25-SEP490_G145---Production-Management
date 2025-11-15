@@ -1,5 +1,10 @@
 import { Module } from "@nestjs/common";
 import { ManufacturingOrderModule } from "./manufacturing-order/manufacturing-order.module";
+import { ManufacturingProcessModule } from "./manufacturing-process/manufacturing-process.module";
+import { ManufacturingOrderProcessModule } from "./manufacturing-order-process/manufacturing-order-process.module";
+import { ProductModule } from "./product/product.module";
+import { WareModule } from "./ware/ware.module";
+import { CorrugatorProcessModule } from "./corrugator-process/corrugator-process.module";
 import { ProductionDevModule } from "./dev/dev.module";
 import { PurchaseOrderModule } from "./purchase-order/purchase-order.module";
 import { SubPurchaseOrderModule } from "./sub-purchase-order/sub-purchase-order.module";
@@ -9,10 +14,17 @@ import { WareManufacturingProcessTypeModule } from './ware-manufacturing-process
 import { WareFinishingProcessTypeModule } from "./ware-finishing-process-type/ware-finishing-process-type.module";
 import { ProductTypeModule } from './product-type/product-type.module';
 import { FluteCombinationModule } from './flute-combination/flute-combination.module';
+import { CustomerModule } from "./customer/customer.module";
 
 @Module({
   imports: [
     ManufacturingOrderModule,
+    ManufacturingProcessModule,
+    ManufacturingOrderProcessModule,
+    PurchaseOrderItemModule,
+    ProductModule,
+    WareModule,
+    CorrugatorProcessModule,
     PurchaseOrderModule,
     SubPurchaseOrderModule,
     PurchaseOrderItemModule,
@@ -23,6 +35,7 @@ import { FluteCombinationModule } from './flute-combination/flute-combination.mo
     CustomerModule,
     ProductTypeModule,
     FluteCombinationModule,
+    CustomerModule,
   ],
 })
-export class ProductionModule { }
+export class ProductionModule {}

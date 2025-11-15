@@ -3,8 +3,10 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Query,
+  Param,
   UseGuards,
 } from "@nestjs/common";
 import { ManufacturingOrderService } from "./manufacturing-order.service";
@@ -32,6 +34,8 @@ import {
   CreateManyManufacturingOrdersResponseDto,
 } from "./dto/create-many-orders.dto";
 import mongoose from "mongoose";
+import { FindAllMoQueryDto } from "./dto/find-all-mo-query.dto";
+import { UpdateOverallStatusDto } from "./dto/update-overall-status.dto";
 
 @Controller("manufacturing-order")
 // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -46,30 +50,37 @@ export class ManufacturingOrderController {
     private poiService: PurchaseOrderItemService,
   ) { }
 
-  // @UseGuards(JwtAuthGuard)
-  @Get("list-all")
-  @ApiOperation({ summary: "List manufacturing orders" })
-  async findAll(): Promise<BaseResponse<ManufacturingOrderDocument[]>> {
-    const docs = await this.moService.findAll();
+  @Get('tracking-list')
+  @ApiOperation({
+    summary: 'List all manufacturing orders (populated, filtered, paginated)',
+  })
+  async findAll(
+    // 1. Dùng @Query() để nhận DTO chứa các tham số filter/pagination
+    @Query() queryDto: FindAllMoQueryDto,
+  ): Promise<BaseResponse<any>> { // 2. Cập nhật kiểu trả về (hoặc dùng 'any')
+    
+    // 3. Truyền DTO vào service
+    const paginatedResult = await this.moService.findAllPopulated(queryDto);
+    
     return {
       success: true,
-      message: "Fetch successful",
-      data: docs,
+      message: 'Fetch successful',
+      // 4. Trả về toàn bộ đối tượng phân trang (data, total, page, limit)
+      data: paginatedResult,
     };
   }
 
-  @Get("query")
-  @ApiOperation({ summary: "Query manufacturing orders" })
-  // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
-  @ApiResponseWith(ManufacturingOrder, { paginated: true })
-  async queryList(
-    @Query() query: QueryListManufacturingOrderRequestDto,
-  ): Promise<QueryListManufacturingOrderResponseDto> {
-    const docs = await this.moService.queryList(query);
+  @Patch(':id/status') // Endpoint mới: PATCH /manufacturing-order/some-id/status
+  @ApiOperation({ summary: 'Update MO overall status (Pause/Cancel)' })
+  async updateOverallStatus(
+    @Param('id') id: string,
+    @Body() body: UpdateOverallStatusDto,
+  ): Promise<BaseResponse<ManufacturingOrderDocument>> {
+    const result = await this.moService.updateOverallStatus(id, body);
     return {
       success: true,
-      message: "Fetch successful",
-      data: docs,
+      message: 'Cập nhật trạng thái tổng thể thành công',
+      data: result,
     };
   }
 
@@ -116,7 +127,7 @@ export class ManufacturingOrderController {
     const result = await this.moService.createOne(body);
     return {
       success: true,
-      message: "Fetch successul",
+      message: 'Fetch successful',
       data: result,
     };
   }

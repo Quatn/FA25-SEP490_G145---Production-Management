@@ -14,13 +14,19 @@ const tagTypes = [
   "PaperRoll",
   "PaperRollTransaction",
   "ManufacturingOrder",
+  "ManufacturingOrderTracking",
+  "ManufacturingOrderProcess",
+  "CorrugatorProcess",
   "WareManufacturingProcessType",
   "WareFinishingProcessType",
   "ProductType",
   "FluteCombination",
   "PaperRoll",
   "PaperRollTransaction",
-  "PurchaseOrder", "Customer"
+  "PurchaseOrder",
+  "Product",
+  "Ware",
+  "Customer",
 ];
 
 export const apiSlice = createApi({

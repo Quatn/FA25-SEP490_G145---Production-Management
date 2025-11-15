@@ -12,6 +12,8 @@ import { DatabaseModule } from "./database/database.module";
 import { CommonServicesModule } from "./common/services/services.module";
 import { ProductionModule } from './modules/production/production.module';
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
+import { ProductModule } from "./modules/production/product/product.module";
+import { WareModule } from "./modules/production/ware/ware.module";
 import { PaperTypeModule } from "./modules/warehouse/paper-type/paper-type.module";
 import { ProductTypeModule } from "./modules/production/product-type/product-type.module";
 
@@ -30,6 +32,8 @@ import { ProductTypeModule } from "./modules/production/product-type/product-typ
     UserModule,
     ProductionModule,
     WarehouseModule,
+    ProductModule,
+    WareModule,
     PaperTypeModule,
     ProductTypeModule,
   ],

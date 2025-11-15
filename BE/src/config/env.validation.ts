@@ -52,8 +52,9 @@ class EnvironmentVariables {
   @IsString()
   ENCRYPTION_SECRET: string;
 
+  @IsOptional()
   @IsString()
-  CORS_ORIGINS: string;
+  CORS_ORIGINS?: string;
 }
 
 export function validateEnvs(config: Record<string, unknown>) {

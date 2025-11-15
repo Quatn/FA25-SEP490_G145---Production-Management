@@ -8,10 +8,10 @@ import { Customer, CustomerDocument } from '../schemas/customer.schema';
 export class CustomerService {
   constructor(
     @InjectModel(Customer.name) private readonly customerModel: Model<CustomerDocument>,
-  ) {}
+  ) { }
 
   async findAll(): Promise<Customer[]> {
-    return this.customerModel.find().exec();
+    return this.customerModel.find({ isDeleted: false }).exec();
   }
 
   async findPaginated(page = 1, limit = 10, search?: string) {
@@ -42,4 +42,5 @@ export class CustomerService {
     if (!doc) throw new NotFoundException('Customer not found');
     return doc;
   }
+
 }

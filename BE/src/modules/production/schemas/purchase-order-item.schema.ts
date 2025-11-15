@@ -150,9 +150,5 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
 
 export type PurchaseOrderItemDocument = HydratedDocument<PurchaseOrderItem>;
 
-export const PurchaseOrderItemSchema = SchemaFactory.createForClass(
-  PurchaseOrderItem,
-)
-  .plugin(
-    softDeletePlugin,
-  );
+export const PurchaseOrderItemSchema =
+  SchemaFactory.createForClass(PurchaseOrderItem).plugin(softDeletePlugin);

@@ -78,6 +78,7 @@ export class PurchaseOrderItemService {
     const warePath = PurchaseOrderItemSchema.path("ware");
     const fluteCombinationPath = WareSchema.path("fluteCombination");
     const finishingProcessesPath = WareSchema.path("finishingProcesses");
+    const manufacturingProcessesPath = WareSchema.path("manufacturingProcesses");
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
     const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
@@ -85,7 +86,11 @@ export class PurchaseOrderItemService {
     const populate = [
       {
         path: warePath.path,
-        populate: [fluteCombinationPath, finishingProcessesPath],
+        populate: [
+          fluteCombinationPath,
+          finishingProcessesPath,
+          manufacturingProcessesPath,
+        ],
       },
       {
         path: subpoPath.path,
@@ -139,6 +144,7 @@ export class PurchaseOrderItemService {
     const warePath = PurchaseOrderItemSchema.path("ware");
     const fluteCombinationPath = WareSchema.path("fluteCombination");
     const finishingProcessesPath = WareSchema.path("finishingProcesses");
+    const manufacturingProcessesPath = WareSchema.path("manufacturingProcesses");
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
     const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
@@ -146,7 +152,11 @@ export class PurchaseOrderItemService {
     const populate = [
       {
         path: warePath.path,
-        populate: [fluteCombinationPath, finishingProcessesPath],
+        populate: [
+          fluteCombinationPath,
+          finishingProcessesPath,
+          manufacturingProcessesPath,
+        ],
       },
       {
         path: subpoPath.path,
