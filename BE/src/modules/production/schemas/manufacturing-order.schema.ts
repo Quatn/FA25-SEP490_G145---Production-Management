@@ -63,7 +63,7 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
-  manufacturedAmount: number;
+  amount: number;
 
   // TODO: Change this to an enum, maybe
   @ApiProperty()
@@ -87,10 +87,5 @@ export const ManufacturingOrderSchema = SchemaFactory.createForClass(
 
 ManufacturingOrderSchema.index(
   { code: 1 },
-  { unique: true, partialFilterExpression: { isDeleted: false } }
-);
-
-ManufacturingOrderSchema.index(
-  { purchaseOrderItem: 1 },
   { unique: true, partialFilterExpression: { isDeleted: false } }
 );
