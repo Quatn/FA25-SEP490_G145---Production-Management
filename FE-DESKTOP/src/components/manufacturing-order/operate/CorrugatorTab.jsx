@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import {
   Container,
@@ -18,142 +18,52 @@ import {
   useUpdateCorrugatorProcessMutation,
   useUpdateManyCorrugatorProcessesMutation,
 } from "@/service/api/trackingManufacturingOrderApiSlice";
+import CustomPagination from "./CustomPagination";
+import {
+  formatNumber,
+  getRowStyles,
+  getStatus,
+  EDITABLE_STATUSES,
+  formatShortDate,
+} from "./trackingUtils";
 
-// Hàm format số lượng thành định dạng 1.500
-const formatNumber = (num) => {
-  if (num === null || num === undefined) return "-";
-  return new Intl.NumberFormat("vi-VN").format(num);
-};
-
-// Hàm lấy style cho toàn bộ hàng dựa trên trạng thái quy trình sóng
-const getRowStyles = (item) => {
-  const baseStyle = {
-    fontWeight: "500",
-    color: "#000000",
-    textDecoration: "none",
-    backgroundColor: "white",
-  };
-
-  // Lấy trạng thái từ corrugatorProcess
-  const corrugatorStatus =
-    typeof item?.corrugatorProcess === "object" &&
-    item?.corrugatorProcess !== null
-      ? item.corrugatorProcess.status
-      : null;
-
-  switch (corrugatorStatus) {
-    case "COMPLETED":
-      return {
-        ...baseStyle,
-        backgroundColor: "#c8e6c9",
-        fontWeight: "600",
-        color: "#2e7d32",
-      };
-    case "RUNNING":
-      return {
-        ...baseStyle,
-        backgroundColor: "#fff9c4",
-      };
-    case "PAUSED":
-      return {
-        ...baseStyle,
-        backgroundColor: "#ffe0b2",
-        color: "#e65100",
-      };
-    case "NOTSTARTED":
-      return {
-        ...baseStyle,
-        backgroundColor: "#e3f2fd",
-      };
-    case "OVERCOMPLETED":
-      return {
-        ...baseStyle,
-        backgroundColor: "#ffcdd2",
-      };
-    case "CANCELLED":
-      return {
-        ...baseStyle,
-        backgroundColor: "#fbe6e8",
-        textDecoration: "line-through",
-        color: "#c62828",
-      };
-    default:
-      return baseStyle;
-  }
-};
-
-const getStatus = (status) => {
-  switch (status) {
-    case "NOTSTARTED":
-      return "Chờ";
-    case "RUNNING":
-      return "Chạy";
-    case "COMPLETED":
-      return "Hoàn Thành";
-    case "PAUSED":
-      return "Dừng";
-    case "CANCELLED":
-      return "Hủy";
-    case "OVERCOMPLETED":
-      return "Vượt Mức";
-    default:
-      return "-";
-  }
-};
-
-// Mảng các trạng thái có thể chỉnh sửa
-const EDITABLE_STATUSES = [
-  // { value: "NOTSTARTED", label: "Chờ" },
-  { value: "RUNNING", label: "Chạy" },
-  { value: "PAUSED", label: "Dừng" },
-  { value: "CANCELLED", label: "Hủy" },
-  { value: "COMPLETED", label: "Hoàn Thành" },
-  // Bạn có thể thêm/bớt các trạng thái khác ở đây
-  // VD: { value: "COMPLETED", label: "Hoàn Thành" }
-];
-
-const formatShortDate = (dateString) => {
-  if (!dateString) return "-";
-  const date = new Date(dateString);
-  if (isNaN(date)) return "-";
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  return `${day}-${month}`;
-};
-
-export default function FluteCorrugatorProcessPage() {
+export default function CorrugatorTab({
+  searchTerm: propSearchTerm = "",
+  corrugatorLineFilter: propCorrugatorLineFilter = "all",
+  paperWidthFilter: propPaperWidthFilter = "",
+  stepAmount: propStepAmount = 100,
+  statusFilter: propStatusFilter = "all",
+}) {
   // --- STATE ---
   const [activePage, setActivePage] = useState(1);
   const [pendingPage, setPendingPage] = useState(1);
-  const [activeLimit, setActiveLimit] = useState(1);
-  const [pendingLimit, setPendingLimit] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [corrugatorLineFilter, setCorrugatorLineFilter] = useState("all");
-  const [paperWidthFilter, setPaperWidthFilter] = useState("");
+  const [activeLimit, setActiveLimit] = useState(5);
+  const [pendingLimit, setPendingLimit] = useState(5);
   const [selectedMoIds, setSelectedMoIds] = useState(new Set());
-  const [selectedProcessIds, setSelectedProcessIds] = useState(new Set()); // Lưu các process IDs được chọn trong bảng active
-  const [selectedStatusForUpdate, setSelectedStatusForUpdate] = useState(""); // Trạng thái được chọn để cập nhật
-  const [isUpdatingStatusMode, setIsUpdatingStatusMode] = useState(false); // Mode cập nhật trạng thái
-  const [stepAmount, setStepAmount] = useState(100);
+  const [isUpdatingStatusMode, setIsUpdatingStatusMode] = useState(false);
+  const [isMarkingCompletedMode, setIsMarkingCompletedMode] = useState(false);
+  const [selectedProcessIdsForComplete, setSelectedProcessIdsForComplete] =
+    useState(new Set());
   const [toasts, setToasts] = useState([]);
-
   const [pendingAmounts, setPendingAmounts] = useState({});
   const [pendingStatuses, setPendingStatuses] = useState({});
+  // State để lưu trạng thái được chọn cho từng process khi ở chế độ edit
+  const [selectedStatusesForRows, setSelectedStatusesForRows] = useState({});
 
   // --- BUILD QUERY ARGS ---
   const queryArgs = useMemo(
     () => ({
       page: 1,
       limit: 1000,
-      ...(searchTerm.trim() ? { searchCode: searchTerm.trim() } : {}),
-      ...(corrugatorLineFilter !== "all"
-        ? { corrugatorLine: Number(corrugatorLineFilter) }
+      ...(propSearchTerm.trim() ? { searchCode: propSearchTerm.trim() } : {}),
+      ...(propCorrugatorLineFilter !== "all"
+        ? { corrugatorLine: Number(propCorrugatorLineFilter) }
         : {}),
-      ...(paperWidthFilter.trim() && !isNaN(Number(paperWidthFilter))
-        ? { paperWidth: Number(paperWidthFilter) }
+      ...(propPaperWidthFilter.trim() && !isNaN(Number(propPaperWidthFilter))
+        ? { paperWidth: Number(propPaperWidthFilter) }
         : {}),
     }),
-    [searchTerm, corrugatorLineFilter, paperWidthFilter]
+    [propSearchTerm, propCorrugatorLineFilter, propPaperWidthFilter]
   );
 
   // --- FETCH DATA ---
@@ -167,7 +77,11 @@ export default function FluteCorrugatorProcessPage() {
 
   const rawDataList = useMemo(() => trackingData?.data ?? [], [trackingData]);
 
-  console.log(rawDataList);
+  // Reset page khi filter thay đổi
+  useEffect(() => {
+    setActivePage(1);
+    setPendingPage(1);
+  }, [propSearchTerm, propCorrugatorLineFilter, propPaperWidthFilter, propStatusFilter]);
 
   // --- HELPER: SHOW TOAST ---
   const showToast = (message, type = "success") => {
@@ -204,97 +118,127 @@ export default function FluteCorrugatorProcessPage() {
   };
 
   // --- FILTER DATA ---
-  // Bảng trên: Quy trình sóng có trạng thái RUNNING, PAUSED, COMPLETED
+  // Bảng 1: Hiển thị tất cả các trạng thái TRỪ NOTSTARTED (bao gồm cả CANCELLED, COMPLETED, OVERCOMPLETED)
   const activeProcesses = useMemo(() => {
-    const filtered = rawDataList.filter((item) => {
+    let filtered = rawDataList.filter((item) => {
       const corrugatorStatus =
         typeof item?.corrugatorProcess === "object" &&
         item?.corrugatorProcess !== null
           ? item.corrugatorProcess.status
           : null;
+
+      const processId = String(
+        item.corrugatorProcess?._id || item.corrugatorProcess?.id
+      );
+      const hasPendingStatus = Object.keys(pendingStatuses).includes(processId);
+
+      // Hiển thị tất cả các trạng thái trừ NOTSTARTED
+      // Bao gồm: RUNNING, PAUSED, COMPLETED, CANCELLED, OVERCOMPLETED
+      // Hoặc các item có pendingStatus (đang được chỉnh sửa)
       return (
-        corrugatorStatus === "RUNNING" ||
-        corrugatorStatus === "PAUSED" ||
-        corrugatorStatus === "COMPLETED" ||
-        // Hiển thị cả những trạng thái đang được thay đổi tạm thời
-        Object.keys(pendingStatuses).includes(
+        (corrugatorStatus !== null && corrugatorStatus !== "NOTSTARTED") ||
+        hasPendingStatus
+      );
+    });
+
+    // Filter theo statusFilter nếu được chọn
+    if (propStatusFilter !== "all") {
+      filtered = filtered.filter((item) => {
+        const processId = String(
+          item.corrugatorProcess?._id || item.corrugatorProcess?.id
+        );
+        const currentStatus = pendingStatuses[processId] ?? item.corrugatorProcess?.status;
+        return currentStatus === propStatusFilter;
+      });
+    }
+
+    const start = (activePage - 1) * activeLimit;
+    const end = start + activeLimit;
+    return filtered.slice(start, end);
+  }, [rawDataList, activePage, activeLimit, pendingStatuses, propStatusFilter]);
+
+  const activeTotalItems = useMemo(() => {
+    let filtered = rawDataList.filter((item) => {
+      const corrugatorStatus =
+        typeof item?.corrugatorProcess === "object" &&
+        item?.corrugatorProcess !== null
+          ? item.corrugatorProcess.status
+          : null;
+
+      const processId = String(
+        item.corrugatorProcess?._id || item.corrugatorProcess?.id
+      );
+      const hasPendingStatus = Object.keys(pendingStatuses).includes(processId);
+
+      return (
+        (corrugatorStatus !== null && corrugatorStatus !== "NOTSTARTED") ||
+        hasPendingStatus
+      );
+    });
+
+    // Filter theo statusFilter nếu được chọn
+    if (propStatusFilter !== "all") {
+      filtered = filtered.filter((item) => {
+        const processId = String(
+          item.corrugatorProcess?._id || item.corrugatorProcess?.id
+        );
+        const currentStatus = pendingStatuses[processId] ?? item.corrugatorProcess?.status;
+        return currentStatus === propStatusFilter;
+      });
+    }
+
+    return filtered.length;
+  }, [rawDataList, pendingStatuses, propStatusFilter]);
+
+  // Bảng 2: Chỉ hiển thị NOTSTARTED
+  const pendingProcesses = useMemo(() => {
+    let filtered = rawDataList.filter((item) => {
+      const corrugatorStatus =
+        typeof item?.corrugatorProcess === "object" &&
+        item?.corrugatorProcess !== null
+          ? item.corrugatorProcess.status
+          : null;
+      // Chỉ hiển thị NOTSTARTED và không có trong pendingStatuses (đã được chuyển sang active)
+      return (
+        corrugatorStatus === "NOTSTARTED" &&
+        !Object.keys(pendingStatuses).includes(
           String(item.corrugatorProcess?._id || item.corrugatorProcess?.id)
         )
       );
     });
 
-    // Pagination cho active processes
-    const start = (activePage - 1) * activeLimit;
-    const end = start + activeLimit;
+    // Filter theo statusFilter - chỉ hiển thị NOTSTARTED nếu filter là "all" hoặc "NOTSTARTED"
+    if (propStatusFilter !== "all" && propStatusFilter !== "NOTSTARTED") {
+      filtered = [];
+    }
+
+    const start = (pendingPage - 1) * pendingLimit;
+    const end = start + pendingLimit;
     return filtered.slice(start, end);
-  }, [rawDataList, activePage, activeLimit, pendingStatuses]);
+  }, [rawDataList, pendingPage, pendingLimit, pendingStatuses, propStatusFilter]);
 
-  const activeTotalItems = useMemo(() => {
-    return rawDataList.filter((item) => {
+  const pendingTotalItems = useMemo(() => {
+    let filtered = rawDataList.filter((item) => {
       const corrugatorStatus =
         typeof item?.corrugatorProcess === "object" &&
         item?.corrugatorProcess !== null
           ? item.corrugatorProcess.status
           : null;
-      return (
-        corrugatorStatus === "RUNNING" ||
-        corrugatorStatus === "PAUSED" ||
-        corrugatorStatus === "COMPLETED" ||
-        Object.keys(pendingStatuses).includes(
-          String(item.corrugatorProcess?.id)
-        )
-      );
-    }).length;
-  }, [rawDataList, pendingStatuses]);
-
-  // Bảng dưới: Quy trình sóng có trạng thái NOTSTARTED
-  const pendingProcesses = useMemo(() => {
-    const filtered = rawDataList.filter((item) => {
-      const corrugatorStatus =
-        typeof item?.corrugatorProcess === "object" &&
-        item?.corrugatorProcess !== null
-          ? item.corrugatorProcess.status
-          : null;
-      // Lọc ra những item CHƯA bắt đầu VÀ không có trong danh sách active
       return (
         corrugatorStatus === "NOTSTARTED" &&
-        !(
-          corrugatorStatus === "RUNNING" ||
-          corrugatorStatus === "PAUSED" ||
-          corrugatorStatus === "COMPLETED" ||
-          Object.keys(pendingStatuses).includes(
-            String(item.corrugatorProcess?._id || item.corrugatorProcess?.id)
-          )
+        !Object.keys(pendingStatuses).includes(
+          String(item.corrugatorProcess?._id || item.corrugatorProcess?.id)
         )
       );
     });
 
-    // Pagination cho pending processes
-    const start = (pendingPage - 1) * pendingLimit;
-    const end = start + pendingLimit;
-    return filtered.slice(start, end);
-  }, [rawDataList, pendingPage, pendingLimit, pendingStatuses]);
+    // Filter theo statusFilter - chỉ hiển thị NOTSTARTED nếu filter là "all" hoặc "NOTSTARTED"
+    if (propStatusFilter !== "all" && propStatusFilter !== "NOTSTARTED") {
+      filtered = [];
+    }
 
-  const pendingTotalItems = useMemo(() => {
-    return rawDataList.filter((item) => {
-      const corrugatorStatus =
-        typeof item?.corrugatorProcess === "object" &&
-        item?.corrugatorProcess !== null
-          ? item.corrugatorProcess.status
-          : null;
-      return (
-        corrugatorStatus === "NOTSTARTED" &&
-        !(
-          corrugatorStatus === "RUNNING" ||
-          corrugatorStatus === "PAUSED" ||
-          corrugatorStatus === "COMPLETED" ||
-          Object.keys(pendingStatuses).includes(
-            String(item.corrugatorProcess?._id || item.corrugatorProcess?.id)
-          )
-        )
-      );
-    }).length;
-  }, [rawDataList, pendingStatuses]);
+    return filtered.length;
+  }, [rawDataList, pendingStatuses, propStatusFilter]);
 
   // --- MUTATION ---
   const [runCorrugatorProcesses, { isLoading: isRunning }] =
@@ -308,12 +252,10 @@ export default function FluteCorrugatorProcessPage() {
   const activeTotalPages = Math.ceil(activeTotalItems / activeLimit) || 1;
   const activeHasNextPage = activePage < activeTotalPages;
   const activeHasPrevPage = activePage > 1;
-  const activeCurrentPage = activePage;
 
   const pendingTotalPages = Math.ceil(pendingTotalItems / pendingLimit) || 1;
   const pendingHasNextPage = pendingPage < pendingTotalPages;
   const pendingHasPrevPage = pendingPage > 1;
-  const pendingCurrentPage = pendingPage;
 
   const limitOptions = [1, 5, 10, 15];
 
@@ -382,73 +324,110 @@ export default function FluteCorrugatorProcessPage() {
     }
   };
 
-  // Handler cho việc chọn process trong bảng active
-  const handleSelectAllActive = (checked) => {
-    if (checked) {
-      const allProcessIds = activeProcesses
-        .map(
-          (item) => item.corrugatorProcess?._id || item.corrugatorProcess?.id
-        )
-        .filter((id) => id);
-      setSelectedProcessIds(new Set(allProcessIds));
-    } else {
-      setSelectedProcessIds(new Set());
-    }
+  const handleStartUpdateStatus = () => {
+    setIsUpdatingStatusMode(true);
+    setSelectedStatusesForRows({});
+    // Tắt chế độ mark as completed nếu đang bật
+    setIsMarkingCompletedMode(false);
+    setSelectedProcessIdsForComplete(new Set());
   };
 
-  const handleSelectActiveItem = (processId, checked) => {
-    const newSelected = new Set(selectedProcessIds);
+  const handleCancelUpdateStatus = () => {
+    setIsUpdatingStatusMode(false);
+    setSelectedStatusesForRows({});
+  };
+
+  const handleStartMarkAsCompleted = () => {
+    setIsMarkingCompletedMode(true);
+    setSelectedProcessIdsForComplete(new Set());
+    // Tắt chế độ update status nếu đang bật
+    setIsUpdatingStatusMode(false);
+    setSelectedStatusesForRows({});
+  };
+
+  const handleCancelMarkAsCompleted = () => {
+    setIsMarkingCompletedMode(false);
+    setSelectedProcessIdsForComplete(new Set());
+  };
+
+  const handleSelectProcessForComplete = (processId, checked) => {
+    const newSelected = new Set(selectedProcessIdsForComplete);
     if (checked) {
       newSelected.add(processId);
     } else {
       newSelected.delete(processId);
     }
-    setSelectedProcessIds(newSelected);
+    setSelectedProcessIdsForComplete(newSelected);
   };
 
-  // Handler để bật mode cập nhật trạng thái
-  const handleStartUpdateStatus = () => {
-    if (selectedProcessIds.size === 0) {
-      showToast("Vui lòng chọn ít nhất một quy trình sóng", "danger");
-      return;
+  const handleSelectAllProcessesForComplete = (checked) => {
+    if (checked) {
+      const allProcessIds = activeProcesses
+        .map((item) => {
+          const processId =
+            item.corrugatorProcess?._id || item.corrugatorProcess?.id;
+          // Chỉ chọn các process chưa hoàn thành
+          if (processId && item.corrugatorProcess?.status !== "COMPLETED") {
+            return processId;
+          }
+          return null;
+        })
+        .filter((id) => id);
+      setSelectedProcessIdsForComplete(new Set(allProcessIds));
+    } else {
+      setSelectedProcessIdsForComplete(new Set());
     }
-    setIsUpdatingStatusMode(true);
-    setSelectedStatusForUpdate("");
   };
 
-  // Handler để hủy mode cập nhật trạng thái
-  const handleCancelUpdateStatus = () => {
-    setIsUpdatingStatusMode(false);
-    setSelectedStatusForUpdate("");
+  // Handler để cập nhật trạng thái cho một hàng cụ thể
+  const handleRowStatusChange = (processId, newStatus) => {
+    setSelectedStatusesForRows((prev) => ({
+      ...prev,
+      [processId]: newStatus,
+    }));
   };
 
-  // Handler cho việc xác nhận và update nhiều quy trình cùng lúc
+  // Handler để xác nhận và cập nhật tất cả các trạng thái đã chọn
   const handleConfirmUpdateManyStatus = async () => {
-    if (selectedProcessIds.size === 0) {
-      showToast("Vui lòng chọn ít nhất một quy trình sóng", "danger");
-      return;
-    }
+    // Lọc ra các process có trạng thái đã chọn và khác với trạng thái hiện tại
+    const processIdsToUpdate = Object.keys(selectedStatusesForRows).filter(
+      (id) => {
+        const selectedStatus = selectedStatusesForRows[id];
+        if (!selectedStatus) return false;
 
-    if (!selectedStatusForUpdate) {
-      showToast("Vui lòng chọn trạng thái", "danger");
+        // Tìm process tương ứng để so sánh trạng thái hiện tại
+        const item = activeProcesses.find(
+          (p) => (p.corrugatorProcess?._id || p.corrugatorProcess?.id) === id
+        );
+        if (!item) return false;
+
+        const currentStatus = item.corrugatorProcess?.status;
+        return selectedStatus !== currentStatus;
+      }
+    );
+
+    if (processIdsToUpdate.length === 0) {
+      showToast(
+        "Vui lòng chọn trạng thái mới cho ít nhất một quy trình",
+        "danger"
+      );
       return;
     }
 
     try {
-      const result = await updateManyCorrugatorProcesses({
-        processIds: Array.from(selectedProcessIds),
-        status: selectedStatusForUpdate,
-      }).unwrap();
-      setSelectedProcessIds(new Set());
+      const updatePromises = processIdsToUpdate.map((processId) =>
+        updateCorrugatorProcess({
+          id: processId,
+          status: selectedStatusesForRows[processId],
+        }).unwrap()
+      );
+
+      await Promise.all(updatePromises);
       setIsUpdatingStatusMode(false);
-      setSelectedStatusForUpdate("");
+      setSelectedStatusesForRows({});
       showToast(
-        `Đã cập nhật ${result.successCount} quy trình sóng. ${
-          result.failedCount > 0
-            ? `${result.failedCount} quy trình thất bại.`
-            : ""
-        }`,
-        result.failedCount > 0 ? "warning" : "success"
+        `Đã cập nhật ${processIdsToUpdate.length} quy trình sóng thành công!`,
+        "success"
       );
       refetch();
     } catch (error) {
@@ -460,12 +439,74 @@ export default function FluteCorrugatorProcessPage() {
     }
   };
 
-  // --- LOGIC MỚI: CẬP NHẬT STATE TẠM THỜI ---
+  // Handler để xác nhận và đánh dấu nhiều process là hoàn thành
+  const handleConfirmMarkAsCompleted = async () => {
+    if (selectedProcessIdsForComplete.size === 0) {
+      showToast(
+        "Vui lòng chọn ít nhất một quy trình để đánh dấu hoàn thành",
+        "danger"
+      );
+      return;
+    }
 
-  // Cập nhật state SỐ LƯỢNG (Đã SX) tạm thời
+    const processIdsArray = Array.from(selectedProcessIdsForComplete);
+    const results = [];
+    const failedItems = [];
+
+    try {
+      // Update từng process và lưu kết quả
+      for (const processId of processIdsArray) {
+        try {
+          await updateCorrugatorProcess({
+            id: processId,
+            status: "COMPLETED",
+          }).unwrap();
+          results.push({ processId, success: true });
+        } catch (error) {
+          // Tìm tên lệnh sản xuất từ processId trong rawDataList (toàn bộ dữ liệu)
+          const item = rawDataList.find(
+            (p) =>
+              (p.corrugatorProcess?._id || p.corrugatorProcess?.id) ===
+              processId
+          );
+          const moCode = item?.code || processId;
+          failedItems.push(moCode);
+          results.push({ processId, success: false, error, moCode });
+        }
+      }
+
+      const successCount = results.filter((r) => r.success).length;
+      const failedCount = results.filter((r) => !r.success).length;
+
+      // Hiển thị thông báo chi tiết
+      if (failedCount > 0) {
+        const failedCodes = failedItems.join(", ");
+        showToast(
+          `Đã đánh dấu hoàn thành ${successCount} quy trình. ${failedCount} quy trình thất bại: ${failedCodes}`,
+          "warning"
+        );
+      } else {
+        showToast(
+          `Đã đánh dấu hoàn thành ${successCount} quy trình thành công!`,
+          "success"
+        );
+      }
+
+      setIsMarkingCompletedMode(false);
+      setSelectedProcessIdsForComplete(new Set());
+      refetch();
+    } catch (error) {
+      console.error("Error marking processes as completed:", error);
+      showToast(
+        error.data?.message || "Có lỗi xảy ra khi đánh dấu hoàn thành",
+        "danger"
+      );
+    }
+  };
+
   const handleChangePendingAmount = (
     corrugatorProcessId,
-    currentAmount, // Số lượng từ API (hoặc từ state tạm thời nếu đã thay đổi)
+    currentAmount,
     delta
   ) => {
     if (!corrugatorProcessId) return;
@@ -477,7 +518,6 @@ export default function FluteCorrugatorProcessPage() {
     }));
   };
 
-  // Cập nhật state TRẠNG THÁI tạm thời
   const handleChangePendingStatus = (corrugatorProcessId, newStatus) => {
     if (!corrugatorProcessId) return;
 
@@ -487,12 +527,10 @@ export default function FluteCorrugatorProcessPage() {
     }));
   };
 
-  // --- LOGIC MỚI: XỬ LÝ LƯU (GỌI API) ---
   const handleSave = async (corrugatorProcessId) => {
     const newAmount = pendingAmounts[corrugatorProcessId];
     const newStatus = pendingStatuses[corrugatorProcessId];
 
-    // Kiểm tra xem có gì để lưu không
     const hasPendingAmount = newAmount !== undefined;
     const hasPendingStatus = newStatus !== undefined;
 
@@ -501,7 +539,6 @@ export default function FluteCorrugatorProcessPage() {
       return;
     }
 
-    // Build body cho API
     const body = { id: corrugatorProcessId };
     if (hasPendingAmount) {
       body.manufacturedAmount = newAmount;
@@ -514,7 +551,6 @@ export default function FluteCorrugatorProcessPage() {
       const result = await updateCorrugatorProcess(body).unwrap();
       showToast(result?.message || "Lưu thay đổi thành công!", "success");
 
-      // Xóa các thay đổi tạm thời sau khi lưu
       if (hasPendingAmount) {
         setPendingAmounts((prev) => {
           const newState = { ...prev };
@@ -530,7 +566,7 @@ export default function FluteCorrugatorProcessPage() {
         });
       }
 
-      refetch(); // Tải lại dữ liệu
+      refetch();
     } catch (error) {
       console.error("Error saving changes:", error);
       showToast(
@@ -540,22 +576,10 @@ export default function FluteCorrugatorProcessPage() {
     }
   };
 
-  const handleClearFilters = () => {
-    setSearchTerm("");
-    setCorrugatorLineFilter("all");
-    setPaperWidthFilter("");
-    setActivePage(1);
-    setPendingPage(1);
-  };
-
   // --- TABLE HEADERS ---
   const TABLE_HEADERS_ACTIVE = [
-    "", // Checkbox column
     "Lệnh SX",
     "Sóng",
-    // "Dài/Khổ",
-    // "Rộng/CD",
-    // "Cao",
     "Khổ gia công",
     "Cắt dài gia công",
     "Nắp/ Cánh SP",
@@ -563,9 +587,9 @@ export default function FluteCorrugatorProcessPage() {
     "Part SX",
     "Tấm chặt",
     "Mét SX",
-    "Trạng thái", // Sẽ là dropdown
+    "Trạng thái",
     "Đã SX",
-    "Lưu", // Thay "Hành động"
+    "Hành Động",
     "Ngày Nhận",
     "Khổ giấy",
     "Giấy mặt SP",
@@ -583,8 +607,6 @@ export default function FluteCorrugatorProcessPage() {
     "Lề biên",
     "Part SX",
     "Tấm chặt",
-    // "Trạng thái",
-    // "Đã SX",
     "Ngày Nhận",
     "Khổ giấy",
     "Giấy mặt SP",
@@ -605,144 +627,6 @@ export default function FluteCorrugatorProcessPage() {
       </Container>
     );
   }
-
-  // Render pagination component
-  const renderPagination = (
-    currentPage,
-    totalPages,
-    hasNextPage,
-    hasPrevPage,
-    onPageChange,
-    isFetching,
-    totalItems,
-    currentLimit
-  ) => {
-    const startItem =
-      totalItems === 0 ? 0 : (currentPage - 1) * currentLimit + 1;
-    const endItem = Math.min(currentPage * currentLimit, totalItems);
-    const rangeDisplay = `${startItem} - ${endItem} of ${totalItems}`;
-
-    return (
-      <div
-        className="d-flex flex-column flex-md-row justify-content-md-end align-items-center mt-3 gap-3"
-        style={{ width: "100%", margin: "0" }}
-      >
-        <div className="d-flex align-items-center justify-content-center justify-content-md-end gap-4 flex-wrap">
-          <span
-            className="text-muted"
-            style={{
-              fontWeight: 500,
-              whiteSpace: "nowrap",
-              fontSize: "0.9rem",
-            }}
-          >
-            {rangeDisplay}
-          </span>
-        </div>
-
-        <div className="d-flex justify-content-center justify-content-md-end gap-2">
-          <Button
-            variant="light"
-            disabled={!hasPrevPage || isFetching}
-            onClick={() => onPageChange(1)}
-            style={{
-              borderRadius: "8px",
-              width: "40px",
-              height: "40px",
-              padding: 0,
-              backgroundColor: "#f1f1f1",
-              border: "none",
-              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
-            }}
-          >
-            <i className="bi bi-chevron-bar-left"></i>
-          </Button>
-
-          <Button
-            variant="light"
-            disabled={!hasPrevPage || isFetching}
-            onClick={() => onPageChange(currentPage - 1)}
-            style={{
-              borderRadius: "8px",
-              width: "40px",
-              height: "40px",
-              padding: 0,
-              backgroundColor: "#f1f1f1",
-              border: "none",
-              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
-            }}
-          >
-            <i className="bi bi-chevron-left"></i>
-          </Button>
-
-          <Button
-            variant="light"
-            disabled={!hasNextPage || isFetching}
-            onClick={() => onPageChange(currentPage + 1)}
-            style={{
-              borderRadius: "8px",
-              width: "40px",
-              height: "40px",
-              padding: 0,
-              backgroundColor: "#f1f1f1",
-              border: "none",
-              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
-            }}
-          >
-            <i className="bi bi-chevron-right"></i>
-          </Button>
-
-          <Button
-            variant="light"
-            disabled={!hasNextPage || isFetching}
-            onClick={() => onPageChange(totalPages)}
-            style={{
-              borderRadius: "8px",
-              width: "40px",
-              height: "40px",
-              padding: 0,
-              backgroundColor: "#f1f1f1",
-              border: "none",
-              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
-            }}
-          >
-            <i className="bi bi-chevron-bar-right"></i>
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
-  // Render "Rows per page" component
-  const renderLimitSelector = (currentLimit, onChangeHandler, isDisabled) => (
-    <div className="d-flex align-items-center gap-2">
-      <Form.Label
-        className="mb-0 text-muted"
-        style={{ fontSize: "0.9rem", whiteSpace: "nowrap" }}
-      >
-        Rows per page
-      </Form.Label>
-      <Form.Select
-        style={{
-          width: "80px",
-          height: "40px",
-          borderRadius: "8px",
-          backgroundColor: "#fff",
-          padding: "6px 10px",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-        }}
-        value={currentLimit}
-        onChange={(e) => onChangeHandler(Number(e.target.value))}
-        disabled={isDisabled}
-      >
-        {limitOptions.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </Form.Select>
-    </div>
-  );
 
   return (
     <Container fluid className="p-4">
@@ -782,115 +666,11 @@ export default function FluteCorrugatorProcessPage() {
         ))}
       </ToastContainer>
 
-      <h2 className="fw-bold mb-3">Quản lý quy trình sóng</h2>
-
-      {/* ======================= FILTER SECTION ======================= */}
-      <Form className="mb-4 p-3 border rounded shadow-sm bg-light">
-        <Row className="mb-3">
-          {/* Search */}
-          <Col xs={12} md={4} className="mb-3 mb-md-0">
-            <Form.Group>
-              <Form.Label className="fw-bold">Tìm kiếm</Form.Label>
-              <div className="d-flex align-items-center border rounded">
-                <span className="px-2">
-                  <i className="bi bi-search"></i>
-                </span>
-                <Form.Control
-                  type="text"
-                  placeholder="Lệnh SX hoặc Mã Hàng..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setActivePage(1);
-                    setPendingPage(1);
-                  }}
-                  style={{ border: "none", boxShadow: "none" }}
-                />
-              </div>
-            </Form.Group>
-          </Col>
-
-          {/* Corrugator Line Filter */}
-          <Col xs={12} md={2} className="mb-3 mb-md-0">
-            <Form.Group>
-              <Form.Label className="fw-bold">Dàn</Form.Label>
-              <Form.Select
-                value={
-                  corrugatorLineFilter === "all"
-                    ? "all"
-                    : String(corrugatorLineFilter)
-                }
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setCorrugatorLineFilter(
-                    value === "all" ? "all" : Number(value)
-                  );
-                  setActivePage(1);
-                  setPendingPage(1);
-                }}
-              >
-                <option value="all">-- Tất cả --</option>
-                <option value="5">Dàn 5L</option>
-                <option value="7">Dàn 7L</option>
-              </Form.Select>
-            </Form.Group>
-          </Col>
-
-          {/* Paper Width Filter */}
-          <Col xs={12} md={2} className="mb-3 mb-md-0">
-            <Form.Group>
-              <Form.Label className="fw-bold">Khổ giấy</Form.Label>
-              <Form.Control
-                type="number"
-                placeholder="Nhập khổ giấy..."
-                value={paperWidthFilter}
-                onChange={(e) => {
-                  setPaperWidthFilter(e.target.value);
-                  setActivePage(1);
-                  setPendingPage(1);
-                }}
-              />
-            </Form.Group>
-          </Col>
-
-          {/* Step Amount */}
-          <Col xs={12} md={2} className="mb-3 mb-md-0">
-            <Form.Group>
-              <Form.Label className="fw-bold">Bước nhảy</Form.Label>
-              <Form.Control
-                type="number"
-                min="1"
-                value={stepAmount}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value) || 100;
-                  setStepAmount(val);
-                }}
-                placeholder="100"
-              />
-            </Form.Group>
-          </Col>
-
-          {/* Clear Button */}
-          <Col
-            xs={12}
-            md={2}
-            className="d-flex align-items-end justify-content-end"
-          >
-            <Button
-              variant="outline-danger"
-              onClick={handleClearFilters}
-              style={{ alignItems: "center" }}
-            >
-              <i className="bi bi-funnel-fill me-2"></i>
-              Xóa bộ lọc
-            </Button>
-          </Col>
-        </Row>
-      </Form>
       {/* Loading Indicator */}
       {(isLoading || isFetching) && (
         <div className="text-muted mb-3">Đang tải dữ liệu...</div>
       )}
+
       {/* ======================= TABLE 1: ACTIVE PROCESSES ======================= */}
       <div className="mb-5">
         <div className="d-flex justify-content-between align-items-center mb-3">
@@ -898,72 +678,68 @@ export default function FluteCorrugatorProcessPage() {
             Quy trình sóng đang chạy/Dừng/Hoàn thành
           </h4>
           <div className="d-flex align-items-center gap-2">
-            {selectedProcessIds.size > 0 ? (
+            {isUpdatingStatusMode ? (
               <>
-                {isUpdatingStatusMode ? (
-                  <>
-                    <Form.Select
-                      size="sm"
-                      value={selectedStatusForUpdate}
-                      onChange={(e) =>
-                        setSelectedStatusForUpdate(e.target.value)
-                      }
-                      disabled={isUpdatingMany}
-                      style={{ width: "180px" }}
-                    >
-                      <option value="">Chọn trạng thái...</option>
-                      <option value="RUNNING">Chạy</option>
-                      <option value="PAUSED">Dừng</option>
-                      <option value="CANCELLED">Hủy</option>
-                      <option value="COMPLETED">Hoàn thành</option>
-                    </Form.Select>
-                    <Button
-                      variant="success"
-                      size="sm"
-                      onClick={handleConfirmUpdateManyStatus}
-                      disabled={isUpdatingMany || !selectedStatusForUpdate}
-                    >
-                      <i className="bi bi-check-circle me-2"></i>
-                      Xác nhận
-                    </Button>
-                    <Button
-                      variant="outline-secondary"
-                      size="sm"
-                      onClick={handleCancelUpdateStatus}
-                      disabled={isUpdatingMany}
-                    >
-                      <i className="bi bi-x-circle me-2"></i>
-                      Hủy
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={handleStartUpdateStatus}
-                    >
-                      <i className="bi bi-pencil-square me-2"></i>
-                      Cập nhật trạng thái
-                    </Button>
-                    <Button
-                      variant="outline-secondary"
-                      size="sm"
-                      onClick={() => setSelectedProcessIds(new Set())}
-                    >
-                      <i className="bi bi-x-circle me-2"></i>
-                      Bỏ chọn ({selectedProcessIds.size})
-                    </Button>
-                  </>
-                )}
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={handleConfirmUpdateManyStatus}
+                  disabled={isUpdatingMany}
+                >
+                  <i className="bi bi-check-circle me-2"></i>
+                  Xác nhận
+                </Button>
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={handleCancelUpdateStatus}
+                  disabled={isUpdatingMany}
+                >
+                  <i className="bi bi-x-circle me-2"></i>
+                  Hủy
+                </Button>
+              </>
+            ) : isMarkingCompletedMode ? (
+              <>
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={handleConfirmMarkAsCompleted}
+                  disabled={
+                    isUpdatingMany || selectedProcessIdsForComplete.size === 0
+                  }
+                >
+                  <i className="bi bi-check-circle me-2"></i>
+                  Xác nhận
+                </Button>
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={handleCancelMarkAsCompleted}
+                  disabled={isUpdatingMany}
+                >
+                  <i className="bi bi-x-circle me-2"></i>
+                  Hủy
+                </Button>
               </>
             ) : (
               <>
-                {renderLimitSelector(
-                  activeLimit,
-                  handleActiveLimitChange,
-                  isFetching
-                )}
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleStartUpdateStatus}
+                >
+                  <i className="bi bi-pencil-square me-2"></i>
+                  Cập nhật trạng thái
+                </Button>
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={handleStartMarkAsCompleted}
+                >
+                  <i className="bi bi-check-circle me-2"></i>
+                  Đánh dấu hoàn thành
+                </Button>
               </>
             )}
           </div>
@@ -994,32 +770,40 @@ export default function FluteCorrugatorProcessPage() {
                   }}
                 >
                   <tr>
-                    <th style={{ width: "50px" }}>
-                      <Form.Check
-                        type="checkbox"
-                        checked={
-                          activeProcesses.length > 0 &&
-                          selectedProcessIds.size ===
+                    {isMarkingCompletedMode && (
+                      <th style={{ width: "50px" }}>
+                        <Form.Check
+                          type="checkbox"
+                          checked={
+                            activeProcesses.length > 0 &&
                             activeProcesses.filter(
                               (item) =>
-                                item.corrugatorProcess?._id ||
-                                item.corrugatorProcess?.id
-                            ).length &&
-                          activeProcesses.every((item) => {
-                            const processId =
-                              item.corrugatorProcess?._id ||
-                              item.corrugatorProcess?.id;
-                            return (
-                              !processId || selectedProcessIds.has(processId)
-                            );
-                          })
-                        }
-                        onChange={(e) =>
-                          handleSelectAllActive(e.target.checked)
-                        }
-                      />
-                    </th>
-                    {TABLE_HEADERS_ACTIVE.slice(1).map((header) => (
+                                item.corrugatorProcess?.status !== "COMPLETED"
+                            ).length > 0 &&
+                            activeProcesses
+                              .filter(
+                                (item) =>
+                                  item.corrugatorProcess?.status !== "COMPLETED"
+                              )
+                              .every((item) => {
+                                const processId =
+                                  item.corrugatorProcess?._id ||
+                                  item.corrugatorProcess?.id;
+                                return (
+                                  !processId ||
+                                  selectedProcessIdsForComplete.has(processId)
+                                );
+                              })
+                          }
+                          onChange={(e) =>
+                            handleSelectAllProcessesForComplete(
+                              e.target.checked
+                            )
+                          }
+                        />
+                      </th>
+                    )}
+                    {TABLE_HEADERS_ACTIVE.map((header) => (
                       <th key={header} style={{ fontSize: "13.5px" }}>
                         {header}
                       </th>
@@ -1036,27 +820,35 @@ export default function FluteCorrugatorProcessPage() {
                         ? item.corrugatorProcess
                         : null;
 
-                    if (!corrugatorProcess) return null; // Không hiển thị nếu không có process
+                    if (!corrugatorProcess) return null;
 
                     const processId =
                       corrugatorProcess._id || corrugatorProcess.id;
 
-                    // Lấy số lượng: ưu tiên state tạm thời, nếu không có thì lấy từ API
+                    const originalAmount =
+                      corrugatorProcess.manufacturedAmount ?? 0;
+                    const originalStatus = corrugatorProcess.status;
+
                     const currentAmount =
-                      pendingAmounts[processId] ??
-                      corrugatorProcess.manufacturedAmount ??
-                      0;
+                      pendingAmounts[processId] ?? originalAmount;
 
-                    // Lấy trạng thái: ưu tiên state tạm thời, nếu không có thì lấy từ API
                     const currentStatus =
-                      pendingStatuses[processId] ?? corrugatorProcess.status;
+                      pendingStatuses[processId] ?? originalStatus;
 
-                    // Kiểm tra xem có thay đổi chưa lưu hay không
-                    const hasPendingChanges =
-                      pendingAmounts[processId] !== undefined ||
-                      pendingStatuses[processId] !== undefined;
+                    // Kiểm tra xem có thay đổi thực sự so với giá trị ban đầu không
+                    const hasAmountChange =
+                      pendingAmounts[processId] !== undefined &&
+                      pendingAmounts[processId] !== originalAmount;
+                    const hasStatusChange =
+                      pendingStatuses[processId] !== undefined &&
+                      pendingStatuses[processId] !== originalStatus;
 
-                    const isProcessSelected = selectedProcessIds.has(processId);
+                    const hasPendingChanges = hasAmountChange || hasStatusChange;
+
+                    const isSelectedForComplete =
+                      selectedProcessIdsForComplete.has(processId);
+                    const isCompleted =
+                      corrugatorProcess?.status === "COMPLETED";
 
                     return (
                       <tr
@@ -1064,7 +856,7 @@ export default function FluteCorrugatorProcessPage() {
                         className="align-middle"
                         style={{
                           ...rowStyles,
-                          ...(isProcessSelected
+                          ...(isSelectedForComplete
                             ? {
                                 backgroundColor: "#bbdefb",
                                 fontWeight: "600",
@@ -1072,24 +864,24 @@ export default function FluteCorrugatorProcessPage() {
                             : {}),
                         }}
                       >
-                        <td className="text-center">
-                          <Form.Check
-                            type="checkbox"
-                            checked={isProcessSelected}
-                            onChange={(e) =>
-                              handleSelectActiveItem(
-                                processId,
-                                e.target.checked
-                              )
-                            }
-                          />
-                        </td>
+                        {isMarkingCompletedMode && (
+                          <td className="text-center">
+                            <Form.Check
+                              type="checkbox"
+                              checked={isSelectedForComplete}
+                              onChange={(e) =>
+                                handleSelectProcessForComplete(
+                                  processId,
+                                  e.target.checked
+                                )
+                              }
+                              disabled={isCompleted}
+                            />
+                          </td>
+                        )}
                         <td className="text-center" style={{ ...rowStyles }}>
                           {item?.code || "-"}
                         </td>
-                        {/* <td style={{ ...rowStyles, minWidth: "150px" }}>
-                          {ware?.code || "-"}
-                        </td> */}
                         <td
                           className="text-center"
                           style={{ ...rowStyles, color: "red" }}
@@ -1097,19 +889,8 @@ export default function FluteCorrugatorProcessPage() {
                           {typeof ware?.fluteCombination === "object" &&
                           ware?.fluteCombination?.code
                             ? ware.fluteCombination.code
-                            : typeof ware?.fluteCombination === "string"
-                            ? "-"
                             : "-"}
                         </td>
-                        {/* <td className="text-center" style={{ ...rowStyles }}>
-                          {ware?.wareLength || "-"}
-                        </td>
-                        <td className="text-center" style={{ ...rowStyles }}>
-                          {ware?.wareWidth || "-"}
-                        </td>
-                        <td className="text-center" style={{ ...rowStyles }}>
-                          {ware?.wareHeight || "-"}
-                        </td> */}
                         <td className="text-center" style={{ ...rowStyles }}>
                           {ware?.blankWidth || "-"}
                         </td>
@@ -1125,7 +906,6 @@ export default function FluteCorrugatorProcessPage() {
                         <td className="text-center" style={{ ...rowStyles }}>
                           {ware?.crossCutCount || "-"}
                         </td>
-
                         <td
                           className="text-center"
                           style={{
@@ -1148,48 +928,65 @@ export default function FluteCorrugatorProcessPage() {
                         >
                           {formatNumber(item?.purchaseOrderItem?.runningLength)}
                         </td>
-
-                        {/* --- CỘT TRẠNG THÁI (DROPDOWN) --- */}
                         <td
                           className="text-center"
                           style={{ ...rowStyles, minWidth: "130px" }}
-                          // style={{ ...rowStyles }}
                         >
-                          <Form.Select
-                            size="sm"
-                            value={currentStatus}
-                            onChange={(e) =>
-                              handleChangePendingStatus(
-                                processId,
-                                e.target.value
-                              )
-                            }
-                            disabled={isUpdating}
-                            style={{
-                              fontWeight: 600,
-                              borderColor: hasPendingChanges
-                                ? "#0d6efd"
-                                : "default",
-                              // minWidth: "90px"
-                            }}
-                          >
-                            {EDITABLE_STATUSES.map((status) => (
-                              <option key={status.value} value={status.value}>
-                                {status.label}
-                              </option>
-                            ))}
-                            {/* Thêm các trạng thái không chỉnh sửa được (như COMPLETED) */}
-                            {!EDITABLE_STATUSES.some(
-                              (s) => s.value === corrugatorProcess.status
-                            ) && (
-                              <option value={corrugatorProcess.status} disabled>
-                                {getStatus(corrugatorProcess.status)}
-                              </option>
-                            )}
-                          </Form.Select>
+                          {isUpdatingStatusMode &&
+                          corrugatorProcess?.status !== "COMPLETED" ? (
+                            // Chế độ edit: hiển thị select (chỉ cho các lệnh chưa hoàn thành)
+                            <Form.Select
+                              size="sm"
+                              value={
+                                selectedStatusesForRows[processId] ||
+                                currentStatus
+                              }
+                              onChange={(e) =>
+                                handleRowStatusChange(processId, e.target.value)
+                              }
+                              disabled={isUpdating}
+                              style={{
+                                fontWeight: 600,
+                                borderColor:
+                                  selectedStatusesForRows[processId] &&
+                                  selectedStatusesForRows[processId] !==
+                                    currentStatus
+                                    ? "#0d6efd"
+                                    : "default",
+                              }}
+                            >
+                              {EDITABLE_STATUSES.map((status) => (
+                                <option key={status.value} value={status.value}>
+                                  {status.label}
+                                </option>
+                              ))}
+                              {!EDITABLE_STATUSES.some(
+                                (s) => s.value === currentStatus
+                              ) && (
+                                <option value={currentStatus} disabled>
+                                  {getStatus(currentStatus)}
+                                </option>
+                              )}
+                            </Form.Select>
+                          ) : (
+                            // Chế độ bình thường hoặc lệnh đã hoàn thành: hiển thị text
+                            <span
+                              style={{
+                                fontWeight: 600,
+                                color:
+                                  corrugatorProcess?.status === "COMPLETED"
+                                    ? "#2e7d32"
+                                    : corrugatorProcess?.status === "RUNNING"
+                                    ? "#1976d2"
+                                    : corrugatorProcess?.status === "PAUSED"
+                                    ? "#e65100"
+                                    : "#000",
+                              }}
+                            >
+                              {getStatus(currentStatus)}
+                            </span>
+                          )}
                         </td>
-
-                        {/* --- CỘT ĐÃ SX (CẬP NHẬT STATE TẠM) --- */}
                         <td
                           className="text-center"
                           style={{
@@ -1208,8 +1005,8 @@ export default function FluteCorrugatorProcessPage() {
                               onClick={() =>
                                 handleChangePendingAmount(
                                   processId,
-                                  currentAmount, // Truyền số lượng hiện tại (từ state tạm hoặc api)
-                                  -stepAmount
+                                  currentAmount,
+                                  -propStepAmount
                                 )
                               }
                               disabled={
@@ -1217,7 +1014,7 @@ export default function FluteCorrugatorProcessPage() {
                                 corrugatorProcess?.status === "COMPLETED"
                               }
                               style={{ textDecoration: "none" }}
-                              title={`Giảm ${stepAmount}`}
+                              title={`Giảm ${propStepAmount}`}
                             >
                               <i className="bi bi-dash-circle fs-5"></i>
                             </Button>
@@ -1243,8 +1040,8 @@ export default function FluteCorrugatorProcessPage() {
                               onClick={() =>
                                 handleChangePendingAmount(
                                   processId,
-                                  currentAmount, // Truyền số lượng hiện tại (từ state tạm hoặc api)
-                                  stepAmount
+                                  currentAmount,
+                                  propStepAmount
                                 )
                               }
                               disabled={
@@ -1252,18 +1049,13 @@ export default function FluteCorrugatorProcessPage() {
                                 corrugatorProcess?.status === "COMPLETED"
                               }
                               style={{ textDecoration: "none" }}
-                              title={`Tăng ${stepAmount}`}
+                              title={`Tăng ${propStepAmount}`}
                             >
                               <i className="bi bi-plus-circle fs-5"></i>
                             </Button>
                           </div>
                         </td>
-
-                        {/* --- CỘT LƯU --- */}
-                        <td
-                          className="text-center"
-                          style={{ ...rowStyles, minWidth: "100px" }}
-                        >
+                        <td className="text-center" style={{ ...rowStyles }}>
                           <Button
                             variant={
                               hasPendingChanges
@@ -1275,12 +1067,13 @@ export default function FluteCorrugatorProcessPage() {
                             disabled={!hasPendingChanges || isUpdating}
                             className="d-flex align-items-center justify-content-center gap-1"
                             style={{
-                              minWidth: "90px",
+                              minWidth: "30px",
                               fontWeight: hasPendingChanges ? 600 : 400,
                               boxShadow: hasPendingChanges
                                 ? "0 2px 4px rgba(25, 135, 84, 0.3)"
                                 : "none",
                               transition: "all 0.2s ease",
+                              margin: "auto",
                             }}
                             title="Lưu thay đổi"
                           >
@@ -1288,27 +1081,20 @@ export default function FluteCorrugatorProcessPage() {
                             {hasPendingChanges && <span>Lưu</span>}
                           </Button>
                         </td>
-
                         <td className="text-center" style={{ ...rowStyles }}>
                           {formatShortDate(item?.manufacturingDate)}
                         </td>
-
                         <td
                           className="text-center"
                           style={{
                             ...rowStyles,
                             ...amountCellStyle,
-                            color: "red",
+                            color: "blue",
                           }}
                         >
                           {ware?.paperWidth || "-"}
                         </td>
-                        <td
-                          className="text-center"
-                          style={{
-                            ...rowStyles,
-                          }}
-                        >
+                        <td className="text-center" style={{ ...rowStyles }}>
                           {ware?.faceLayerPaperType || "-"}
                         </td>
                       </tr>
@@ -1317,16 +1103,18 @@ export default function FluteCorrugatorProcessPage() {
                 </tbody>
               </Table>
             </div>
-            {renderPagination(
-              activeCurrentPage,
-              activeTotalPages,
-              activeHasNextPage,
-              activeHasPrevPage,
-              handleActivePageChange,
-              isFetching,
-              activeTotalItems,
-              activeLimit
-            )}
+            <CustomPagination
+              currentPage={activePage}
+              totalPages={activeTotalPages}
+              hasNextPage={activeHasNextPage}
+              hasPrevPage={activeHasPrevPage}
+              onPageChange={handleActivePageChange}
+              isFetching={isFetching}
+              totalItems={activeTotalItems}
+              limit={activeLimit}
+              onLimitChange={handleActiveLimitChange}
+              limitOptions={limitOptions}
+            />
           </>
         ) : (
           !isFetching && (
@@ -1337,11 +1125,11 @@ export default function FluteCorrugatorProcessPage() {
         )}
       </div>
 
-      {/* ======================= TABLE 2: PENDING PROCESSES (SELECTABLE) ======================= */}
+      {/* ======================= TABLE 2: PENDING PROCESSES ======================= */}
       <div className="mb-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h4 className="fw-bold mb-0">Lệnh sản xuất chờ xử lý</h4>
-          {selectedMoIds.size > 0 ? (
+          {selectedMoIds.size > 0 && (
             <Button
               variant="success"
               onClick={handleRunSelected}
@@ -1350,12 +1138,6 @@ export default function FluteCorrugatorProcessPage() {
               <i className="bi bi-play-fill me-2"></i>
               Chuyển {selectedMoIds.size} lệnh sang chạy
             </Button>
-          ) : (
-            renderLimitSelector(
-              pendingLimit,
-              handlePendingLimitChange,
-              isFetching
-            )
           )}
         </div>
         {!isFetching && pendingProcesses.length > 0 ? (
@@ -1437,9 +1219,6 @@ export default function FluteCorrugatorProcessPage() {
                         <td className="text-center" style={{ ...rowStyles }}>
                           {item?.code || "-"}
                         </td>
-                        {/* <td style={{ ...rowStyles, minWidth: "150px" }}>
-                          {ware?.code || "-"}
-                        </td> */}
                         <td
                           className="text-center"
                           style={{ ...rowStyles, color: "red" }}
@@ -1447,8 +1226,6 @@ export default function FluteCorrugatorProcessPage() {
                           {typeof ware?.fluteCombination === "object" &&
                           ware?.fluteCombination?.code
                             ? ware.fluteCombination.code
-                            : typeof ware?.fluteCombination === "string"
-                            ? "-"
                             : "-"}
                         </td>
                         <td className="text-center" style={{ ...rowStyles }}>
@@ -1487,22 +1264,6 @@ export default function FluteCorrugatorProcessPage() {
                             item?.purchaseOrderItem?.longitudinalCutCount
                           )}
                         </td>
-                        {/* <td className="text-center" style={{ ...rowStyles }}>
-                          {corrugatorProcess
-                            ? getStatus(corrugatorProcess.status)
-                            : "Chờ"}
-                        </td> */}
-                        {/* <td
-                          className="text-center"
-                          style={{
-                            ...rowStyles,
-                            ...amountCellStyle,
-                          }}
-                        >
-                          {corrugatorProcess
-                            ? formatNumber(corrugatorProcess.manufacturedAmount)
-                            : "0"}
-                        </td> */}
                         <td className="text-center" style={{ ...rowStyles }}>
                           {formatShortDate(item?.manufacturingDate)}
                         </td>
@@ -1525,16 +1286,18 @@ export default function FluteCorrugatorProcessPage() {
                 </tbody>
               </Table>
             </div>
-            {renderPagination(
-              pendingCurrentPage,
-              pendingTotalPages,
-              pendingHasNextPage,
-              pendingHasPrevPage,
-              handlePendingPageChange,
-              isFetching,
-              pendingTotalItems,
-              pendingLimit
-            )}
+            <CustomPagination
+              currentPage={pendingPage}
+              totalPages={pendingTotalPages}
+              hasNextPage={pendingHasNextPage}
+              hasPrevPage={pendingHasPrevPage}
+              onPageChange={handlePendingPageChange}
+              isFetching={isFetching}
+              totalItems={pendingTotalItems}
+              limit={pendingLimit}
+              onLimitChange={handlePendingLimitChange}
+              limitOptions={limitOptions}
+            />
           </>
         ) : (
           !isFetching && (
