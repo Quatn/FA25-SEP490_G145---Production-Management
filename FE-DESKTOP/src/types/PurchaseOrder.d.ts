@@ -4,7 +4,7 @@ export interface PurchaseOrder extends BaseSchema {
   _id?: string;
   code: string;
   orderDate: string; 
-  deliveryAdress: string;
+  deliveryAddress: string;
   paymentTerms: string;
   customer?: Customer; 
   status: string; 

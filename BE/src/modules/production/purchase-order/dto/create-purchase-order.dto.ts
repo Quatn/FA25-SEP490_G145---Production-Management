@@ -18,7 +18,7 @@ export class CreatePurchaseOrderDto {
 
   @ApiProperty({ example: "Warehouse A", description: "Delivery address" })
   @IsString()
-  deliveryAdress: string;
+  deliveryAddress: string;
 
   @ApiProperty({ example: "30 days", description: "Payment terms" })
   @IsString()

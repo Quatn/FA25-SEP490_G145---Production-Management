@@ -48,7 +48,7 @@ function normalizeServerPo(raw: any): PurchaseOrder {
         : "",
     customer: customerName || raw.customer?.name || "",
     customerId,
-    address: raw.deliveryAdress ?? "",
+    address: raw.deliveryAddress ?? "",
     phone: raw.customer?.contactNumber ?? raw.phone ?? "",
     email: raw.customer?.email ?? raw.email ?? "",
     taxTemplate: (raw as any).paymentTerms ?? "",
@@ -164,7 +164,7 @@ const PurchaseOrderList: React.FC = () => {
       const payload: any = {
         code: updated.poNumber,
         orderDate: updated.poDate,
-        deliveryAdress: updated.address,
+        deliveryAddress: updated.address,
         paymentTerms: updated.taxTemplate,
         note: updated.notes,
       };
