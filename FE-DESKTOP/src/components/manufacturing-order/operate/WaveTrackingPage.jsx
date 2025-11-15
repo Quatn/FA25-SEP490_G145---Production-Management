@@ -63,7 +63,7 @@ export default function WaveTrackingPage() {
       }
     });
     // Thứ tự ưu tiên: In, Bế, Bó, Dán
-    const orderPriority = ["IN", "BE", "BO", "DAN"];
+    const orderPriority = ["IN", "BE", "BO", "CHAP", "DAN"];
     
     // Sắp xếp theo thứ tự ưu tiên
     return Array.from(typeMap.values()).sort((a, b) => {

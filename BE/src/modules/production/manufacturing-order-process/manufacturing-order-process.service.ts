@@ -216,6 +216,13 @@ export class ManufacturingOrderProcessService {
             `Không thể hoàn thành thủ công khi số lượng (${newAmount}) chưa đạt mục tiêu (${targetAmount}).`,
           );
         }
+        // Kiểm tra ràng buộc: không được vượt quá 110% số lượng mục tiêu
+        const maxAmountForCompletion = targetAmount * 1.1;
+        if (newAmount > maxAmountForCompletion) {
+          throw new BadRequestException(
+            `Không thể hoàn thành khi số lượng (${newAmount}) vượt quá 110% cho phép (${maxAmountForCompletion.toFixed(0)}).`,
+          );
+        }
         newCalculatedStatus = ProcessStatus.COMPLETED;
       } else {
         newCalculatedStatus = newStatusFromDto;
