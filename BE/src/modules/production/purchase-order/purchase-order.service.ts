@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PurchaseOrder, PurchaseOrderSchema } from "../schemas/purchase-order.schema";
 
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
 import { PurchaseOrderItem } from "../schemas/purchase-order-item.schema";
@@ -33,7 +33,7 @@ export class PurchaseOrderService {
     @InjectModel(
       Customer.name,
     ) private readonly customerModel: Model<Customer>,
-  ) {}
+  ) { }
 
   async findAll() {
     return await this.purchaseOrderModel.find();
@@ -164,5 +164,65 @@ export class PurchaseOrderService {
     const result = await this.purchaseOrderModel.findByIdAndDelete(id);
     if (!result) throw new NotFoundException("Purchase order not found");
     return { success: true };
+  }
+
+  async getDetailWithSubs(id: string): Promise<any> {
+    const pipeline: any[] = [
+      // match the PO
+      { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
+
+      {
+        $lookup: {
+          from: "subpurchaseorders",
+          let: { poId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $and: [{ $eq: ["$purchaseOrder", "$$poId"] }, { $eq: ["$isDeleted", false] }] } } },
+
+            {
+              $lookup: {
+                from: "products",
+                localField: "product",
+                foreignField: "_id",
+                as: "product",
+              },
+            },
+            { $unwind: { path: "$product", preserveNullAndEmptyArrays: true } },
+
+            {
+              $lookup: {
+                from: "purchaseorderitems",
+                let: { subId: "$_id" },
+                pipeline: [
+                  { $match: { $expr: { $and: [{ $eq: ["$subPurchaseOrder", "$$subId"] }, { $eq: ["$isDeleted", false] }] } } },
+
+                  {
+                    $lookup: {
+                      from: "wares",
+                      localField: "ware",
+                      foreignField: "_id",
+                      as: "ware",
+                    },
+                  },
+                  { $unwind: { path: "$ware", preserveNullAndEmptyArrays: true } },
+
+                ],
+                as: "items",
+              },
+            },
+
+            { $sort: { deliveryDate: -1 } },
+          ],
+          as: "subPurchaseOrders",
+        },
+      },
+
+    ];
+
+    const agg = await this.purchaseOrderModel.aggregate(pipeline).exec();
+    const doc = agg[0];
+    if (!doc) {
+      throw new NotFoundException(`PurchaseOrder ${id} not found`);
+    }
+    return doc;
   }
 }

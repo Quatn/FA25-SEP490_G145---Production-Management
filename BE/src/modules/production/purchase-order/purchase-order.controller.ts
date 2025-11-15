@@ -94,4 +94,15 @@ export class PurchaseOrderController {
     await this.poService.removeHard(id);
     return { success: true, message: 'Permanently deleted successfully', data: null };
   }
+
+  @Get("detailwithsub/:id")
+  @ApiOperation({ summary: "Get purchase order with sub-POs and items (populated)" })
+  async detailWithSubs(@Param("id") id: string): Promise<BaseResponse<any>> {
+    const doc = await this.poService.getDetailWithSubs(id);
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: doc,
+    };
+  }
 }

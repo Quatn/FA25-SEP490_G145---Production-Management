@@ -1,23 +1,14 @@
-// src/components/purchase-order-management/PurchaseOrderDetailModal.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import type { PurchaseOrder, SubPO, POItem } from "@/types/PurchaseOrderTypes";
 import { useGetAllCustomersQuery } from "@/service/api/customerApiSlice";
+import { useGetPurchaseOrderWithSubsQuery } from "@/service/api/purchaseOrderApiSlice";
 
 type Props = {
   po: PurchaseOrder | null;
   onClose: () => void;
-  /**
-   * Optional callback used when user clicks Save changes.
-   * Receives an updated PurchaseOrder object.
-   */
   onSave?: (updated: PurchaseOrder) => void;
-  /**
-   * Optional callback to open your separate SubPO selector screen/modal.
-   * Receives the current PO id and the subPO id (or undefined if creating).
-   * Parent can open its own screen and then call onSave with the selected data.
-   */
   onOpenSubPOSelector?: (poId: string | undefined, subPOId?: string) => void;
 };
 
@@ -43,26 +34,72 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
     return [];
   })();
 
+  // fetch full server doc (subPOs + items) when editing an existing server PO
+  const serverId = po?.id && !String(po.id).startsWith("local-") ? po.id : "";
+  const { data: fullResp } = useGetPurchaseOrderWithSubsQuery(serverId, {
+    skip: !serverId,
+  });
+
   useEffect(() => {
     if (!po) {
       setLocal(null);
       return;
     }
-    // deep clone so we don't mutate parent data
-    // ensure we preserve customerId if present
-    const clone = JSON.parse(JSON.stringify(po)) as any;
-    // If incoming PO had `customer` populated object, try to set customerId
-    if (
-      !clone.customerId &&
-      clone.customer &&
-      typeof clone.customer !== "string"
-    ) {
-      clone.customerId = clone.customer._id ?? clone.customer;
-    }
-    setLocal(clone);
-  }, [po]);
 
-  // compute totals from local state
+    const clone: any = JSON.parse(JSON.stringify(po));
+
+    // if server response exists, merge subPurchaseOrders/items into local state
+    const serverDoc = fullResp?.data ?? fullResp ?? null;
+    if (serverDoc) {
+      clone.subPOs = (serverDoc.subPurchaseOrders || []).map((s: any) => {
+        return {
+          id: s._id ?? s.code ?? makeId("sub-"),
+          poId: serverDoc._id ?? serverDoc.id,
+          title: s.code ?? s.product?.name ?? "",
+          status: s.status ?? "",
+          productRef: s.product ?? null,
+          items: (s.items || []).map((it: any) => ({
+            id: it._id ?? it.code ?? makeId("item-"),
+            subPOId: s._id ?? s.id,
+            sku: it.code ?? "",
+            description: it.note ?? "",
+            uom: "PCS",
+            unitPrice: it.ware?.unitPrice ?? 0,
+            quantity: it.amount ?? 0,
+            total: (it.amount ?? 0) * (it.ware?.unitPrice ?? 0),
+            status: it.status ?? "",
+            wareRef: it.ware ?? null,
+          })),
+        } as SubPO;
+      });
+      // ensure header fields map to our local keys
+      clone.poNumber = serverDoc.code ?? clone.poNumber;
+      clone.poDate = serverDoc.orderDate
+        ? new Date(serverDoc.orderDate).toISOString().slice(0, 10)
+        : clone.poDate;
+      clone.address =
+        serverDoc.deliveryAddress ?? serverDoc.deliveryAdress ?? clone.address;
+      clone.notes = serverDoc.note ?? clone.notes;
+      // handle customer populate
+      if (serverDoc.customer && typeof serverDoc.customer !== "string") {
+        clone.customerId = serverDoc.customer._id ?? serverDoc.customer;
+        clone.customer =
+          serverDoc.customer.name ?? serverDoc.customer.code ?? clone.customer;
+      }
+    } else {
+      // incoming local PO might have customer populated - ensure customerId exists
+      if (
+        !clone.customerId &&
+        clone.customer &&
+        typeof clone.customer !== "string"
+      ) {
+        clone.customerId = clone.customer._id ?? clone.customer;
+      }
+    }
+
+    setLocal(clone);
+  }, [po, fullResp]);
+
   const totals = useMemo(() => {
     if (!local) return { items: 0, value: 0 };
     let items = 0;
@@ -73,9 +110,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
         const t =
           Number(
             it.total ??
-              (it.unitPrice != null && it.quantity != null
-                ? it.unitPrice * it.quantity
-                : 0)
+              (it.unitPrice && it.quantity ? it.unitPrice * it.quantity : 0)
           ) || 0;
         value += t;
       });
@@ -83,7 +118,6 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
     return { items, value };
   }, [local]);
 
-  // helpers to update local
   const updateLocal = (updater: (curr: PurchaseOrder) => PurchaseOrder) => {
     setLocal((curr) => {
       if (!curr) return curr;
@@ -91,7 +125,6 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
     });
   };
 
-  // header handlers
   const onFieldChange = (field: keyof PurchaseOrder, value: any) => {
     setLocal((curr) => {
       if (!curr) return curr;
@@ -101,13 +134,11 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
     });
   };
 
-  // customer selection handler (stores id into customerId)
   const handleCustomerSelect = (customerId: string) => {
     setLocal((curr) => {
       if (!curr) return curr;
       const copy = JSON.parse(JSON.stringify(curr));
       copy.customerId = customerId || undefined;
-      // keep a human readable label in customer for display
       const c = customers.find((x) => {
         const id = x._id?.$oid ?? x._id ?? x;
         return String(id) === String(customerId);
@@ -119,7 +150,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
     });
   };
 
-  // Sub-PO and item helpers (same logic as before)
+  /* Sub-PO & item handlers (local edits) */
   const handleAddSubPO = () => {
     if (!local) return;
     const newSub: SubPO = {
@@ -188,7 +219,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
           title: "Auto",
           status: "Open",
           items: [newItem],
-        });
+        } as any);
       } else {
         s.items = s.items || [];
         s.items.push(newItem);
@@ -219,9 +250,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
       if (s) {
         const it = (s.items || []).find((i) => i.id === itemId);
         if (it) {
-          // typed assignment
           (it as any)[field] = value;
-          // recalc total when qty or price changes
           const qty = Number(it.quantity ?? 0);
           const price = Number(it.unitPrice ?? 0);
           it.total = Number(qty * price);
@@ -236,7 +265,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
       onClose();
       return;
     }
-    // compute totals into local
+    // compute totals
     const clone = JSON.parse(JSON.stringify(local)) as PurchaseOrder;
     let items = 0;
     let value = 0;
@@ -253,7 +282,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
     });
     clone.totalItems = items;
     clone.totalValue = value;
-    // callback
+
     if (onSave) onSave(clone);
     onClose();
   };
@@ -270,7 +299,6 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
 
   if (!local) return null;
 
-  // derive selectedCustomerId for control
   const selectedCustomerId = (() => {
     const c = (local as any).customerId ?? local.customer;
     if (!c) return "";
@@ -289,7 +317,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
             </div>
 
             <div className="modal-body">
-              {/* Header form (editable) */}
+              {/* Header form */}
               <div style={{ marginBottom: 12 }}>
                 <table className="table table-borderless">
                   <tbody>
@@ -408,237 +436,6 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                     </tr>
                   </tbody>
                 </table>
-              </div>
-
-              {/* Sub-PO section */}
-              <div style={{ marginBottom: 12 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 8,
-                  }}
-                >
-                  <h6 className="m-0">Sub-POs</h6>
-                  <div>
-                    <button
-                      className="btn btn-outline-success btn-sm"
-                      onClick={handleAddSubPO}
-                    >
-                      + Add Sub-PO
-                    </button>
-                  </div>
-                </div>
-
-                {(local.subPOs || []).map((s) => (
-                  <div key={s.id} className="card mb-2">
-                    <div className="card-body">
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 12,
-                          alignItems: "center",
-                          marginBottom: 8,
-                        }}
-                      >
-                        <input
-                          className="form-control"
-                          style={{ maxWidth: 420 }}
-                          value={s.title}
-                          onChange={(e) =>
-                            handleChangeSubTitle(s.id, e.target.value)
-                          }
-                        />
-                        <select
-                          className="form-select"
-                          style={{ width: 160 }}
-                          value={s.status ?? "Open"}
-                          onChange={(e) =>
-                            handleChangeSubStatus(s.id, e.target.value)
-                          }
-                        >
-                          <option value="Open">Open</option>
-                          <option value="Waiting">Waiting</option>
-                          <option value="InProgress">InProgress</option>
-                          <option value="Done">Done</option>
-                          <option value="Cancelled">Cancelled</option>
-                        </select>
-
-                        <div style={{ marginLeft: 8 }}>
-                          {s.productType && (
-                            <span className="badge bg-secondary me-1">
-                              Loại: {s.productType}
-                            </span>
-                          )}
-                          {s.customerCode && (
-                            <span className="badge bg-light text-dark me-1">
-                              Khách: {s.customerCode}
-                            </span>
-                          )}
-                          {s.size && (
-                            <span className="badge bg-info text-dark">
-                              Size: {s.size}
-                            </span>
-                          )}
-                        </div>
-
-                        <button
-                          className="btn btn-outline-secondary btn-sm"
-                          onClick={() => handleOpenSubPOSelector(s.id)}
-                        >
-                          Select sub-PO
-                        </button>
-
-                        <div style={{ flex: 1 }} />
-
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={() => handleRemoveSubPO(s.id)}
-                        >
-                          Remove sub-PO
-                        </button>
-                      </div>
-
-                      {/* PO items inside subPO */}
-                      <div>
-                        <div style={{ marginBottom: 8 }}>
-                          <button
-                            className="btn btn-outline-primary btn-sm"
-                            onClick={() => handleAddItem(s.id)}
-                          >
-                            + Add item
-                          </button>
-                        </div>
-
-                        <div style={{ overflowX: "auto" }}>
-                          <table className="table table-sm table-bordered">
-                            <thead>
-                              <tr>
-                                <th>Mã hàng</th>
-                                <th>Mô tả</th>
-                                <th>Sóng</th>
-                                <th>Khổ</th>
-                                <th>UOM</th>
-                                <th style={{ textAlign: "right" }}>Số lượng</th>
-                                <th style={{ textAlign: "right" }}>Đơn giá</th>
-                                <th style={{ textAlign: "right" }}>Tổng</th>
-                                <th style={{ width: 120 }}>Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {(s.items || []).map((it) => (
-                                <tr key={it.id}>
-                                  <td>
-                                    <input
-                                      className="form-control form-control-sm"
-                                      value={it.sku}
-                                      onChange={(e) =>
-                                        handleChangeItemField(
-                                          s.id,
-                                          it.id,
-                                          "sku",
-                                          e.target.value
-                                        )
-                                      }
-                                    />
-                                  </td>
-                                  <td>
-                                    <input
-                                      className="form-control form-control-sm"
-                                      value={it.description ?? ""}
-                                      onChange={(e) =>
-                                        handleChangeItemField(
-                                          s.id,
-                                          it.id,
-                                          "description",
-                                          e.target.value
-                                        )
-                                      }
-                                    />
-                                  </td>
-                                  <td>{it.waveType ?? "-"}</td>
-                                  <td>{it.grammage ?? "-"}</td>
-                                  <td>
-                                    <input
-                                      className="form-control form-control-sm"
-                                      value={it.uom ?? ""}
-                                      onChange={(e) =>
-                                        handleChangeItemField(
-                                          s.id,
-                                          it.id,
-                                          "uom",
-                                          e.target.value
-                                        )
-                                      }
-                                    />
-                                  </td>
-                                  <td style={{ textAlign: "right" }}>
-                                    <input
-                                      className="form-control form-control-sm"
-                                      type="number"
-                                      value={it.quantity}
-                                      onChange={(e) =>
-                                        handleChangeItemField(
-                                          s.id,
-                                          it.id,
-                                          "quantity",
-                                          Number(e.target.value)
-                                        )
-                                      }
-                                    />
-                                  </td>
-                                  <td style={{ textAlign: "right" }}>
-                                    <input
-                                      className="form-control form-control-sm"
-                                      type="number"
-                                      value={it.unitPrice}
-                                      onChange={(e) =>
-                                        handleChangeItemField(
-                                          s.id,
-                                          it.id,
-                                          "unitPrice",
-                                          Number(e.target.value)
-                                        )
-                                      }
-                                    />
-                                  </td>
-                                  <td style={{ textAlign: "right" }}>
-                                    {Number(it.total ?? 0).toLocaleString()}
-                                  </td>
-
-                                  <td>
-                                    <div style={{ display: "flex", gap: 6 }}>
-                                      <button
-                                        className="btn btn-danger btn-sm"
-                                        onClick={() =>
-                                          handleRemoveItem(s.id, it.id)
-                                        }
-                                      >
-                                        Remove
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                              {(s.items || []).length === 0 && (
-                                <tr>
-                                  <td colSpan={9} className="text-muted">
-                                    No items yet
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {(local.subPOs || []).length === 0 && (
-                  <div className="text-muted">No sub-POs yet</div>
-                )}
               </div>
             </div>
 

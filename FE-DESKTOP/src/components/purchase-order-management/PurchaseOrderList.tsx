@@ -4,23 +4,28 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { PurchaseOrder, SubPO, POItem } from "@/types/PurchaseOrderTypes";
 import PurchaseOrderDetailModal from "./PurchaseOrderDetailModal";
-import ProductSelectorModal, { ProductCard } from "./SubPOSelectorModal";
+import ProductSelectorModal from "./SubPOSelectorModal";
 import {
   useGetPurchaseOrdersQuery,
+  useGetPurchaseOrderWithSubsQuery,
   useCreatePurchaseOrderMutation,
   useUpdatePurchaseOrderMutation,
   useDeletePurchaseOrderMutation,
 } from "@/service/api/purchaseOrderApiSlice";
+import {
+  useUpdatePurchaseOrderItemMutation,
+  useDeletePurchaseOrderItemMutation,
+} from "@/service/api/purchaseOrderItemApiSlice";
+import { useCreateFromProductsMutation } from "@/service/api/subPurchaseOrderApiSlice";
 
-/* ... same helper functions, normalizeServerPo updated to capture customer id ... */
-
+/* Helper: generate temporary local ids for UI-created items */
 function makeId(prefix = "") {
   return `${prefix}${Date.now()}${Math.floor(Math.random() * 9000 + 1000)}`;
 }
 
+/* Normalize server PO -> UI PurchaseOrder type */
 function normalizeServerPo(raw: any): PurchaseOrder {
   const id = raw._id?.$oid ?? raw._id ?? raw.id ?? String(Math.random());
-  // extract customer id (may be populated object or raw id)
   let customerId: string | undefined = undefined;
   let customerName = "";
   if (raw.customer) {
@@ -31,7 +36,6 @@ function normalizeServerPo(raw: any): PurchaseOrder {
       customerId = raw.customer._id?.$oid ?? raw.customer._id ?? raw.customer;
       customerName = raw.customer.name ?? "";
     } else {
-      // fallback: populated object
       customerId = raw.customer;
       customerName = "";
     }
@@ -48,7 +52,7 @@ function normalizeServerPo(raw: any): PurchaseOrder {
         : "",
     customer: customerName || raw.customer?.name || "",
     customerId,
-    address: raw.deliveryAddress ?? "",
+    address: raw.deliveryAddress ?? raw.deliveryAdress ?? "",
     phone: raw.customer?.contactNumber ?? raw.phone ?? "",
     email: raw.customer?.email ?? raw.email ?? "",
     taxTemplate: (raw as any).paymentTerms ?? "",
@@ -80,17 +84,17 @@ const PurchaseOrderList: React.FC = () => {
   const [query, setQuery] = useState<string>("");
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
 
-  // product selector modal (local-only)
   const [productModalOpenForPo, setProductModalOpenForPo] = useState<{
     open: boolean;
     poId?: string;
-  }>({ open: false });
+  }>({
+    open: false,
+  });
 
-  // api hooks
+  // get paginated purchase orders
   const {
     data: poResp,
     isLoading,
-    error,
     refetch,
   } = useGetPurchaseOrdersQuery({
     page: 1,
@@ -98,11 +102,31 @@ const PurchaseOrderList: React.FC = () => {
     search: "",
   });
 
+  // create/update/delete hooks
   const [createPo] = useCreatePurchaseOrderMutation();
   const [updatePo] = useUpdatePurchaseOrderMutation();
   const [deletePo] = useDeletePurchaseOrderMutation();
+  const [createSubFromProducts] = useCreateFromProductsMutation();
 
+  // PO item update/delete hooks
+  const [updatePoItem] = useUpdatePurchaseOrderItemMutation();
+  const [deletePoItem] = useDeletePurchaseOrderItemMutation();
+
+  // list local state
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+
+  // better ui
+  const [expandedLocalDoc, setExpandedLocalDoc] = useState<any | null>(null);
+
+  // expanded PO id to show server-side sub-POs; fetch details only when expanded
+  const [expandedPoId, setExpandedPoId] = useState<string | null>(null);
+  const {
+    data: expandedPoResp,
+    isFetching: isFetchingSubs,
+    refetch: refetchSubs,
+  } = useGetPurchaseOrderWithSubsQuery(expandedPoId ?? "", {
+    skip: !expandedPoId,
+  });
 
   useEffect(() => {
     const payload = poResp?.data?.data ?? poResp?.data ?? [];
@@ -112,6 +136,41 @@ const PurchaseOrderList: React.FC = () => {
       setOrders([]);
     }
   }, [poResp]);
+
+  useEffect(() => {
+    if (!expandedPoResp) {
+      setExpandedLocalDoc(null);
+      return;
+    }
+    const doc = expandedPoResp?.data ?? expandedPoResp ?? null;
+    setExpandedLocalDoc(doc ? JSON.parse(JSON.stringify(doc)) : null);
+  }, [expandedPoResp]);
+
+  const resolveId = (x: any) => x?._id?.$oid ?? x?._id ?? x?.id ?? x;
+
+  // helper: compute totals from expandedLocalDoc and push them into orders list
+  const syncTotalsToOrders = (localDoc: any | null) => {
+    if (!localDoc) return;
+    const poId =
+      String(localDoc._id ?? localDoc.id ?? localDoc._id?.$oid ?? "") || "";
+    const totals = { items: 0, value: 0 };
+    (localDoc.subPurchaseOrders || []).forEach((s: any) => {
+      (s.items || []).forEach((it: any) => {
+        totals.items += 1;
+        const unit = Number(it.ware?.unitPrice ?? 0);
+        const amt = Number(it.amount ?? 0);
+        totals.value += unit * amt;
+      });
+    });
+
+    setOrders((prev) =>
+      prev.map((p) =>
+        String(p.id) === String(poId)
+          ? { ...p, totalItems: totals.items, totalValue: totals.value }
+          : p
+      )
+    );
+  };
 
   const filtered = useMemo(() => {
     const q = (query || "").trim().toLowerCase();
@@ -123,7 +182,6 @@ const PurchaseOrderList: React.FC = () => {
     );
   }, [orders, query]);
 
-  // local updater: keeps inline edits local until user saves via modal
   const updatePOLocal = (
     poId: string,
     updater: (po: PurchaseOrder) => PurchaseOrder
@@ -171,8 +229,6 @@ const PurchaseOrderList: React.FC = () => {
       // attach customer ObjectId if present
       if ((updated as any).customerId) {
         payload.customer = (updated as any).customerId;
-      } else if (updated.customer && typeof updated.customer === "string") {
-        // if user typed a name and didn't select an id, don't send customer
       }
       if (!updated.id || String(updated.id).startsWith("local-")) {
         await createPo(payload).unwrap();
@@ -193,6 +249,7 @@ const PurchaseOrderList: React.FC = () => {
     if (!po?.id) return;
     if (!confirm("Delete this Purchase Order?")) return;
     try {
+      // deletePo expects a string id
       await deletePo(po.id).unwrap();
       await refetch();
     } catch (err: any) {
@@ -203,11 +260,17 @@ const PurchaseOrderList: React.FC = () => {
     }
   };
 
-  // Inline subPO helpers preserved (local-only)...
+  const toggleExpandSubs = (poId: string) => {
+    setExpandedPoId((prev) => (prev === poId ? null : poId));
+  };
+
+  /* --------------------------
+     Inline local-only subPO & item handlers (UI-only)
+     -------------------------- */
   const handleAddSubPO = (poId: string) => {
     const newSub: SubPO = {
       id: makeId("sub-"),
-      poId: poId,
+      poId,
       title: "New sub-PO",
       status: "Open",
       items: [],
@@ -369,6 +432,91 @@ const PurchaseOrderList: React.FC = () => {
     return { items, value };
   };
 
+  // server-expanded PO doc (if fetched)
+  const expandedPoDoc: any | null =
+    expandedPoResp?.data ?? expandedPoResp ?? null;
+
+  // Handler: update server item amount
+  const handleUpdateServerItemAmount = async (
+    itemIdRaw: any,
+    newAmount: number
+  ) => {
+    const idStr = String(resolveId(itemIdRaw));
+    // Optimistically update expandedLocalDoc
+    setExpandedLocalDoc((prev: any) => {
+      if (!prev) return prev;
+      const copy = JSON.parse(JSON.stringify(prev));
+      let touched = false;
+      (copy.subPurchaseOrders || []).forEach((s: any) => {
+        (s.items || []).forEach((it: any) => {
+          const itId = String(resolveId(it));
+          if (itId === idStr) {
+            it.amount = Number(newAmount ?? 0);
+            touched = true;
+          }
+        });
+      });
+      if (touched) {
+        // synchronize totals into the left-hand orders summary
+        syncTotalsToOrders(copy);
+        return copy;
+      }
+      return prev;
+    });
+
+    // send update to server (no full refetch)
+    try {
+      await updatePoItem({
+        id: idStr,
+        body: { amount: Number(newAmount ?? 0) },
+      }).unwrap();
+      // successful: nothing else required; local state already reflects the change
+    } catch (err: any) {
+      // revert: fetch expanded PO from server to restore authoritative state
+      console.error("Update failed, refetching sub-POs", err);
+      if (refetchSubs) await refetchSubs();
+      // also re-sync totals once server data arrives (the useEffect above will set expandedLocalDoc)
+    }
+  };
+
+  // Handler: delete server item
+  const handleDeleteServerItem = async (itemRaw: any) => {
+    const idStr = String(resolveId(itemRaw));
+    if (!confirm("Delete this item?")) return;
+
+    // make a copy to allow rollback
+    const prevCopy = expandedLocalDoc
+      ? JSON.parse(JSON.stringify(expandedLocalDoc))
+      : null;
+
+    // optimistic remove
+    setExpandedLocalDoc((prev: any) => {
+      if (!prev) return prev;
+      const copy = JSON.parse(JSON.stringify(prev));
+      (copy.subPurchaseOrders || []).forEach((s: any) => {
+        s.items = (s.items || []).filter(
+          (it: any) => String(resolveId(it)) !== idStr
+        );
+      });
+      // sync totals to orders
+      syncTotalsToOrders(copy);
+      return copy;
+    });
+
+    try {
+      await deletePoItem(idStr).unwrap();
+      // success: done
+    } catch (err: any) {
+      // rollback to previous local doc
+      console.error("Delete failed, rolling back & refetching", err);
+      if (prevCopy) setExpandedLocalDoc(prevCopy);
+      if (refetchSubs) await refetchSubs();
+      alert(
+        "Delete failed: " + (err?.data?.message || err?.message || "unknown")
+      );
+    }
+  };
+
   return (
     <div style={{ padding: 16 }}>
       <div
@@ -404,6 +552,17 @@ const PurchaseOrderList: React.FC = () => {
         ) : (
           filtered.map((po) => {
             const totals = computeTotals(po);
+            const isExpanded = expandedPoId === po.id;
+            const localExpandedMatches =
+              isExpanded &&
+              expandedLocalDoc &&
+              (String(expandedLocalDoc._id) === String(po.id) ||
+                expandedLocalDoc._id === po.id);
+            const serverSubs =
+              (localExpandedMatches
+                ? expandedLocalDoc.subPurchaseOrders
+                : []) ?? [];
+
             return (
               <div key={po.id} className="card mb-3">
                 <div className="card-body">
@@ -428,12 +587,12 @@ const PurchaseOrderList: React.FC = () => {
                     </div>
 
                     <div style={{ textAlign: "right" }}>
-                      <div>
+                      {/* <div>
                         Total items: <strong>{totals.items}</strong>
                       </div>
                       <div>
                         Total value: <strong>{totals.value}</strong>
-                      </div>
+                      </div> */}
                       <div
                         style={{
                           marginTop: 8,
@@ -449,6 +608,12 @@ const PurchaseOrderList: React.FC = () => {
                           View detail
                         </button>
                         <button
+                          className="btn btn-outline-info btn-sm"
+                          onClick={() => toggleExpandSubs(po.id)}
+                        >
+                          {isExpanded ? "Hide Sub-POs" : "Show Sub-POs"}
+                        </button>
+                        <button
                           className="btn btn-danger btn-sm"
                           onClick={() => handleDeleteFromList(po)}
                         >
@@ -458,7 +623,7 @@ const PurchaseOrderList: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* ALWAYS VISIBLE: Inline SubPO editor area */}
+                  {/* ALWAYS VISIBLE: Inline SubPO editor area (local-only) */}
                   <div style={{ marginTop: 12 }}>
                     <div
                       style={{
@@ -468,7 +633,7 @@ const PurchaseOrderList: React.FC = () => {
                         marginBottom: 8,
                       }}
                     >
-                      <h6 className="m-0">Sub-POs (inline editor)</h6>
+                      <h6 className="m-0">Sub-POs</h6>
                       <div style={{ display: "flex", gap: 8 }}>
                         <button
                           className="btn btn-outline-success btn-sm"
@@ -489,6 +654,184 @@ const PurchaseOrderList: React.FC = () => {
                         </button>
                       </div>
                     </div>
+
+                    {/* Server sub-POs when expanded */}
+                    {isExpanded && (
+                      <div style={{ marginBottom: 12 }}>
+                        {isFetchingSubs ? (
+                          <div className="text-muted">Loading sub-POs...</div>
+                        ) : serverSubs.length === 0 ? (
+                          <div className="text-muted">No server sub-POs</div>
+                        ) : (
+                          serverSubs.map((s: any) => (
+                            <div key={s._id ?? s.id} className="card mb-2">
+                              <div className="card-body">
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <div>
+                                    <strong>{s.code ?? s._id}</strong>
+                                    <div className="small text-muted">
+                                      {s.product?.name ??
+                                        s.product?.code ??
+                                        "-"}
+                                    </div>
+                                    <div className="small text-muted">
+                                      Delivery:{" "}
+                                      {s.deliveryDate
+                                        ? new Date(s.deliveryDate)
+                                            .toISOString()
+                                            .slice(0, 10)
+                                        : "-"}
+                                    </div>
+                                  </div>
+
+                                  <div style={{ textAlign: "right" }}>
+                                    <div className="small text-muted">
+                                      Status: {s.status}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* items for sub-PO */}
+                                <div style={{ marginTop: 8 }}>
+                                  <table className="table table-sm table-bordered">
+                                    <thead>
+                                      <tr>
+                                        <th>Item code</th>
+                                        <th>Ware</th>
+                                        <th>Amount</th>
+                                        <th>Unit price</th>
+                                        <th style={{ textAlign: "right" }}>
+                                          Total
+                                        </th>
+                                        <th style={{ width: 120 }}>Actions</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {(s.items || []).map((it: any) => {
+                                        const itemId = resolveId(it);
+                                        const amountVal = it.amount ?? 0;
+                                        const unitPrice =
+                                          it.ware?.unitPrice ?? 0;
+                                        return (
+                                          <tr key={itemId}>
+                                            <td>{it.code ?? it.code}</td>
+
+                                            <td>
+                                              {it.ware
+                                                ? it.ware.code ?? it.ware._id
+                                                : "-"}
+                                            </td>
+
+                                            <td>
+                                              {/* amount input: local update on change, save on blur */}
+                                              <input
+                                                className="form-control form-control-sm"
+                                                type="number"
+                                                value={Number(it.amount ?? 0)}
+                                                onChange={(e) => {
+                                                  const v =
+                                                    e.target.value === ""
+                                                      ? 0
+                                                      : Number(e.target.value);
+                                                  // just update local copy
+                                                  setExpandedLocalDoc(
+                                                    (prev: any) => {
+                                                      if (!prev) return prev;
+                                                      const copy = JSON.parse(
+                                                        JSON.stringify(prev)
+                                                      );
+                                                      (
+                                                        copy.subPurchaseOrders ||
+                                                        []
+                                                      ).forEach((s: any) => {
+                                                        (s.items || []).forEach(
+                                                          (ii: any) => {
+                                                            if (
+                                                              String(
+                                                                resolveId(ii)
+                                                              ) ===
+                                                              String(
+                                                                resolveId(it)
+                                                              )
+                                                            ) {
+                                                              ii.amount = v;
+                                                            }
+                                                          }
+                                                        );
+                                                      });
+                                                      syncTotalsToOrders(copy);
+                                                      return copy;
+                                                    }
+                                                  );
+                                                }}
+                                                onBlur={(e) => {
+                                                  const finalVal = Number(
+                                                    e.target.value || 0
+                                                  );
+                                                  handleUpdateServerItemAmount(
+                                                    it,
+                                                    finalVal
+                                                  );
+                                                }}
+                                              />
+                                            </td>
+
+                                            <td style={{ textAlign: "right" }}>
+                                              {unitPrice ?? "-"}
+                                            </td>
+
+                                            <td style={{ textAlign: "right" }}>
+                                              {(
+                                                Number(it.amount ?? 0) *
+                                                Number(unitPrice ?? 0)
+                                              ).toLocaleString()}
+                                            </td>
+
+                                            <td>
+                                              <div
+                                                style={{
+                                                  display: "flex",
+                                                  gap: 6,
+                                                }}
+                                              >
+                                                <button
+                                                  className="btn btn-danger btn-sm"
+                                                  onClick={() =>
+                                                    handleDeleteServerItem(it)
+                                                  }
+                                                >
+                                                  Delete
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                      {(s.items || []).length === 0 && (
+                                        <tr>
+                                          <td
+                                            colSpan={6}
+                                            className="text-muted"
+                                          >
+                                            No items for this sub-PO
+                                          </td>
+                                        </tr>
+                                      )}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
 
                     {(po.subPOs || []).map((s) => (
                       <div key={s.id} className="card mb-2">
@@ -532,7 +875,6 @@ const PurchaseOrderList: React.FC = () => {
                               <option value="Cancelled">Cancelled</option>
                             </select>
 
-                            {/* EDITABLE: Loại, Khách, Size */}
                             <div
                               style={{
                                 marginLeft: 8,
@@ -596,7 +938,7 @@ const PurchaseOrderList: React.FC = () => {
                             </button>
                           </div>
 
-                          {/* items ... (unchanged) */}
+                          {/* items */}
                           <div style={{ marginTop: 6 }}>
                             <div style={{ marginBottom: 6 }}>
                               <button
@@ -644,7 +986,6 @@ const PurchaseOrderList: React.FC = () => {
                                           }
                                         />
                                       </td>
-
                                       <td>
                                         <input
                                           className="form-control form-control-sm"
@@ -660,7 +1001,6 @@ const PurchaseOrderList: React.FC = () => {
                                           }
                                         />
                                       </td>
-
                                       <td>
                                         <input
                                           className="form-control form-control-sm"
@@ -670,13 +1010,12 @@ const PurchaseOrderList: React.FC = () => {
                                               po.id,
                                               s.id,
                                               it.id,
-                                              "waveType" as keyof POItem,
+                                              "waveType" as any,
                                               e.target.value
                                             )
                                           }
                                         />
                                       </td>
-
                                       <td>
                                         <input
                                           className="form-control form-control-sm"
@@ -687,7 +1026,7 @@ const PurchaseOrderList: React.FC = () => {
                                               po.id,
                                               s.id,
                                               it.id,
-                                              "grammage" as keyof POItem,
+                                              "grammage" as any,
                                               e.target.value === ""
                                                 ? undefined
                                                 : Number(e.target.value)
@@ -695,7 +1034,6 @@ const PurchaseOrderList: React.FC = () => {
                                           }
                                         />
                                       </td>
-
                                       <td>
                                         <input
                                           className="form-control form-control-sm"
@@ -711,7 +1049,6 @@ const PurchaseOrderList: React.FC = () => {
                                           }
                                         />
                                       </td>
-
                                       <td style={{ textAlign: "right" }}>
                                         <input
                                           className="form-control form-control-sm"
@@ -728,7 +1065,6 @@ const PurchaseOrderList: React.FC = () => {
                                           }
                                         />
                                       </td>
-
                                       <td style={{ textAlign: "right" }}>
                                         <input
                                           className="form-control form-control-sm"
@@ -745,11 +1081,9 @@ const PurchaseOrderList: React.FC = () => {
                                           }
                                         />
                                       </td>
-
                                       <td style={{ textAlign: "right" }}>
                                         {Number(it.total ?? 0).toLocaleString()}
                                       </td>
-
                                       <td>
                                         <div
                                           style={{ display: "flex", gap: 6 }}
@@ -784,10 +1118,6 @@ const PurchaseOrderList: React.FC = () => {
                         </div>
                       </div>
                     ))}
-
-                    {(po.subPOs || []).length === 0 && (
-                      <div className="text-muted">No sub-POs yet</div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -799,48 +1129,35 @@ const PurchaseOrderList: React.FC = () => {
       <ProductSelectorModal
         show={productModalOpenForPo.open}
         onHide={() => setProductModalOpenForPo({ open: false })}
-        onConfirm={(selectedProducts: ProductCard[]) => {
+        onConfirm={async (selectedProducts) => {
           const poId = productModalOpenForPo.poId;
           if (!poId) {
             setProductModalOpenForPo({ open: false });
             return;
           }
-          updatePOLocal(poId, (po) => {
-            po.subPOs = po.subPOs || [];
-            for (const prod of selectedProducts) {
-              const newSubId = makeId("sub-");
-              const newSub: SubPO = {
-                id: newSubId,
-                poId: po.id,
-                title: `${prod.product_code} • ${prod.product_name}`,
-                status: "Open",
-                items: [],
-                productType: prod.product_type,
-                customerCode: prod.customer_code,
-                size: [
-                  prod.length ?? "",
-                  prod.width ?? "",
-                  prod.height ?? "",
-                ].join("×"),
-              };
-              newSub.items = (prod.item_codes || []).map((it) => ({
-                id: makeId("item-"),
-                subPOId: newSubId,
-                sku: it.product_code,
-                description: prod.description ?? "",
-                uom: "PCS",
-                unitPrice: 0,
-                quantity: 0,
-                total: 0,
-                status: "Pending",
-                waveType: it.wave_type,
-                grammage: it.paper_size,
-              }));
-              po.subPOs.push(newSub);
-            }
-            return po;
-          });
-          setProductModalOpenForPo({ open: false });
+          try {
+            // map selected products (contains productId/deliveryDate/status)
+            const payload = {
+              purchaseOrderId: poId,
+              products: selectedProducts.map((p: any) => ({
+                productId: p.productId ?? p._id ?? p.unique_id,
+                deliveryDate: p.deliveryDate,
+                status: p.status,
+              })),
+            };
+            await createSubFromProducts(payload).unwrap();
+            // optionally refetch subPOs and POs
+            if (refetchSubs) await refetchSubs();
+            await refetch();
+            // close modal
+            setProductModalOpenForPo({ open: false });
+          } catch (err: any) {
+            console.error("Create sub-POs failed", err);
+            alert(
+              "Create sub-POs failed: " +
+                (err?.data?.message || err?.message || "unknown")
+            );
+          }
         }}
       />
 

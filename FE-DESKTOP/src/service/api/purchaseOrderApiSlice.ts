@@ -29,6 +29,11 @@ export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
       providesTags: (result, error, id) => [{ type: "PurchaseOrder" as const, id }],
     }),
 
+    getPurchaseOrderWithSubs: builder.query<BaseResponse<any>, string>({
+      query: (id) => ({ url: `${PURCHASE_ORDER_URL}/detailwithsub/${id}`, method: "GET", credentials: "include" }),
+      providesTags: (result, error, id) => [{ type: "PurchaseOrder" as const, id }],
+    }),
+
     createPurchaseOrder: builder.mutation<BaseResponse<any>, Partial<any>>({
       query: (body) => ({ url: `${PURCHASE_ORDER_URL}/create`, method: "POST", body, credentials: "include" }),
       invalidatesTags: [{ type: "PurchaseOrder", id: "LIST" }],
@@ -61,6 +66,7 @@ export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
 export const {
   useGetPurchaseOrdersQuery,
   useGetPurchaseOrderQuery,
+  useGetPurchaseOrderWithSubsQuery,
   useCreatePurchaseOrderMutation,
   useUpdatePurchaseOrderMutation,
   useDeletePurchaseOrderMutation,

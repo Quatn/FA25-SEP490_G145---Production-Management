@@ -1,5 +1,5 @@
 import { apiSlice } from "./apiSlice";
-import { PURCHASE_ORDER_URL } from "../constants";
+import { PURCHASE_ORDER_ITEM_URL, PURCHASE_ORDER_URL } from "../constants";
 import { mockPurchaseOrdersQuery } from "../mock-data/functions/mock-purchase-orders-crud";
 import { PurchaseOrder } from "@/types/PurchaseOrder";
 import { createApiEndpoint } from "@/utils/endpointFactory";
@@ -21,9 +21,31 @@ export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
         credentials: "include",
       }),
     }),
+    updatePurchaseOrderItem: builder.mutation<any, { id: string; body: Partial<any> }>({
+      query: ({ id, body }) => ({
+        url: `${PURCHASE_ORDER_ITEM_URL}/${id}`,
+        method: "PATCH",
+        body,
+        credentials: "include",
+      }),
+      invalidatesTags: (result, error, arg) => [
+        { type: "PurchaseOrder", id: "LIST" },
+      ],
+    }),
+
+    deletePurchaseOrderItem: builder.mutation<any, string>({
+      query: (id) => ({
+        url: `${PURCHASE_ORDER_ITEM_URL}/delete-soft/${id}`,
+        method: "DELETE",
+        credentials: "include",
+      }),
+      invalidatesTags: [{ type: "PurchaseOrder", id: "LIST" }],
+    }),
   }),
 });
 
 export const {
   useGetFullDetailsPurchaseOrderItemsByIdsQuery,
+  useUpdatePurchaseOrderItemMutation,
+  useDeletePurchaseOrderItemMutation,
 } = purchaseOrderApiSlice;
