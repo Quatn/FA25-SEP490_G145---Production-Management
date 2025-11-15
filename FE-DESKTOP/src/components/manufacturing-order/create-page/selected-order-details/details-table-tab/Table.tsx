@@ -21,7 +21,7 @@ import { useState } from "react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { useCreateManyManufacturingOrdersMutation, useDeleteManufacturingOrderMutation, useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
-import { manufacturingOrderTableColumnsByTabs } from "@/components/manufacturing-order/full-detail-table/tableDefinition";
+import { manufacturingOrderTableColumnsByTabs } from "@/components/manufacturing-order/full-detail-table/tableDefinition.old";
 import check from "check-types";
 import { CreateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
 
@@ -77,8 +77,6 @@ export default function CreatePageManufacturingOrderTable(
   if (check.undefined(moPaginatedList)) {
     return <Text>Unable to load table</Text>;
   }
-
-  console.log(moPaginatedList)
 
   const formValue: CreateManyManufacturingOrdersRequestDto = {
     orders: moPaginatedList.filter(order => !check.undefined(order.purchaseOrderItem)).map((order) => ({

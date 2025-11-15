@@ -7,14 +7,14 @@ import {
 import { Checkbox } from "@chakra-ui/react";
 
 export default function ManufacturingOrderTableControl() {
-  const { } = useManufacturingTableState();
+  const { allowEdit } = useManufacturingTableState();
   const dispatch = useManufacturingTableDispatch();
 
   return (
-    <Checkbox.Root>
+    <Checkbox.Root checked={allowEdit} onCheckedChange={(v) => dispatch({ type: "SET_ALLOW_EDIT", payload: v.checked })} colorPalette={"blue"}>
       <Checkbox.HiddenInput />
       <Checkbox.Control />
-      <Checkbox.Label>Allow editing on the table</Checkbox.Label>
+      <Checkbox.Label>Cho phép chỉnh sửa trên bảng</Checkbox.Label>
     </Checkbox.Root>
   );
 }

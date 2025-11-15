@@ -13,8 +13,6 @@ import {
   Box,
   BoxProps,
   Button,
-  Grid,
-  GridItem,
   Group,
   Popover,
   Portal,
@@ -27,16 +25,41 @@ import {
 } from "@chakra-ui/react";
 import check from "check-types";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
-import { manufacturingOrderTableColumnsByTabs } from "./tableDefinition";
-import { useOptionalManufacturingDialogDispatch } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
-import { useEffect } from "react";
+import { manufacturingOrderColumnsByTabs } from "./tableDefinition";
+import { useManufacturingDialogDispatch } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
+import { CSSProperties, useEffect, useState } from "react";
 import { BiSolidDownArrow } from "react-icons/bi";
+import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 
 export type ManufacturingOrderTableProps = {
   rootProps?: BoxProps;
   tabsRootProps?: TabsRootProps;
   tableRootProps?: TableRootProps;
 };
+
+const getCommonPinningStyles = (column: Column<Serialized<ManufacturingOrder>>): CSSProperties => {
+  const isPinned = column.getIsPinned()
+  const isLastLeftPinnedColumn =
+    isPinned === 'left' && column.getIsLastColumn('left')
+  const isFirstRightPinnedColumn =
+    isPinned === 'right' && column.getIsFirstColumn('right')
+
+  return {
+    boxShadow: isLastLeftPinnedColumn
+      ? '-4px 0 4px -4px gray inset'
+      : isFirstRightPinnedColumn
+        ? '4px 0 4px -4px gray inset'
+        : undefined,
+    left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
+    right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
+    opacity: isPinned ? 0.95 : 1,
+    position: isPinned ? 'sticky' : 'relative',
+    // width: column.getIsLastColumn() ? "100%" : column.getSize(),
+    width: column.getSize(),
+    zIndex: isPinned ? 1 : 0,
+  }
+}
 
 export default function ManufacturingOrderTable(
   props: ManufacturingOrderTableProps,
@@ -49,6 +72,7 @@ export default function ManufacturingOrderTable(
     hoveredRowId,
     selectedOrderId,
     pinnedOrderIds,
+    allowEdit,
   } = useManufacturingTableState();
   const dispatch = useManufacturingTableDispatch();
 
@@ -58,13 +82,48 @@ export default function ManufacturingOrderTable(
     isLoading: isFetchingList,
   } = useGetFullDetailManufacturingOrdersQuery({ page, limit });
 
-  const dialogDispatch = useOptionalManufacturingDialogDispatch();
-
-  const columnsForTab = manufacturingOrderTableColumnsByTabs[tab] ?? [];
+  const dialogDispatch = useManufacturingDialogDispatch();
+  const [deleteOrder] = useDeleteManufacturingOrderMutation();
 
   const moPaginatedList = fullDetailMOPaginatedResponse?.data;
+  const [tableData, setTableData] = useState<Serialized<ManufacturingOrder>[]>(() => moPaginatedList?.data ?? [])
 
-  const [deleteOrder] = useDeleteManufacturingOrderMutation();
+  useEffect(() => {
+    setTableData(moPaginatedList?.data ?? [])
+  }, [moPaginatedList])
+
+  const table = useReactTable({
+    data: tableData,
+    columns: manufacturingOrderColumnsByTabs[tab],
+    getCoreRowModel: getCoreRowModel(),
+    initialState: {
+      columnPinning: {
+        left: ['manufacturingDirective', "code"],
+        right: ['actions-column'],
+      },
+    },
+    getRowId: (row) => row._id,
+
+    meta: {
+      updateData: (rowIndex: number, columnId: number, value: string) => {
+        // Skip page index reset until after next rerender
+        // skipAutoResetPageIndex()
+        setTableData(old =>
+          old.map((row, index) => {
+            if (index === rowIndex) {
+              return {
+                ...old[rowIndex]!,
+                [columnId]: value,
+              }
+            }
+            return row
+          })
+        )
+      },
+      allowEdit,
+    },
+  }
+  );
 
   useEffect(() => {
     dispatch({
@@ -85,6 +144,15 @@ export default function ManufacturingOrderTable(
     return <Text>Unable to load table</Text>;
   }
 
+  const getTabBarOffset = () => {
+    try {
+      return (table.getColumn("code")?.getStart("left") ?? 0) + (table.getColumn("code")?.getSize() ?? 0);
+    }
+    catch {
+      return 0
+    }
+  }
+
   return (
     <Box mt={3} {...props.rootProps}>
       <Tabs.Root
@@ -96,7 +164,7 @@ export default function ManufacturingOrderTable(
           })}
         {...props.tabsRootProps}
       >
-        <Tabs.List ms="200px">
+        <Tabs.List ms={`${getTabBarOffset()}px`}>
           <Tabs.Trigger value="all">
             <LuUser />
             Tổng quan
@@ -128,148 +196,91 @@ export default function ManufacturingOrderTable(
         </Tabs.List>
       </Tabs.Root>
 
-      <Table.ScrollArea borderWidth="1px" rounded="md">
+      <Table.ScrollArea borderWidth="1px">
         <Table.Root
+          minW={table.getTotalSize()}
           size="sm"
-          css={{
-            "& [data-sticky]": {
-              position: "sticky",
-              zIndex: 1,
-              bg: "bg",
-
-              _after: {
-                content: '""',
-                position: "absolute",
-                pointerEvents: "none",
-                top: "0",
-                bottom: "-1px",
-                width: "32px",
-              },
-            },
-
-            "& [data-sticky=end]": {
-              _after: {
-                insetInlineEnd: "0",
-                translate: "100% 0",
-                shadow: "inset 8px 0px 8px -8px rgba(0, 0, 0, 0.16)",
-              },
-            },
-
-            "& [data-sticky=start]": {
-              _after: {
-                insetInlineStart: "0",
-                translate: "-100% 0",
-                shadow: "inset -8px 0px 8px -8px rgba(0, 0, 0, 0.16)",
-              },
-            },
-          }}
+          variant={"outline"}
+          showColumnBorder
           {...props.tableRootProps}
         >
-          <Table.Header bgColor={"blue.100"}>
-            <Table.Row h="60px">
-              <Table.ColumnHeader
-                data-sticky
-                minW="100px"
-                w="100px"
-                left="0"
-              >
-                KH Giao
-              </Table.ColumnHeader>
-              <Table.ColumnHeader
-                minW="100px"
-                w="100px"
-                left="100px"
-                data-sticky="end"
-              >
-                Mã lệnh
-              </Table.ColumnHeader>
-              {columnsForTab.map((col) => (
-                <Table.ColumnHeader key={col.key}>
-                  {col.header}
-                </Table.ColumnHeader>
-              ))}
-
-              <Table.ColumnHeader w="120px" border="none" />
-            </Table.Row>
+          <Table.Header colorPalette={"blue"} bgColor={"colorPalette.muted"}>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <Table.Row key={headerGroup.id} h={"3rem"}>
+                {headerGroup.headers.map((header) => (
+                  <Table.ColumnHeader key={header.id}
+                    colorPalette={"blue"} bgColor={"colorPalette.muted"}
+                    style={{ ...getCommonPinningStyles(header.column) }}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                  </Table.ColumnHeader>
+                ))}
+              </Table.Row>
+            ))}
           </Table.Header>
           <Table.Body>
-            {moPaginatedList.data.map((item) => (
+            {table.getRowModel().rows.map((row) => (
               <Table.Row
-                key={item._id}
-                bg={"gray.50"}
-                h="50px"
-                onMouseEnter={() =>
-                  dispatch({ type: "SET_HOVERED_ROW_ID", payload: item._id })}
-                onMouseLeave={() =>
-                  dispatch({ type: "SET_HOVERED_ROW_ID", payload: null })}
+                key={row.id}
+                onMouseEnter={() => dispatch({ type: "SET_HOVERED_ROW_ID", payload: row.id })}
+                onMouseLeave={() => dispatch({ type: "SET_HOVERED_ROW_ID", payload: null })}
+                h={"3.2rem"}
               >
-                <Table.Cell minW="100px" w="100px" left="0" data-sticky>
-                  {item.manufacturingDirective}
-                </Table.Cell>
-                <Table.Cell
-                  minW="100px"
-                  w="100px"
-                  left="100px"
-                  data-sticky="end"
-                >
-                  {item.code}
-                </Table.Cell>
-                {columnsForTab.map((col) => (
-                  <Table.Cell key={col.key}>{col.render(item)}</Table.Cell>
+                {row.getVisibleCells().map((cell) => (
+                  <Table.Cell
+                    key={cell.id}
+                    style={{
+                      ...getCommonPinningStyles(cell.column),
+                      background: cell.column.getIsPinned() ? "#fefefe" : "#f3f3f3"
+                    }}
+                  >
+                    {(cell.column.id === "actions-column" && row.id === hoveredRowId) ? (
+                      <Popover.Root size="xs">
+                        <Box>
+                          <Group attached>
+                            <Button
+                              size="xs"
+                              colorPalette={"blue"}
+                              onClick={() =>
+                                dialogDispatch({
+                                  type: "OPEN_DIALOG_WITH_ORDER",
+                                  payload: row.original,
+                                })
+                              }
+                            >
+                              Chi tiết
+                            </Button>
+
+                            <Popover.Trigger asChild>
+                              <Button variant="solid" size="xs" colorPalette={"gray"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }}>
+                                <BiSolidDownArrow />
+                              </Button>
+                            </Popover.Trigger>
+                          </Group>
+
+                          <Portal>
+                            <Popover.Positioner>
+                              <Popover.Content>
+                                <Stack>
+                                  <Button size="xs" colorPalette={"yellow"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }}>Hoàn tác</Button>
+                                  <Button size="xs" colorPalette={"blue"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }}>Ghim lệnh</Button>
+                                  <Button size="xs" colorPalette={"red"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }} onClick={() => deleteOrder({ id: row.id })}>Xóa</Button>
+                                </Stack>
+                              </Popover.Content>
+                            </Popover.Positioner>
+                          </Portal>
+                        </Box>
+                      </Popover.Root>
+                    ) : (
+                      flexRender(cell.column.columnDef.cell, cell.getContext())
+                    )}
+                  </Table.Cell>
                 ))}
-                <Table.Cell
-                  w="120px"
-                  border="none"
-                  bg="none"
-                >
-                  {hoveredRowId === item._id && (
-                    <>
-                      {dialogDispatch &&
-                        (
-                          <Popover.Root size="xs">
-                            <Box h={"30px"}>
-                              <Group attached>
-                                <Button
-                                  size="xs"
-                                  colorPalette={"blue"}
-                                  onClick={() =>
-                                    dialogDispatch({
-                                      type: "OPEN_DIALOG_WITH_ORDER",
-                                      payload: item,
-                                    })}
-                                >
-                                  Chi tiết
-                                </Button>
-
-                                <Popover.Trigger asChild>
-                                  <Button variant="solid" size="xs" colorPalette={"gray"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }}>
-                                    <BiSolidDownArrow />
-                                  </Button>
-                                </Popover.Trigger>
-                              </Group>
-
-                              <Portal>
-                                <Popover.Positioner>
-                                  <Popover.Content>
-                                    <Stack>
-                                      <Button size="xs" colorPalette={"yellow"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }}>Hoàn tác</Button>
-                                      <Button size="xs" colorPalette={"blue"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }}>Ghim lệnh</Button>
-                                      <Button size="xs" colorPalette={"red"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }} onClick={() => deleteOrder({ id: item._id })}>Xóa</Button>
-                                    </Stack>
-                                  </Popover.Content>
-                                </Popover.Positioner>
-                              </Portal>
-                            </Box>
-                          </Popover.Root>
-                        )}
-                    </>
-                  )}
-                </Table.Cell>
               </Table.Row>
             ))}
           </Table.Body>
         </Table.Root>
       </Table.ScrollArea>
-    </Box>
+    </Box >
   );
 }
