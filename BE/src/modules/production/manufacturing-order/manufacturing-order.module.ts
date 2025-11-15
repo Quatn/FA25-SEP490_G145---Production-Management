@@ -7,11 +7,16 @@ import {
   ManufacturingOrderSchema,
 } from "../schemas/manufacturing-order.schema";
 import { PurchaseOrderItemModule } from "../purchase-order-item/purchase-order-item.module";
+import {
+  OrderFinishingProcess,
+  OrderFinishingProcessSchema,
+} from "../schemas/order-finishing-process.schema";
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: ManufacturingOrder.name, schema: ManufacturingOrderSchema },
+      { name: OrderFinishingProcess.name, schema: OrderFinishingProcessSchema },
     ]),
     PurchaseOrderItemModule,
   ],
@@ -19,4 +24,4 @@ import { PurchaseOrderItemModule } from "../purchase-order-item/purchase-order-i
   providers: [ManufacturingOrderService],
   exports: [ManufacturingOrderService],
 })
-export class ManufacturingOrderModule {}
+export class ManufacturingOrderModule { }

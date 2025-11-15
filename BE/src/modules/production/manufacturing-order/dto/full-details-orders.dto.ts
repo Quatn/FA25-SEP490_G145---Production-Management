@@ -23,7 +23,7 @@ class PopulatedPurchaseOrder extends PurchaseOrder {
     }
     super();
     Object.assign(this, order);
-    this.customer = order.customer as Customer;
+    this.customer = order.customer;
   }
 }
 
@@ -48,7 +48,7 @@ class PopulatedWare extends Ware {
     }
     super();
     Object.assign(this, ware);
-    this.fluteCombination = ware.fluteCombination as FluteCombination;
+    this.fluteCombination = ware.fluteCombination;
     this.finishingProcesses =
       ware.finishingProcesses as WareFinishingProcessType[];
   }
@@ -80,10 +80,8 @@ class PopulatedSubPurchaseOrder extends SubPurchaseOrder {
     }
     super();
     Object.assign(this, order);
-    this.purchaseOrder = new PopulatedPurchaseOrder(
-      order.purchaseOrder as PurchaseOrder,
-    );
-    this.product = order.product as Product;
+    this.purchaseOrder = new PopulatedPurchaseOrder(order.purchaseOrder);
+    this.product = order.product;
   }
 }
 
@@ -114,9 +112,9 @@ class PopulatedPurchaseOrderItem extends PurchaseOrderItem {
     super();
     Object.assign(this, order);
     this.subPurchaseOrder = new PopulatedSubPurchaseOrder(
-      order.subPurchaseOrder as SubPurchaseOrder,
+      order.subPurchaseOrder,
     );
-    this.ware = new PopulatedWare(order.ware as Ware);
+    this.ware = new PopulatedWare(order.ware);
   }
 }
 
@@ -136,7 +134,7 @@ export class FullDetailManufacturingOrderDto extends ManufacturingOrder {
     super();
     Object.assign(this, order);
     this.purchaseOrderItem = new PopulatedPurchaseOrderItem(
-      order.purchaseOrderItem as PurchaseOrderItem,
+      order.purchaseOrderItem,
     );
   }
 }

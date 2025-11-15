@@ -2,7 +2,10 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -31,7 +34,9 @@ import {
   CreateManyManufacturingOrdersRequestDto,
   CreateManyManufacturingOrdersResponseDto,
 } from "./dto/create-many-orders.dto";
-import mongoose from "mongoose";
+import { DeleteResult } from "@/common/dto/delete-result.dto";
+import { DeleteManufacturingOrderRequestDto } from "./dto/delete-order-request.dto";
+import { PatchResult } from "@/common/dto/patch-result.dto";
 
 @Controller("manufacturing-order")
 // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -122,7 +127,7 @@ export class ManufacturingOrderController {
   }
 
   @Post("create-many")
-  @ApiOperation({ summary: "Query fully populated manufacturing orders" })
+  @ApiOperation({ summary: "Create many manufacturing orders" })
   @ApiResponseWith(FullDetailManufacturingOrderDto)
   async createMany(
     @Body() body: CreateManyManufacturingOrdersRequestDto,
@@ -148,6 +153,34 @@ export class ManufacturingOrderController {
       success: true,
       message: "Fetch successful",
       data: docs,
+    };
+  }
+
+  @Delete("id/:id")
+  @ApiOperation({ summary: "Delete one manufacturing order" })
+  async deleteOne(
+    @Param() param: DeleteManufacturingOrderRequestDto,
+  ): Promise<BaseResponse<DeleteResult<{ code: string }>>> {
+    console.log(param);
+    const result = await this.moService.deleteOne(param.id);
+    return {
+      success: true,
+      message: "Fetch successul",
+      data: result,
+    };
+  }
+
+  @Patch("restore/:id")
+  @ApiOperation({ summary: "Create one manufacturing order" })
+  async RestoreOne(
+    @Param() param: DeleteManufacturingOrderRequestDto,
+  ): Promise<BaseResponse<PatchResult<{ code: string }>>> {
+    console.log(param);
+    const result = await this.moService.restoreOne(param.id);
+    return {
+      success: true,
+      message: "Fetch successul",
+      data: result,
     };
   }
 }

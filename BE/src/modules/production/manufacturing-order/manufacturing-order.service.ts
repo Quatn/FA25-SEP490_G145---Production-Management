@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
-import mongoose, { Model } from "mongoose";
+import { Injectable, NotFoundException } from "@nestjs/common";
+import mongoose, { Model, MongooseError } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import {
   ManufacturingOrder,
@@ -25,14 +25,22 @@ import { getManufacturingDate } from "./business-logics/mo-manufacturing-date-ge
 import { FullDetailPurchaseOrderItemDto } from "../purchase-order-item/dto/full-details-orders.dto";
 import { getCorrugatorLine } from "./business-logics/mo-corrugator-line-getter";
 import { CreateResult } from "@/common/dto/create-result.dto";
+import { OrderFinishingProcess } from "../schemas/order-finishing-process.schema";
+import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
+import { DeleteResult } from "@/common/dto/delete-result.dto";
+import { PatchResult } from "@/common/dto/patch-result.dto";
+import check from "check-types";
+
+type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
 @Injectable()
 export class ManufacturingOrderService {
   constructor(
-    @InjectModel(
-      ManufacturingOrder.name,
-    ) private readonly manufacturingOrderModel: Model<ManufacturingOrder>,
-  ) {}
+    @InjectModel(ManufacturingOrder.name)
+    private readonly manufacturingOrderModel: Model<ManufacturingOrder>,
+    @InjectModel(OrderFinishingProcess.name)
+    private readonly orderFinishingProcessModel: Model<OrderFinishingProcess>,
+  ) { }
 
   async findAll() {
     return await this.manufacturingOrderModel.find();
@@ -78,9 +86,9 @@ export class ManufacturingOrderService {
   }
 
   async getLastOrder() {
-    const order = await this.manufacturingOrderModel.find().limit(1).sort({
-      code: -1,
-    });
+    const order = await this.manufacturingOrderModel.find().sort({
+      _id: -1,
+    }).limit(1);
     if (order.length < 1) {
       throw Error("Cannot get last order since no orders exist in the system");
     }
@@ -244,5 +252,47 @@ export class ManufacturingOrderService {
   async updateOne(dto: UpdateManufacturingOrderRequestDto) {
     // const doc = new this.manufacturingOrderModel(dto);
     // return await doc.save();
+  }
+
+  async deleteOne(
+    id: mongoose.Types.ObjectId,
+  ): Promise<DeleteResult<{ code: string }>> {
+    const doc = (await this.manufacturingOrderModel.findById(
+      id,
+    )) as DocWithSoftDelete;
+    if (!doc) throw new NotFoundException("Manufacturing Order not found");
+    const code = doc.code;
+    await doc.softDelete();
+    return {
+      deletedAmount: 1,
+      requestedAmount: 1,
+      echo: { code },
+    };
+  }
+
+  async restoreOne(
+    id: mongoose.Types.ObjectId,
+  ): Promise<PatchResult<{ code: string }>> {
+    try {
+      const doc = (await this.manufacturingOrderModel.findById(
+        id,
+      )) as DocWithSoftDelete;
+      if (!doc) throw new NotFoundException("Manufacturing Order not found");
+      const code = doc.code;
+      await doc.restore();
+      return {
+        patchedAmount: 1,
+        requestedAmount: 1,
+        echo: { code },
+      };
+    } catch (e) {
+      if (check.instance(e, MongooseError)) {
+        console.log(e)
+      }
+      return {
+        patchedAmount: 1,
+        requestedAmount: 1,
+      };
+    }
   }
 }

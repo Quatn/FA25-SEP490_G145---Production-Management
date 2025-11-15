@@ -13,10 +13,10 @@ import { PurchaseOrderItem } from "./purchase-order-item.schema";
 import { ApiProperty, getSchemaPath } from "@nestjs/swagger";
 import { BaseDenormalizedSchema } from "@/common/schemas/base.denormalized.schema";
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true  })
 export class ManufacturingOrder extends BaseDenormalizedSchema {
   @ApiProperty()
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   @IsString()
   code: string;
 
@@ -26,7 +26,6 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   })
   @Prop({
     required: true,
-    unique: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: PurchaseOrderItem.name,
   })
@@ -39,13 +38,13 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   manufacturingDate: Date;
 
   @ApiProperty()
-  @Prop({ required: true, type: Date, default: null })
+  @Prop({ required: false, type: Date, default: null })
   @IsOptional()
   @IsDate()
   manufacturingDateAdjustment: Date | null;
 
   @ApiProperty()
-  @Prop({ required: true, type: Date, default: null })
+  @Prop({ required: false, type: Date, default: null })
   @IsOptional()
   @IsDate()
   requestedDatetime: Date | null;
@@ -56,7 +55,7 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   corrugatorLine: number;
 
   @ApiProperty()
-  @Prop({ required: true, type: Number, default: null })
+  @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   corrugatorLineAdjustment: number | null;
@@ -85,3 +84,13 @@ export type ManufacturingOrderDocument = HydratedDocument<ManufacturingOrder>;
 export const ManufacturingOrderSchema = SchemaFactory.createForClass(
   ManufacturingOrder,
 ).plugin(softDeletePlugin);
+
+ManufacturingOrderSchema.index(
+  { code: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } }
+);
+
+ManufacturingOrderSchema.index(
+  { purchaseOrderItem: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } }
+);
