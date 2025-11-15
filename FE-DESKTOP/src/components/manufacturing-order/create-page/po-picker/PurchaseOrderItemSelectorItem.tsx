@@ -41,11 +41,12 @@ export default function PurchaseOrderItemSelectorItem(
   const indeterminate = indeterminateOrderNodes[orderId] ||
     false;
 
-  const handleToggle = () =>
+  const handleToggle = () => {
     dispatch({
       type: "TOGGLE_ORDER_TREE_NODE",
       payload: { id: orderId, tree: props.tree },
     });
+  }
 
   const dates = props.po.subPurchaseOrders.map((subpo) =>
     new Date(subpo.subPurchaseOrder.deliveryDate)

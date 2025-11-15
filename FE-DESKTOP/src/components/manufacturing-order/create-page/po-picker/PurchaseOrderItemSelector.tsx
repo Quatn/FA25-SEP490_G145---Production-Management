@@ -46,10 +46,11 @@ export default function PurchaseOrderItemSelector() {
             return {
               id: subpo.subPurchaseOrder._id,
               name: subpo.subPurchaseOrder.code,
-              children: subpo.purchaseOrderItems.map((poi) => {
+              children: subpo.purchaseOrderItems.filter(poi => !poi.isManufactured).map((poi) => {
                 return {
                   id: poi._id,
                   name: poi.code,
+                  isPOI: true,
                 };
               }),
             };

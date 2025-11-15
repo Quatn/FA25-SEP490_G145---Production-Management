@@ -6,6 +6,7 @@ import {
   useManufacturingTableState,
 } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import {
+  useDeleteManufacturingOrderMutation,
   useGetFullDetailManufacturingOrdersQuery,
 } from "@/service/api/manufacturingOrderApiSlice";
 import {
@@ -14,6 +15,10 @@ import {
   Button,
   Grid,
   GridItem,
+  Group,
+  Popover,
+  Portal,
+  Stack,
   Table,
   TableRootProps,
   Tabs,
@@ -25,6 +30,7 @@ import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { manufacturingOrderTableColumnsByTabs } from "./tableDefinition";
 import { useOptionalManufacturingDialogDispatch } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { useEffect } from "react";
+import { BiSolidDownArrow } from "react-icons/bi";
 
 export type ManufacturingOrderTableProps = {
   rootProps?: BoxProps;
@@ -57,6 +63,8 @@ export default function ManufacturingOrderTable(
   const columnsForTab = manufacturingOrderTableColumnsByTabs[tab] ?? [];
 
   const moPaginatedList = fullDetailMOPaginatedResponse?.data;
+
+  const [deleteOrder] = useDeleteManufacturingOrderMutation();
 
   useEffect(() => {
     dispatch({
@@ -218,17 +226,41 @@ export default function ManufacturingOrderTable(
                     <>
                       {dialogDispatch &&
                         (
-                          <Button
-                            size="xs"
-                            colorPalette={"blue"}
-                            onClick={() =>
-                              dialogDispatch({
-                                type: "OPEN_DIALOG_WITH_ORDER",
-                                payload: item,
-                              })}
-                          >
-                            Chi tiết
-                          </Button>
+                          <Popover.Root size="xs">
+                            <Box h={"30px"}>
+                              <Group attached>
+                                <Button
+                                  size="xs"
+                                  colorPalette={"blue"}
+                                  onClick={() =>
+                                    dialogDispatch({
+                                      type: "OPEN_DIALOG_WITH_ORDER",
+                                      payload: item,
+                                    })}
+                                >
+                                  Chi tiết
+                                </Button>
+
+                                <Popover.Trigger asChild>
+                                  <Button variant="solid" size="xs" colorPalette={"gray"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }}>
+                                    <BiSolidDownArrow />
+                                  </Button>
+                                </Popover.Trigger>
+                              </Group>
+
+                              <Portal>
+                                <Popover.Positioner>
+                                  <Popover.Content>
+                                    <Stack>
+                                      <Button size="xs" colorPalette={"yellow"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }}>Hoàn tác</Button>
+                                      <Button size="xs" colorPalette={"blue"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }}>Ghim lệnh</Button>
+                                      <Button size="xs" colorPalette={"red"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }} onClick={() => deleteOrder({ id: item._id })}>Xóa</Button>
+                                    </Stack>
+                                  </Popover.Content>
+                                </Popover.Positioner>
+                              </Portal>
+                            </Box>
+                          </Popover.Root>
                         )}
                     </>
                   )}
