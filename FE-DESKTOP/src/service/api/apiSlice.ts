@@ -14,6 +14,7 @@ const tagTypes = [
   "WareManufacturingProcessType",
   "WareFinishingProcessType",
   "ProductType",
+  "PurchaseOrder",
   "FluteCombination",
   "PaperRoll",
   "PaperRollTransaction",

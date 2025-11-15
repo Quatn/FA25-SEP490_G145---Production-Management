@@ -13,11 +13,6 @@ export type PurchaseOrderItemTableColumnsType = {
 export const purchaseOrderItemTableColumns:
   PurchaseOrderItemTableColumnsType[] = [
     {
-      key: "wareCode",
-      header: "Mã hàng",
-      render: (poi) => poi.ware?.code,
-    },
-    {
       key: "fluteCombo",
       header: "Sóng",
       render: (poi) => poi.ware?.fluteCombination?.code,

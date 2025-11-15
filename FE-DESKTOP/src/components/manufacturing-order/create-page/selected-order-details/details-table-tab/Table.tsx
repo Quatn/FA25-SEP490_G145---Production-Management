@@ -109,6 +109,7 @@ export default function CreatePageManufacturingOrderTable(
 
   const handleCreateOrder = () => {
     createOrders(formValue)
+    dispatch({ type: "RESET_TREE_STATE" })
   }
 
   return (

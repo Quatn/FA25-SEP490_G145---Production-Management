@@ -48,8 +48,11 @@ export default function PurchaseOrderItemSelectorSubItem(
 
   return (
     <CheckboxCard.Root
-      checked={indeterminate ? "indeterminate" : checked}
+      checked={props.subpo.unmanufacturedItemCount < 1 ? true : (indeterminate ? "indeterminate" : checked)}
       onCheckedChange={() => handleToggle()}
+      colorPalette={"yellow"}
+      bgColor={"colorPalette.subtle"}
+      disabled={props.subpo.unmanufacturedItemCount < 1}
     >
       <CheckboxCard.HiddenInput />
       <CheckboxCard.Control>
@@ -82,9 +85,9 @@ export default function PurchaseOrderItemSelectorSubItem(
             asChild
           >
             <HStack>
-              <Button variant="outline" size="sm" flexGrow={1}>
+              <Button variant="outline" size="sm" flexGrow={1} colorPalette={"gray"} bg={"colorPalette.contrast"}>
                 <Collapsible.Context>
-                  {(api) => (api.open ? "Show Less" : "Show More")}
+                  {(api) => (api.open ? "Đóng" : "Mở rộng")}
                 </Collapsible.Context>
                 <Collapsible.Indicator
                   transition="transform 0.2s"

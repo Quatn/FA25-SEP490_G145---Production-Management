@@ -17,15 +17,15 @@ export default function ManufacturingOrderCreatePageSelectedOrdersDetails() {
       <Tabs.List>
         <Tabs.Trigger value="members">
           <LuUser />
-          Members
+          Thông tin các lệnh sẽ tạo
         </Tabs.Trigger>
         <Tabs.Trigger value="projects">
           <LuFolder />
-          Projects
+          Kiểm tra nguyên phụ liệu
         </Tabs.Trigger>
         <Tabs.Trigger value="tasks">
           <LuSquareCheck />
-          Settings
+          Kiểm tra tồn kho hàng
         </Tabs.Trigger>
       </Tabs.List>
       <Tabs.Content value="members">

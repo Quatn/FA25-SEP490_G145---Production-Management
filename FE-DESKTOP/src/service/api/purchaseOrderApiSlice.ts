@@ -18,8 +18,7 @@ export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
         params: { page, limit },
         credentials: "include",
       }),
-      mockFn: ({ page = 1, limit = 20 }) =>
-        mockPurchaseOrdersQuery({ page, limit }),
+      // mockFn: ({ page = 1, limit = 20 }) => mockPurchaseOrdersQuery({ page, limit }),
     }),
 
     queryOrdersWithUnmanufacturedItems: createApiEndpoint<
@@ -32,6 +31,7 @@ export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
         params: { page, limit, search },
         credentials: "include",
       }),
+      providesTags: ["ManufacturingOrder", "PurchaseOrder"],
     }),
   }),
 });
