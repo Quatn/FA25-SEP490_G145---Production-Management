@@ -353,11 +353,11 @@ export default function ProductList() {
 
     // Extract productType ID (can be ObjectId string or ProductType object)
     // When from select, it's already a string (ObjectId)
-    const productTypeId = editingProduct.productType || "";
-      // typeof editingProduct.productType === "string"
-      //   ? editingProduct.productType
-      //   : editingProduct.productType?._id || editingProduct.productType?.id || "";
-
+    const productTypeId = 
+      typeof editingProduct.productType === "string"
+        ? editingProduct.productType
+        : editingProduct.productType?._id || editingProduct.productType?.id || "";
+// editingProduct.productType || "";
     const payload = {
       code: editingProduct.code?.trim() ?? "",
       name: editingProduct.name?.trim() ?? "",
