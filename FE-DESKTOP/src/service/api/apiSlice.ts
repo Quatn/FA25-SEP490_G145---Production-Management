@@ -4,13 +4,19 @@ import { EndpointBuilder } from "@reduxjs/toolkit/query";
 
 const baseQuery = fetchBaseQuery({ baseUrl: BASE_URL, credentials: "include" });
 
+
 const tagTypes = [
   "User",
   "Auth",
   "PaperSupplier",
   "PaperColor",
   "PaperType",
+  "PaperRoll",
+  "PaperRollTransaction",
   "ManufacturingOrder",
+  "ManufacturingOrderTracking",
+  "ManufacturingOrderProcess",
+  "CorrugatorProcess",
   "WareManufacturingProcessType",
   "WareFinishingProcessType",
   "ProductType",
@@ -18,6 +24,13 @@ const tagTypes = [
   "FluteCombination",
   "PaperRoll",
   "PaperRollTransaction",
+  "PurchaseOrder",
+  "Product",
+  "Ware",
+  "Customer",
+  "SubPurchaseOrder",
+  "PrintColor",
+  "ManufacturingProcess",
 ];
 
 export const apiSlice = createApi({

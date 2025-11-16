@@ -2,13 +2,18 @@ import { FluteCombination } from "./FluteCombination";
 import { PrintColor } from "./PrintColor";
 import { WareFinishingProcessType } from "./WareFinishingProcessType";
 import { WareManufacturingProcessType } from "./WareManufacturingProcessType";
+import { ManufacturingProcess } from "./ManufacturingProcess";
 
 export interface Ware extends BaseSchema {
   code: string;
   unitPrice: number;
+  // fluteCombination can be ObjectId (string) when not populated, or FluteCombination object when populated
+  fluteCombination: string | FluteCombination;
   wareWidth: number;
   wareLength: number;
   wareHeight: number | null;
+  // wareManufacturingProcessType can be ObjectId (string) when not populated, or WareManufacturingProcessType object when populated
+  wareManufacturingProcessType: string | WareManufacturingProcessType;
   warePerBlankAdjustment: number | null;
   flapAdjustment: number | null;
   flapOverlapAdjustment: number | null;
@@ -31,11 +36,12 @@ export interface Ware extends BaseSchema {
   warePerSet: number;
   warePerCombinedSet: number;
   horizontalWareSplit: number;
+  printColors: string[] | PrintColor[];
+  typeOfPrinter: string | null;
+  finishingProcesses: string[] | WareFinishingProcessType[];
+  manufacturingProcesses: string[] | ManufacturingProcess[];
   note: string;
-
-  fluteCombination?: FluteCombination;
-  wareManufacturingProcessType?: WareManufacturingProcessType;
-  printColors?: PrintColor[];
-  typeOfPrinter?: string | null;
-  finishingProcesses: WareFinishingProcessType[];
+  recalcFlag: boolean;
 }
+
+  

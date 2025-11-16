@@ -62,6 +62,24 @@ const initialCollection = createTreeCollection<Node>({
             href: "/manufacturing-order/create",
             children: [],
           },
+          {
+            id: "manufacturing-order-tracking",
+            name: "Manufacturing Order Tracking",
+            href: "/manufacturing-order/tracking",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "product",
+        name: "Product Management",
+        children: [
+          {
+            id: "product-list",
+            name: "Product List",
+            href: "/products",
+            children: [],
+          },
         ],
       },
       // {

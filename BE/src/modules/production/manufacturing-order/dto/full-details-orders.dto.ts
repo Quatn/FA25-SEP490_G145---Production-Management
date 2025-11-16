@@ -9,6 +9,9 @@ import { isRefPopulated } from "@/common/utils/populate-check";
 import { Product } from "../../schemas/product.schema";
 import { FluteCombination } from "../../schemas/flute-combination.schema";
 import { WareFinishingProcessType } from "../../schemas/ware-finishing-process-type.schema";
+import { WareManufacturingProcessType } from "../../schemas/ware-manufacturing-process-type.schema";
+import { PrintColor } from "../../schemas/print-color.schema";
+import { ManufacturingProcess } from "../../schemas/manufacturing-process.schema";
 
 // Change the ref fields from id or object (unpopulated or populated) to just object since you are supposed to populate all of the full detail dto's fields
 class PopulatedPurchaseOrder extends PurchaseOrder {
@@ -35,10 +38,28 @@ class PopulatedWare extends Ware {
   declare fluteCombination: FluteCombination;
 
   @ApiProperty({
+    type: WareManufacturingProcessType,
+    description: "Populated wareManufacturingProcessType",
+  })
+  declare wareManufacturingProcessType: WareManufacturingProcessType;
+
+  @ApiProperty({
+    type: Array<PrintColor>,
+    description: "Populated printColors",
+  })
+  declare printColors: PrintColor[];
+
+  @ApiProperty({
     type: Array<WareFinishingProcessType>,
-    description: "Populated fluteCombination",
+    description: "Populated finishingProcesses",
   })
   declare finishingProcesses: WareFinishingProcessType[];
+
+  @ApiProperty({
+    type: Array<ManufacturingProcess>,
+    description: "Populated manufacturingProcesses",
+  })
+  declare manufacturingProcesses: ManufacturingProcess[];
 
   constructor(ware: Ware) {
     if (!isRefPopulated(ware.fluteCombination)) {
@@ -46,11 +67,20 @@ class PopulatedWare extends Ware {
         "mo.purchaseOrderItem.ware.fluteCombination must be populated in order to be used in FullDetailManufacturingOrderDto",
       );
     }
+    if (!isRefPopulated(ware.wareManufacturingProcessType)) {
+      throw Error(
+        "mo.purchaseOrderItem.ware.wareManufacturingProcessType must be populated in order to be used in FullDetailManufacturingOrderDto",
+      );
+    }
     super();
     Object.assign(this, ware);
     this.fluteCombination = ware.fluteCombination;
-    this.finishingProcesses =
-      ware.finishingProcesses as WareFinishingProcessType[];
+    this.wareManufacturingProcessType = ware.wareManufacturingProcessType;
+    this.printColors = (ware.printColors || []) as PrintColor[];
+    this.finishingProcesses = (ware.finishingProcesses ||
+      []) as WareFinishingProcessType[];
+    this.manufacturingProcesses = (ware.manufacturingProcesses ||
+      []) as ManufacturingProcess[];
   }
 }
 
@@ -123,7 +153,8 @@ export class FullDetailManufacturingOrderDto extends ManufacturingOrder {
     type: PopulatedPurchaseOrderItem,
     description: "Populated purchaseOrderItem",
   })
-  declare purchaseOrderItem: PopulatedPurchaseOrderItem;
+  declare purchaseOrderItem: PopulatedPurchaseOrderItem &
+    ManufacturingOrder["purchaseOrderItem"];
 
   constructor(order: ManufacturingOrder) {
     if (!isRefPopulated(order.purchaseOrderItem)) {

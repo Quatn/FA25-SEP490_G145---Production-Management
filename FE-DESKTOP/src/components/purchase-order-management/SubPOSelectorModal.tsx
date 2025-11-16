@@ -1,12 +1,13 @@
-// src/components/purchase-order-management/SubPOSelectorModal.tsx
+// SubPOSelectorModal.tsx (modified to use API)
 "use client";
 
 import React, { useMemo, useState } from "react";
 import { Button, Card, Row, Col, Badge, Collapse, Form } from "react-bootstrap";
+import { useGetProductsQuery } from "@/service/api/productApiSlice";
 
-export type ItemCode = {
-  id: number;
-  product_code: string;
+type ItemCode = {
+  id?: string | number;
+  product_code?: string;
   wave_type?: string;
   length?: number;
   width_panel_flap?: number;
@@ -15,118 +16,55 @@ export type ItemCode = {
   [k: string]: any;
 };
 
-export type ProductCard = {
-  unique_id: string;
-  product_code: string;
-  customer_code: string;
-  product_name: string;
+type ProductCard = {
+  _id?: string;
+  code?: string;
+  name?: string;
   description?: string;
   length?: number;
   width?: number;
   height?: number;
   quantity?: number;
   product_type?: string;
-  received_date?: string;
-  delivery_date?: string;
-  item_codes: ItemCode[];
+  customer?: any;
+  wares?: any[]; // populated ware objects
 };
 
 type Props = {
   show: boolean;
   onHide: () => void;
-  onConfirm: (selectedProducts: ProductCard[]) => void;
+  onConfirm: (
+    selectedProducts: {
+      productId: string;
+      deliveryDate: string;
+      status: string;
+    }[]
+  ) => void;
   preselectedIds?: string[];
 };
 
-const mockProducts: ProductCard[] = [
-  {
-    unique_id: "CAT-0001",
-    product_code: "VN-BOX-001",
-    customer_code: "AROMA",
-    product_name: "Thùng carton Aroma 5 lớp",
-    description:
-      "Thùng carton 5 lớp sử dụng để đóng gói sản phẩm nước hoa Aroma",
-    length: 200,
-    width: 300,
-    height: 100,
-    quantity: 200,
-    product_type: "Bộ",
-    received_date: "2025-10-25",
-    delivery_date: "2025-11-02",
-    item_codes: [
-      {
-        id: 1,
-        product_code: "VN 240*125*260 (WX1-0202)",
-        wave_type: "5C",
-        length: 260,
-        width_panel_flap: 730,
-        height: 240,
-        paper_size: 1100,
-      },
-      {
-        id: 2,
-        product_code: "VN 250*130*270 (WX1-0203)",
-        wave_type: "5C",
-        length: 270,
-        width_panel_flap: 740,
-        height: 250,
-        paper_size: 1120,
-      },
-    ],
-  },
-  {
-    unique_id: "CAT-0003",
-    product_code: "VN-BOX-003",
-    customer_code: "THUẬN AN",
-    product_name: "Thùng carton 7 lớp",
-    description: "Thùng carton 7 lớp cho sản phẩm công nghiệp",
-    length: 610,
-    width: 508,
-    height: 324,
-    quantity: 150,
-    product_type: "Lót",
-    received_date: "2025-10-28",
-    delivery_date: "2025-11-05",
-    item_codes: [
-      {
-        id: 1,
-        product_code: "VN 610*508*324 (TA-0707)",
-        wave_type: "7CBE",
-        length: 610,
-        width_panel_flap: 508,
-        height: 324,
-        paper_size: 1250,
-      },
-    ],
-  },
-  {
-    unique_id: "CAT-0005",
-    product_code: "VN-BOX-005",
-    customer_code: "MAY YÊN",
-    product_name: "Thùng carton 5 lớp TAG",
-    description: "Thùng carton 5 lớp có TAG cho sản phẩm may mặc",
-    length: 940,
-    width: 680,
-    height: 280,
-    quantity: 100,
-    product_type: "Thùng",
-    received_date: "2025-10-26",
-    delivery_date: "2025-11-03",
-    item_codes: [
-      {
-        id: 1,
-        product_code: "VN 940*680*280 (MY-0505)",
-        wave_type: "3BC",
-        length: 940,
-        width_panel_flap: 680,
-        height: 280,
-        paper_size: 1500,
-      },
-    ],
-  },
+const SUBPO_STATUSES = [
+  { value: "PENDINGAPPROVAL", label: "Pending approval" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "SCHEDULED", label: "Scheduled" },
+  { value: "CANCELLED", label: "Cancelled" },
+  { value: "INPRODUCTION", label: "In production" },
+  { value: "PAUSED", label: "Paused" },
+  { value: "PARTIALLYCOMPLETED", label: "Partially completed" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "INDELIVERY", label: "In delivery" },
+  { value: "DELIVERED", label: "Delivered" },
 ];
 
-const ProductSelectorModal: React.FC<Props> = ({
+const todayIso = () => {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = `${d.getMonth() + 1}`.padStart(2, "0");
+  const dd = `${d.getDate()}`.padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const SubPOSelectorModal: React.FC<Props> = ({
   show,
   onHide,
   onConfirm,
@@ -142,6 +80,21 @@ const ProductSelectorModal: React.FC<Props> = ({
     }
   );
 
+  const [meta, setMeta] = useState<
+    Record<string, { deliveryDate: string; status: string }>
+  >({});
+
+  // fetch real products
+  const { data: productsResp } = useGetProductsQuery({
+    page: 1,
+    limit: 100,
+    search: "",
+  });
+  // product service returns { data, total, page, limit }
+  const products: ProductCard[] =
+    (productsResp?.data ?? productsResp?.data?.data ?? productsResp?.data) ||
+    [];
+
   const toggleCollapse = (id: string) => {
     setOpenIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
@@ -150,23 +103,61 @@ const ProductSelectorModal: React.FC<Props> = ({
 
   const filtered = useMemo(() => {
     const q = (searchTerm || "").trim().toLowerCase();
-    if (!q) return mockProducts;
-    return mockProducts.filter((p) => {
-      const matches =
-        p.product_code.toLowerCase().includes(q) ||
-        p.product_name.toLowerCase().includes(q) ||
-        p.customer_code.toLowerCase().includes(q) ||
-        p.item_codes.some((it) => it.product_code.toLowerCase().includes(q));
-      return matches;
+    if (!q) return products;
+    return products.filter((p) => {
+      const code = (p.code ?? p._id ?? "").toString().toLowerCase();
+      const name = (p.name ?? "").toLowerCase();
+      const customer = (
+        p.customer?.name ??
+        p.customer?.code ??
+        ""
+      ).toLowerCase();
+      const waresMatch = (p.wares || []).some((w: any) =>
+        (w.code ?? "").toLowerCase().includes(q)
+      );
+      return (
+        code.includes(q) ||
+        name.includes(q) ||
+        customer.includes(q) ||
+        waresMatch
+      );
     });
-  }, [searchTerm]);
+  }, [searchTerm, products]);
 
   const toggleSelectProduct = (id: string) => {
-    setSelectedIds((prev) => ({ ...prev, [id]: !prev[id] }));
+    setSelectedIds((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      if (next[id] && !meta[id]) {
+        setMeta((m) => ({
+          ...m,
+          [id]: { deliveryDate: todayIso(), status: "PENDINGAPPROVAL" },
+        }));
+      }
+      return next;
+    });
+  };
+
+  const setProductMeta = (
+    id: string,
+    patch: Partial<{ deliveryDate: string; status: string }>
+  ) => {
+    setMeta((m) => ({
+      ...m,
+      [id]: {
+        ...(m[id] ?? { deliveryDate: todayIso(), status: "PENDINGAPPROVAL" }),
+        ...(patch ?? {}),
+      },
+    }));
   };
 
   const confirmSelection = () => {
-    const selected = mockProducts.filter((p) => selectedIds[p.unique_id]);
+    const selected = products
+      .filter((p) => selectedIds[p._id ?? (p as any).id])
+      .map((p) => ({
+        productId: p._id ?? (p as any).id,
+        deliveryDate: meta[p._id ?? (p as any).id]?.deliveryDate ?? todayIso(),
+        status: meta[p._id ?? (p as any).id]?.status ?? "PENDINGAPPROVAL",
+      }));
     onConfirm(selected);
     onHide();
   };
@@ -200,7 +191,10 @@ const ProductSelectorModal: React.FC<Props> = ({
                   <Button
                     variant="outline-secondary"
                     size="sm"
-                    onClick={() => setSelectedIds({})}
+                    onClick={() => {
+                      setSelectedIds({});
+                      setMeta({});
+                    }}
                   >
                     Clear selection
                   </Button>
@@ -209,12 +203,16 @@ const ProductSelectorModal: React.FC<Props> = ({
 
               <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
                 {filtered.map((product) => {
-                  const open = openIds.includes(product.unique_id);
-                  const isSelected = !!selectedIds[product.unique_id];
-
+                  const id = product._id ?? (product as any).id;
+                  const open = openIds.includes(id);
+                  const isSelected = !!selectedIds[id];
+                  const m = meta[id] ?? {
+                    deliveryDate: todayIso(),
+                    status: "PENDINGAPPROVAL",
+                  };
                   return (
                     <Card
-                      key={product.unique_id}
+                      key={id}
                       className={`mb-3 ${
                         isSelected ? "border-2 border-primary" : ""
                       }`}
@@ -224,15 +222,13 @@ const ProductSelectorModal: React.FC<Props> = ({
                         <Form.Check
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() =>
-                            toggleSelectProduct(product.unique_id)
-                          }
+                          onChange={() => toggleSelectProduct(id)}
                         />
                       </div>
 
                       <Card.Body style={{ paddingLeft: 56 }}>
                         <Row>
-                          <Col md={8}>
+                          <Col md={7}>
                             <div
                               style={{
                                 display: "flex",
@@ -241,16 +237,19 @@ const ProductSelectorModal: React.FC<Props> = ({
                               }}
                             >
                               <h5 style={{ margin: 0 }}>
-                                {product.product_name}{" "}
+                                {product.name}{" "}
                                 <small className="text-muted">
-                                  ({product.product_code})
+                                  ({product.code ?? id})
                                 </small>
                               </h5>
                               <Badge bg="secondary">
-                                Loại: {product.product_type}
+                                Loại: {product.product_type ?? "-"}
                               </Badge>
                               <Badge bg="light" text="dark">
-                                Khách: {product.customer_code}
+                                Khách:{" "}
+                                {product.customer?.code ??
+                                  product.customer?.name ??
+                                  "-"}
                               </Badge>
                             </div>
 
@@ -260,15 +259,15 @@ const ProductSelectorModal: React.FC<Props> = ({
                             >
                               {product.description}
                             </div>
+
                             <div style={{ marginTop: 8 }}>
                               <Button
                                 variant="outline-secondary"
                                 size="sm"
-                                onClick={() =>
-                                  toggleCollapse(product.unique_id)
-                                }
+                                onClick={() => toggleCollapse(id)}
                               >
-                                Hiển thị mã hàng ({product.item_codes.length}){" "}
+                                Hiển thị mã hàng ({(product.wares || []).length}
+                                ){" "}
                                 <i
                                   className={`bi ${
                                     open ? "bi-chevron-up" : "bi-chevron-down"
@@ -278,22 +277,61 @@ const ProductSelectorModal: React.FC<Props> = ({
                             </div>
                           </Col>
 
-                          <Col md={4} className="text-end">
+                          <Col md={5} className="text-end">
                             <div style={{ fontSize: 13 }}>
-                              <strong>Size:</strong> {product.length}×
-                              {product.width}×{product.height} mm
+                              <strong>Size:</strong> {product.length ?? "-"}×
+                              {product.width ?? "-"}×{product.height ?? "-"} mm
                             </div>
                             <div style={{ fontSize: 13, marginTop: 8 }}>
-                              <strong>Quantity:</strong> {product.quantity}
+                              <strong>Quantity:</strong>{" "}
+                              {product.quantity ?? "-"}
+                            </div>
+
+                            <div
+                              style={{
+                                marginTop: 12,
+                                display: "flex",
+                                gap: 8,
+                                justifyContent: "flex-end",
+                                alignItems: "center",
+                              }}
+                            >
+                              <input
+                                type="date"
+                                className="form-control form-control-sm"
+                                style={{ width: 160 }}
+                                value={m.deliveryDate ?? ""}
+                                onChange={(e) =>
+                                  setProductMeta(id, {
+                                    deliveryDate: e.target.value,
+                                  })
+                                }
+                                disabled={!isSelected}
+                              />
+                              <select
+                                className="form-select form-select-sm"
+                                style={{ width: 160 }}
+                                value={m.status}
+                                onChange={(e) =>
+                                  setProductMeta(id, { status: e.target.value })
+                                }
+                                disabled={!isSelected}
+                              >
+                                {SUBPO_STATUSES.map((s) => (
+                                  <option key={s.value} value={s.value}>
+                                    {s.label}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
                           </Col>
                         </Row>
 
                         <Collapse in={open}>
                           <div style={{ marginTop: 12 }}>
-                            {product.item_codes.map((item) => (
+                            {(product.wares || []).map((w: any) => (
                               <div
-                                key={item.id}
+                                key={w._id ?? w.id ?? w.code}
                                 style={{
                                   padding: 8,
                                   background: "#f8fafc",
@@ -302,20 +340,12 @@ const ProductSelectorModal: React.FC<Props> = ({
                                 }}
                               >
                                 <div style={{ fontWeight: 600 }}>
-                                  {item.product_code}
+                                  {w.code ?? w._id}
                                 </div>
                                 <div className="small text-muted">
-                                  Kích thước: {item.length}×
-                                  {item.width_panel_flap}
-                                  {item.height ? `×${item.height}` : ""} mm •
-                                  Sóng:{" "}
-                                  <span style={{ color: "blue" }}>
-                                    {item.wave_type}
-                                  </span>{" "}
-                                  • Khổ giấy:{" "}
-                                  <span style={{ color: "red" }}>
-                                    {item.paper_size}
-                                  </span>
+                                  Width: {w.wareWidth ?? "-"} mm • Length:{" "}
+                                  {w.wareLength ?? "-"} mm • UnitPrice:{" "}
+                                  {w.unitPrice ?? "-"}
                                 </div>
                               </div>
                             ))}
@@ -347,4 +377,4 @@ const ProductSelectorModal: React.FC<Props> = ({
   );
 };
 
-export default ProductSelectorModal;
+export default SubPOSelectorModal;

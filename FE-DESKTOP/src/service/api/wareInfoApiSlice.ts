@@ -1,5 +1,5 @@
 import { apiSlice } from "./apiSlice";
-import { WARE_INFO_URL, USE_MOCK_DATA } from "../constants";
+import { WARE_URL, USE_MOCK_DATA } from "../constants";
 import { mockWareInfoQuery } from "../mock-data/functions/mock-ware-info-crud";
 
 export const wareInfoApiSlice = apiSlice.injectEndpoints({
@@ -11,7 +11,7 @@ export const wareInfoApiSlice = apiSlice.injectEndpoints({
           }
         : {
             query: ({ page = 1, limit = 20 }) => ({
-              url: `${WARE_INFO_URL}/`,
+              url: `${WARE_URL}/`,
               method: "GET",
               params: { page, limit },
               credentials: "include",

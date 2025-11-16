@@ -15,6 +15,7 @@ import { PrintColor } from "./print-color.schema";
 import { WareFinishingProcessType } from "./ware-finishing-process-type.schema";
 import { Optional } from "@nestjs/common";
 import { ApiProperty } from "@nestjs/swagger";
+import { ManufacturingProcess } from "./manufacturing-process.schema";
 
 @Schema({ timestamps: true })
 export class Ware extends BaseDenormalizedSchema {
@@ -202,14 +203,25 @@ export class Ware extends BaseDenormalizedSchema {
 
   @ApiProperty()
   @Prop({
-    type: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: WareFinishingProcessType.name,
-    }],
+    type: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: WareFinishingProcessType.name,
+      },
+    ],
   })
-  finishingProcesses:
-    | mongoose.Types.ObjectId[]
-    | WareFinishingProcessType[];
+  finishingProcesses: mongoose.Types.ObjectId[] | WareFinishingProcessType[];
+
+  @ApiProperty()
+  @Prop({
+    type: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: ManufacturingProcess.name,
+      },
+    ],
+  })
+  manufacturingProcesses: mongoose.Types.ObjectId[] | ManufacturingProcess[];
 
   @ApiProperty()
   @Prop({ required: false, default: "" })
@@ -220,8 +232,5 @@ export class Ware extends BaseDenormalizedSchema {
 
 export type WareDocument = HydratedDocument<Ware>;
 
-export const WareSchema = SchemaFactory.createForClass(
-  Ware,
-).plugin(
-  softDeletePlugin,
-);
+export const WareSchema =
+  SchemaFactory.createForClass(Ware).plugin(softDeletePlugin);

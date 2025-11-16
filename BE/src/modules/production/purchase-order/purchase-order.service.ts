@@ -1,13 +1,15 @@
-import { Injectable } from "@nestjs/common";
-import {
-  PurchaseOrder,
-  PurchaseOrderSchema,
-} from "../schemas/purchase-order.schema";
-import { Model } from "mongoose";
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PurchaseOrder, PurchaseOrderSchema } from "../schemas/purchase-order.schema";
+
+import { Model, Types } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
 import { PurchaseOrderItem } from "../schemas/purchase-order-item.schema";
+// import { ordersWithUnmanufacturedItemsPopulatedPipe } from "./aggregate-pipes/orders-with-unmanufactured-items";
 import { ordersWithUnmanufacturedItemsLeanPipe } from "./aggregate-pipes/orders-with-unmanufactured-items";
+import { CreatePurchaseOrderDto } from "./dto/create-purchase-order.dto";
+import { UpdatePurchaseOrderDto } from "./dto/update-purchase-order.dto";
+import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
 import {
   QueryOrdersWithUnmanufacturedItemsResponseDto,
 } from "./dto/query-orders-with-unmanufactured-items.dto";
@@ -17,6 +19,8 @@ import {
 } from "../schemas/sub-purchase-order.schema";
 import { Customer } from "../schemas/customer.schema";
 import { Ware } from "../schemas/ware.schema";
+
+type SoftPurchaseOrder = PurchaseOrder & SoftDeleteDocument;
 
 @Injectable()
 export class PurchaseOrderService {
@@ -115,5 +119,117 @@ export class PurchaseOrderService {
       hasPrevPage,
       data: data as QueryOrdersWithUnmanufacturedItemsResponseDto[],
     };
+  }
+
+  async create(dto: CreatePurchaseOrderDto): Promise<PurchaseOrder> {
+    // transform date
+    const payload: any = {
+      ...dto,
+      orderDate: new Date(dto.orderDate),
+    };
+
+    const doc = new this.purchaseOrderModel(payload);
+    try {
+      const saved = await doc.save();
+      return saved;
+    } catch (err: any) {
+      // re-throw to let controller / global handler format
+      throw err;
+    }
+  }
+
+  async findOne(id: string): Promise<PurchaseOrder> {
+    const doc = await this.purchaseOrderModel.findById(id);
+    if (!doc) throw new NotFoundException(`Purchase order ${id} not found`);
+    return doc;
+  }
+
+  async updateOne(id: string, dto: UpdatePurchaseOrderDto): Promise<PurchaseOrder> {
+    const payload: any = { ...dto };
+    if (dto.orderDate) payload.orderDate = new Date(dto.orderDate as any);
+
+    const updated = await this.purchaseOrderModel.findByIdAndUpdate(id, payload, { new: true });
+    if (!updated) throw new NotFoundException(`Purchase order ${id} not found`);
+    return updated;
+  }
+
+  async softDelete(id: string) {
+    const doc = await this.purchaseOrderModel.findById(id) as SoftPurchaseOrder;
+    if (!doc) throw new NotFoundException("Purchase order not found");
+    await doc.softDelete();
+    return { success: true };
+  }
+
+  async restore(id: string) {
+    const doc = await this.purchaseOrderModel.findById(id) as SoftPurchaseOrder;
+    if (!doc) throw new NotFoundException("Purchase order not found");
+    await doc.restore();
+    return { success: true };
+  }
+
+  async removeHard(id: string) {
+    const result = await this.purchaseOrderModel.findByIdAndDelete(id);
+    if (!result) throw new NotFoundException("Purchase order not found");
+    return { success: true };
+  }
+
+  async getDetailWithSubs(id: string): Promise<any> {
+    const pipeline: any[] = [
+      // match the PO
+      { $match: { _id: new Types.ObjectId(id), isDeleted: false } },
+
+      {
+        $lookup: {
+          from: "subpurchaseorders",
+          let: { poId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $and: [{ $eq: ["$purchaseOrder", "$$poId"] }, { $eq: ["$isDeleted", false] }] } } },
+
+            {
+              $lookup: {
+                from: "products",
+                localField: "product",
+                foreignField: "_id",
+                as: "product",
+              },
+            },
+            { $unwind: { path: "$product", preserveNullAndEmptyArrays: true } },
+
+            {
+              $lookup: {
+                from: "purchaseorderitems",
+                let: { subId: "$_id" },
+                pipeline: [
+                  { $match: { $expr: { $and: [{ $eq: ["$subPurchaseOrder", "$$subId"] }, { $eq: ["$isDeleted", false] }] } } },
+
+                  {
+                    $lookup: {
+                      from: "wares",
+                      localField: "ware",
+                      foreignField: "_id",
+                      as: "ware",
+                    },
+                  },
+                  { $unwind: { path: "$ware", preserveNullAndEmptyArrays: true } },
+
+                ],
+                as: "items",
+              },
+            },
+
+            { $sort: { deliveryDate: -1 } },
+          ],
+          as: "subPurchaseOrders",
+        },
+      },
+
+    ];
+
+    const agg = await this.purchaseOrderModel.aggregate(pipeline).exec();
+    const doc = agg[0];
+    if (!doc) {
+      throw new NotFoundException(`PurchaseOrder ${id} not found`);
+    }
+    return doc;
   }
 }

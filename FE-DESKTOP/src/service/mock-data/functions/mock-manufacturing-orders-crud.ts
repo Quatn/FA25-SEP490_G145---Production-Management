@@ -61,7 +61,7 @@ export const mockFullDetailManufacturingOrderQuery = async (
   const slicedData = manufacturingOrders.slice(startIndex, endIndex);
 
   const poitems: PurchaseOrderItem[] = slicedData.map((mo) =>
-    purchaseOrderItems.find((poi) => poi.id === mo.purchaseOrderItemId)
+    purchaseOrderItems.find((poi) => poi._id === mo.purchaseOrderItem?._id)
   ).filter((poi) => !check.undefined(poi));
 
   if (poitems.length != slicedData.length) {

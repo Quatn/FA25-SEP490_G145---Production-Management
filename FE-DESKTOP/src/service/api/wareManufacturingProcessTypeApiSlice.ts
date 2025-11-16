@@ -15,6 +15,15 @@ export const wareManufacturingProcessTypeApiSlice = apiSlice.injectEndpoints({
             providesTags: ["WareManufacturingProcessType"],
         }),
 
+        getAllWareManufacturingTypes: builder.query<{ success: boolean; message: string; data: WareManufacturingProcessType[] }, void>({
+            query: () => ({
+                url: `${WARE_MANUFACTURING_PROCESS_TYPE_URL}/list-all`,
+                method: "GET",
+                credentials: "include",
+            }),
+            providesTags: ["WareManufacturingProcessType"],
+        }),
+
         getWareManufacturingProcess: builder.query<BaseResponse<PaginatedList<WareManufacturingProcessType>>, { page?: number; limit?: number, search?: string }>(
             {
                 query: ({ page = 1, limit = 10, search = '' }) => ({
@@ -65,6 +74,7 @@ export const wareManufacturingProcessTypeApiSlice = apiSlice.injectEndpoints({
 
 export const {
     useGetAllWareManufacturingProcessesQuery,
+    useGetAllWareManufacturingTypesQuery, 
     useAddWareManufacturingProcessMutation,
     useGetWareManufacturingProcessQuery,
     useUpdateWareManufacturingProcessMutation,

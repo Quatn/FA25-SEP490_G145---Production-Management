@@ -4,6 +4,9 @@ import { PurchaseOrder } from "../../schemas/purchase-order.schema";
 import { Ware } from "../../schemas/ware.schema";
 import { FluteCombination } from "../../schemas/flute-combination.schema";
 import { WareFinishingProcessType } from "../../schemas/ware-finishing-process-type.schema";
+import { WareManufacturingProcessType } from "../../schemas/ware-manufacturing-process-type.schema";
+import { PrintColor } from "../../schemas/print-color.schema";
+import { ManufacturingProcess } from "../../schemas/manufacturing-process.schema";
 import { SubPurchaseOrder } from "../../schemas/sub-purchase-order.schema";
 import { ApiProperty } from "@nestjs/swagger";
 import { Product } from "../../schemas/product.schema";
@@ -33,10 +36,28 @@ class PopulatedWare extends Ware {
   declare fluteCombination: FluteCombination;
 
   @ApiProperty({
+    type: WareManufacturingProcessType,
+    description: "Populated wareManufacturingProcessType",
+  })
+  declare wareManufacturingProcessType: WareManufacturingProcessType;
+
+  @ApiProperty({
+    type: Array<PrintColor>,
+    description: "Populated printColors",
+  })
+  declare printColors: PrintColor[];
+
+  @ApiProperty({
     type: Array<WareFinishingProcessType>,
-    description: "Populated fluteCombination",
+    description: "Populated finishingProcesses",
   })
   declare finishingProcesses: WareFinishingProcessType[];
+
+  @ApiProperty({
+    type: Array<ManufacturingProcess>,
+    description: "Populated manufacturingProcesses",
+  })
+  declare manufacturingProcesses: ManufacturingProcess[];
 
   constructor(ware: Ware) {
     if (!isRefPopulated(ware.fluteCombination)) {
@@ -44,11 +65,21 @@ class PopulatedWare extends Ware {
         "mo.purchaseOrderItem.ware.fluteCombination must be populated in order to be used in FullDetailManufacturingOrderDto",
       );
     }
+    if (!isRefPopulated(ware.wareManufacturingProcessType)) {
+      throw Error(
+        "mo.purchaseOrderItem.ware.wareManufacturingProcessType must be populated in order to be used in FullDetailManufacturingOrderDto",
+      );
+    }
     super();
     Object.assign(this, ware);
     this.fluteCombination = ware.fluteCombination as FluteCombination;
+    this.wareManufacturingProcessType =
+      ware.wareManufacturingProcessType as WareManufacturingProcessType;
+    this.printColors = (ware.printColors || []) as PrintColor[];
     this.finishingProcesses =
-      ware.finishingProcesses as WareFinishingProcessType[];
+      (ware.finishingProcesses || []) as WareFinishingProcessType[];
+    this.manufacturingProcesses =
+      (ware.manufacturingProcesses || []) as ManufacturingProcess[];
   }
 }
 

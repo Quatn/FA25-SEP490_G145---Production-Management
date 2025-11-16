@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import {
   PurchaseOrderItem,
@@ -10,14 +10,14 @@ import { FullDetailPurchaseOrderItemDto } from "./dto/full-details-orders.dto";
 import { WareSchema } from "../schemas/ware.schema";
 import { SubPurchaseOrderSchema } from "../schemas/sub-purchase-order.schema";
 import { PurchaseOrderSchema } from "../schemas/purchase-order.schema";
+import { UpdatePurchaseOrderItemDto } from "./dto/update-purchase-order-item.dto";
 
 @Injectable()
 export class PurchaseOrderItemService {
   constructor(
-    @InjectModel(
-      PurchaseOrderItem.name,
-    ) private readonly purchaseOrderItemModel: Model<PurchaseOrderItem>,
-  ) {}
+    @InjectModel(PurchaseOrderItem.name)
+    private readonly purchaseOrderItemModel: Model<PurchaseOrderItem>,
+  ) { }
 
   async findAll() {
     return await this.purchaseOrderItemModel.find();
@@ -78,14 +78,25 @@ export class PurchaseOrderItemService {
     const warePath = PurchaseOrderItemSchema.path("ware");
     const fluteCombinationPath = WareSchema.path("fluteCombination");
     const finishingProcessesPath = WareSchema.path("finishingProcesses");
+    const manufacturingProcessesPath = WareSchema.path(
+      "manufacturingProcesses",
+    );
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
     const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
+    const wareManufacturingProcessTypePath = WareSchema.path(
+      "wareManufacturingProcessType",
+    );
 
     const populate = [
       {
         path: warePath.path,
-        populate: [fluteCombinationPath, finishingProcessesPath],
+        populate: [
+          fluteCombinationPath,
+          finishingProcessesPath,
+          manufacturingProcessesPath,
+          wareManufacturingProcessTypePath,
+        ],
       },
       {
         path: subpoPath.path,
@@ -139,14 +150,23 @@ export class PurchaseOrderItemService {
     const warePath = PurchaseOrderItemSchema.path("ware");
     const fluteCombinationPath = WareSchema.path("fluteCombination");
     const finishingProcessesPath = WareSchema.path("finishingProcesses");
+    const manufacturingProcessesPath = WareSchema.path(
+      "manufacturingProcesses",
+    );
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
     const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
+    const wareManufacturingProcessTypePath = WareSchema.path("wareManufacturingProcessType")
 
     const populate = [
       {
         path: warePath.path,
-        populate: [fluteCombinationPath, finishingProcessesPath],
+        populate: [
+          fluteCombinationPath,
+          finishingProcessesPath,
+          manufacturingProcessesPath,
+          wareManufacturingProcessTypePath,
+        ],
       },
       {
         path: subpoPath.path,
@@ -170,5 +190,26 @@ export class PurchaseOrderItemService {
     );
 
     return mappedData;
+  }
+
+  async update(
+    id: string,
+    payload: UpdatePurchaseOrderItemDto,
+  ): Promise<PurchaseOrderItem> {
+    const updated = await this.purchaseOrderItemModel
+      .findByIdAndUpdate(id, payload, { new: true })
+      .populate("ware")
+      .populate("subPurchaseOrder")
+      .exec();
+
+    if (!updated) throw new NotFoundException("PurchaseOrderItem not found");
+    return updated as any;
+  }
+
+  async softRemove(id: string): Promise<void> {
+    const res = await this.purchaseOrderItemModel
+      .findByIdAndUpdate(id, { isDeleted: true }, { new: true })
+      .exec();
+    if (!res) throw new NotFoundException("PurchaseOrderItem not found");
   }
 }

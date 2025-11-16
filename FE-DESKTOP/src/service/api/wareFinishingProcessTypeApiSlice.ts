@@ -15,6 +15,15 @@ export const wareFinishingProcessTypeApiSlice = apiSlice.injectEndpoints({
             providesTags: ["WareFinishingProcessType"],
         }),
 
+        getAllWareFinishingTypes: builder.query<{ success: boolean; message: string; data: WareFinishingProcessType[] }, void>({
+            query: () => ({
+                url: `${WARE_FINISHING_PROCESS_TYPE_URL}/list-all`,
+                method: "GET",
+                credentials: "include",
+            }),
+            providesTags: ["WareFinishingProcessType"],
+        }),
+
         getWareFinishingProcessType: builder.query<BaseResponse<PaginatedList<WareFinishingProcessType>>, { page?: number; limit?: number, search?: string }>({
             query: ({ page = 1, limit = 10, search = '' }) => ({
                 url: `${WARE_FINISHING_PROCESS_TYPE_URL}/list`,
@@ -64,6 +73,7 @@ export const wareFinishingProcessTypeApiSlice = apiSlice.injectEndpoints({
 
 export const {
     useGetWareFinishingProcessTypeQuery,
+    useGetAllWareFinishingTypesQuery,
     useGetAllWareFinishingProcessTypeQuery,
     useAddWareFinishingProcessTypeMutation,
     useUpdateWareFinishingProcessTypeMutation,

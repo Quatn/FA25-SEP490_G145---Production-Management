@@ -1,12 +1,15 @@
 import { Customer } from "./Customer";
 
 export interface PurchaseOrder extends BaseSchema {
+  _id?: string;
   code: string;
-  orderDate: Date;
-  deliveryAdress: string;
+  orderDate: string; 
+  deliveryAddress: string;
   paymentTerms: string;
-  status: string;
-  notes: string;
-
-  customer?: Customer;
+  customer?: Customer; 
+  status: string; 
+  note?: string;
 }
+
+
+
