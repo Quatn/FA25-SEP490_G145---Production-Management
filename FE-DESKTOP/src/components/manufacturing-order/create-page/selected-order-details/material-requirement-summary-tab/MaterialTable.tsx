@@ -1,11 +1,16 @@
-/*
 "use client";
 
 import { useGetMaterialRequirementsQuery } from "@/service/api/materialRequirementApiSlice";
 import { MaterialRequirementDto } from "@/types/DTO/material-requirement-summary/MaterialRequirement";
-import { BoxProps, Table, TableRootProps, TabsRootProps } from "@chakra-ui/react";
-import { Column, flexRender, useReactTable } from "@tanstack/react-table";
+import { Box, BoxProps, Center, Spinner, Stack, Table, TableRootProps, TabsRootProps, Text } from "@chakra-ui/react";
+import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { useEffect, useReducer, useState } from "react";
+import { materialRequirementColumns } from "./materialTableDefinition";
+import check from "check-types";
+import { useSelectedOrdersState } from "../TabbedContainer";
+import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { Ware } from "@/types/Ware";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 
 export type MaterialRequirementTableProps = {
   rootProps?: BoxProps;
@@ -13,66 +18,84 @@ export type MaterialRequirementTableProps = {
   tableRootProps?: TableRootProps;
 };
 
-export default function MaterialRequirementDto(
+function accumulateMaterialRequirements(
+  items: Serialized<ManufacturingOrder>[] | undefined
+): MaterialRequirementDto[] {
+  if (check.undefined(items)) return []
+
+  const requirementMap: Map<string, number> = new Map();
+
+  const poi = items.map(mo => mo.purchaseOrderItem)
+  const ware = items.map(mo => mo.purchaseOrderItem?.ware)
+
+  if (check.undefined(poi) || check.undefined(ware)) return []
+
+  // List of all paper type and weight field pairs
+  const fields: { type: keyof Ware; weight: keyof PurchaseOrderItem }[] = [
+    { type: "faceLayerPaperType", weight: "faceLayerPaperWeight" },
+    { type: "EFlutePaperType", weight: "EFlutePaperWeight" },
+    { type: "EBLinerLayerPaperType", weight: "EBLinerLayerPaperWeight" },
+    { type: "BFlutePaperType", weight: "BFlutePaperWeight" },
+    { type: "BACLinerLayerPaperType", weight: "BACLinerLayerPaperWeight" },
+    { type: "ACFlutePaperType", weight: "ACFlutePaperWeight" },
+    { type: "backLayerPaperType", weight: "backLayerPaperWeight" },
+  ];
+
+  for (const item of items) {
+    for (const pair of fields) {
+      const code = item.purchaseOrderItem!.ware![pair.type] as string;
+      const weight = item.purchaseOrderItem![pair.weight];
+
+      if (code && typeof weight === "number") {
+        const current = requirementMap.get(code) || 0;
+        requirementMap.set(code, current + weight);
+      }
+    }
+  }
+
+  // Convert map to array of MaterialRequirementDto
+  const result: MaterialRequirementDto[] = [];
+  for (const [code, requirementWeight] of requirementMap) {
+    result.push({
+      code,
+      requirementWeight,
+      inventoryWeight: 0, // Set to 0 or update as needed
+      status: "Pending",  // Set a default status or update as needed
+    });
+  }
+
+  return result;
+}
+
+export default function MaterialRequirementTable(
   props: MaterialRequirementTableProps,
 ) {
-  const {
-    data: materialRequirementResponse,
-    error: fetchError,
-    isLoading: isFetchingList,
-  } = useGetMaterialRequirementsQuery({ orderId: "asca" });
+  const { selectedManufacturingOrders } = useSelectedOrdersState();
 
-  const materialRequirementList = materialRequirementResponse?.data;
-  const [tableData, setTableData] = useState<Serialized<MaterialRequirementDto>[]>(materialRequirementList ?? [])
+  // const moPaginatedList = fullDetailMOsResponse?.data;
+  const tableData: MaterialRequirementDto[] = accumulateMaterialRequirements(selectedManufacturingOrders);
 
-  const [flag, forceDataReset] = useReducer((x) => x + 1, 0);
-  useEffect(() => {
-    setTableData(materialRequirementList ?? [])
-  }, [materialRequirementList, flag])
-
-  /*
   const table = useReactTable({
     data: tableData,
-    columns: manufacturingOrderColumnsByTabs[tab],
+    columns: materialRequirementColumns,
     getCoreRowModel: getCoreRowModel(),
-    initialState: {
-      columnPinning: {
-        left: ['manufacturingDirective', "code"],
-        right: ['actions-column'],
-      },
-    },
-    getRowId: (row) => row._id,
-  }
-  );
-  */
+    getRowId: (row) => row.code,
+  });
 
-  /*
-  useEffect(() => {
-    dispatch({
-      type: "SET_TOTAL_ITEMS",
-      payload: moPaginatedList ? moPaginatedList.totalItems : 0,
-    });
-  }, [dispatch, moPaginatedList, moPaginatedList?.totalItems]);
+  console.log("A")
 
-  if (isFetchingList) {
+  if (check.undefined(selectedManufacturingOrders) || selectedManufacturingOrders.length < 1) {
     return (
-      <Center h={"full"} flex={1} flexGrow={1}>
-        <Stack alignItems={"center"}>
-          <Spinner size="xl" />
-          <Text>Đang tải lệnh</Text>
-        </Stack>
+      <Center>
+        <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
+          <Stack alignItems={"center"}>
+            <Text>Các lệnh sẽ được tạo sẽ được hiển thị ở đây</Text>
+            <Text>Hãy chọn PO Item bên trên</Text>
+          </Stack>
+        </Box>
       </Center>
     );
   }
-
-  if (fetchError) {
-    return <Text>{JSON.stringify(fetchError)}</Text>;
-  }
-
-  if (check.undefined(moPaginatedList)) {
-    return <Text>Unable to load table</Text>;
-  }
-  */
 
   return (
     <Box mt={3} {...props.rootProps}>
@@ -102,6 +125,7 @@ export default function MaterialRequirementDto(
               <Table.Row
                 key={row.id}
                 h={"3.2rem"}
+                bg={"bg"}
               >
                 {row.getVisibleCells().map((cell) => (
                   <Table.Cell
@@ -118,4 +142,3 @@ export default function MaterialRequirementDto(
     </Box >
   );
 }
-*/

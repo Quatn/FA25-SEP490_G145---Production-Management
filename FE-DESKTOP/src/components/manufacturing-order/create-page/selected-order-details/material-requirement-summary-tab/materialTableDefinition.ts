@@ -23,29 +23,29 @@ const colSize = {
 
 export const materialRequirementColumns = [
   columnHelper.display({
-    id: "manufacturingDirective",
-    header: "KH Giao",
+    id: "code",
+    header: "Mã giấy",
     ...colSize.md,
     cell: ({ row }) =>
       row.original.code,
   }),
   columnHelper.display({
-    id: "code",
-    header: "Mã lệnh",
+    id: "requirementWeight",
+    header: "Trọng lượng sử dựng (kg)",
     ...colSize.sm,
     cell: ({ row }) =>
       row.original.requirementWeight,
   }),
   columnHelper.display({
-    id: "customerCode",
-    header: "Khách hàng",
+    id: "inventoryWeight",
+    header: "Tồn kho (kg)",
     ...colSize.sm,
     cell: ({ row }) =>
       row.original.inventoryWeight,
   }),
   columnHelper.display({
-    id: "wareCode",
-    header: "Mã hàng",
+    id: "status",
+    header: "Trạng thái",
     ...colSize.sm,
     cell: ({ row }) =>
       row.original.status,

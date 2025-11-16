@@ -24,6 +24,7 @@ import { useCreateManyManufacturingOrdersMutation, useDeleteManufacturingOrderMu
 import { manufacturingOrderTableColumnsByTabs } from "@/components/manufacturing-order/full-detail-table/tableDefinition.old";
 import check from "check-types";
 import { CreateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
+import { useSelectedOrdersState } from "../TabbedContainer";
 
 type TableProps = {
   rootProps?: BoxProps;
@@ -48,10 +49,11 @@ export default function CreatePageManufacturingOrderTable(
     ids: selectedPOIsIds,
   });
 
-
   const [createOrders] = useCreateManyManufacturingOrdersMutation();
 
-  if (selectedPOIsIds.length < 1) {
+  const { selectedManufacturingOrders } = useSelectedOrdersState();
+
+  if (check.undefined(selectedManufacturingOrders) || selectedManufacturingOrders.length < 1) {
     return (
       <Center>
         <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
@@ -64,7 +66,8 @@ export default function CreatePageManufacturingOrderTable(
     );
   }
 
-  const moPaginatedList = fullDetailMOsResponse?.data;
+  // const moPaginatedList = fullDetailMOsResponse?.data;
+  const moPaginatedList = selectedManufacturingOrders;
 
   if (isFetchingList) {
     return <Text>Loading table</Text>;
