@@ -68,6 +68,12 @@ const initialCollection = createTreeCollection<Node>({
             href: "/manufacturing-order/tracking",
             children: [],
           },
+          {
+            id: "manufacturing-order-operate",
+            name: "Manufacturing Order Operate",
+            href: "/manufacturing-order/operate",
+            children: [],
+          },
         ],
       },
       {
@@ -82,18 +88,6 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
-      // {
-      //   id: "product",
-      //   name: "Product Management",
-      //   children: [
-      //     {
-      //       id: "product-list",
-      //       name: "Product List",
-      //       href: "/products",
-      //       children: [],
-      //     },
-      //   ],
-      // },
       {
         id: "paper-supplier",
         name: "Paper Supplier",
@@ -174,6 +168,42 @@ const initialCollection = createTreeCollection<Node>({
             id: "flute-combination-list",
             name: "Flute Combination List",
             href: "/flute-combination",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "semi-finished-good",
+        name: "Semi Finished Good",
+        children: [
+          {
+            id: "semi-finished-good-list",
+            name: "Semi Finished Good List",
+            href: "/semi-finished-good",
+            children: [],
+          },
+          {
+            id: "semi-finished-good-daily-report",
+            name: "Semi Finished Good Daily Report",
+            href: "/semi-finished-good/daily-report",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "finished-good",
+        name: "Finished Good",
+        children: [
+          {
+            id: "finished-good-list",
+            name: "Finished Good List",
+            href: "/finished-good",
+            children: [],
+          },
+          {
+            id: "finished-good-daily-report",
+            name: "Finished Good Daily Report",
+            href: "/finished-good/daily-report",
             children: [],
           },
         ],

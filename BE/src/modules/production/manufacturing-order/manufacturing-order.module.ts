@@ -24,6 +24,7 @@ import {
   imports: [
     MongooseModule.forFeature([
       { name: ManufacturingOrder.name, schema: ManufacturingOrderSchema },
+      { name: OrderFinishingProcess.name, schema: OrderFinishingProcessSchema },
       {
         name: ManufacturingOrderProcess.name,
         schema: ManufacturingOrderProcessSchema,
@@ -32,7 +33,6 @@ import {
         name: CorrugatorProcess.name,
         schema: CorrugatorProcessSchema,
       },
-      { name: OrderFinishingProcess.name, schema: OrderFinishingProcessSchema },
     ]),
     PurchaseOrderItemModule,
   ],

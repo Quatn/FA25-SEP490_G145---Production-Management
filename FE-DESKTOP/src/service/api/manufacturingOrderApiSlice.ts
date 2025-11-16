@@ -12,6 +12,7 @@ import {
   CreateManyManufacturingOrdersResponseDto,
 } from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
 import { DeleteManufacturingOrderRequestDto, DeleteManufacturingOrderResponseDto } from "@/types/DTO/manufacturing-order/DeleteManufacturingOrderDto";
+import { UpdateManyManufacturingOrdersRequestDto, UpdateManyManufacturingOrdersResponseDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -69,6 +70,19 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ["ManufacturingOrder"],
     }),
 
+    updateManyManufacturingOrders: builder.mutation<
+      UpdateManyManufacturingOrdersResponseDto,
+      UpdateManyManufacturingOrdersRequestDto
+    >({
+      query: (body) => ({
+        url: `${MANUFACTURING_ORDER_URL}/update-many`,
+        method: "PATCH",
+        body,
+        credentials: "include",
+      }),
+      invalidatesTags: ["ManufacturingOrder"],
+    }),
+
     deleteManufacturingOrder: builder.mutation<
       DeleteManufacturingOrderResponseDto,
       DeleteManufacturingOrderRequestDto
@@ -80,6 +94,15 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["ManufacturingOrder"],
     }),
+
+    getAllManufacturingOrders: builder.query<{ success: boolean; message: string; data: ManufacturingOrder[] }, void>({
+      query: () => ({
+        url: `${MANUFACTURING_ORDER_URL}/list-all`,
+        method: "GET",
+        credentials: "include",
+      }),
+      providesTags: ["ManufacturingOrder"],
+    }),
   }),
 });
 
@@ -89,4 +112,6 @@ export const {
   useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery,
   useCreateManyManufacturingOrdersMutation,
   useDeleteManufacturingOrderMutation,
+  useUpdateManyManufacturingOrdersMutation,
+  useGetAllManufacturingOrdersQuery,
 } = manufacturingOrderApiSlice;

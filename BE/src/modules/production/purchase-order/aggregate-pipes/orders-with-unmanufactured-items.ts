@@ -262,6 +262,14 @@ export const ordersWithUnmanufacturedItemsLeanPipe = (
         subPurchaseOrders: 1,
       },
     },
+
+    // Could be optimized by adding the matches earlier, not doing it now
+    {
+      $match: {
+        unmanufacturedItemCount: { $gt: 0 },
+      },
+    },
+
     {
       $match: {
         $or: [

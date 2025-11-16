@@ -1,4 +1,5 @@
 "use client";
+import { CheckboxCheckedChangeDetails } from "@chakra-ui/react";
 import React, { createContext, Dispatch, useContext, useReducer } from "react";
 
 type TabType =
@@ -30,6 +31,7 @@ interface TableState {
   pinnedOrderIds: string[];
   searchFilterType: SearchFilterType;
   paginationType: PaginationType;
+  allowEdit: boolean | string;
 }
 
 type TableAction =
@@ -45,6 +47,7 @@ type TableAction =
   | { type: "REMOVE_PINNED_ORDER_ID"; payload: string }
   | { type: "SET_SEARCH_FILTER_TYPE"; payload: SearchFilterType }
   | { type: "SET_PAGINATION_TYPE"; payload: PaginationType }
+  | { type: "SET_ALLOW_EDIT"; payload: boolean | string }
   | { type: "RESET" };
 
 const initialState: TableState = {
@@ -52,12 +55,13 @@ const initialState: TableState = {
   limit: 20,
   totalItems: 0,
   search: "",
-  tab: "order",
+  tab: "all",
   hoveredRowId: null,
   selectedOrderId: null,
   pinnedOrderIds: [],
   searchFilterType: "searchAndFilter",
   paginationType: "paged",
+  allowEdit: false,
 };
 
 function tableReducer(state: TableState, action: TableAction): TableState {
@@ -100,6 +104,8 @@ function tableReducer(state: TableState, action: TableAction): TableState {
         ...state,
         paginationType: action.payload,
       };
+    case "SET_ALLOW_EDIT":
+      return { ...state, allowEdit: action.payload };
     case "RESET":
       return initialState;
     default:

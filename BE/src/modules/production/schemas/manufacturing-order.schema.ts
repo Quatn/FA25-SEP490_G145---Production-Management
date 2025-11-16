@@ -74,7 +74,7 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
     ref: PurchaseOrderItem.name,
   })
   @IsMongoId()
-  purchaseOrderItem: Types.ObjectId;
+  purchaseOrderItem: mongoose.Types.ObjectId | PurchaseOrderItem;
 
   @ApiProperty()
   @Prop({ required: true })

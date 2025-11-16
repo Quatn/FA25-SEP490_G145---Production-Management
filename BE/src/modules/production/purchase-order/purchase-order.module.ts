@@ -11,6 +11,7 @@ import {
   PurchaseOrderItemSchema,
 } from "../schemas/purchase-order-item.schema";
 import { Customer, CustomerSchema } from "../schemas/customer.schema";
+import { Ware, WareSchema } from "../schemas/ware.schema";
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { Customer, CustomerSchema } from "../schemas/customer.schema";
       { name: PurchaseOrder.name, schema: PurchaseOrderSchema },
       { name: PurchaseOrderItem.name, schema: PurchaseOrderItemSchema },
       { name: Customer.name, schema: CustomerSchema },
+      { name: Ware.name, schema: WareSchema },
     ]),
   ],
 

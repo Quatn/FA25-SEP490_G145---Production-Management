@@ -23,6 +23,7 @@ import {
 import { LuChevronDown, LuChevronRight } from "react-icons/lu";
 import PurchaseOrderItemSelectorSubItem from "./PurchaseOrderItemSelectorSubItem";
 import check from "check-types";
+import { useMemo } from "react";
 
 export type PurchaseOrderItemSelectorItemProps = {
   po: Serialized<QueryOrdersWithUnmanufacturedItemsDto>;
@@ -63,10 +64,16 @@ export default function PurchaseOrderItemSelectorItem(
     subpo.purchaseOrderItems.length
   ).reduce((acc, i) => acc + i);
 
+  const sorted = useMemo(() => {
+    return props.po.subPurchaseOrders.toSorted((a, b) => b.unmanufacturedItemCount - a.unmanufacturedItemCount)
+  }, [props.po.subPurchaseOrders])
+
   return (
     <CheckboxCard.Root
       checked={indeterminate ? "indeterminate" : checked}
       onCheckedChange={() => handleToggle()}
+      colorPalette={"orange"}
+      bgColor={"colorPalette.subtle"}
     >
       <CheckboxCard.HiddenInput />
       <CheckboxCard.Control>
@@ -84,8 +91,8 @@ export default function PurchaseOrderItemSelectorItem(
                   matchAll
                   query={search}
                   styles={{
-                    bg: "yellow.subtle",
-                    color: "orange.fg",
+                    bg: "teal.subtle",
+                    color: "blue.fg",
                   }}
                 >
                   {props.po.purchaseOrder.code}
@@ -97,7 +104,7 @@ export default function PurchaseOrderItemSelectorItem(
                   ignoreCase
                   matchAll
                   query={search}
-                  styles={{ bg: "yellow.subtle", color: "orange.fg" }}
+                  styles={{ bg: "teal.subtle", color: "blue.fg" }}
                 >
                   {check.assigned(props.po.purchaseOrder.customer)
                     ? props.po.purchaseOrder.customer!.code
@@ -136,9 +143,9 @@ export default function PurchaseOrderItemSelectorItem(
             asChild
           >
             <HStack>
-              <Button variant="outline" size="sm" flexGrow={1}>
+              <Button variant="outline" size="sm" flexGrow={1} bg={"colorPalette.contrast"}>
                 <Collapsible.Context>
-                  {(api) => (api.open ? "Show Less" : "Show More")}
+                  {(api) => (api.open ? "Đóng" : "Mở rộng")}
                 </Collapsible.Context>
                 <Collapsible.Indicator
                   transition="transform 0.2s"
@@ -151,7 +158,7 @@ export default function PurchaseOrderItemSelectorItem(
           </Collapsible.Trigger>
           <Collapsible.Content>
             <Stack padding="4" borderWidth="1px">
-              {props.po.subPurchaseOrders.map((subpo) => (
+              {sorted.map((subpo) => (
                 <PurchaseOrderItemSelectorSubItem
                   key={subpo.subPurchaseOrder.code}
                   subpo={subpo}

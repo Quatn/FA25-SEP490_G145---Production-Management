@@ -121,6 +121,7 @@ type PageAction =
     type: "TOGGLE_ORDER_TREE_NODE";
     payload: { id: string; tree: TreeNode[] };
   }
+  | { type: "RESET_TREE_STATE" }
   | { type: "RESET" };
 
 const initialState: PageState = {
@@ -203,6 +204,15 @@ function pageReducer(state: PageState, action: PageAction): PageState {
       }
       // Update ancestors recursively
       return updateAncestors(tree, id, newState);
+    case "RESET_TREE_STATE":
+      return {
+        ...state,
+        selectedIdsTree: {},
+        checkedOrderNodes: {},
+        indeterminateOrderNodes: {},
+        selectedPOIsIds: [],
+        hasUnsavedChanges: false,
+      };
     case "RESET":
       return initialState;
     default:

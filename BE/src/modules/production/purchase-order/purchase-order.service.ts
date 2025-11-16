@@ -18,6 +18,7 @@ import {
   SubPurchaseOrderSchema,
 } from "../schemas/sub-purchase-order.schema";
 import { Customer } from "../schemas/customer.schema";
+import { Ware } from "../schemas/ware.schema";
 
 type SoftPurchaseOrder = PurchaseOrder & SoftDeleteDocument;
 
@@ -33,7 +34,10 @@ export class PurchaseOrderService {
     @InjectModel(
       Customer.name,
     ) private readonly customerModel: Model<Customer>,
-  ) { }
+    @InjectModel(
+      Ware.name,
+    ) private readonly wareModel: Model<Ware>,
+  ) {}
 
   async findAll() {
     return await this.purchaseOrderModel.find();
@@ -95,6 +99,9 @@ export class PurchaseOrderService {
       { path: "purchaseOrder.customer" },
     ]);
 
+    await this.wareModel.populate(data, [
+      { path: "subPurchaseOrders.purchaseOrderItems.ware" },
+    ]);
     // console.log(populatedData)
 
     // temp

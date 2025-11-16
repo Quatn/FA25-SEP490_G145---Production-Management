@@ -15,10 +15,9 @@ import { UpdatePurchaseOrderItemDto } from "./dto/update-purchase-order-item.dto
 @Injectable()
 export class PurchaseOrderItemService {
   constructor(
-    @InjectModel(
-      PurchaseOrderItem.name,
-    ) private readonly purchaseOrderItemModel: Model<PurchaseOrderItem>,
-  ) {}
+    @InjectModel(PurchaseOrderItem.name)
+    private readonly purchaseOrderItemModel: Model<PurchaseOrderItem>,
+  ) { }
 
   async findAll() {
     return await this.purchaseOrderItemModel.find();
@@ -79,10 +78,15 @@ export class PurchaseOrderItemService {
     const warePath = PurchaseOrderItemSchema.path("ware");
     const fluteCombinationPath = WareSchema.path("fluteCombination");
     const finishingProcessesPath = WareSchema.path("finishingProcesses");
-    const manufacturingProcessesPath = WareSchema.path("manufacturingProcesses");
+    const manufacturingProcessesPath = WareSchema.path(
+      "manufacturingProcesses",
+    );
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
     const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
+    const wareManufacturingProcessTypePath = WareSchema.path(
+      "wareManufacturingProcessType",
+    );
 
     const populate = [
       {
@@ -91,6 +95,7 @@ export class PurchaseOrderItemService {
           fluteCombinationPath,
           finishingProcessesPath,
           manufacturingProcessesPath,
+          wareManufacturingProcessTypePath,
         ],
       },
       {
@@ -145,10 +150,13 @@ export class PurchaseOrderItemService {
     const warePath = PurchaseOrderItemSchema.path("ware");
     const fluteCombinationPath = WareSchema.path("fluteCombination");
     const finishingProcessesPath = WareSchema.path("finishingProcesses");
-    const manufacturingProcessesPath = WareSchema.path("manufacturingProcesses");
+    const manufacturingProcessesPath = WareSchema.path(
+      "manufacturingProcesses",
+    );
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
     const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
+    const wareManufacturingProcessTypePath = WareSchema.path("wareManufacturingProcessType")
 
     const populate = [
       {
@@ -157,6 +165,7 @@ export class PurchaseOrderItemService {
           fluteCombinationPath,
           finishingProcessesPath,
           manufacturingProcessesPath,
+          wareManufacturingProcessTypePath,
         ],
       },
       {
@@ -183,7 +192,10 @@ export class PurchaseOrderItemService {
     return mappedData;
   }
 
-  async update(id: string, payload: UpdatePurchaseOrderItemDto): Promise<PurchaseOrderItem> {
+  async update(
+    id: string,
+    payload: UpdatePurchaseOrderItemDto,
+  ): Promise<PurchaseOrderItem> {
     const updated = await this.purchaseOrderItemModel
       .findByIdAndUpdate(id, payload, { new: true })
       .populate("ware")

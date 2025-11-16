@@ -13,7 +13,7 @@ export default function PurchaseOrderCreatePage() {
         rounded={"sm"}
       >
         <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-          Create Manufacturing order
+          Tạo lệnh
         </Text>
 
         <Box

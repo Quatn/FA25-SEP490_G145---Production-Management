@@ -74,11 +74,15 @@ class PopulatedWare extends Ware {
     }
     super();
     Object.assign(this, ware);
-    this.fluteCombination = ware.fluteCombination;
-    this.finishingProcesses =
-      (ware.finishingProcesses || []) as WareFinishingProcessType[];
-    this.manufacturingProcesses =
-      (ware.manufacturingProcesses || []) as ManufacturingProcess[];
+    this.printColors = (ware.printColors || []) as PrintColor[];
+    this.finishingProcesses = (ware.finishingProcesses ||
+      []) as WareFinishingProcessType[];
+    this.manufacturingProcesses = (ware.manufacturingProcesses ||
+      []) as ManufacturingProcess[];
+    this.finishingProcesses = (ware.finishingProcesses ||
+      []) as WareFinishingProcessType[];
+    this.manufacturingProcesses = (ware.manufacturingProcesses ||
+      []) as ManufacturingProcess[];
   }
 }
 
@@ -151,7 +155,8 @@ export class FullDetailManufacturingOrderDto extends ManufacturingOrder {
     type: PopulatedPurchaseOrderItem,
     description: "Populated purchaseOrderItem",
   })
-  declare purchaseOrderItem: PopulatedPurchaseOrderItem & ManufacturingOrder['purchaseOrderItem'];
+  declare purchaseOrderItem: PopulatedPurchaseOrderItem &
+    ManufacturingOrder["purchaseOrderItem"];
 
   constructor(order: ManufacturingOrder) {
     if (!isRefPopulated(order.purchaseOrderItem)) {
@@ -162,7 +167,7 @@ export class FullDetailManufacturingOrderDto extends ManufacturingOrder {
     super();
     Object.assign(this, order);
     this.purchaseOrderItem = new PopulatedPurchaseOrderItem(
-      order.purchaseOrderItem as unknown as PurchaseOrderItem,
-    ) as any;
+      order.purchaseOrderItem,
+    );
   }
 }

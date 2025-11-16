@@ -15,7 +15,9 @@ export default function ManufacturingOrderPaginationControl() {
       <Group attached>
         <Button
           colorPalette={"teal"}
-          variant={paginationType === "paged" ? "solid" : "outline"}
+          bg={paginationType !== "paged" ? "bg" : "colorPalette.solid"}
+          variant={"outline"}
+          // variant={paginationType === "paged" ? "solid" : "outline"}
           onClick={() =>
             dispatch({
               type: "SET_PAGINATION_TYPE",
@@ -26,7 +28,8 @@ export default function ManufacturingOrderPaginationControl() {
         </Button>
         <Button
           colorPalette={"teal"}
-          variant={paginationType === "pageless" ? "solid" : "outline"}
+          bg={paginationType !== "pageless" ? "bg" : "colorPalette.solid"}
+          variant={"outline"}
           onClick={() =>
             dispatch({ type: "SET_PAGINATION_TYPE", payload: "pageless" })}
         >

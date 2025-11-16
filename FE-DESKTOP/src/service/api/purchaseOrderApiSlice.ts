@@ -59,6 +59,7 @@ export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
         params: { page, limit, search },
         credentials: "include",
       }),
+      providesTags: ["ManufacturingOrder", "PurchaseOrder"],
     }),
   }),
 });

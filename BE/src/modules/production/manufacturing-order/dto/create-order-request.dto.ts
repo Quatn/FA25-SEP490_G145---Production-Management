@@ -8,16 +8,18 @@ import {
 } from "class-validator";
 import mongoose from "mongoose";
 import { FullDetailPurchaseOrderItemDto } from "../../purchase-order-item/dto/full-details-orders.dto";
+import { IntersectionType } from "@nestjs/mapped-types";
 
-export class CreateManufacturingOrderRequestDto {
+export class CreateManufacturingOrderRequestDtoInfoFields {
   @ApiProperty({
-    example: "TA-ĐH 03-01-01",
     description:
-      "Code of the PO Item the order attachs with, must be unique since an PO Item can only be used to create one order",
+      "Id of the PO Item the order attachs with, must be unique since an PO Item can only be used to create one order",
   })
   @IsMongoId()
   purchaseOrderItemId: mongoose.Types.ObjectId;
+}
 
+export class CreateManufacturingOrderRequestDtoFormFields {
   @ApiProperty()
   @IsOptional()
   @IsDate()
@@ -47,6 +49,11 @@ export class CreateManufacturingOrderRequestDto {
   @IsString()
   note: string = "";
 }
+
+export class CreateManufacturingOrderRequestDto extends IntersectionType(
+  CreateManufacturingOrderRequestDtoInfoFields,
+  CreateManufacturingOrderRequestDtoFormFields,
+) { }
 
 export class AssembledCreateManufacturingOrderRequestDto extends CreateManufacturingOrderRequestDto {
   purchaseOrderItem: FullDetailPurchaseOrderItemDto;

@@ -14,7 +14,8 @@ export default function ManufacturingOrderSearchFilterControl() {
     <Group attached>
       <Button
         colorPalette={"teal"}
-        variant={searchFilterType === "searchAndFilter" ? "solid" : "outline"}
+        bg={searchFilterType !== "searchAndFilter" ? "bg" : "colorPalette.solid"}
+        variant={"outline"}
         onClick={() =>
           dispatch({
             type: "SET_SEARCH_FILTER_TYPE",
@@ -25,7 +26,8 @@ export default function ManufacturingOrderSearchFilterControl() {
       </Button>
       <Button
         colorPalette={"teal"}
-        variant={searchFilterType === "search" ? "solid" : "outline"}
+        bg={searchFilterType !== "search" ? "bg" : "colorPalette.solid"}
+        variant={"outline"}
         onClick={() =>
           dispatch({ type: "SET_SEARCH_FILTER_TYPE", payload: "search" })}
       >
@@ -33,7 +35,8 @@ export default function ManufacturingOrderSearchFilterControl() {
       </Button>
       <Button
         colorPalette={"teal"}
-        variant={searchFilterType === "filter" ? "solid" : "outline"}
+        bg={searchFilterType !== "filter" ? "bg" : "colorPalette.solid"}
+        variant={"outline"}
         onClick={() =>
           dispatch({ type: "SET_SEARCH_FILTER_TYPE", payload: "filter" })}
       >

@@ -32,6 +32,7 @@ export default function PurchaseOrderItemSearchBar() {
         placeholder="Smart search"
         value={localSearch}
         onChange={changeQuery}
+        bg={"bg"}
       />
     </InputGroup>
   );

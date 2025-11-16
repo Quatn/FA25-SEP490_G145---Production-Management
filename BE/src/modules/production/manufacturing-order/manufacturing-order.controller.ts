@@ -34,12 +34,17 @@ import {
   CreateManyManufacturingOrdersRequestDto,
   CreateManyManufacturingOrdersResponseDto,
 } from "./dto/create-many-orders.dto";
-import mongoose from "mongoose";
-import { FindAllMoQueryDto } from "./dto/find-all-mo-query.dto";
-import { UpdateOverallStatusDto } from "./dto/update-overall-status.dto";
 import { DeleteResult } from "@/common/dto/delete-result.dto";
 import { DeleteManufacturingOrderRequestDto } from "./dto/delete-order-request.dto";
 import { PatchResult } from "@/common/dto/patch-result.dto";
+import {
+  UpdateManyManufacturingOrdersRequestDto,
+  UpdateManyManufacturingOrdersResponseDto,
+} from "./dto/update-many-orders.dto";
+import { AssembledUpdateManufacturingOrderRequestDto } from "./dto/update-order-request.dto";
+import mongoose from "mongoose";
+import { FindAllMoQueryDto } from "./dto/find-all-mo-query.dto";
+import { UpdateOverallStatusDto } from "./dto/update-overall-status.dto";
 
 @Controller("manufacturing-order")
 // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -71,6 +76,21 @@ export class ManufacturingOrderController {
       message: 'Fetch successful',
       // 4. Trả về toàn bộ đối tượng phân trang (data, total, page, limit)
       data: paginatedResult,
+    };
+  }
+
+  @Get("query")
+  @ApiOperation({ summary: "Query manufacturing orders" })
+  // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
+  @ApiResponseWith(ManufacturingOrder, { paginated: true })
+  async queryList(
+    @Query() query: QueryListManufacturingOrderRequestDto,
+  ): Promise<QueryListManufacturingOrderResponseDto> {
+    const docs = await this.moService.queryList(query);
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
     };
   }
 
@@ -138,7 +158,7 @@ export class ManufacturingOrderController {
 
   @Post("create-many")
   @ApiOperation({ summary: "Create many manufacturing orders" })
-  @ApiResponseWith(FullDetailManufacturingOrderDto)
+  // @ApiResponseWith(FullDetailManufacturingOrderDto)
   async createMany(
     @Body() body: CreateManyManufacturingOrdersRequestDto,
   ): Promise<CreateManyManufacturingOrdersResponseDto> {
@@ -159,6 +179,26 @@ export class ManufacturingOrderController {
       }));
 
     const docs = await this.moService.createMany(assembledDto);
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
+    };
+  }
+
+  @Patch("update-many")
+  @ApiOperation({ summary: "Update many manufacturing orders" })
+  // @ApiResponseWith(FullDetailManufacturingOrderDto)
+  async updateMany(
+    @Body() body: UpdateManyManufacturingOrdersRequestDto,
+  ): Promise<UpdateManyManufacturingOrdersResponseDto> {
+    const assembledDto: AssembledUpdateManufacturingOrderRequestDto[] =
+      body.orders.map((mo, _i) => ({
+        ...mo,
+        // purchaseOrderItem: pois[i],
+      }));
+
+    const docs = await this.moService.updateMany(assembledDto);
     return {
       success: true,
       message: "Fetch successful",

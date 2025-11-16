@@ -10,6 +10,7 @@ import {
   Box,
   BoxProps,
   Button,
+  Checkbox,
   Group,
   HStack,
   Table,
@@ -17,16 +18,17 @@ import {
   Tabs,
   TabsRootProps,
 } from "@chakra-ui/react";
-import { purchaseOrderItemTableColumnsByTabs } from "./poiTableDefinition";
-import { useState } from "react";
+import { purchaseOrderItemTableColumns, purchaseOrderItemTableColumnsByTabs } from "./poiTableDefinition";
+import { useMemo, useState } from "react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
+import { QueryOrdersWithUnmanufacturedItemsDto_PurchaseOrderItem } from "@/types/DTO/purchase-order/query-orders-with-unmanufactured-items";
 
 type TableProps = {
   rootProps?: BoxProps;
   tabsRootProps?: TabsRootProps;
   tableRootProps?: TableRootProps;
-  items: Serialized<PurchaseOrderItem>[];
+  items: Serialized<QueryOrdersWithUnmanufacturedItemsDto_PurchaseOrderItem>[];
   tree: ManufacturingOrderCreatePageTreeNode[];
 };
 
@@ -47,11 +49,16 @@ export default function PurchaseOrderItemPickerTable(
       payload: { id, tree: props.tree },
     });
 
+  const sorted = useMemo(() => {
+    return props.items.toSorted((a, b) => (a.isManufactured ? 1 : 0) - (b.isManufactured ? 1 : 0))
+  }, [props.items])
+
   const [tab, setTab] = useState<PurchaseOrderItemPickerTabType>("all");
-  const columnsForTab = purchaseOrderItemTableColumnsByTabs[tab] ?? [];
+  // const columnsForTab = purchaseOrderItemTableColumnsByTabs[tab] ?? [];
 
   return (
     <Box mt={3} {...props.rootProps}>
+      {/*
       <Tabs.Root
         value={tab}
         onValueChange={(e) => setTab(e.value as PurchaseOrderItemPickerTabType)}
@@ -88,6 +95,7 @@ export default function PurchaseOrderItemPickerTable(
           </Tabs.Trigger>
         </Tabs.List>
       </Tabs.Root>
+      */}
 
       <Table.ScrollArea borderWidth="1px" rounded="md">
         <Table.Root
@@ -128,23 +136,24 @@ export default function PurchaseOrderItemPickerTable(
         >
           <Table.Header bgColor={"blue.100"}>
             <Table.Row h="60px">
+              <Table.ColumnHeader />
               <Table.ColumnHeader
                 data-sticky
-                minW="100px"
-                w="100px"
+                minW="160px"
+                w="160px"
                 left="0"
               >
                 Mã PO Item
               </Table.ColumnHeader>
               <Table.ColumnHeader
-                minW="100px"
-                w="100px"
-                left="100px"
+                minW="160px"
+                w="160px"
+                left="160px"
                 data-sticky="end"
               >
                 Mã hàng
               </Table.ColumnHeader>
-              {columnsForTab.map((col) => (
+              {purchaseOrderItemTableColumns.map((col) => (
                 <Table.ColumnHeader key={col.key}>
                   {col.header}
                 </Table.ColumnHeader>
@@ -152,24 +161,41 @@ export default function PurchaseOrderItemPickerTable(
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {props.items.map((item) => (
+            {sorted.map((item) => (
               <Table.Row
                 key={item._id}
-                bg={"gray.50"}
+                colorPalette={"gray"}
+                bg={item.isManufactured ? "gray.muted" : "gray.subtle"}
                 h="50px"
               >
-                <Table.Cell minW="100px" w="100px" left="0" data-sticky>
+                <Table.Cell>
+                  <Checkbox.Root
+                    size="sm"
+                    top="0.5"
+                    aria-label="Select row"
+                    disabled={item.isManufactured}
+                    checked={(item.isManufactured) ? true : getChecked(item._id)}
+                    onCheckedChange={() => {
+                      if (!item.isManufactured) handleToggle(item._id)
+                    }}
+                  >
+                    <Checkbox.HiddenInput />
+                    <Checkbox.Control />
+                  </Checkbox.Root>
+                </Table.Cell>
+
+                <Table.Cell minW="160px" w="160px" left="0" data-sticky>
                   {item.code}
                 </Table.Cell>
                 <Table.Cell
-                  minW="100px"
-                  w="100px"
-                  left="100px"
+                  minW="160px"
+                  w="160px"
+                  left="160px"
                   data-sticky="end"
                 >
                   {item.ware?.code}
                 </Table.Cell>
-                {columnsForTab.map((col) => (
+                {purchaseOrderItemTableColumns.map((col) => (
                   <Table.Cell key={col.key}>{col.render(item)}</Table.Cell>
                 ))}
               </Table.Row>

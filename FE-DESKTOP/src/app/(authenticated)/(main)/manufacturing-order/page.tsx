@@ -1,6 +1,5 @@
 import ManufacturingOrderPagination from "@/components/manufacturing-order/full-detail-table/Pagination";
 import ManufacturingOrderPaginationControl from "@/components/manufacturing-order/full-detail-table/PaginationControl";
-import ManufacturingOrderPinnedOrders from "@/components/manufacturing-order/full-detail-table/PinnedOrders";
 import ManufacturingOrderSearchBar from "@/components/manufacturing-order/full-detail-table/SearchBar";
 import ManufacturingOrderSearchFilterControl from "@/components/manufacturing-order/full-detail-table/SearchFilterControl";
 import ManufacturingOrderTable from "@/components/manufacturing-order/full-detail-table/Table";
@@ -8,10 +7,10 @@ import ManufacturingOrderTableControl from "@/components/manufacturing-order/ful
 import ManufacturingOrderDetailsDialog from "@/components/manufacturing-order/order-details-dialog/Dialog";
 import { ManufacturingOrderDialogProvider } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { ManufacturingOrderTableProvider } from "@/context/manufacturing-order/manufacturingOrderTableContext";
-import { Box, Button, Group, HStack, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, HStack, Stack, Text } from "@chakra-ui/react";
 import Link from "next/link";
 
-export default function PurchaseOrderHome() {
+export default function ManufacturingOrderHome() {
   return (
     <ManufacturingOrderTableProvider>
       <ManufacturingOrderDialogProvider>
@@ -24,12 +23,15 @@ export default function PurchaseOrderHome() {
             px={3}
             py={5}
             rounded={"md"}
-            backgroundColor={"gray.100"}
-            height={"80vh"}
+            colorPalette={"gray"}
+            backgroundColor={"colorPalette.subtle"}
           >
-            <Stack height={"full"} gapY={2}>
+            <Stack
+              gapY={2}
+              minHeight={"80vh"}
+            >
               <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-                Manufacturing Orders
+                Danh sách lệnh
               </Text>
               <HStack justifyContent={"space-between"}>
                 <ManufacturingOrderSearchBar />
@@ -43,21 +45,14 @@ export default function PurchaseOrderHome() {
 
               <ManufacturingOrderTableControl />
 
-              <ManufacturingOrderTable rootProps={{ flexGrow: 1 }} />
+              <Box flexGrow={1}>
+                <ManufacturingOrderTable rootProps={{ flexGrow: 1 }} />
+              </Box>
 
               <ManufacturingOrderPaginationControl />
 
               <ManufacturingOrderPagination />
             </Stack>
-          </Box>
-
-          <Box
-            p={3}
-            mt={5}
-            rounded={"md"}
-            backgroundColor={"gray.100"}
-          >
-            <ManufacturingOrderPinnedOrders />
           </Box>
         </Box>
 
