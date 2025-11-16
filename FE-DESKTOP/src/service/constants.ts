@@ -29,3 +29,4 @@ export const SEMI_FINISHED_GOOD_URL = "/semi-finished-good";
 export const SEMI_FINISHED_GOOD_TRANSACTION_URL = "/semi-finished-good-transaction";
 export const FINISHED_GOOD_URL = "/finished-good";
 export const FINISHED_GOOD_TRANSACTION_URL = "/finished-good-transaction";
+export const MATERIAL_REQUIREMENT_URL = "/material_requirement";

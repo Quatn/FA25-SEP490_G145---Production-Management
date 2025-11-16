@@ -15,6 +15,7 @@ import {
   Box,
   BoxProps,
   Button,
+  Center,
   Editable,
   Group,
   Input,
@@ -23,6 +24,7 @@ import {
   Popover,
   Portal,
   Select,
+  Spinner,
   Stack,
   Table,
   TableRootProps,
@@ -32,7 +34,7 @@ import {
 } from "@chakra-ui/react";
 import check from "check-types";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
-import { manufacturingOrderColumnsByTabs } from "./tableDefinition";
+import { manufacturingOrderColumnsByTabs, ManufacturingOrderTableDataType } from "./tableDefinition";
 import { useManufacturingDialogDispatch } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { CSSProperties, useEffect, useReducer, useState } from "react";
 import { BiSolidDownArrow } from "react-icons/bi";
@@ -47,7 +49,7 @@ export type ManufacturingOrderTableProps = {
   tableRootProps?: TableRootProps;
 };
 
-const getCommonPinningStyles = (column: Column<Serialized<ManufacturingOrder>>): CSSProperties => {
+const getCommonPinningStyles = (column: Column<ManufacturingOrderTableDataType>): CSSProperties => {
   const isPinned = column.getIsPinned()
   const isLastLeftPinnedColumn =
     isPinned === 'left' && column.getIsLastColumn('left')
@@ -180,7 +182,7 @@ export default function ManufacturingOrderTable(
 
 
   const moPaginatedList = fullDetailMOPaginatedResponse?.data;
-  const [tableData, setTableData] = useState<(Serialized<ManufacturingOrder> & { isEdited: boolean })[]>(() => moPaginatedList?.data.map((mo) => ({
+  const [tableData, setTableData] = useState<(ManufacturingOrderTableDataType)[]>(() => moPaginatedList?.data.map((mo) => ({
     ...mo,
     isEdited: false,
   })) ?? [])
@@ -241,7 +243,14 @@ export default function ManufacturingOrderTable(
   }, [dispatch, moPaginatedList, moPaginatedList?.totalItems]);
 
   if (isFetchingList) {
-    return <Text>Loading table</Text>;
+    return (
+      <Center h={"full"} flex={1} flexGrow={1}>
+        <Stack alignItems={"center"}>
+          <Spinner size="xl" />
+          <Text>Đang tải lệnh</Text>
+        </Stack>
+      </Center>
+    );
   }
 
   if (fetchError) {
@@ -378,7 +387,7 @@ export default function ManufacturingOrderTable(
                     key={cell.id}
                     style={{
                       ...getCommonPinningStyles(cell.column),
-                      background: cell.column.getIsPinned() ? "#fefefe" : "#f3f3f3"
+                      background: row.original.isEdited ? (cell.column.getIsPinned() ? "#F5F5D5" : "#E7E7CB") : (cell.column.getIsPinned() ? "#fefefe" : "#f3f3f3")
                     }}
                   >
                     {(cell.column.id === "actions-column" && row.id === hoveredRowId) ? (

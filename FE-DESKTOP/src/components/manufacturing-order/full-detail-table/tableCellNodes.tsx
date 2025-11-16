@@ -2,6 +2,7 @@ import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { createListCollection, ListCollection } from "@chakra-ui/react";
 import { CellContext } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
+import { ManufacturingOrderTableDataType } from "./tableDefinition";
 
 export enum ManufacturingTableEditableCellInputTypes {
   text = "TEXT",
@@ -28,7 +29,7 @@ export type ManufacturingTableMeta = {
 };
 
 type NodeCellProps = {
-  context: CellContext<Serialized<ManufacturingOrder>, unknown>
+  context: CellContext<ManufacturingOrderTableDataType, unknown>
 }
 
 const NoteCell = (props: NodeCellProps) => {

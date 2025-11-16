@@ -24,11 +24,12 @@ export function createApiEndpoint<
     providesTags?: string[];
     mockFn?: (args: TArgs) => Promise<TData>;
     transform?: (response: TData) => TData;
+    doMock?: boolean,
   },
 ): QueryDefinition<TArgs, ApiBaseQuery, string, TData, string> {
-  const { query, mockFn, transform, providesTags } = config;
+  const { query, mockFn, transform, providesTags, doMock } = config;
 
-  if (USE_MOCK_DATA && mockFn) {
+  if ((doMock || USE_MOCK_DATA) && mockFn) {
     return builder.query<TData, TArgs>({
       queryFn: async (args): Promise<MockResponse<TData>> => {
         try {

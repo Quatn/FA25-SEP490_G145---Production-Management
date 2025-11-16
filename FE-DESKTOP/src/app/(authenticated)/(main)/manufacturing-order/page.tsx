@@ -45,9 +45,9 @@ export default function ManufacturingOrderHome() {
 
               <ManufacturingOrderTableControl />
 
-              <Box flexGrow={1}>
+              <Stack flexGrow={1}>
                 <ManufacturingOrderTable rootProps={{ flexGrow: 1 }} />
-              </Box>
+              </Stack>
 
               <ManufacturingOrderPaginationControl />
 

@@ -6,7 +6,9 @@ import type { ManufacturingTableTabType } from "@/context/manufacturing-order/ma
 import { useEffect, useState } from "react";
 import { manufacturingOrderTableCells } from "./tableCellNodes";
 
-const columnHelper = createColumnHelper<Serialized<ManufacturingOrder>>();
+export type ManufacturingOrderTableDataType = Serialized<ManufacturingOrder> & { isEdited: boolean }
+
+const columnHelper = createColumnHelper<ManufacturingOrderTableDataType>();
 
 const colSize = {
   sm: {
@@ -32,7 +34,7 @@ export const manufacturingOrderColumns = [
     header: "KH Giao",
     enablePinning: true,
     ...colSize.md,
-    cell: (context: CellContext<Serialized<ManufacturingOrder>, unknown>) => manufacturingOrderTableCells.manufacturingDirective({ context }),
+    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.manufacturingDirective({ context }),
   }),
   columnHelper.display({
     id: "code",
@@ -59,6 +61,7 @@ export const manufacturingOrderColumns = [
     header: "Sóng",
     cell: ({ row }) =>
       row.original.purchaseOrderItem?.ware?.fluteCombination?.code,
+
   }),
   columnHelper.display({
     id: "wareWidth",
@@ -82,7 +85,7 @@ export const manufacturingOrderColumns = [
     id: "amount",
     header: "Số lượng",
     ...colSize.md,
-    cell: (context: CellContext<Serialized<ManufacturingOrder>, unknown>) => manufacturingOrderTableCells.amount({ context }),
+    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.amount({ context }),
 
   }),
   columnHelper.display({
@@ -224,24 +227,24 @@ export const manufacturingOrderColumns = [
     id: "note",
     header: "Ghi chú tạm thời",
     ...colSize.lg,
-    cell: (context: CellContext<Serialized<ManufacturingOrder>, unknown>) => manufacturingOrderTableCells.note({ context }),
+    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.note({ context }),
   }),
   columnHelper.display({
     id: "manufacturingDateAdjustment",
     header: "Ngày SX",
-    cell: (context: CellContext<Serialized<ManufacturingOrder>, unknown>) => manufacturingOrderTableCells.manufacturingDate({ context }),
+    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.manufacturingDate({ context }),
 
   }),
   columnHelper.display({
     id: "requestedDatetime",
     header: "Ngày và giờ cần",
-    cell: (context: CellContext<Serialized<ManufacturingOrder>, unknown>) => manufacturingOrderTableCells.requestedDatetime({ context }),
+    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.requestedDatetime({ context }),
 
   }),
   columnHelper.display({
     id: "corrugatorLineAdjustment",
     header: "Dàn",
-    cell: (context: CellContext<Serialized<ManufacturingOrder>, unknown>) => manufacturingOrderTableCells.corrugatorLine({ context }),
+    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.corrugatorLine({ context }),
   }),
   columnHelper.display({
     id: "faceLayerPaperWeight",
