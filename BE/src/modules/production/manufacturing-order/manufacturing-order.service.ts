@@ -66,6 +66,10 @@ export class ManufacturingOrderService {
     private readonly corrugatorProcessModel: Model<CorrugatorProcessDocument>,
   ) { }
 
+  async findAll() {
+    return await this.manufacturingOrderModel.find();
+  }
+
   /**
    * Lấy danh sách MO đã populate đầy đủ dữ liệu (có phân trang và filter)
    */

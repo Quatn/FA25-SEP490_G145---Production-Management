@@ -79,6 +79,18 @@ export class ManufacturingOrderController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
+  @Get("list-all")
+  @ApiOperation({ summary: "List manufacturing orders" })
+  async listAll(): Promise<BaseResponse<ManufacturingOrderDocument[]>> {
+    const docs = await this.moService.findAll();
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
+    };
+  }
+
   @Get("query")
   @ApiOperation({ summary: "Query manufacturing orders" })
   // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
