@@ -33,11 +33,6 @@ import { getManufacturingDate } from "./business-logics/mo-manufacturing-date-ge
 import { FullDetailPurchaseOrderItemDto } from "../purchase-order-item/dto/full-details-orders.dto";
 import { getCorrugatorLine } from "./business-logics/mo-corrugator-line-getter";
 import { CreateResult } from "@/common/dto/create-result.dto";
-import { OrderFinishingProcess } from "../schemas/order-finishing-process.schema";
-import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
-import { DeleteResult } from "@/common/dto/delete-result.dto";
-import { PatchResult } from "@/common/dto/patch-result.dto";
-import check from "check-types";
 import {
   ManufacturingOrderProcess,
   ManufacturingOrderProcessDocument,
@@ -50,6 +45,11 @@ import {
 } from "../schemas/corrugator-process.schema";
 import { FindAllMoQueryDto } from "./dto/find-all-mo-query.dto";
 import { UpdateOverallStatusDto } from "./dto/update-overall-status.dto";
+import { OrderFinishingProcess } from "../schemas/order-finishing-process.schema";
+import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
+import { DeleteResult } from "@/common/dto/delete-result.dto";
+import { PatchResult } from "@/common/dto/patch-result.dto";
+import check from "check-types";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -871,7 +871,11 @@ export class ManufacturingOrderService {
       populate: [
         {
           path: warePath.path,
-          populate: [fluteCombinationPath, finishingProcessesPath, wareManufacturingProcessTypePath],
+          populate: [
+            fluteCombinationPath,
+            finishingProcessesPath,
+            wareManufacturingProcessTypePath,
+          ],
         },
         {
           path: subpoPath.path,

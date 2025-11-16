@@ -145,4 +145,15 @@ export class PaperRollController {
     const docs = await this.prService.findDeleted(page, limit);
     return { success: true, message: "Fetch deleted", data: docs };
   }
+
+  @Get('detail-by-paper-roll/:paperRollId')
+  @ApiOperation({ summary: 'Paper roll detail by paperRollId' })
+  async findByPaperRollId(@Param('paperRollId') paperRollId: string): Promise<BaseResponse<PaperRollDocument>> {
+    const doc = await this.prService.findByPaperRollId(paperRollId);
+    return {
+      success: true,
+      message: 'Fetch successful',
+      data: doc,
+    };
+  }
 }
