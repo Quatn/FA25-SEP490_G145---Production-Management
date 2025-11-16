@@ -1,0 +1,29 @@
+[
+  {
+    "id": "T1",
+    "paperRollId": "R1",
+    "timeStamp": "2025-07-13T08:05:00",
+    "transactionType": "XUAT",
+    "initialWeight": 156,
+    "finalWeight": 0,
+    "inCharge": "Nguyen A"
+  },
+  {
+    "id": "T2",
+    "paperRollId": "R2",
+    "timeStamp": "2025-07-13T09:12:00",
+    "transactionType": "NHAPLAI",
+    "initialWeight": 0,
+    "finalWeight": 399,
+    "inCharge": "Tran B"
+  },
+  {
+    "id": "T3",
+    "paperRollId": "R3",
+    "timeStamp": "2025-07-12T11:20:00",
+    "transactionType": "XUAT",
+    "initialWeight": 995,
+    "finalWeight": 0,
+    "inCharge": "Le C"
+  }
+]

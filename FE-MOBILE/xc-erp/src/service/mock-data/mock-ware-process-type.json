@@ -1,0 +1,72 @@
+[
+  {
+    "id": "wareprocesstypeid001",
+    "code": "GHEP",
+    "name": "Ghép",
+    "description": "Sản phẩm được ghép từ nhiều phần riêng biệt để tạo thành một bộ hoàn chỉnh.",
+    "note": ""
+  },
+  {
+    "id": "wareprocesstypeid002",
+    "code": "GHEP1NAP",
+    "name": "Ghép 1 nắp",
+    "description": "Sản phẩm ghép có thêm một nắp, thường dùng cho hộp nắp rời.",
+    "note": ""
+  },
+  {
+    "id": "wareprocesstypeid003",
+    "code": "GHEPCHONGNAP",
+    "name": "Ghép chồng nắp",
+    "description": "Sản phẩm ghép có phần nắp chồng lên thân, thường dùng để tăng độ kín hoặc độ cứng.",
+    "note": ""
+  },
+  {
+    "id": "wareprocesstypeid004",
+    "code": "KHAY",
+    "name": "Khay",
+    "description": "Sản phẩm dạng khay, thường không có nắp, dùng để đựng hàng hoặc làm khay lót.",
+    "note": ""
+  },
+  {
+    "id": "wareprocesstypeid005",
+    "code": "LIEN",
+    "name": "Liền",
+    "description": "Sản phẩm liền khối, không ghép, được tạo thành từ một tấm giấy duy nhất sau quá trình bế và gấp.",
+    "note": ""
+  },
+  {
+    "id": "wareprocesstypeid006",
+    "code": "LIEN1NAP",
+    "name": "Liền 1 nắp",
+    "description": "Sản phẩm liền có một nắp, thường là hộp gấp nắp trên.",
+    "note": ""
+  },
+  {
+    "id": "wareprocesstypeid007",
+    "code": "LIENCHONGNAP",
+    "name": "Liền chồng nắp",
+    "description": "Sản phẩm liền có phần nắp gấp chồng lên nhau, tăng độ kín hoặc độ chịu lực.",
+    "note": ""
+  },
+  {
+    "id": "wareprocesstypeid008",
+    "code": "TAM",
+    "name": "Tấm",
+    "description": "Dạng tấm phẳng, không có nắp hay ghép, thường dùng làm lót hoặc vách ngăn.",
+    "note": ""
+  },
+  {
+    "id": "wareprocesstypeid009",
+    "code": "TAM1LAN",
+    "name": "Tấm 1 lằn",
+    "description": "Tấm có một đường gấp (lằn), cho phép gập thành góc hoặc tạo nếp trong đóng gói.",
+    "note": ""
+  },
+  {
+    "id": "wareprocesstypeid010",
+    "code": "VACHU",
+    "name": "Vách U",
+    "description": "Dạng tấm carton được gấp hoặc bế tạo hình chữ U, thường dùng làm vách đệm hoặc khung bảo vệ sản phẩm trong thùng.",
+    "note": ""
+  }
+]
