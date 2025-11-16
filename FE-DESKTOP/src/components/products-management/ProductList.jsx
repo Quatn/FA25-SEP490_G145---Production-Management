@@ -20,6 +20,8 @@ import {
   useDeleteProductMutation,
 } from "@/service/api/productApiSlice";
 import { useGetWaresQuery } from "@/service/api/wareApiSlice";
+import { useGetAllCustomersQuery } from "@/service/api/customerApiSlice";
+import { useGetAllProductTypeQuery } from "@/service/api/productTypeApiSlice";
 
 export default function ProductList() {
   // Load wares from API instead of mock data
@@ -28,7 +30,14 @@ export default function ProductList() {
     limit: 1000,
   }); // Load all wares for selection
 
-  console.log(waresData);
+  const { data: customersData, isLoading: isLoadingCustomer } =
+    useGetAllCustomersQuery({}); // Load all customers for selection
+
+  const { data: productTypesData, isLoading: isLoadingProductTypes } =
+    useGetAllProductTypeQuery();
+
+  const customers = customersData?.data ?? [];
+  const productTypes = productTypesData?.data ?? [];
 
   // Use Ware objects directly from API - no need to transform
   const availableItemCodes = useMemo(() => {
@@ -115,26 +124,7 @@ export default function ProductList() {
       });
   }, [availableItemCodes, modalSearchTerm, productToUpdateWareCodes]);
 
-  const customerOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          products
-            .map((p) => {
-              // Handle customer as ObjectId string or populated Customer object
-              if (typeof p.customer === "string") {
-                return p.customer;
-              }
-              if (p.customer && typeof p.customer === "object") {
-                return p.customer._id || p.customer.id || p.customer.code;
-              }
-              return null;
-            })
-            .filter(Boolean)
-        )
-      ),
-    [products]
-  );
+  // Không cần customerOptions từ products nữa, sử dụng trực tiếp từ API
 
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
@@ -362,16 +352,16 @@ export default function ProductList() {
         : editingProduct.customer?._id || editingProduct.customer?.id || "";
 
     // Extract productType ID (can be ObjectId string or ProductType object)
-    const productTypeId =
-      typeof editingProduct.productType === "string"
-        ? editingProduct.productType
-        : editingProduct.productType?._id ||
-          editingProduct.productType?.id ||
-          "";
+    // When from select, it's already a string (ObjectId)
+    const productTypeId = editingProduct.productType || "";
+      // typeof editingProduct.productType === "string"
+      //   ? editingProduct.productType
+      //   : editingProduct.productType?._id || editingProduct.productType?.id || "";
 
     const payload = {
       code: editingProduct.code?.trim() ?? "",
       name: editingProduct.name?.trim() ?? "",
+      productName: editingProduct.name?.trim() ?? "", // Backend requires productName
       customer: customerId,
       description: editingProduct.description ?? "",
       productLength: Number(editingProduct.productLength) || 0,
@@ -383,8 +373,24 @@ export default function ProductList() {
       wares: waresIds,
     };
 
-    if (!payload.code || !payload.customer || !payload.name) {
-      window.alert("Vui lòng nhập mã sản phẩm, khách hàng và tên sản phẩm.");
+    // Validation
+    if (!payload.code || !payload.name) {
+      window.alert("Vui lòng nhập mã sản phẩm và tên sản phẩm.");
+      return;
+    }
+
+    if (!payload.customer) {
+      window.alert("Vui lòng chọn khách hàng.");
+      return;
+    }
+
+    if (!payload.productType) {
+      window.alert("Vui lòng chọn loại sản phẩm.");
+      return;
+    }
+
+    if (!Array.isArray(payload.wares) || payload.wares.length === 0) {
+      window.alert("Vui lòng chọn ít nhất một mã hàng.");
       return;
     }
 
@@ -400,7 +406,12 @@ export default function ProductList() {
       handleCloseProductModal();
     } catch (error) {
       console.error("Không thể lưu sản phẩm:", error);
-      window.alert("Đã xảy ra lỗi khi lưu sản phẩm. Vui lòng thử lại.");
+      // Hiển thị thông báo lỗi chi tiết hơn
+      const errorMessage =
+        error?.data?.message ||
+        error?.message ||
+        "Đã xảy ra lỗi khi lưu sản phẩm. Vui lòng thử lại.";
+      window.alert(errorMessage);
     }
   };
 
@@ -489,13 +500,19 @@ export default function ProductList() {
               setProductTypeFilter(e.target.value);
               setPage(1);
             }}
+            disabled={isLoadingProductTypes}
           >
             <option value="all">--Chọn Loại--</option>
-            <option value="Bộ">Bộ</option>
-            <option value="Lót">Lót</option>
-            <option value="Thùng">Thùng</option>
-            <option value="Vách">Vách</option>
-            <option value="Đế">Đế</option>
+            {productTypes.map((productType) => {
+              const productTypeId = productType._id || productType.id;
+              const productTypeName =
+                productType.name || productType.code || "";
+              return (
+                <option key={productTypeId} value={productTypeId}>
+                  {productTypeName}
+                </option>
+              );
+            })}
           </Form.Select>
         </Col>
         <Col xs={12} md={2}>
@@ -505,13 +522,18 @@ export default function ProductList() {
               setCustomerFilter(e.target.value);
               setPage(1);
             }}
+            disabled={isLoadingCustomer}
           >
             <option value="all">--Khách Hàng--</option>
-            {customerOptions.map((customer) => (
-              <option key={customer} value={customer}>
-                {customer}
-              </option>
-            ))}
+            {customers.map((customer) => {
+              const customerId = customer._id || customer.id;
+              const customerCode = customer.code || customer.name || customerId;
+              return (
+                <option key={customerId} value={customerId}>
+                  {customerCode}
+                </option>
+              );
+            })}
           </Form.Select>
         </Col>
       </Row>
@@ -667,8 +689,8 @@ export default function ProductList() {
                       </small>{" "}
                       <strong>
                         {typeof product.productType === "object" &&
-                        product.productType?.name
-                          ? product.productType.name
+                        product.productType?.code
+                          ? product.productType?.code
                           : typeof product.productType === "string"
                           ? product.productType
                           : "-"}
@@ -1051,9 +1073,8 @@ export default function ProductList() {
 
                 <Col md={4}>
                   <Form.Group>
-                    <Form.Label>Khách hàng (ObjectId)</Form.Label>
-                    <Form.Control
-                      type="text"
+                    <Form.Label>Khách hàng</Form.Label>
+                    <Form.Select
                       value={
                         typeof editingProduct.customer === "string"
                           ? editingProduct.customer
@@ -1067,30 +1088,47 @@ export default function ProductList() {
                           customer: e.target.value,
                         })
                       }
-                      placeholder="VD: Customer ObjectId"
-                    />
+                      disabled={isLoadingCustomer}
+                    >
+                      <option value="">--Chọn khách hàng--</option>
+                      {customers.map((customer) => {
+                        const customerId = customer._id || customer.id;
+                        const customerCode =
+                          customer.code || customer.name || customerId;
+                        return (
+                          <option key={customerId} value={customerId}>
+                            {customerCode}
+                          </option>
+                        );
+                      })}
+                    </Form.Select>
                   </Form.Group>
                 </Col>
                 <Col md={4}>
                   <Form.Group>
-                    <Form.Label>Loại sản phẩm (ObjectId)</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={
-                        typeof editingProduct.productType === "string"
-                          ? editingProduct.productType
-                          : editingProduct.productType?._id ||
-                            editingProduct.productType?.id ||
-                            ""
-                      }
+                    <Form.Label>Loại sản phẩm</Form.Label>
+                    <Form.Select
+                      value={editingProduct?.productType?._id}
                       onChange={(e) =>
                         setEditingProduct({
                           ...editingProduct,
                           productType: e.target.value,
                         })
                       }
-                      placeholder="VD: ProductType ObjectId"
-                    />
+                      disabled={isLoadingProductTypes}
+                    >
+                      <option value="">--Chọn loại sản phẩm--</option>
+                      {productTypes.map((productType) => {
+                        const productTypeId = productType._id || productType.id;
+                        const productTypeName =
+                          productType.name || productType.code || "";
+                        return (
+                          <option key={productTypeId} value={productTypeId}>
+                            {productTypeName}
+                          </option>
+                        );
+                      })}
+                    </Form.Select>
                   </Form.Group>
                 </Col>
               </Row>

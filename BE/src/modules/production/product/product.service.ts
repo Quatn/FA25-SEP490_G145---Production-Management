@@ -64,9 +64,10 @@ export class ProductService {
         .find(filter)
         .populate({
           path: "wares",
-          populate: {
-            path: "manufacturingProcesses",
-          },
+          populate:  [
+            { path: "manufacturingProcesses" },
+            { path: "fluteCombination" }
+          ],
         })
         .populate("customer")
         .populate("productType")
