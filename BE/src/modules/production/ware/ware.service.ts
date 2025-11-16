@@ -183,7 +183,6 @@ export class WareService {
 
   async findDeleted(page = 1, limit = 100) {
     const skip = (page - 1) * limit;
-    // get raw deleted docs using collection.find to bypass the plugin
     const cursor = this.wareModel.collection.find({ isDeleted: true }).sort({ deletedAt: -1 }).skip(skip).limit(limit);
     const docs = await cursor.toArray();
     const total = await this.wareModel.collection.countDocuments({ isDeleted: true });
