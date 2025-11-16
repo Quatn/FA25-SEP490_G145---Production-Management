@@ -1,34 +1,33 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { SemiFinishedGoodTransaction, SemiFinishedGoodTransactionDocument } from '../schemas/semi-finished-good-transaction.schema';
-import { Model, Types } from 'mongoose';
-import { CreateSemiFinishedGoodTransactionDto } from './dto/create-semi-finished-good-transaction.dto';
-import { UpdateSemiFinishedGoodTransactionDto } from './dto/update-semi-finished-good-transaction.dto';
+import { CreateFinishedGoodTransactionDto } from './dto/create-finished-good-transaction.dto';
+import { UpdateFinishedGoodTransactionDto } from './dto/update-finished-good-transaction.dto';
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
-import { SemiFinishedGood, SemiFinishedGoodDocument, SemiFinishedGoodSchema } from '../schemas/semi-finished-good.schema';
+import { FinishedGoodTransaction, FinishedGoodTransactionDocument } from '../schemas/finished-good-transaction.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { FinishedGood, FinishedGoodDocument } from '../schemas/finished-good.schema';
 
-type SoftSFGTransaction = SemiFinishedGoodTransaction & SoftDeleteDocument;
-
+type SoftFGTransaction = FinishedGoodTransaction & SoftDeleteDocument;
 @Injectable()
-export class SemiFinishedGoodTransactionService {
+export class FinishedGoodTransactionService {
   constructor(
-    @InjectModel(SemiFinishedGoodTransaction.name) private readonly sfgTransactionModel: Model<SemiFinishedGoodTransactionDocument>,
-    @InjectModel(SemiFinishedGood.name) private readonly semiModel: Model<SemiFinishedGoodDocument>,
+    @InjectModel(FinishedGoodTransaction.name) private readonly fgTransactionModel: Model<FinishedGoodTransactionDocument>,
+    @InjectModel(FinishedGood.name) private readonly finishedModel: Model<FinishedGoodDocument>,
   ) { }
 
-  async findPaginated(page = 1, limit = 10, search?: string, semiFinishedGoodId?: string) {
+  async findPaginated(page = 1, limit = 10, search?: string, finishedGoodId?: string) {
     const skip = (page - 1) * limit;
     const pipeline: any[] = [];
 
     pipeline.push({
       $lookup: {
-        from: 'semifinishedgoods',
-        localField: 'semiFinishedGoodId',
+        from: 'finishedgoods',
+        localField: 'finishedGoodId',
         foreignField: '_id',
-        as: 'semiFinishedGood',
+        as: 'finishedGood',
       },
     });
-    pipeline.push({ $unwind: { path: '$semiFinishedGood', preserveNullAndEmptyArrays: true } });
+    pipeline.push({ $unwind: { path: '$finishedGood', preserveNullAndEmptyArrays: true } });
 
     pipeline.push({
       $lookup: {
@@ -41,13 +40,13 @@ export class SemiFinishedGoodTransactionService {
     pipeline.push({ $unwind: { path: '$employee', preserveNullAndEmptyArrays: true } });
 
     const match: any = {};
-    if (semiFinishedGoodId) match.semiFinishedGoodId = new Types.ObjectId(semiFinishedGoodId);
+    if (finishedGoodId) match.finishedGoodId = new Types.ObjectId(finishedGoodId);
     if (search && search.trim() !== '') {
       const regex = new RegExp(search.trim(), 'i');
       match.$or = [
         { transactionType: regex },
         { note: regex },
-        { 'semiFinishedGood.note': regex },
+        { 'finishedGood.note': regex },
       ];
     }
     if (Object.keys(match).length) pipeline.push({ $match: match });
@@ -61,7 +60,7 @@ export class SemiFinishedGoodTransactionService {
       },
     });
 
-    const result = await this.sfgTransactionModel.aggregate(pipeline).exec();
+    const result = await this.fgTransactionModel.aggregate(pipeline).exec();
     const data = result[0]?.data || [];
     const totalItems = result[0]?.totalCount[0]?.count || 0;
     const totalPages = Math.ceil(totalItems / limit);
@@ -70,7 +69,7 @@ export class SemiFinishedGoodTransactionService {
   }
 
   async findAll() {
-    return await this.sfgTransactionModel.find().exec();
+    return await this.fgTransactionModel.find().exec();
   }
 
   async findOne(id: string) {
@@ -78,13 +77,13 @@ export class SemiFinishedGoodTransactionService {
       { $match: { _id: new Types.ObjectId(id) } },
       {
         $lookup: {
-          from: 'semifinishedgoods',
-          localField: 'semiFinishedGoodId',
+          from: 'finishedgoods',
+          localField: 'finishedGoodId',
           foreignField: '_id',
-          as: 'semiFinishedGood',
+          as: 'finishedGood',
         },
       },
-      { $unwind: { path: '$semiFinishedGood', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$finishedGood', preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: 'employees',
@@ -96,29 +95,29 @@ export class SemiFinishedGoodTransactionService {
       { $unwind: { path: '$employee', preserveNullAndEmptyArrays: true } },
     ];
 
-    const docs = await this.sfgTransactionModel.aggregate(pipeline).exec();
+    const docs = await this.fgTransactionModel.aggregate(pipeline).exec();
     if (!docs || docs.length === 0) throw new NotFoundException('Transaction not found');
     return docs[0];
   }
 
-  async createOne(dto: CreateSemiFinishedGoodTransactionDto) {
+  async createOne(dto: CreateFinishedGoodTransactionDto) {
     const moId = new Types.ObjectId(dto.manufacturingOrderId);
-    let semi = await this.semiModel.findOne({ manufacturingOrderId: moId }).exec();
-    if (!semi) {
-      semi = await this.semiModel.create({ manufacturingOrderId: moId, currentQuantity: 0 });
+    let finishedGood = await this.finishedModel.findOne({ manufacturingOrderId: moId }).exec();
+    if (!finishedGood) {
+      finishedGood = await this.finishedModel.create({ manufacturingOrderId: moId, currentQuantity: 0 });
     }
 
-    const initialQuantity = semi.currentQuantity ?? 0;
+    const initialQuantity = finishedGood.currentQuantity ?? 0;
     let finalQuantity = initialQuantity;
     if (dto.transactionType === 'IMPORT') finalQuantity = initialQuantity + dto.quantity;
     else if (dto.transactionType === 'EXPORT') finalQuantity = initialQuantity - dto.quantity;
     else if (dto.transactionType === 'ADJUSTMENT') finalQuantity = dto.quantity;
 
-    semi.currentQuantity = finalQuantity;
-    await semi.save();
+    finishedGood.currentQuantity = finalQuantity;
+    await finishedGood.save();
 
-    const doc = new this.sfgTransactionModel({
-      semiFinishedGoodId: semi._id,
+    const doc = new this.fgTransactionModel({
+      finishedGoodId: finishedGood._id,
       employeeId: dto.employeeId ? new Types.ObjectId(dto.employeeId) : undefined,
       transactionType: dto.transactionType,
       initialQuantity,
@@ -131,13 +130,13 @@ export class SemiFinishedGoodTransactionService {
       { $match: { _id: inserted._id } },
       {
         $lookup: {
-          from: 'semifinishedgoods',
-          localField: 'semiFinishedGoodId',
+          from: 'finishedgoods',
+          localField: 'finishedGoodId',
           foreignField: '_id',
-          as: 'semiFinishedGood',
+          as: 'finishedGood',
         },
       },
-      { $unwind: { path: '$semiFinishedGood', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$finishedGood', preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: 'employees',
@@ -148,29 +147,29 @@ export class SemiFinishedGoodTransactionService {
       },
       { $unwind: { path: '$employee', preserveNullAndEmptyArrays: true } },
     ];
-    const docs = await this.sfgTransactionModel.aggregate(pipeline).exec();
+    const docs = await this.fgTransactionModel.aggregate(pipeline).exec();
     return docs[0];
   }
 
-  async updateOne(id: string, dto: UpdateSemiFinishedGoodTransactionDto) {
+  async updateOne(id: string, dto: UpdateFinishedGoodTransactionDto) {
     const raw: any = { ...dto };
-    if (raw.semiFinishedGoodId) raw.semiFinishedGoodId = new Types.ObjectId(raw.semiFinishedGoodId);
-    if (raw.employeeId) raw.employeeId = new Types.ObjectId(raw.employeeId);
+    if (raw.finishedGoodId) raw.finishedGoodId = new Types.ObjectId(String(raw.finishedGoodId));
+    if (raw.employeeId) raw.employeeId = new Types.ObjectId(String(raw.employeeId));
 
-    const updated = await this.sfgTransactionModel.findByIdAndUpdate(id, raw, { new: true });
+    const updated = await this.fgTransactionModel.findByIdAndUpdate(id, raw, { new: true });
     if (!updated) throw new NotFoundException('Transaction not found');
 
     const pipeline = [
       { $match: { _id: updated._id } },
       {
         $lookup: {
-          from: 'semifinishedgoods',
-          localField: 'semiFinishedGoodId',
+          from: 'finishedgoods',
+          localField: 'finishedGoodId',
           foreignField: '_id',
-          as: 'semiFinishedGood',
+          as: 'finishedGood',
         },
       },
-      { $unwind: { path: '$semiFinishedGood', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$finishedGood', preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: 'employees',
@@ -181,7 +180,7 @@ export class SemiFinishedGoodTransactionService {
       },
       { $unwind: { path: '$employee', preserveNullAndEmptyArrays: true } },
     ];
-    const docs = await this.sfgTransactionModel.aggregate(pipeline).exec();
+    const docs = await this.fgTransactionModel.aggregate(pipeline).exec();
     return docs[0];
   }
 
@@ -202,26 +201,26 @@ export class SemiFinishedGoodTransactionService {
 
     pipeline.push({
       $lookup: {
-        from: "semifinishedgoods",
-        localField: "semiFinishedGoodId",
+        from: "finishedgoods",
+        localField: "finishedGoodId",
         foreignField: "_id",
-        as: "semiFinishedGood",
+        as: "finishedGood",
       },
     });
     pipeline.push({
-      $unwind: { path: "$semiFinishedGood", preserveNullAndEmptyArrays: true },
+      $unwind: { path: "$finishedGood", preserveNullAndEmptyArrays: true },
     });
 
     pipeline.push({
       $lookup: {
         from: "manufacturingorders",
-        localField: "semiFinishedGood.manufacturingOrderId",
+        localField: "finishedGood.manufacturingOrderId",
         foreignField: "_id",
-        as: "semiFinishedGood.manufacturingOrder",
+        as: "finishedGood.manufacturingOrder",
       },
     });
     pipeline.push({
-      $unwind: { path: "$semiFinishedGood.manufacturingOrder", preserveNullAndEmptyArrays: true },
+      $unwind: { path: "$finishedGood.manufacturingOrder", preserveNullAndEmptyArrays: true },
     });
 
     pipeline.push({
@@ -270,7 +269,7 @@ export class SemiFinishedGoodTransactionService {
       },
     });
 
-    const result = (await this.sfgTransactionModel.aggregate(pipeline).exec())[0];
+    const result = (await this.fgTransactionModel.aggregate(pipeline).exec())[0];
 
     const totalImport = result.importStats[0]?.total ?? 0;
     const totalExport = result.exportStats[0]?.total ?? 0;
@@ -287,21 +286,21 @@ export class SemiFinishedGoodTransactionService {
   }
 
   async softDelete(id: string) {
-    const doc = await this.sfgTransactionModel.findById(id) as SoftSFGTransaction;
+    const doc = await this.fgTransactionModel.findById(id) as SoftFGTransaction;
     if (!doc) throw new NotFoundException('Transaction not found');
     await doc.softDelete();
     return { success: true };
   }
 
   async restore(id: string) {
-    const doc = await this.sfgTransactionModel.findById(id) as SoftSFGTransaction;
+    const doc = await this.fgTransactionModel.findById(id) as SoftFGTransaction;
     if (!doc) throw new NotFoundException('Transaction not found');
     await doc.restore();
     return { success: true };
   }
 
   async removeHard(id: string) {
-    const res = await this.sfgTransactionModel.findByIdAndDelete(id);
+    const res = await this.fgTransactionModel.findByIdAndDelete(id);
     if (!res) throw new NotFoundException('Transaction not found');
     return { success: true };
   }

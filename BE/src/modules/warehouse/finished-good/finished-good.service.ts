@@ -1,17 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateSemiFinishedGoodDto } from './dto/create-semi-finished-good.dto';
-import { UpdateSemiFinishedGoodDto } from './dto/update-semi-finished-good.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { SemiFinishedGood, SemiFinishedGoodDocument } from '../schemas/semi-finished-good.schema';
-import { Model, Types } from 'mongoose';
+import { CreateFinishedGoodDto } from './dto/create-finished-good.dto';
+import { UpdateFinishedGoodDto } from './dto/update-finished-good.dto';
+import { FinishedGood, FinishedGoodDocument } from '../schemas/finished-good.schema';
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
 
-type SoftSemi = SemiFinishedGood & SoftDeleteDocument;
+type SoftFinishedGood = FinishedGood & SoftDeleteDocument;
 
 @Injectable()
-export class SemiFinishedGoodService {
+export class FinishedGoodService {
   constructor(
-    @InjectModel(SemiFinishedGood.name) private readonly model: Model<SemiFinishedGoodDocument>,
+    @InjectModel(FinishedGood.name) private readonly model: Model<FinishedGoodDocument>,
   ) { }
 
   async findPaginated(page = 1, limit = 10, search?: string) {
@@ -76,7 +76,7 @@ export class SemiFinishedGoodService {
     return await this.model.find().exec();
   }
 
-  async create(dto: CreateSemiFinishedGoodDto) {
+  async create(dto: CreateFinishedGoodDto) {
     const doc = new this.model({
       manufacturingOrderId: new Types.ObjectId(dto.manufacturingOrderId),
       currentQuantity: dto.currentQuantity ?? 0,
@@ -116,16 +116,16 @@ export class SemiFinishedGoodService {
     ];
 
     const docs = await this.model.aggregate(pipeline).exec();
-    if (!docs || docs.length === 0) throw new NotFoundException(`Semi-finished good #${id} not found`);
+    if (!docs || docs.length === 0) throw new NotFoundException(`Finished good #${id} not found`);
     return docs[0];
   }
 
-  async update(id: string, dto: UpdateSemiFinishedGoodDto) {
+  async update(id: string, dto: UpdateFinishedGoodDto) {
     const raw: any = { ...dto };
-    if (raw.manufacturingOrderId) raw.manufacturingOrderId = new Types.ObjectId(raw.manufacturingOrderId);
+    if (raw.manufacturingOrderId) raw.manufacturingOrderId = new Types.ObjectId(String(raw.manufacturingOrderId));
 
     const updated = await this.model.findByIdAndUpdate(id, raw, { new: true });
-    if (!updated) throw new NotFoundException(`Semi-finished good #${id} not found`);
+    if (!updated) throw new NotFoundException(`Finished good #${id} not found`);
 
     const pipeline = [
       { $match: { _id: updated._id } },
@@ -145,22 +145,22 @@ export class SemiFinishedGoodService {
   }
 
   async softDelete(id: string) {
-    const doc = await this.model.findById(id) as SoftSemi;
-    if (!doc) throw new NotFoundException('Semi-finished good not found');
+    const doc = await this.model.findById(id) as SoftFinishedGood;
+    if (!doc) throw new NotFoundException('Finished good not found');
     await doc.softDelete();
     return { success: true };
   }
 
   async restore(id: string) {
-    const doc = await this.model.findById(id) as SoftSemi;
-    if (!doc) throw new NotFoundException('Semi-finished good not found');
+    const doc = await this.model.findById(id) as SoftFinishedGood;
+    if (!doc) throw new NotFoundException('Finished good not found');
     await doc.restore();
     return { success: true };
   }
 
   async removeHard(id: string) {
     const res = await this.model.findByIdAndDelete(id);
-    if (!res) throw new NotFoundException('Semi-finished good not found');
+    if (!res) throw new NotFoundException('Finished good not found');
     return { success: true };
   }
 

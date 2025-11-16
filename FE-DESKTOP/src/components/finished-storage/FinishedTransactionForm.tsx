@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Button, Combobox, Dialog, Field, Flex, Input, NumberInput, Portal, Select, createListCollection, useFilter, useListCollection } from "@chakra-ui/react";
-import { SemiFinishedGood } from "@/types/SemiFinishedGood";
-import { useCreateSemiFinishedGoodTransactionMutation } from "@/service/api/semiFinishedGoodTransactionApiSlice";
+import { useCreateFinishedGoodTransactionMutation } from "@/service/api/finishedGoodTransactionApiSlice";
 import { toaster } from "@/components/ui/toaster";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { FinishedGood } from "@/types/FinishedGood";
 
 interface Props {
     isOpen: boolean;
     manufacturingOrders: ManufacturingOrder[];
     onClose: () => void;
-    initialData?: SemiFinishedGood | undefined;
+    initialData?: FinishedGood | undefined;
     transactionType?: "IMPORT" | "EXPORT";
 }
 
@@ -22,8 +22,8 @@ type TransactionRequest = {
     note?: string;
 };
 
-const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData, transactionType, manufacturingOrders }) => {
-    const [createSemiTransaction] = useCreateSemiFinishedGoodTransactionMutation();
+const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData, transactionType, manufacturingOrders }) => {
+    const [createFinishedGoodTransaction] = useCreateFinishedGoodTransactionMutation();
     const [transaction, setTransaction] = useState<TransactionRequest>({
         manufacturingOrderId: "",
         manufacturingOrderCode: "",
@@ -58,12 +58,12 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
 
     const handleSubmit = async () => {
         if (!transaction.manufacturingOrderId) {
-            toaster.create({ title: "Lỗi", description: "Chưa chọn bán thành phẩm", type: "error", closable: true });
+            toaster.create({ title: "Lỗi", description: "Chưa chọn thành phẩm", type: "error", closable: true });
             return;
         }
 
         try {
-            await createSemiTransaction({
+            await createFinishedGoodTransaction({
                 manufacturingOrderId: transaction.manufacturingOrderId,
                 transactionType: transaction.transactionType,
                 quantity: transaction.quantity,
@@ -73,7 +73,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
             toaster.create({
                 title: "Thành công",
                 description: `${transaction.transactionType === "IMPORT" ? "Nhập" : "Xuất"} kho 
-                ${transaction.quantity} bán thành phẩm lệnh ${transaction.manufacturingOrderCode}`,
+                ${transaction.quantity} thành phẩm lệnh ${transaction.manufacturingOrderCode}`,
                 type: "success",
                 closable: true
             });
@@ -91,7 +91,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                 <Dialog.Positioner>
                     <Dialog.Content>
                         <Dialog.Header>
-                            <Dialog.Title>{transaction.transactionType === "IMPORT" ? "Phiếu Nhập" : "Phiếu Xuất"} Kho Bán Thành Phẩm</Dialog.Title>
+                            <Dialog.Title>{transaction.transactionType === "IMPORT" ? "Phiếu Nhập" : "Phiếu Xuất"} Kho Thành Phẩm</Dialog.Title>
                         </Dialog.Header>
                         <Dialog.Body>
                             <Flex direction="column" gap={3}>
@@ -133,7 +133,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                                     <Input
                                         size="lg"
                                         type="text"
-                                        value={transaction.transactionType === "IMPORT" ? "Nhập Bán Thành Phẩm" : "Xuất Bán Thành Phẩm"}
+                                        value={transaction.transactionType === "IMPORT" ? "Nhập Thành Phẩm" : "Xuất Thành Phẩm"}
                                         readOnly
                                     />
                                 </Field.Root>
@@ -205,4 +205,4 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
     );
 };
 
-export default SemiFinishedTransactionForm;
+export default FinishedTransactionForm;

@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { Button, IconButton, Pagination, ButtonGroup, Spinner, Table, Text } from "@chakra-ui/react";
-import { useGetSemiFinishedGoodTransactionsQuery } from "@/service/api/semiFinishedGoodTransactionApiSlice";
-import { SemiFinishedGoodTransaction } from "@/types/SemiFinishedTransaction";
+import { FinishedGoodTransaction } from "@/types/FinishedGoodTransaction";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
+import { useGetFinishedGoodTransactionsQuery } from "@/service/api/finishedGoodTransactionApiSlice";
 
 interface Props {
     id: string | undefined;
 }
 
-const SemiFinishedTransactionHistory: React.FC<Props> = ({ id }) => {
+const FinishedTransactionHistory: React.FC<Props> = ({ id }) => {
     const [page, setPage] = useState(1);
     const limit = 10;
-    const { data, error, isLoading } = useGetSemiFinishedGoodTransactionsQuery({ page, limit, search: '', finishedGoodId: id ?? '' });
-    const items: SemiFinishedGoodTransaction[] = (data as any)?.data?.data ?? [];
+    const { data, error, isLoading } = useGetFinishedGoodTransactionsQuery({ page, limit, search: '', finishedGoodId: id ?? '' });
+    const items: FinishedGoodTransaction[] = (data as any)?.data?.data ?? [];
     const totalPages = (data as any)?.data?.totalPages ?? 1;
 
     if (isLoading) return <Spinner />;
@@ -64,4 +64,4 @@ const SemiFinishedTransactionHistory: React.FC<Props> = ({ id }) => {
     );
 }
 
-export default SemiFinishedTransactionHistory;
+export default FinishedTransactionHistory;

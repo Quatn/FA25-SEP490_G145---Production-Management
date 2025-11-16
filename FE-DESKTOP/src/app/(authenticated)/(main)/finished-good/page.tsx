@@ -1,6 +1,6 @@
-import SemiFinishedDailyReport from "@/components/semi-finished-storage/SemiFinishedDailyReport";
-import { Box, Stack, Text } from "@chakra-ui/react";
-export default function SFGDailyReportHome() {
+import FinishedList from "@/components/finished-storage/FinishedList";
+import { Box, Button, Stack, Text } from "@chakra-ui/react";
+export default function FinishedGoodHome() {
   return (
     <Box
       m={5}
@@ -11,11 +11,11 @@ export default function SFGDailyReportHome() {
     >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"bold"} color={"black"}>
-          Báo cáo ngày nhập xuất kho bán thành phẩm
+          KHO THÀNH PHẨM
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>
-        <SemiFinishedDailyReport />
+        <FinishedList />
       </Stack>
     </Box>
   );

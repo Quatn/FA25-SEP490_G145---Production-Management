@@ -15,12 +15,12 @@ import {
     ButtonGroup,
     IconButton,
 } from "@chakra-ui/react";
-import { FaFileExcel, FaPlus } from "react-icons/fa";
-import { useGetSFGDailyReportQuery } from "@/service/api/semiFinishedGoodTransactionApiSlice";
+import { FaFileExcel } from "react-icons/fa";
+import { useGetFGDailyReportQuery } from "@/service/api/finishedGoodTransactionApiSlice";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
-import exportDailyReportToExcel from "./SemiFinishedExportExcelButton";
+import exportDailyReportToExcel from "./FinishedExportExcelButton";
 
-const SemiFinishedDailyReport: React.FC = () => {
+const FinishedDailyReport: React.FC = () => {
     const [date, setDate] = useState<string>(() =>
         new Date().toISOString().slice(0, 10)
     );
@@ -32,7 +32,7 @@ const SemiFinishedDailyReport: React.FC = () => {
     const today = new Date();
     const localDate = today.toLocaleDateString('en-CA');
 
-    const { data: sfDRData, isLoading, error } = useGetSFGDailyReportQuery({ date });
+    const { data: sfDRData, isLoading, error } = useGetFGDailyReportQuery({ date });
 
     const report = sfDRData?.data;
     const transactions = report?.data ?? [];
@@ -110,7 +110,7 @@ const SemiFinishedDailyReport: React.FC = () => {
                                     <Table.Cell textAlign="center">{(page - 1) * ITEMS_PER_PAGE + index + 1}</Table.Cell>
                                     <Table.Cell>{new Date(tx.createdAt ?? "").toLocaleTimeString()}</Table.Cell>
                                     <Table.Cell>{tx.transactionType == "IMPORT" ? "Nhập" : "Xuất"}</Table.Cell>
-                                    <Table.Cell>{tx.semiFinishedGood?.manufacturingOrder?.code ?? "-"}</Table.Cell>
+                                    <Table.Cell>{tx.finishedGood?.manufacturingOrder?.code ?? "-"}</Table.Cell>
                                     <Table.Cell>{tx.employee?.name ?? "-"}</Table.Cell>
                                     <Table.Cell>{quantity}</Table.Cell>
                                     <Table.Cell>{tx.initialQuantity}</Table.Cell>
@@ -154,4 +154,4 @@ const SemiFinishedDailyReport: React.FC = () => {
     );
 };
 
-export default SemiFinishedDailyReport;
+export default FinishedDailyReport;

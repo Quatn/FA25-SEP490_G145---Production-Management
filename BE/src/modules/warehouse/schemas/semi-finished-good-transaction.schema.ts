@@ -4,7 +4,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import mongoose, { HydratedDocument, Types } from "mongoose";
 import { Employee } from "./employee.schema";
 import { SemiFinishedGood } from "./semi-finished-good.schema";
-import { SemiFinishedGoodTransactionType } from "../enums/semi-finished-good-transaction-type.enum";
+import { TransactionType } from "../enums/transaction-type.enum";
 
 @Schema({ timestamps: true })
 export class SemiFinishedGoodTransaction extends BaseSchema {
@@ -17,10 +17,10 @@ export class SemiFinishedGoodTransaction extends BaseSchema {
 
     @Prop({
         type: String,
-        enum: Object.values(SemiFinishedGoodTransactionType),
+        enum: Object.values(TransactionType),
         required: true,
     })
-    transactionType: SemiFinishedGoodTransactionType;
+    transactionType: TransactionType;
 
     @Prop({ required: true })
     initialQuantity: number;

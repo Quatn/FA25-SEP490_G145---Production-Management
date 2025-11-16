@@ -1,7 +1,8 @@
-import { IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsPositive, Min } from 'class-validator';
-import { TransactionType } from '../../enums/transaction-type.enum';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-export class CreateSemiFinishedGoodTransactionDto {
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsOptional, Min } from "class-validator";
+import { TransactionType } from "../../enums/transaction-type.enum";
+
+export class CreateFinishedGoodTransactionDto {
     @ApiProperty({
         description: 'The ID of the manufacturing order this transaction is associated with',
         type: String,
@@ -21,7 +22,7 @@ export class CreateSemiFinishedGoodTransactionDto {
     transactionType: TransactionType;
 
     @ApiProperty({
-        description: 'Quantity of semi-finished good for this transaction',
+        description: 'Quantity of finished good for this transaction',
         type: Number,
         example: 100,
         minimum: 1,

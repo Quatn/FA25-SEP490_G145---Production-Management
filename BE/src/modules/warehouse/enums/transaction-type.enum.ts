@@ -1,4 +1,4 @@
-export enum SemiFinishedGoodTransactionType {
+export enum TransactionType {
   IMPORT = 'IMPORT',
   EXPORT = 'EXPORT',
   ADJUSTMENT = 'ADJUSTMENT', // inventory corrections

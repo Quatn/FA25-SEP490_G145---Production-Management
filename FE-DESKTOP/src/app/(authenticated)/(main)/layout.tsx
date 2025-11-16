@@ -178,6 +178,24 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
+      {
+        id: "finished-good",
+        name: "Finished Good",
+        children: [
+          {
+            id: "finished-good-list",
+            name: "Finished Good List",
+            href: "/finished-good",
+            children: [],
+          },
+          {
+            id: "finished-good-daily-report",
+            name: "Finished Good Daily Report",
+            href: "/finished-good/daily-report",
+            children: [],
+          },
+        ],
+      },
     ],
   },
 });

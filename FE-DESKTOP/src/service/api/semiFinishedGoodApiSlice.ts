@@ -24,22 +24,12 @@ export const SemiFinishedGoodApiSlice = apiSlice.injectEndpoints({
                 method: "GET",
                 credentials: "include",
             }),
-            providesTags: (result, error, arg) => [{ type: "SemiFinishedGood", id: arg.id }],
+            providesTags: ["SemiFinishedGood"],
         }),
 
         createSemiFinishedGood: builder.mutation<BaseResponse<SemiFinishedGood>, Partial<SemiFinishedGood>>({
             query: (body) => ({
                 url: `${SEMI_FINISHED_GOOD_URL}/create`,
-                method: "POST",
-                body,
-                credentials: "include",
-            }),
-            invalidatesTags: ["SemiFinishedGood"],
-        }),
-
-        createMultipleSemiFinishedGoods: builder.mutation<BaseResponse<SemiFinishedGood>, SemiFinishedGood>({
-            query: (body) => ({
-                url: `${SEMI_FINISHED_GOOD_URL}/create-multiple`,
                 method: "POST",
                 body,
                 credentials: "include",
@@ -66,16 +56,6 @@ export const SemiFinishedGoodApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: ["SemiFinishedGood"],
         }),
 
-        getDeletedSemiFinishedGoods: builder.query<BaseResponse<PaginatedList<SemiFinishedGood>>, { page?: number; limit?: number }>({
-            query: ({ page = 1, limit = 100 }) => ({
-                url: `${SEMI_FINISHED_GOOD_URL}/list-deleted`,
-                method: "GET",
-                params: { page, limit },
-                credentials: "include",
-            }),
-            providesTags: ["SemiFinishedGood"],
-        }),
-
         restoreSemiFinishedGood: builder.mutation<BaseResponse<SemiFinishedGood>, { id: string }>({
             query: ({ id }) => ({
                 url: `${SEMI_FINISHED_GOOD_URL}/restore/${id}`,
@@ -91,9 +71,7 @@ export const {
     useGetSemiFinishedGoodsQuery,
     useGetSemiFinishedGoodDetailQuery,
     useCreateSemiFinishedGoodMutation,
-    useCreateMultipleSemiFinishedGoodsMutation,
     useUpdateSemiFinishedGoodMutation,
     useDeleteSemiFinishedGoodMutation,
-    useGetDeletedSemiFinishedGoodsQuery,
     useRestoreSemiFinishedGoodMutation,
 } = SemiFinishedGoodApiSlice;

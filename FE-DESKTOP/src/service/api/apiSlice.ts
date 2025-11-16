@@ -19,6 +19,8 @@ const tagTypes = [
   "PaperRollTransaction",
   "SemiFinishedGood",
   "SemiFinishedGoodTransaction",
+  "FinishedGood",
+  "FinishedGoodTransaction",
 ];
 
 export const apiSlice = createApi({

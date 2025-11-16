@@ -71,10 +71,4 @@ export class SemiFinishedGoodController {
     return { success: true, message: 'Permanently deleted successfully', data: null };
   }
 
-  @Get('list-deleted')
-  @ApiOperation({ summary: 'List soft-deleted semi finished goods' })
-  async findDeleted(@Query('page') page: number = 1, @Query('limit') limit: number = 10): Promise<BaseResponse<PaginatedList<SemiFinishedGood>>> {
-    const docs = await this.semiFinishedGoodService.findDeleted(page, limit);
-    return { success: true, message: 'Fetch deleted', data: docs };
-  }
 }
