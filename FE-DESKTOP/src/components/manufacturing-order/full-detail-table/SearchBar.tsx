@@ -27,7 +27,7 @@ export default function ManufacturingOrderSearchBar() {
   };
 
   return (
-    <InputGroup flex={1} endElement={<LuSearch />}>
+    <InputGroup flex={1} endElement={<LuSearch />} bg={"bg"}>
       <Input placeholder="Smart search" value={localSearch} onChange={changeQuery}/>
     </InputGroup>
   );

@@ -91,8 +91,8 @@ export default function PurchaseOrderItemSelectorItem(
                   matchAll
                   query={search}
                   styles={{
-                    bg: "yellow.subtle",
-                    color: "orange.fg",
+                    bg: "teal.subtle",
+                    color: "blue.fg",
                   }}
                 >
                   {props.po.purchaseOrder.code}
@@ -104,7 +104,7 @@ export default function PurchaseOrderItemSelectorItem(
                   ignoreCase
                   matchAll
                   query={search}
-                  styles={{ bg: "yellow.subtle", color: "orange.fg" }}
+                  styles={{ bg: "teal.subtle", color: "blue.fg" }}
                 >
                   {check.assigned(props.po.purchaseOrder.customer)
                     ? props.po.purchaseOrder.customer!.code

@@ -1,8 +1,10 @@
-import { createColumnHelper } from "@tanstack/react-table";
+import { CellContext, createColumnHelper } from "@tanstack/react-table";
 import type { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
 import check from "check-types";
 import type { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
+import { useEffect, useState } from "react";
+import { manufacturingOrderTableCells } from "./tableCellNodes";
 
 const columnHelper = createColumnHelper<Serialized<ManufacturingOrder>>();
 
@@ -29,9 +31,8 @@ export const manufacturingOrderColumns = [
     id: "manufacturingDirective",
     header: "KH Giao",
     enablePinning: true,
-    ...colSize.sm,
-    cell: ({ row }) =>
-      row.original.manufacturingDirective,
+    ...colSize.md,
+    cell: (context: CellContext<Serialized<ManufacturingOrder>, unknown>) => manufacturingOrderTableCells.manufacturingDirective({ context }),
   }),
   columnHelper.display({
     id: "code",
@@ -80,8 +81,9 @@ export const manufacturingOrderColumns = [
   columnHelper.display({
     id: "amount",
     header: "Số lượng",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.amount,
+    ...colSize.md,
+    cell: (context: CellContext<Serialized<ManufacturingOrder>, unknown>) => manufacturingOrderTableCells.amount({ context }),
+
   }),
   columnHelper.display({
     id: "orderDate",
@@ -222,46 +224,24 @@ export const manufacturingOrderColumns = [
     id: "note",
     header: "Ghi chú tạm thời",
     ...colSize.lg,
-    cell: ({ row }) => row.original.note,
-
-/*
-  columnHelper.display({
-    id: "note",
-    header: "Ghi chú tạm thời",
-    ...colSize.lg,
-    cell: ({ row, column, table }) => {
-      const initialValue = row.original.note;
-      const [value, setValue] = useState(initialValue)
-
-      const onBlur = () => {
-        table.options.meta?.updateData(row.index, column.id, value)
-      }
-
-      // If the initialValue is changed external, sync it up with our state
-      useEffect(() => {
-        setValue(initialValue)
-      }, [initialValue])
-
-      return <p></p>
-    },
-  }),
-
-*/
+    cell: (context: CellContext<Serialized<ManufacturingOrder>, unknown>) => manufacturingOrderTableCells.note({ context }),
   }),
   columnHelper.display({
-    id: "manufacturingDate",
+    id: "manufacturingDateAdjustment",
     header: "Ngày SX",
-    cell: ({ row }) => formatDateToDDMMYYYY(row.original.manufacturingDate),
+    cell: (context: CellContext<Serialized<ManufacturingOrder>, unknown>) => manufacturingOrderTableCells.manufacturingDate({ context }),
+
   }),
   columnHelper.display({
     id: "requestedDatetime",
     header: "Ngày và giờ cần",
-    cell: ({ row }) => formatDateToDDMMYYYY(row.original.requestedDatetime),
+    cell: (context: CellContext<Serialized<ManufacturingOrder>, unknown>) => manufacturingOrderTableCells.requestedDatetime({ context }),
+
   }),
   columnHelper.display({
-    id: "corrugatorLine",
+    id: "corrugatorLineAdjustment",
     header: "Dàn",
-    cell: ({ row }) => row.original.corrugatorLine,
+    cell: (context: CellContext<Serialized<ManufacturingOrder>, unknown>) => manufacturingOrderTableCells.corrugatorLine({ context }),
   }),
   columnHelper.display({
     id: "faceLayerPaperWeight",
@@ -401,9 +381,9 @@ export const manufacturingOrderColumnsByTabs: Record<
       "code",
       "purchaseOrderItemNote",
       "note",
-      "manufacturingDate",
+      "manufacturingDateAdjustment",
       "requestedDatetime",
-      "corrugatorLine",
+      "corrugatorLineAdjustment",
       "actions-column",
     ])
   ),

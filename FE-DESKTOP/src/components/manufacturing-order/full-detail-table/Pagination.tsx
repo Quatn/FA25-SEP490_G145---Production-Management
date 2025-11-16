@@ -74,7 +74,7 @@ export default function ManufacturingOrderPagination() {
       </Pagination.Root>
 
       <Group attached>
-        <Input flex="1" placeholder="Nhập trang" />
+        <Input flex="1" placeholder="Nhập trang" w={"100px"} />
         <Button bg="bg.subtle" variant="outline">
           Submit
         </Button>
@@ -83,7 +83,8 @@ export default function ManufacturingOrderPagination() {
       <Select.Root
         collection={pageOptions}
         size="sm"
-        width="320px"
+        width={"100px"}
+        bg={"bg"}
         value={[limit.toString()]}
         onValueChange={pageSizeSelect}
       >

@@ -11,7 +11,7 @@ export default function ManufacturingOrderTableControl() {
   const dispatch = useManufacturingTableDispatch();
 
   return (
-    <Checkbox.Root checked={allowEdit} onCheckedChange={(v) => dispatch({ type: "SET_ALLOW_EDIT", payload: v.checked })} colorPalette={"blue"}>
+    <Checkbox.Root checked={allowEdit == true || allowEdit === "checked"} onCheckedChange={(v) => dispatch({ type: "SET_ALLOW_EDIT", payload: v.checked })} colorPalette={"blue"}>
       <Checkbox.HiddenInput />
       <Checkbox.Control />
       <Checkbox.Label>Cho phép chỉnh sửa trên bảng</Checkbox.Label>

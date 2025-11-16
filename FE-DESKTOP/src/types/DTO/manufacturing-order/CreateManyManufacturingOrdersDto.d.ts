@@ -1,3 +1,4 @@
+import { CreateResult } from "../CreateResult";
 import { CreateManufacturingOrderRequestDto } from "./CreateManufacturingOrdersRequest";
 
 export class CreateManyManufacturingOrdersRequestDto {
@@ -6,4 +7,4 @@ export class CreateManyManufacturingOrdersRequestDto {
 
 export class CreateManyManufacturingOrdersResponseDto extends BaseResponse<
   CreateResult<{ codes: string[] }>
-> {}
+> { }

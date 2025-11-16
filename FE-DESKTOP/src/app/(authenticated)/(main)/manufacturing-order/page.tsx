@@ -31,7 +31,7 @@ export default function ManufacturingOrderHome() {
               minHeight={"80vh"}
             >
               <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-                Manufacturing Orders
+                Danh sách lệnh
               </Text>
               <HStack justifyContent={"space-between"}>
                 <ManufacturingOrderSearchBar />
