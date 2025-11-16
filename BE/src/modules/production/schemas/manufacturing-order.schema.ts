@@ -24,7 +24,7 @@ export enum OrderStatus {
   CANCELLED = "CANCELLED",
 }
 
-@Schema({ timestamps: true  })
+@Schema({ timestamps: true })
 export class ManufacturingOrder extends BaseDenormalizedSchema {
   @ApiProperty()
   @Prop({ required: true })

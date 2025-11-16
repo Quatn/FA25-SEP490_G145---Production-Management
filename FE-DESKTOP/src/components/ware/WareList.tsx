@@ -1005,7 +1005,8 @@ export const WareList: React.FC = () => {
                         />
                       </label>
 
-                      {/* Print colors multi: inline multi-select */}
+                      <br></br>
+
                       <label className="form-label">Print colors</label>
                       <MultiSelectInline
                         id="create-printcolor"
@@ -1021,7 +1022,6 @@ export const WareList: React.FC = () => {
                         placeholder="-- choose print colors --"
                       />
 
-                      {/* Finishing */}
                       <label className="form-label" style={{ marginTop: 8 }}>
                         Finishing processes
                       </label>
@@ -1041,7 +1041,6 @@ export const WareList: React.FC = () => {
                         placeholder="-- choose finishing processes --"
                       />
 
-                      {/* Manufacturing processes */}
                       <label className="form-label" style={{ marginTop: 8 }}>
                         Manufacturing processes
                       </label>

@@ -74,9 +74,11 @@ class PopulatedWare extends Ware {
     }
     super();
     Object.assign(this, ware);
-    this.fluteCombination = ware.fluteCombination;
-    this.wareManufacturingProcessType = ware.wareManufacturingProcessType;
     this.printColors = (ware.printColors || []) as PrintColor[];
+    this.finishingProcesses = (ware.finishingProcesses ||
+      []) as WareFinishingProcessType[];
+    this.manufacturingProcesses = (ware.manufacturingProcesses ||
+      []) as ManufacturingProcess[];
     this.finishingProcesses = (ware.finishingProcesses ||
       []) as WareFinishingProcessType[];
     this.manufacturingProcesses = (ware.manufacturingProcesses ||

@@ -175,6 +175,16 @@ export const PaperList: React.FC = () => {
     return r.paperRollId ?? "-";
   };
 
+  // --- NEW: low weight helper & threshold ---
+  const LOW_WEIGHT_THRESHOLD = 1000; // change this value if you want a different threshold
+  const isLowWeight = (rollOrWeight: any) => {
+    const w =
+      rollOrWeight && typeof rollOrWeight === "object"
+        ? Number(rollOrWeight.weight ?? 0)
+        : Number(rollOrWeight ?? 0);
+    return !isNaN(w) && w > 0 && w < LOW_WEIGHT_THRESHOLD;
+  };
+
   // table selection helpers
   const selectedRolls = useMemo(
     () => paperRolls.filter((r) => selectedIds[r.paperRollId]),
@@ -388,6 +398,42 @@ export const PaperList: React.FC = () => {
     }
   };
 
+  const doBulkReImport = async (
+    updates: { paperRollId: string; newWeight: number }[]
+  ) => {
+    if (!updates || updates.length === 0) return;
+
+    try {
+      await Promise.all(
+        updates.map(async (u) => {
+          const roll = paperRolls.find((r) => r.paperRollId === u.paperRollId);
+          if (!roll) return;
+          const dbId = getIdFromDoc(roll) ?? roll._id ?? roll.paperRollId;
+          const prev = Number(roll.weight || 0);
+          const newW = Number(u.newWeight || 0);
+
+          await createTransaction({
+            paperRollId: dbId,
+            employeeId: "69146dd889bf8e8ca320bcff",
+            transactionType: "NHAPLAI",
+            initialWeight: prev,
+            finalWeight: newW,
+            timeStamp: new Date().toISOString(),
+            inCharge: "Operator A",
+          }).unwrap();
+
+          await updatePaperRoll({ id: dbId, data: { weight: newW } }).unwrap();
+        })
+      );
+
+      alert("Đã cập nhật trọng lượng nhập lại cho các cuộn.");
+      setSelectedIds({});
+    } catch (err) {
+      console.error("Bulk re-import failed", err);
+      alert("Nhập lại thất bại");
+    }
+  };
+
   // QR helpers (same as before)
   const handleCreateQR = async (text: string) => {
     setQrModal({ open: true, text });
@@ -401,6 +447,50 @@ export const PaperList: React.FC = () => {
     } finally {
       setQrLoading(false);
     }
+  };
+
+  const handleCloseQr = () => {
+    setQrModal({ open: false, text: undefined });
+    setQrDataUrl(undefined);
+    setQrLoading(false);
+  };
+  const handleDownloadQr = () => {
+    if (!qrDataUrl || !qrModal.text) return alert("QR not ready");
+    const a = document.createElement("a");
+    a.href = qrDataUrl;
+    a.download = `${qrModal.text}-qr.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+  const handleOpenQrInNewTab = () => {
+    if (!qrDataUrl) return;
+    const w = window.open();
+    if (!w) return alert("Popup blocked");
+    w.document.write(`<img src="${qrDataUrl}" alt="QR" />`);
+  };
+  const handleCopyCode = async () => {
+    if (!qrModal.text) return;
+    try {
+      await navigator.clipboard.writeText(qrModal.text);
+      alert("Mã cuộn đã được copy");
+    } catch {
+      alert("Copy failed — please copy manually: " + qrModal.text);
+    }
+  };
+  const handlePrintQr = () => {
+    if (!qrDataUrl) return alert("QR not ready");
+    const w = window.open("", "_blank", "width=600,height=600");
+    if (!w) return alert("Popup blocked");
+    w.document.write(`
+      <html><head><title>QR Print</title></head>
+      <body style="text-align:center;font-family:sans-serif;margin-top:40px">
+        <img src="${qrDataUrl}" style="width:300px;height:300px" />
+        <div class="code">${qrModal.text ?? ""}</div>
+        <script>window.onload = () => window.print()</script>
+      </body></html>
+    `);
+    w.document.close();
   };
 
   // render
@@ -530,7 +620,67 @@ export const PaperList: React.FC = () => {
                   <td style={{ textAlign: "right" }}>
                     {pt?.grammage ?? r.grammage ?? "-"}
                   </td>
-                  <td style={{ textAlign: "right" }}>{r.weight ?? "-"}</td>
+
+                  {/* Weight cell: show value + small low-weight badge/icon when under threshold */}
+                  <td style={{ textAlign: "right" }}>
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                        gap: 8,
+                        minWidth: 80,
+                      }}
+                    >
+                      <span style={{ minWidth: 32, textAlign: "right" }}>
+                        {r.weight ?? "-"}
+                      </span>
+                      {isLowWeight(r) && (
+                        <span
+                          title={`Weight below ${LOW_WEIGHT_THRESHOLD}`}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            padding: "2px 6px",
+                            borderRadius: 999,
+                            background: "rgba(220,53,69,0.12)",
+                            color: "#c82333",
+                            fontSize: 12,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {/* small exclamation triangle SVG */}
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden
+                          >
+                            <path d="M12 2L22 20H2L12 2Z" fill="#ffc107" />
+                            <path
+                              d="M12 8V12"
+                              stroke="#212529"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M12 16H12.01"
+                              stroke="#212529"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <span style={{ lineHeight: 1 }}>{"Low"}</span>
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
                   <td>
                     {r.receivingDate
                       ? new Date(r.receivingDate).toISOString().slice(0, 10)
@@ -632,7 +782,66 @@ export const PaperList: React.FC = () => {
                   <td style={{ textAlign: "right" }}>
                     {pt?.grammage ?? r.grammage ?? "-"}
                   </td>
-                  <td style={{ textAlign: "right" }}>{r.weight ?? "-"}</td>
+
+                  {/* Deleted weight cell: also show low-weight badge for consistency */}
+                  <td style={{ textAlign: "right" }}>
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                        gap: 8,
+                        minWidth: 80,
+                      }}
+                    >
+                      <span style={{ minWidth: 32, textAlign: "right" }}>
+                        {r.weight ?? "-"}
+                      </span>
+                      {isLowWeight(r) && (
+                        <span
+                          title={`Weight below ${LOW_WEIGHT_THRESHOLD}`}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            padding: "2px 6px",
+                            borderRadius: 999,
+                            background: "rgba(220,53,69,0.12)",
+                            color: "#c82333",
+                            fontSize: 12,
+                            fontWeight: 600,
+                          }}
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden
+                          >
+                            <path d="M12 2L22 20H2L12 2Z" fill="#ffc107" />
+                            <path
+                              d="M12 8V12"
+                              stroke="#212529"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M12 16H12.01"
+                              stroke="#212529"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <span style={{ lineHeight: 1 }}>{"Low"}</span>
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
                   <td>
                     {r.deletedAt
                       ? new Date(r.deletedAt)
@@ -964,12 +1173,87 @@ export const PaperList: React.FC = () => {
         mode={bulkModal.mode ?? "NHAPLAI"}
         selectedRolls={getSelectedRolls()}
         onClose={() => setBulkModal({ open: false })}
-        onConfirmBulkReImport={() => {
-          /* uses previous logic */
+        onConfirmBulkReImport={(updates) => {
+          doBulkReImport(updates);
+          setBulkModal({ open: false });
         }}
       />
 
-      {/* QR modal block omitted for brevity — same as earlier in your component; keep handleDownload/Print helpers */}
+      {qrModal.open && (
+        <div className="modal-backdrop" style={{ display: "block" }}>
+          <div className="modal" role="dialog" style={{ display: "block" }}>
+            <div className="modal-dialog modal-sm">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">QR: {qrModal.text}</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Close"
+                    onClick={() => setQrModal({ open: false })}
+                  />
+                </div>
+                <div className="modal-body" style={{ textAlign: "center" }}>
+                  {qrLoading ? (
+                    <div>Đang tạo QR...</div>
+                  ) : qrDataUrl ? (
+                    <>
+                      <img
+                        src={qrDataUrl}
+                        alt="QR"
+                        style={{ maxWidth: "100%", height: "auto" }}
+                      />
+                      <div
+                        style={{
+                          marginTop: 12,
+                          display: "flex",
+                          gap: 8,
+                          justifyContent: "center",
+                        }}
+                      >
+                        <button
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={handleOpenQrInNewTab}
+                        >
+                          Mở tab mới
+                        </button>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={handleDownloadQr}
+                        >
+                          Download
+                        </button>
+                        <button
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={handleCopyCode}
+                        >
+                          Copy mã cuộn
+                        </button>
+                        <button
+                          className="btn btn-success btn-sm"
+                          onClick={handlePrintQr}
+                        >
+                          In
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-danger">Tạo QR thất bại</div>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setQrModal({ open: false })}
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
