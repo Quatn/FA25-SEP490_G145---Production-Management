@@ -1,4 +1,3 @@
-// src/components/paper-storage-management/PaperList.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -9,6 +8,7 @@ import {
   useGetPaperRollsQuery,
   useGetDeletedPaperRollsQuery,
   useCreatePaperRollMutation,
+  useCreateMultiplePaperRollsMutation,
   useUpdatePaperRollMutation,
   useDeletePaperRollMutation,
   useRestorePaperRollMutation,
@@ -42,9 +42,58 @@ export const PaperList: React.FC = () => {
     mode?: "XUAT" | "NHAPLAI";
   }>({ open: false });
 
-  // Create form
+  const [singleModal, setSingleModal] = useState<{ open: boolean; roll?: any }>(
+    { open: false }
+  );
+  const [singleWeight, setSingleWeight] = useState<string>("");
+
   const [createOpen, setCreateOpen] = useState(false);
+  const [createMultipleOpen, setCreateMultipleOpen] = useState(false);
+
   const [createForm, setCreateForm] = useState({
+    useNewType: false,
+    paperTypeId: "",
+    paperColorId: "",
+    width: "",
+    grammage: "",
+    paperSupplierId: "",
+    weight: "",
+    receivingDate: "",
+    note: "",
+  });
+
+  type CreateMultipleRow = {
+    id: string;
+    useNewType: boolean;
+    paperTypeId?: string;
+    paperColorId?: string;
+    width?: string;
+    grammage?: string;
+    paperSupplierId?: string;
+    weight?: string;
+    receivingDate?: string;
+    note?: string;
+  };
+  const [createMultipleRows, setCreateMultipleRows] = useState<
+    CreateMultipleRow[]
+  >([
+    {
+      id: String(Date.now()),
+      useNewType: false,
+      paperTypeId: "",
+      paperColorId: "",
+      width: "",
+      grammage: "",
+      paperSupplierId: "",
+      weight: "",
+      receivingDate: "",
+      note: "",
+    },
+  ]);
+
+  const [updateOpen, setUpdateOpen] = useState(false);
+  const [updateForm, setUpdateForm] = useState({
+    id: "",
     paperColorId: "",
     paperSupplierId: "",
     width: "",
@@ -54,20 +103,6 @@ export const PaperList: React.FC = () => {
     note: "",
   });
 
-  // Update form (for editing ANY visible field)
-  const [updateOpen, setUpdateOpen] = useState(false);
-  const [updateForm, setUpdateForm] = useState({
-    id: "",
-    paperColorId: "", // user edits color (title -> selects a PaperColor)
-    paperSupplierId: "",
-    width: "",
-    grammage: "",
-    weight: "",
-    receivingDate: "",
-    note: "",
-  });
-
-  // QR
   const [qrModal, setQrModal] = useState<{ open: boolean; text?: string }>({
     open: false,
   });
@@ -79,7 +114,6 @@ export const PaperList: React.FC = () => {
     return () => clearTimeout(t);
   }, [query]);
 
-  // data queries
   const { data: rollsResp } = useGetPaperRollsQuery({
     page: 1,
     limit: 200,
@@ -89,7 +123,6 @@ export const PaperList: React.FC = () => {
   });
   const paperRolls: any[] = rollsResp?.data?.data ?? [];
 
-  // Deleted rows
   const { data: deletedResp } = useGetDeletedPaperRollsQuery
     ? useGetDeletedPaperRollsQuery({ page: 1, limit: 200 })
     : { data: undefined };
@@ -109,12 +142,13 @@ export const PaperList: React.FC = () => {
   const [addPaperType] = useAddPaperTypeMutation();
   const [createPaperRoll, { isLoading: creating }] =
     useCreatePaperRollMutation();
+  const [createMultiplePaperRolls, { isLoading: creatingMultiple }] =
+    useCreateMultiplePaperRollsMutation();
   const [updatePaperRoll] = useUpdatePaperRollMutation();
   const [deletePaperRoll] = useDeletePaperRollMutation();
   const [restorePaperRoll] = useRestorePaperRollMutation();
   const [createTransaction] = useCreateTransactionMutation();
 
-  // maps for quick lookup: id -> doc
   const colorMap = useMemo(() => {
     const m = new Map<string, any>();
     (allColors || []).forEach((c: any) =>
@@ -131,7 +165,9 @@ export const PaperList: React.FC = () => {
     return m;
   }, [allSuppliers]);
 
-  // util to extract colorId from paperType
+  const findType = (id?: string) =>
+    (allTypes || []).find((t: any) => String(getIdFromDoc(t)) === String(id));
+
   const getColorIdFromPaperType = (pt: any) => {
     if (!pt) return undefined;
     if (pt.paperColorId && typeof pt.paperColorId === "object")
@@ -139,7 +175,6 @@ export const PaperList: React.FC = () => {
     return getIdFromDoc(pt.paperColorId) ?? undefined;
   };
 
-  // compute paperRollId using color.code and supplier.code
   const computePaperRollId = (r: any) => {
     const pt = r.paperType ?? r.paperTypeId ?? null;
     const colorId = getColorIdFromPaperType(pt);
@@ -175,8 +210,7 @@ export const PaperList: React.FC = () => {
     return r.paperRollId ?? "-";
   };
 
-  // --- NEW: low weight helper & threshold ---
-  const LOW_WEIGHT_THRESHOLD = 1000; // change this value if you want a different threshold
+  const LOW_WEIGHT_THRESHOLD = 1000;
   const isLowWeight = (rollOrWeight: any) => {
     const w =
       rollOrWeight && typeof rollOrWeight === "object"
@@ -185,7 +219,6 @@ export const PaperList: React.FC = () => {
     return !isNaN(w) && w > 0 && w < LOW_WEIGHT_THRESHOLD;
   };
 
-  // table selection helpers
   const selectedRolls = useMemo(
     () => paperRolls.filter((r) => selectedIds[r.paperRollId]),
     [paperRolls, selectedIds]
@@ -208,63 +241,193 @@ export const PaperList: React.FC = () => {
   const getSelectedRolls = () =>
     paperRolls.filter((r) => selectedIds[r.paperRollId]);
 
-  // CREATE: identical to earlier flows (create paperType when needed)
   const handleCreateSubmit = async () => {
-    // validate
-    const w = Number(createForm.width || 0);
-    const g = Number(createForm.grammage || 0);
-    const weight = Number(createForm.weight || 0);
-    if (
-      !createForm.paperColorId ||
-      !createForm.paperSupplierId ||
-      !w ||
-      !g ||
-      !weight ||
-      !createForm.receivingDate
-    )
-      return alert("Please fill required fields");
-
     try {
-      // find or create paperType
-      const matched = (allTypes || []).find((t: any) => {
-        const tColorId = getIdFromDoc(t.paperColorId);
-        return (
-          String(tColorId) === String(createForm.paperColorId) &&
-          Number(t.width) === w &&
-          Number(t.grammage) === g
-        );
-      });
+      const supplierId = String(createForm.paperSupplierId ?? "");
+      if (!supplierId) return alert("Please select a supplier");
 
-      let paperTypeId = matched ? getIdFromDoc(matched) : undefined;
-      if (!paperTypeId) {
-        const createdResp: any = await addPaperType({
-          paperColorId: String(createForm.paperColorId),
-          width: w,
-          grammage: g,
-        }).unwrap();
-        const createdDoc = createdResp?.data ?? createdResp;
-        paperTypeId = getIdFromDoc(createdDoc);
+      let paperTypeId: string | undefined = undefined;
+
+      if (createForm.useNewType) {
+        const colorId = createForm.paperColorId;
+        const widthNum = Number(createForm.width || 0);
+        const grammageNum = Number(createForm.grammage || 0);
+        if (!colorId || !widthNum || !grammageNum)
+          return alert("Please provide color, width and grammage for new type");
+
+        const matched = (allTypes || []).find((t: any) => {
+          const tColorId = getIdFromDoc(t.paperColorId);
+          return (
+            String(tColorId) === String(colorId) &&
+            Number(t.width) === widthNum &&
+            Number(t.grammage) === grammageNum
+          );
+        });
+        paperTypeId = matched ? getIdFromDoc(matched) : undefined;
+        if (!paperTypeId) {
+          const createdResp: any = await addPaperType({
+            paperColorId: String(colorId),
+            width: widthNum,
+            grammage: grammageNum,
+          }).unwrap();
+          const createdDoc = createdResp?.data ?? createdResp;
+          paperTypeId = getIdFromDoc(createdDoc);
+        }
+      } else {
+        paperTypeId = createForm.paperTypeId;
       }
 
-      if (!paperTypeId) throw new Error("Failed to get paperTypeId");
+      if (!paperTypeId) return alert("Please select or create paper type");
+
+      const weight = Number(createForm.weight || 0);
+      const receivingDate = createForm.receivingDate;
+      if (!Number.isFinite(weight) || weight <= 0)
+        return alert("Provide valid weight (>0)");
+      if (!receivingDate) return alert("Please provide receiving date");
 
       const payload = {
-        paperSupplierId: String(createForm.paperSupplierId),
+        paperSupplierId: supplierId,
         paperTypeId,
         weight,
-        receivingDate: createForm.receivingDate,
-        note: createForm.note,
+        receivingDate,
+        note: createForm.note ?? "",
       };
+
       const resp: any = await createPaperRoll(payload).unwrap();
       alert(resp?.message ?? "Created");
       setCreateOpen(false);
+      setCreateForm({
+        useNewType: false,
+        paperTypeId: "",
+        paperColorId: "",
+        width: "",
+        grammage: "",
+        paperSupplierId: "",
+        weight: "",
+        receivingDate: "",
+        note: "",
+      });
     } catch (err: any) {
       console.error(err);
       alert(err?.data?.message ?? err?.message ?? "Create failed");
     }
   };
 
-  // EDIT: open update modal prefilled with current values
+  const addCreateMultipleRow = () =>
+    setCreateMultipleRows((prev) => [
+      ...prev,
+      {
+        id: String(Date.now()) + Math.random().toString(36).slice(2, 7),
+        useNewType: false,
+        paperTypeId: "",
+        paperColorId: "",
+        width: "",
+        grammage: "",
+        paperSupplierId: "",
+        weight: "",
+        receivingDate: "",
+        note: "",
+      },
+    ]);
+
+  const removeCreateMultipleRow = (id: string) =>
+    setCreateMultipleRows((prev) => prev.filter((r) => r.id !== id));
+
+  const updateCreateMultipleRow = (
+    id: string,
+    patch: Partial<CreateMultipleRow>
+  ) =>
+    setCreateMultipleRows((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...patch } : r))
+    );
+
+  const handleCreateMultipleSubmit = async () => {
+    try {
+      if (!createMultipleRows.length) return alert("No rows");
+
+      const rollsPayload: any[] = [];
+
+      for (const row of createMultipleRows) {
+        const supplierId = String(row.paperSupplierId ?? "");
+        if (!supplierId) return alert("Please select supplier for every row");
+
+        let paperTypeId: string | undefined = undefined;
+        if (row.useNewType) {
+          const colorId = row.paperColorId;
+          const widthNum = Number(row.width || 0);
+          const grammageNum = Number(row.grammage || 0);
+          if (!colorId || !widthNum || !grammageNum)
+            return alert(
+              "Please provide color, width and grammage for every new-type row"
+            );
+
+          const matched = (allTypes || []).find((t: any) => {
+            const tColorId = getIdFromDoc(t.paperColorId);
+            return (
+              String(tColorId) === String(colorId) &&
+              Number(t.width) === widthNum &&
+              Number(t.grammage) === grammageNum
+            );
+          });
+          paperTypeId = matched ? getIdFromDoc(matched) : undefined;
+
+          if (!paperTypeId) {
+            const createdResp: any = await addPaperType({
+              paperColorId: String(colorId),
+              width: widthNum,
+              grammage: grammageNum,
+            }).unwrap();
+            const createdDoc = createdResp?.data ?? createdResp;
+            paperTypeId = getIdFromDoc(createdDoc);
+          }
+        } else {
+          paperTypeId = row.paperTypeId;
+        }
+
+        if (!paperTypeId)
+          return alert("Please select or create paper type for every row");
+
+        const weight = Number(row.weight || 0);
+        const receivingDate = row.receivingDate;
+        if (!Number.isFinite(weight) || weight <= 0)
+          return alert("Provide valid weight (>0) for every row");
+        if (!receivingDate)
+          return alert("Please provide receiving date for every row");
+
+        rollsPayload.push({
+          paperSupplierId: supplierId,
+          paperTypeId,
+          weight,
+          receivingDate,
+          note: row.note ?? "",
+        });
+      }
+
+      const resp: any = await createMultiplePaperRolls({
+        rolls: rollsPayload,
+      }).unwrap();
+      alert(resp?.message ?? `Created ${rollsPayload.length} rolls`);
+      setCreateMultipleOpen(false);
+      setCreateMultipleRows([
+        {
+          id: String(Date.now()),
+          useNewType: false,
+          paperTypeId: "",
+          paperColorId: "",
+          width: "",
+          grammage: "",
+          paperSupplierId: "",
+          weight: "",
+          receivingDate: "",
+          note: "",
+        },
+      ]);
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.data?.message ?? err?.message ?? "Create multiple failed");
+    }
+  };
+
   const openEdit = (r: any) => {
     const pt = r.paperType ?? r.paperTypeId ?? null;
     const colorId = getColorIdFromPaperType(pt) ?? "";
@@ -285,7 +448,6 @@ export const PaperList: React.FC = () => {
   };
 
   const handleUpdateSubmit = async () => {
-    // validate
     const widthNum = Number(updateForm.width || 0);
     const grammageNum = Number(updateForm.grammage || 0);
     const weightNum = Number(updateForm.weight ?? 0);
@@ -301,7 +463,6 @@ export const PaperList: React.FC = () => {
     }
 
     try {
-      // If color/width/grammage changed (i.e. paper type identity changed), find or create PaperType
       const matched = (allTypes || []).find((t: any) => {
         const tColorId = getIdFromDoc(t.paperColorId);
         return (
@@ -324,7 +485,6 @@ export const PaperList: React.FC = () => {
 
       if (!paperTypeId) throw new Error("Failed to obtain paperTypeId");
 
-      // Build update payload: set paperTypeId, paperSupplierId, weight, receivingDate, note
       const payload: any = {
         paperTypeId,
         paperSupplierId: String(updateForm.paperSupplierId),
@@ -345,7 +505,6 @@ export const PaperList: React.FC = () => {
     }
   };
 
-  // Soft delete (sets isDeleted via backend)
   const handleSoftDelete = async (r: any) => {
     const id = getIdFromDoc(r) ?? r.paperRollId;
     if (!id) return alert("No id");
@@ -359,7 +518,6 @@ export const PaperList: React.FC = () => {
     }
   };
 
-  // Restore deleted
   const handleRestore = async (r: any) => {
     const id = getIdFromDoc(r) ?? r.paperRollId;
     if (!id) return alert("No id");
@@ -372,7 +530,6 @@ export const PaperList: React.FC = () => {
     }
   };
 
-  // Export single / bulk re-import etc (unchanged)
   const doSingleExport = async (roll: any) => {
     if (!roll) return;
     const w = Number(roll.weight || 0);
@@ -395,6 +552,78 @@ export const PaperList: React.FC = () => {
     } catch (err: any) {
       console.error(err);
       alert("Export failed");
+    }
+  };
+
+  const doSingleReImport = async (
+    rollOrPaperRollId: any,
+    newWeight: number
+  ) => {
+    if (
+      typeof newWeight !== "number" ||
+      !Number.isFinite(newWeight) ||
+      newWeight < 0
+    ) {
+      return alert("Vui lòng cung cấp trọng lượng hợp lệ (>= 0).");
+    }
+
+    let roll: any = null;
+    if (!rollOrPaperRollId) return alert("No roll provided");
+
+    if (typeof rollOrPaperRollId === "string") {
+      roll = paperRolls.find((r) => r.paperRollId === rollOrPaperRollId);
+      if (!roll)
+        roll = paperRolls.find(
+          (r) =>
+            getIdFromDoc(r) === rollOrPaperRollId || r._id === rollOrPaperRollId
+        );
+    } else {
+      const candidateDbId =
+        getIdFromDoc(rollOrPaperRollId) ??
+        rollOrPaperRollId._id ??
+        rollOrPaperRollId.paperRollId;
+      roll =
+        paperRolls.find((r) => {
+          return (
+            getIdFromDoc(r) === candidateDbId ||
+            r._id === candidateDbId ||
+            r.paperRollId === candidateDbId
+          );
+        }) || rollOrPaperRollId;
+    }
+
+    if (!roll) return alert("Không tìm thấy cuộn để cập nhật.");
+
+    const dbId = getIdFromDoc(roll) ?? roll._id ?? roll.paperRollId;
+    if (!dbId) return alert("Không xác định được id cuộn (db id).");
+
+    const prev = Number(roll.weight || 0);
+    const newW = Number(newWeight);
+
+    try {
+      await createTransaction({
+        paperRollId: dbId,
+        employeeId: "69146dd889bf8e8ca320bcff",
+        transactionType: "NHAPLAI",
+        initialWeight: prev,
+        finalWeight: newW,
+        timeStamp: new Date().toISOString(),
+        inCharge: "Operator A",
+      }).unwrap();
+
+      await updatePaperRoll({ id: dbId, data: { weight: newW } }).unwrap();
+
+      setSelectedIds((prevSel) => {
+        const next = { ...prevSel };
+        const prId = roll.paperRollId ?? dbId;
+        delete next[prId];
+        return next;
+      });
+
+      alert("Nhập lại thành công");
+    } catch (err: any) {
+      console.error("Single re-import failed", err);
+      alert(err?.data?.message ?? err?.message ?? "Nhập lại thất bại");
     }
   };
 
@@ -434,7 +663,23 @@ export const PaperList: React.FC = () => {
     }
   };
 
-  // QR helpers (same as before)
+  useEffect(() => {
+    if (singleModal.open && singleModal.roll) {
+      setSingleWeight(String(singleModal.roll.weight ?? 0));
+    }
+  }, [singleModal]);
+
+  const handleConfirmSingleReImport = async () => {
+    if (!singleModal.roll) return;
+    const newW = Number(singleWeight);
+    if (!Number.isFinite(newW) || newW < 0) {
+      return alert("Vui lòng nhập một số trọng lượng hợp lệ (>= 0).");
+    }
+    await doSingleReImport(singleModal.roll, newW);
+    setSingleModal({ open: false });
+    setSingleWeight("");
+  };
+
   const handleCreateQR = async (text: string) => {
     setQrModal({ open: true, text });
     setQrLoading(true);
@@ -493,10 +738,13 @@ export const PaperList: React.FC = () => {
     w.document.close();
   };
 
-  // render
+  const fieldStyle: React.CSSProperties = {
+    display: "block",
+    marginBottom: 12,
+  };
+
   return (
     <div>
-      {/* Header & create button */}
       <div
         style={{
           display: "flex",
@@ -520,7 +768,13 @@ export const PaperList: React.FC = () => {
             className="btn btn-primary"
             onClick={() => setCreateOpen(true)}
           >
-            + Create
+            + Tạo
+          </button>
+          <button
+            className="btn btn-outline-primary"
+            onClick={() => setCreateMultipleOpen(true)}
+          >
+            + Tạo nhiều
           </button>
         </div>
       </div>
@@ -538,16 +792,6 @@ export const PaperList: React.FC = () => {
           }}
         >
           Xuất (chọn)
-        </button>
-        <button
-          className="btn btn-secondary"
-          onClick={() => {
-            const sel = getSelectedRolls();
-            if (!sel.length) return alert("Select at least 1");
-            setBulkModal({ open: true, mode: "NHAPLAI" });
-          }}
-        >
-          Nhập lại (chọn)
         </button>
         <button
           className="btn btn-outline-primary"
@@ -577,13 +821,13 @@ export const PaperList: React.FC = () => {
                   }
                 />
               </th>
-              <th>PaperRollId</th>
-              <th>Color</th>
-              <th>Supplier</th>
-              <th style={{ textAlign: "right" }}>Width</th>
-              <th style={{ textAlign: "right" }}>Grammage</th>
-              <th style={{ textAlign: "right" }}>Weight</th>
-              <th>Receive date</th>
+              <th>Mã cuộn</th>
+              <th>Màu</th>
+              <th>Nhà cung cấp</th>
+              <th style={{ textAlign: "right" }}>Rộng</th>
+              <th style={{ textAlign: "right" }}>Khổ</th>
+              <th style={{ textAlign: "right" }}>Trọng lượng</th>
+              <th>Ngày nhập</th>
               <th style={{ width: 360 }}>Actions</th>
             </tr>
           </thead>
@@ -620,8 +864,6 @@ export const PaperList: React.FC = () => {
                   <td style={{ textAlign: "right" }}>
                     {pt?.grammage ?? r.grammage ?? "-"}
                   </td>
-
-                  {/* Weight cell: show value + small low-weight badge/icon when under threshold */}
                   <td style={{ textAlign: "right" }}>
                     <div
                       style={{
@@ -650,7 +892,6 @@ export const PaperList: React.FC = () => {
                             fontWeight: 600,
                           }}
                         >
-                          {/* small exclamation triangle SVG */}
                           <svg
                             width="12"
                             height="12"
@@ -680,7 +921,6 @@ export const PaperList: React.FC = () => {
                       )}
                     </div>
                   </td>
-
                   <td>
                     {r.receivingDate
                       ? new Date(r.receivingDate).toISOString().slice(0, 10)
@@ -709,7 +949,7 @@ export const PaperList: React.FC = () => {
                       <button
                         className="btn btn-secondary btn-sm"
                         onClick={() => {
-                          setBulkModal({ open: true, mode: "NHAPLAI" });
+                          setSingleModal({ open: true, roll: r });
                           setSelectedIds({ [r.paperRollId]: true });
                         }}
                       >
@@ -735,7 +975,7 @@ export const PaperList: React.FC = () => {
             {visibleRows.length === 0 && (
               <tr>
                 <td colSpan={9} className="text-muted p-4">
-                  No rows
+                  Rỗng
                 </td>
               </tr>
             )}
@@ -743,19 +983,18 @@ export const PaperList: React.FC = () => {
         </table>
       </div>
 
-      {/* Deleted table */}
-      <h5 style={{ marginTop: 24 }}>Deleted rolls</h5>
+      <h5 style={{ marginTop: 24 }}>Các cuộn đã xóa</h5>
       <div style={{ overflowX: "auto", marginBottom: 24 }}>
         <table className="table table-sm table-bordered">
           <thead>
             <tr>
-              <th>PaperRollId</th>
-              <th>Color</th>
-              <th>Supplier</th>
-              <th style={{ textAlign: "right" }}>Width</th>
-              <th style={{ textAlign: "right" }}>Grammage</th>
-              <th style={{ textAlign: "right" }}>Weight</th>
-              <th>Deleted At</th>
+              <th>Mã cuộn</th>
+              <th>Màu</th>
+              <th>Nhà cung cấp</th>
+              <th style={{ textAlign: "right" }}>Rộng</th>
+              <th style={{ textAlign: "right" }}>Khổ</th>
+              <th style={{ textAlign: "right" }}>Trọng lượng</th>
+              <th>Ngày xóa</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -782,8 +1021,6 @@ export const PaperList: React.FC = () => {
                   <td style={{ textAlign: "right" }}>
                     {pt?.grammage ?? r.grammage ?? "-"}
                   </td>
-
-                  {/* Deleted weight cell: also show low-weight badge for consistency */}
                   <td style={{ textAlign: "right" }}>
                     <div
                       style={{
@@ -872,14 +1109,13 @@ export const PaperList: React.FC = () => {
         </table>
       </div>
 
-      {/* Create modal (same fields as before) */}
       {createOpen && (
         <div className="modal-backdrop" style={{ display: "block" }}>
           <div className="modal" role="dialog" style={{ display: "block" }}>
             <div className="modal-dialog">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Create Paper Roll</h5>
+                  <h5 className="modal-title">Tạo cuộn</h5>
                   <button
                     type="button"
                     className="btn-close"
@@ -888,31 +1124,131 @@ export const PaperList: React.FC = () => {
                   />
                 </div>
                 <div className="modal-body">
-                  <label>
-                    Color (title)
-                    <select
-                      className="form-control"
-                      value={createForm.paperColorId}
+                  <label style={fieldStyle}>
+                    <input
+                      type="checkbox"
+                      checked={createForm.useNewType}
                       onChange={(e) =>
                         setCreateForm((f) => ({
                           ...f,
-                          paperColorId: e.target.value,
+                          useNewType: e.target.checked,
                         }))
                       }
-                    >
-                      <option value="">-- select color --</option>
-                      {(allColors || []).map((c) => (
-                        <option
-                          key={getIdFromDoc(c) ?? c.code}
-                          value={getIdFromDoc(c)}
-                        >
-                          {c.title}
-                        </option>
-                      ))}
-                    </select>
+                    />{" "}
+                    Tạo loại giấy mới
                   </label>
-                  <label>
-                    Supplier
+
+                  {!createForm.useNewType ? (
+                    <label style={fieldStyle}>
+                      Loại giấy
+                      <select
+                        className="form-control"
+                        value={createForm.paperTypeId}
+                        onChange={(e) =>
+                          setCreateForm((f) => ({
+                            ...f,
+                            paperTypeId: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">-- chọn loại giấy --</option>
+                        {(allTypes || []).map((t) => (
+                          <option
+                            key={getIdFromDoc(t) ?? `${t.width}_${t.grammage}`}
+                            value={getIdFromDoc(t)}
+                          >
+                            {`${
+                              t.paperColor?.title ??
+                              colorMap.get(String(getIdFromDoc(t.paperColorId)))
+                                ?.title ??
+                              ""
+                            } — ${t.width} x ${t.grammage}`}
+                          </option>
+                        ))}
+                      </select>
+                      {createForm.paperTypeId && (
+                        <div style={{ marginTop: 8 }}>
+                          <small className="text-muted">
+                            Width:{" "}
+                            {findType(createForm.paperTypeId)?.width ?? "-"} |
+                            Grammage:{" "}
+                            {findType(createForm.paperTypeId)?.grammage ?? "-"}{" "}
+                            | Color:{" "}
+                            {findType(createForm.paperTypeId)?.paperColor
+                              ?.title ??
+                              colorMap.get(
+                                String(
+                                  getIdFromDoc(
+                                    findType(createForm.paperTypeId)
+                                      ?.paperColorId
+                                  )
+                                )
+                              )?.title ??
+                              "-"}
+                          </small>
+                        </div>
+                      )}
+                    </label>
+                  ) : (
+                    <>
+                      <label style={fieldStyle}>
+                        Màu
+                        <select
+                          className="form-control"
+                          value={createForm.paperColorId}
+                          onChange={(e) =>
+                            setCreateForm((f) => ({
+                              ...f,
+                              paperColorId: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">-- chọn màu --</option>
+                          {(allColors || []).map((c) => (
+                            <option
+                              key={getIdFromDoc(c) ?? c.code}
+                              value={getIdFromDoc(c)}
+                            >
+                              {c.title}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label style={fieldStyle}>
+                        Rộng
+                        <input
+                          className="form-control"
+                          type="number"
+                          value={createForm.width}
+                          onChange={(e) =>
+                            setCreateForm((f) => ({
+                              ...f,
+                              width: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
+                      <label style={fieldStyle}>
+                        Khổ
+                        <input
+                          className="form-control"
+                          type="number"
+                          value={createForm.grammage}
+                          onChange={(e) =>
+                            setCreateForm((f) => ({
+                              ...f,
+                              grammage: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    </>
+                  )}
+
+                  <label style={fieldStyle}>
+                    Nhà cung cấp
                     <select
                       className="form-control"
                       value={createForm.paperSupplierId}
@@ -923,7 +1259,7 @@ export const PaperList: React.FC = () => {
                         }))
                       }
                     >
-                      <option value="">-- select supplier --</option>
+                      <option value="">-- chọn nhà cung cấp --</option>
                       {(allSuppliers || []).map((s) => (
                         <option
                           key={getIdFromDoc(s) ?? s.code}
@@ -934,33 +1270,9 @@ export const PaperList: React.FC = () => {
                       ))}
                     </select>
                   </label>
-                  <label>
-                    Width{" "}
-                    <input
-                      className="form-control"
-                      type="number"
-                      value={createForm.width}
-                      onChange={(e) =>
-                        setCreateForm((f) => ({ ...f, width: e.target.value }))
-                      }
-                    />
-                  </label>
-                  <label>
-                    Grammage{" "}
-                    <input
-                      className="form-control"
-                      type="number"
-                      value={createForm.grammage}
-                      onChange={(e) =>
-                        setCreateForm((f) => ({
-                          ...f,
-                          grammage: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label>
-                    Weight{" "}
+
+                  <label style={fieldStyle}>
+                    Trọng lượng
                     <input
                       className="form-control"
                       type="number"
@@ -970,8 +1282,9 @@ export const PaperList: React.FC = () => {
                       }
                     />
                   </label>
-                  <label>
-                    Receiving Date{" "}
+
+                  <label style={fieldStyle}>
+                    Ngày nhập
                     <input
                       className="form-control"
                       type="date"
@@ -984,8 +1297,9 @@ export const PaperList: React.FC = () => {
                       }
                     />
                   </label>
-                  <label>
-                    Note{" "}
+
+                  <label style={fieldStyle}>
+                    Note
                     <textarea
                       className="form-control"
                       value={createForm.note}
@@ -1000,14 +1314,14 @@ export const PaperList: React.FC = () => {
                     className="btn btn-secondary"
                     onClick={() => setCreateOpen(false)}
                   >
-                    Cancel
+                    Đóng
                   </button>
                   <button
                     className="btn btn-primary"
                     onClick={handleCreateSubmit}
                     disabled={creating}
                   >
-                    {creating ? "Creating..." : "Create"}
+                    {creating ? "Đang tạo..." : "Tạo"}
                   </button>
                 </div>
               </div>
@@ -1016,14 +1330,284 @@ export const PaperList: React.FC = () => {
         </div>
       )}
 
-      {/* Update modal (editing all visible fields) */}
+      {createMultipleOpen && (
+        <div className="modal-backdrop" style={{ display: "block" }}>
+          <div className="modal" role="dialog" style={{ display: "block" }}>
+            {/* <-- changed modal-lg to modal-xl here --> */}
+            <div className="modal-dialog modal-xl">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Tạo nhiều cuộn</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Close"
+                    onClick={() => setCreateMultipleOpen(false)}
+                  />
+                </div>
+                <div className="modal-body">
+                  <div
+                    style={{
+                      marginBottom: 8,
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "center",
+                    }}
+                  >
+                    <button
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={addCreateMultipleRow}
+                    >
+                      Thêm dòng
+                    </button>
+                    <small className="text-muted">
+                      Mỗi dòng tương ứng 1 cuộn — mỗi dòng có thể có
+                      loại/supplier/trọng lượng riêng
+                    </small>
+                  </div>
+
+                  <div style={{ overflowX: "auto" }}>
+                    <table className="table table-sm table-bordered">
+                      <thead>
+                        <tr>
+                          <th style={{ width: 36 }}>#</th>
+                          <th style={{ minWidth: 420 }}>Loại giấy</th>{" "}
+                          <th>Nhà cung cấp</th>
+                          <th style={{ width: 150 }}>Trọng lượng</th>
+                          <th style={{ width: 140 }}>Ngày nhập</th>
+                          <th>Ghi chú</th>
+                          <th style={{ width: 80 }}>Xóa</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {createMultipleRows.map((row, idx) => (
+                          <tr key={row.id}>
+                            <td>{idx + 1}</td>
+                            <td>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: 8,
+                                  alignItems: "center",
+                                  flexDirection: "column",
+                                }}
+                              >
+                                {!row.useNewType ? (
+                                  (() => {
+                                    // compute a friendly title so user can hover and see full text
+                                    const st = findType(row.paperTypeId);
+                                    const titleText = st
+                                      ? `${
+                                          st.paperColor?.title ??
+                                          colorMap.get(
+                                            String(
+                                              getIdFromDoc(st.paperColorId)
+                                            )
+                                          )?.title ??
+                                          ""
+                                        } — ${st.width} x ${st.grammage}`
+                                      : "";
+
+                                    return (
+                                      <select
+                                        className="form-control"
+                                        value={row.paperTypeId}
+                                        onChange={(e) =>
+                                          updateCreateMultipleRow(row.id, {
+                                            paperTypeId: e.target.value,
+                                          })
+                                        }
+                                        style={{ minWidth: 420 }}
+                                        title={titleText}
+                                      >
+                                        <option value="">
+                                          -- chọn loại giấy --
+                                        </option>
+                                        {(allTypes || []).map((t) => (
+                                          <option
+                                            key={
+                                              getIdFromDoc(t) ??
+                                              `${t.width}_${t.grammage}`
+                                            }
+                                            value={getIdFromDoc(t)}
+                                          >
+                                            {`${
+                                              t.paperColor?.title ??
+                                              colorMap.get(
+                                                String(
+                                                  getIdFromDoc(t.paperColorId)
+                                                )
+                                              )?.title ??
+                                              ""
+                                            } — ${t.width} x ${t.grammage}`}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    );
+                                  })()
+                                ) : (
+                                  <>
+                                    <select
+                                      className="form-control"
+                                      value={row.paperColorId}
+                                      onChange={(e) =>
+                                        updateCreateMultipleRow(row.id, {
+                                          paperColorId: e.target.value,
+                                        })
+                                      }
+                                      style={{ minWidth: 200 }}
+                                    >
+                                      <option value="">-- chọn màu --</option>
+                                      {(allColors || []).map((c) => (
+                                        <option
+                                          key={getIdFromDoc(c) ?? c.code}
+                                          value={getIdFromDoc(c)}
+                                        >
+                                          {c.title}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        gap: 8,
+                                        marginTop: 8,
+                                      }}
+                                    >
+                                      <input
+                                        className="form-control"
+                                        placeholder="Width"
+                                        type="number"
+                                        value={row.width}
+                                        onChange={(e) =>
+                                          updateCreateMultipleRow(row.id, {
+                                            width: e.target.value,
+                                          })
+                                        }
+                                      />
+                                      <input
+                                        className="form-control"
+                                        placeholder="Grammage"
+                                        type="number"
+                                        value={row.grammage}
+                                        onChange={(e) =>
+                                          updateCreateMultipleRow(row.id, {
+                                            grammage: e.target.value,
+                                          })
+                                        }
+                                      />
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+
+                            <td>
+                              <select
+                                className="form-control"
+                                value={row.paperSupplierId}
+                                onChange={(e) =>
+                                  updateCreateMultipleRow(row.id, {
+                                    paperSupplierId: e.target.value,
+                                  })
+                                }
+                              >
+                                <option value="">
+                                  -- chọn nhà cung cấp --
+                                </option>
+                                {(allSuppliers || []).map((s) => (
+                                  <option
+                                    key={getIdFromDoc(s) ?? s.code}
+                                    value={getIdFromDoc(s)}
+                                  >
+                                    {s.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+
+                            <td>
+                              <input
+                                className="form-control"
+                                type="number"
+                                min={0}
+                                value={row.weight}
+                                onChange={(e) =>
+                                  updateCreateMultipleRow(row.id, {
+                                    weight: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+
+                            <td>
+                              <input
+                                className="form-control"
+                                type="date"
+                                value={row.receivingDate}
+                                onChange={(e) =>
+                                  updateCreateMultipleRow(row.id, {
+                                    receivingDate: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+
+                            <td>
+                              <input
+                                className="form-control"
+                                value={row.note}
+                                onChange={(e) =>
+                                  updateCreateMultipleRow(row.id, {
+                                    note: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+
+                            <td>
+                              <button
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => removeCreateMultipleRow(row.id)}
+                              >
+                                X
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setCreateMultipleOpen(false)}
+                  >
+                    Đóng
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleCreateMultipleSubmit}
+                    disabled={creatingMultiple}
+                  >
+                    {creatingMultiple ? "Đang tạo..." : "Tạo nhiều"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {updateOpen && (
         <div className="modal-backdrop" style={{ display: "block" }}>
           <div className="modal" role="dialog" style={{ display: "block" }}>
             <div className="modal-dialog">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Edit Paper Roll</h5>
+                  <h5 className="modal-title">Sửa thông tin</h5>
                   <button
                     type="button"
                     className="btn-close"
@@ -1032,8 +1616,8 @@ export const PaperList: React.FC = () => {
                   />
                 </div>
                 <div className="modal-body">
-                  <label>
-                    Color (title)
+                  <label style={fieldStyle}>
+                    Màu
                     <select
                       className="form-control"
                       value={updateForm.paperColorId}
@@ -1055,8 +1639,8 @@ export const PaperList: React.FC = () => {
                       ))}
                     </select>
                   </label>
-                  <label>
-                    Supplier
+                  <label style={fieldStyle}>
+                    Nhà cung cấp
                     <select
                       className="form-control"
                       value={updateForm.paperSupplierId}
@@ -1078,8 +1662,8 @@ export const PaperList: React.FC = () => {
                       ))}
                     </select>
                   </label>
-                  <label>
-                    Width{" "}
+                  <label style={fieldStyle}>
+                    Rộng{" "}
                     <input
                       className="form-control"
                       type="number"
@@ -1089,8 +1673,8 @@ export const PaperList: React.FC = () => {
                       }
                     />
                   </label>
-                  <label>
-                    Grammage{" "}
+                  <label style={fieldStyle}>
+                    Khổ{" "}
                     <input
                       className="form-control"
                       type="number"
@@ -1103,8 +1687,8 @@ export const PaperList: React.FC = () => {
                       }
                     />
                   </label>
-                  <label>
-                    Weight{" "}
+                  <label style={fieldStyle}>
+                    Trọng lượng{" "}
                     <input
                       className="form-control"
                       type="number"
@@ -1114,8 +1698,8 @@ export const PaperList: React.FC = () => {
                       }
                     />
                   </label>
-                  <label>
-                    Receiving Date{" "}
+                  <label style={fieldStyle}>
+                    Ngày nhập{" "}
                     <input
                       className="form-control"
                       type="date"
@@ -1128,7 +1712,7 @@ export const PaperList: React.FC = () => {
                       }
                     />
                   </label>
-                  <label>
+                  <label style={fieldStyle}>
                     Note{" "}
                     <textarea
                       className="form-control"
@@ -1144,13 +1728,13 @@ export const PaperList: React.FC = () => {
                     className="btn btn-secondary"
                     onClick={() => setUpdateOpen(false)}
                   >
-                    Cancel
+                    Đóng
                   </button>
                   <button
                     className="btn btn-primary"
                     onClick={handleUpdateSubmit}
                   >
-                    Save
+                    Lưu
                   </button>
                 </div>
               </div>
@@ -1178,6 +1762,59 @@ export const PaperList: React.FC = () => {
           setBulkModal({ open: false });
         }}
       />
+
+      {/* SINGLE re-import modal */}
+      {singleModal.open && singleModal.roll && (
+        <div className="modal-backdrop" style={{ display: "block" }}>
+          <div className="modal" role="dialog" style={{ display: "block" }}>
+            <div className="modal-dialog modal-sm">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Nhập lại (single)</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Close"
+                    onClick={() => setSingleModal({ open: false })}
+                  />
+                </div>
+
+                <div className="modal-body">
+                  <p>
+                    Nhập lại trọng lượng cho:{" "}
+                    <strong>{computePaperRollId(singleModal.roll)}</strong>
+                  </p>
+                  <label style={fieldStyle}>
+                    Trọng lượng (kg)
+                    <input
+                      className="form-control"
+                      type="number"
+                      min={0}
+                      value={singleWeight}
+                      onChange={(e) => setSingleWeight(e.target.value)}
+                    />
+                  </label>
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setSingleModal({ open: false })}
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => handleConfirmSingleReImport()}
+                  >
+                    Xác nhận Nhập lại
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {qrModal.open && (
         <div className="modal-backdrop" style={{ display: "block" }}>

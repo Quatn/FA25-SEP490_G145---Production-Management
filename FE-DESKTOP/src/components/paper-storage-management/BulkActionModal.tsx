@@ -88,7 +88,7 @@ export const BulkActionModal: React.FC<BulkActionModalProps> = ({
                         </thead>
                         <tbody>
                           {selectedRolls.map((r: any) => (
-                            <tr key={r.paperRollId}>
+                            <tr key={r.paperRollId ?? r._id}>
                               <td style={{ whiteSpace: "nowrap" }}>
                                 {r.paperRollId}
                               </td>

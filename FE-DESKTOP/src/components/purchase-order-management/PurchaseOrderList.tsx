@@ -702,12 +702,12 @@ const PurchaseOrderList: React.FC = () => {
                                   <table className="table table-sm table-bordered">
                                     <thead>
                                       <tr>
-                                        <th>Item code</th>
-                                        <th>Ware</th>
-                                        <th>Amount</th>
-                                        <th>Unit price</th>
+                                        <th>Mã sản phẩm</th>
+                                        <th>Mã hàng</th>
+                                        <th>Số lượng</th>
+                                        <th>Đơn giá</th>
                                         <th style={{ textAlign: "right" }}>
-                                          Total
+                                          Thành tiền
                                         </th>
                                         <th style={{ width: 120 }}>Actions</th>
                                       </tr>
