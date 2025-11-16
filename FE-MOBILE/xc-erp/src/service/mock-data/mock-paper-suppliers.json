@@ -1,0 +1,5 @@
+[
+  { "id": "S1", "name": "VIỆT TRÌ", "code": "VT", "totalPaperPurchased": 25000 },
+  { "id": "S2", "name": "LEE&MAN", "code": "LM", "totalPaperPurchased": 42000 },
+  { "id": "S3", "name": "PHÁT ĐẠT", "code": "PD", "totalPaperPurchased": 15000 }
+]
