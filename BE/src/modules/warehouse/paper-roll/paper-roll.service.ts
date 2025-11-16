@@ -288,15 +288,27 @@ export class PaperRollService {
 
   async findDeleted(page = 1, limit = 10) {
     const skip = (page - 1) * limit;
-    // directly query the collection with an explicit filter (this bypasses pre 'find' if you use collection)
     const filter = { isDeleted: true };
-    const [data, totalCount] = await Promise.all([
-      this.PaperRollModel.find(filter).skip(skip).limit(limit).populate([{ path: 'paperTypeId', populate: { path: 'paperColorId' } }, { path: 'paperSupplierId' }]).lean().exec(),
-      this.PaperRollModel.countDocuments(filter),
+
+    // Use the raw collection to bypass Mongoose `pre('find')` middleware added by the plugin
+    const [rawDocs, totalCount] = await Promise.all([
+      // collection.find returns raw JS objects (no mongoose middleware applied)
+      this.PaperRollModel.collection
+        .find(filter)
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
+      this.PaperRollModel.collection.countDocuments(filter),
     ]);
+
+    const populatedDocs = await this.PaperRollModel.populate(rawDocs, [
+      { path: "paperTypeId", populate: { path: "paperColorId" } },
+      { path: "paperSupplierId" },
+    ]);
+
     const totalPages = Math.ceil((totalCount || 0) / limit);
     return {
-      data,
+      data: populatedDocs,
       page,
       limit,
       totalItems: totalCount,
@@ -304,6 +316,36 @@ export class PaperRollService {
       hasNextPage: page < totalPages,
       hasPrevPage: page > 1,
     };
+  }
+
+  async findByPaperRollId(paperRollId: string): Promise<any> {
+    const populatedRoll = await this.PaperRollModel.aggregate([
+      { $match: { paperRollId: paperRollId } },
+      {
+        $lookup: {
+          from: 'papertypes',
+          localField: 'paperTypeId',
+          foreignField: '_id',
+          as: 'paperType',
+        },
+      },
+      { $unwind: { path: '$paperType', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'papersuppliers',
+          localField: 'paperSupplierId',
+          foreignField: '_id',
+          as: 'paperSupplier',
+        },
+      },
+      { $unwind: { path: '$paperSupplier', preserveNullAndEmptyArrays: true } },
+    ]);
+
+    if (!populatedRoll || populatedRoll.length === 0) {
+      throw new NotFoundException(`Paper roll with paperRollId #${paperRollId} not found`);
+    }
+
+    return populatedRoll[0];
   }
 
 }
