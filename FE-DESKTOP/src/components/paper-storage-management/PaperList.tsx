@@ -42,6 +42,14 @@ export const PaperList: React.FC = () => {
     mode?: "XUAT" | "NHAPLAI";
   }>({ open: false });
 
+  // NEW: single re-import modal state
+  const [singleModal, setSingleModal] = useState<{ open: boolean; roll?: any }>(
+    {
+      open: false,
+    }
+  );
+  const [singleWeight, setSingleWeight] = useState<string>("");
+
   // Create form
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -139,7 +147,6 @@ export const PaperList: React.FC = () => {
     return getIdFromDoc(pt.paperColorId) ?? undefined;
   };
 
-  // compute paperRollId using color.code and supplier.code
   const computePaperRollId = (r: any) => {
     const pt = r.paperType ?? r.paperTypeId ?? null;
     const colorId = getColorIdFromPaperType(pt);
@@ -182,7 +189,7 @@ export const PaperList: React.FC = () => {
       rollOrWeight && typeof rollOrWeight === "object"
         ? Number(rollOrWeight.weight ?? 0)
         : Number(rollOrWeight ?? 0);
-    return !isNaN(w) && w > 0 && w < LOW_WEIGHT_THRESHOLD;
+    return !isNaN(w) && w < LOW_WEIGHT_THRESHOLD;
   };
 
   // table selection helpers
@@ -398,6 +405,90 @@ export const PaperList: React.FC = () => {
     }
   };
 
+  const doSingleReImport = async (
+    rollOrPaperRollId: any,
+    newWeight: number
+  ) => {
+    // parameter:
+    // - rollOrPaperRollId can be either a roll object (from paperRolls) or the computed paperRollId string
+    // - newWeight must be provided (number)
+    if (
+      typeof newWeight !== "number" ||
+      !Number.isFinite(newWeight) ||
+      newWeight < 0
+    ) {
+      return alert("Vui lòng cung cấp trọng lượng hợp lệ (>= 0).");
+    }
+
+    // find the roll object in current list
+    let roll: any = null;
+    if (!rollOrPaperRollId) return alert("No roll provided");
+
+    if (typeof rollOrPaperRollId === "string") {
+      // assume it's the computed paperRollId (the human-readable id used in the UI)
+      roll = paperRolls.find((r) => r.paperRollId === rollOrPaperRollId);
+      // fallback: maybe passed db id
+      if (!roll)
+        roll = paperRolls.find(
+          (r) =>
+            getIdFromDoc(r) === rollOrPaperRollId || r._id === rollOrPaperRollId
+        );
+    } else {
+      // object passed; try to match canonical instance in paperRolls (so we use the same object reference / latest data)
+      const candidateDbId =
+        getIdFromDoc(rollOrPaperRollId) ??
+        rollOrPaperRollId._id ??
+        rollOrPaperRollId.paperRollId;
+      roll =
+        paperRolls.find((r) => {
+          return (
+            getIdFromDoc(r) === candidateDbId ||
+            r._id === candidateDbId ||
+            r.paperRollId === candidateDbId
+          );
+        }) || rollOrPaperRollId;
+    }
+
+    if (!roll) return alert("Không tìm thấy cuộn để cập nhật.");
+
+    // resolve DB id and previous weight
+    const dbId = getIdFromDoc(roll) ?? roll._id ?? roll.paperRollId;
+    if (!dbId) return alert("Không xác định được id cuộn (db id).");
+
+    const prev = Number(roll.weight || 0);
+    const newW = Number(newWeight);
+
+    try {
+      // create transaction (NHAPLAI)
+      await createTransaction({
+        paperRollId: dbId, // link transaction to DB id
+        employeeId: "69146dd889bf8e8ca320bcff",
+        transactionType: "NHAPLAI",
+        initialWeight: prev,
+        finalWeight: newW,
+        timeStamp: new Date().toISOString(),
+        inCharge: "Operator A",
+      }).unwrap();
+
+      // update the paper roll weight in DB
+      await updatePaperRoll({ id: dbId, data: { weight: newW } }).unwrap();
+
+      // optimistic UI: if this roll was selected, remove it from selection
+      setSelectedIds((prevSel) => {
+        const next = { ...prevSel };
+        // remove by computed paperRollId (if present) — fallbacks included
+        const prId = roll.paperRollId ?? dbId;
+        delete next[prId];
+        return next;
+      });
+
+      alert("Nhập lại thành công");
+    } catch (err: any) {
+      console.error("Single re-import failed", err);
+      alert(err?.data?.message ?? err?.message ?? "Nhập lại thất bại");
+    }
+  };
+
   const doBulkReImport = async (
     updates: { paperRollId: string; newWeight: number }[]
   ) => {
@@ -434,7 +525,25 @@ export const PaperList: React.FC = () => {
     }
   };
 
-  // QR helpers (same as before)
+  // When opening single modal set singleWeight to current weight
+  useEffect(() => {
+    if (singleModal.open && singleModal.roll) {
+      setSingleWeight(String(singleModal.roll.weight ?? 0));
+    }
+  }, [singleModal]);
+
+  const handleConfirmSingleReImport = async () => {
+    if (!singleModal.roll) return;
+    const newW = Number(singleWeight);
+    if (!Number.isFinite(newW) || newW < 0) {
+      return alert("Vui lòng nhập một số trọng lượng hợp lệ (>= 0).");
+    }
+    // call worker
+    await doSingleReImport(singleModal.roll, newW);
+    setSingleModal({ open: false });
+    setSingleWeight("");
+  };
+
   const handleCreateQR = async (text: string) => {
     setQrModal({ open: true, text });
     setQrLoading(true);
@@ -520,7 +629,7 @@ export const PaperList: React.FC = () => {
             className="btn btn-primary"
             onClick={() => setCreateOpen(true)}
           >
-            + Create
+            + Tạo 
           </button>
         </div>
       </div>
@@ -539,7 +648,7 @@ export const PaperList: React.FC = () => {
         >
           Xuất (chọn)
         </button>
-        <button
+        {/* <button
           className="btn btn-secondary"
           onClick={() => {
             const sel = getSelectedRolls();
@@ -548,7 +657,7 @@ export const PaperList: React.FC = () => {
           }}
         >
           Nhập lại (chọn)
-        </button>
+        </button> */}
         <button
           className="btn btn-outline-primary"
           onClick={() => {
@@ -577,13 +686,13 @@ export const PaperList: React.FC = () => {
                   }
                 />
               </th>
-              <th>PaperRollId</th>
-              <th>Color</th>
-              <th>Supplier</th>
-              <th style={{ textAlign: "right" }}>Width</th>
-              <th style={{ textAlign: "right" }}>Grammage</th>
-              <th style={{ textAlign: "right" }}>Weight</th>
-              <th>Receive date</th>
+              <th>Mã cuộn</th>
+              <th>Màu</th>
+              <th>Nhà cung cấp</th>
+              <th style={{ textAlign: "right" }}>Rộng</th>
+              <th style={{ textAlign: "right" }}>Khổ</th>
+              <th style={{ textAlign: "right" }}>Trọng lượng</th>
+              <th>Ngày nhập</th>
               <th style={{ width: 360 }}>Actions</th>
             </tr>
           </thead>
@@ -706,11 +815,12 @@ export const PaperList: React.FC = () => {
                       >
                         Xuất
                       </button>
+                      {/* UPDATED: open single re-import modal */}
                       <button
                         className="btn btn-secondary btn-sm"
                         onClick={() => {
-                          setBulkModal({ open: true, mode: "NHAPLAI" });
-                          setSelectedIds({ [r.paperRollId]: true });
+                          setSingleModal({ open: true, roll: r });
+                          setSelectedIds({ [r.paperRollId]: true }); // optional: keep same behaviour as before
                         }}
                       >
                         Nhập lại
@@ -735,7 +845,7 @@ export const PaperList: React.FC = () => {
             {visibleRows.length === 0 && (
               <tr>
                 <td colSpan={9} className="text-muted p-4">
-                  No rows
+                  Rỗng
                 </td>
               </tr>
             )}
@@ -744,18 +854,18 @@ export const PaperList: React.FC = () => {
       </div>
 
       {/* Deleted table */}
-      <h5 style={{ marginTop: 24 }}>Deleted rolls</h5>
+      <h5 style={{ marginTop: 24 }}>Các cuộn đã xóa</h5>
       <div style={{ overflowX: "auto", marginBottom: 24 }}>
         <table className="table table-sm table-bordered">
           <thead>
             <tr>
-              <th>PaperRollId</th>
-              <th>Color</th>
-              <th>Supplier</th>
-              <th style={{ textAlign: "right" }}>Width</th>
-              <th style={{ textAlign: "right" }}>Grammage</th>
-              <th style={{ textAlign: "right" }}>Weight</th>
-              <th>Deleted At</th>
+              <th>Mã cuộn</th>
+              <th>Màu</th>
+              <th>Nhà cung cấp</th>
+              <th style={{ textAlign: "right" }}>Rộng</th>
+              <th style={{ textAlign: "right" }}>Khổ</th>
+              <th style={{ textAlign: "right" }}>Trọng lượng</th>
+              <th>Ngày xóa</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -879,7 +989,7 @@ export const PaperList: React.FC = () => {
             <div className="modal-dialog">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Create Paper Roll</h5>
+                  <h5 className="modal-title">Tạo cuộn</h5>
                   <button
                     type="button"
                     className="btn-close"
@@ -889,7 +999,7 @@ export const PaperList: React.FC = () => {
                 </div>
                 <div className="modal-body">
                   <label>
-                    Color (title)
+                    Màu
                     <select
                       className="form-control"
                       value={createForm.paperColorId}
@@ -900,7 +1010,7 @@ export const PaperList: React.FC = () => {
                         }))
                       }
                     >
-                      <option value="">-- select color --</option>
+                      <option value="">-- chọn màu --</option>
                       {(allColors || []).map((c) => (
                         <option
                           key={getIdFromDoc(c) ?? c.code}
@@ -912,7 +1022,7 @@ export const PaperList: React.FC = () => {
                     </select>
                   </label>
                   <label>
-                    Supplier
+                    Nhà cung cấp
                     <select
                       className="form-control"
                       value={createForm.paperSupplierId}
@@ -923,7 +1033,7 @@ export const PaperList: React.FC = () => {
                         }))
                       }
                     >
-                      <option value="">-- select supplier --</option>
+                      <option value="">-- chọn nhà cung cấp --</option>
                       {(allSuppliers || []).map((s) => (
                         <option
                           key={getIdFromDoc(s) ?? s.code}
@@ -935,7 +1045,7 @@ export const PaperList: React.FC = () => {
                     </select>
                   </label>
                   <label>
-                    Width{" "}
+                    Rộng{" "}
                     <input
                       className="form-control"
                       type="number"
@@ -946,7 +1056,7 @@ export const PaperList: React.FC = () => {
                     />
                   </label>
                   <label>
-                    Grammage{" "}
+                    Khổ{" "}
                     <input
                       className="form-control"
                       type="number"
@@ -960,7 +1070,7 @@ export const PaperList: React.FC = () => {
                     />
                   </label>
                   <label>
-                    Weight{" "}
+                    Trọng lượng{" "}
                     <input
                       className="form-control"
                       type="number"
@@ -971,7 +1081,7 @@ export const PaperList: React.FC = () => {
                     />
                   </label>
                   <label>
-                    Receiving Date{" "}
+                    Ngày nhập{" "}
                     <input
                       className="form-control"
                       type="date"
@@ -1000,14 +1110,14 @@ export const PaperList: React.FC = () => {
                     className="btn btn-secondary"
                     onClick={() => setCreateOpen(false)}
                   >
-                    Cancel
+                    Đóng
                   </button>
                   <button
                     className="btn btn-primary"
                     onClick={handleCreateSubmit}
                     disabled={creating}
                   >
-                    {creating ? "Creating..." : "Create"}
+                    {creating ? "Đang tạo..." : "Tạo"}
                   </button>
                 </div>
               </div>
@@ -1023,7 +1133,7 @@ export const PaperList: React.FC = () => {
             <div className="modal-dialog">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Edit Paper Roll</h5>
+                  <h5 className="modal-title">Sửa thông tin</h5>
                   <button
                     type="button"
                     className="btn-close"
@@ -1033,7 +1143,7 @@ export const PaperList: React.FC = () => {
                 </div>
                 <div className="modal-body">
                   <label>
-                    Color (title)
+                    Màu
                     <select
                       className="form-control"
                       value={updateForm.paperColorId}
@@ -1056,7 +1166,7 @@ export const PaperList: React.FC = () => {
                     </select>
                   </label>
                   <label>
-                    Supplier
+                    Nhà cung cấp
                     <select
                       className="form-control"
                       value={updateForm.paperSupplierId}
@@ -1079,7 +1189,7 @@ export const PaperList: React.FC = () => {
                     </select>
                   </label>
                   <label>
-                    Width{" "}
+                    Rộng{" "}
                     <input
                       className="form-control"
                       type="number"
@@ -1090,7 +1200,7 @@ export const PaperList: React.FC = () => {
                     />
                   </label>
                   <label>
-                    Grammage{" "}
+                    Khổ{" "}
                     <input
                       className="form-control"
                       type="number"
@@ -1104,7 +1214,7 @@ export const PaperList: React.FC = () => {
                     />
                   </label>
                   <label>
-                    Weight{" "}
+                    Trọng lượng{" "}
                     <input
                       className="form-control"
                       type="number"
@@ -1115,7 +1225,7 @@ export const PaperList: React.FC = () => {
                     />
                   </label>
                   <label>
-                    Receiving Date{" "}
+                    Ngày nhập{" "}
                     <input
                       className="form-control"
                       type="date"
@@ -1144,13 +1254,13 @@ export const PaperList: React.FC = () => {
                     className="btn btn-secondary"
                     onClick={() => setUpdateOpen(false)}
                   >
-                    Cancel
+                    Đóng
                   </button>
                   <button
                     className="btn btn-primary"
                     onClick={handleUpdateSubmit}
                   >
-                    Save
+                    Lưu
                   </button>
                 </div>
               </div>
@@ -1178,6 +1288,59 @@ export const PaperList: React.FC = () => {
           setBulkModal({ open: false });
         }}
       />
+
+      {/* SINGLE re-import modal (same look as bulk, but single row) */}
+      {singleModal.open && singleModal.roll && (
+        <div className="modal-backdrop" style={{ display: "block" }}>
+          <div className="modal" role="dialog" style={{ display: "block" }}>
+            <div className="modal-dialog modal-sm">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Nhập lại (single)</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Close"
+                    onClick={() => setSingleModal({ open: false })}
+                  />
+                </div>
+
+                <div className="modal-body">
+                  <p>
+                    Nhập lại trọng lượng cho:{" "}
+                    <strong>{computePaperRollId(singleModal.roll)}</strong>
+                  </p>
+                  <label>
+                    Trọng lượng (kg)
+                    <input
+                      className="form-control"
+                      type="number"
+                      min={0}
+                      value={singleWeight}
+                      onChange={(e) => setSingleWeight(e.target.value)}
+                    />
+                  </label>
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setSingleModal({ open: false })}
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => handleConfirmSingleReImport()}
+                  >
+                    Xác nhận Nhập lại
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {qrModal.open && (
         <div className="modal-backdrop" style={{ display: "block" }}>

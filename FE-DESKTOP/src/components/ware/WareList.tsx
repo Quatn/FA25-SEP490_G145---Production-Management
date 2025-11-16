@@ -725,19 +725,19 @@ export const WareList: React.FC = () => {
         <table className="table table-bordered table-sm">
           <thead>
             <tr>
-              <th>Code</th>
-              <th>Flute</th>
-              <th>Unit price</th>
-              <th>W (mm)</th>
-              <th>L (mm)</th>
-              <th>H (mm)</th>
-              <th>Paper W</th>
-              <th>Cross cut</th>
+              <th>Mã hàng</th>
+              <th>Sóng</th>
+              <th>Đơn giá</th>
+              <th>Rộng (mm)</th>
+              <th>Dài (mm)</th>
+              <th>Cao (mm)</th>
+              <th>Khổ giấy</th>
+              <th>Part SX</th>
               <th>Volume</th>
-              <th>Manufacturing Type</th>
-              <th>Manufacturing Processes</th>
-              <th>Finishing Processes</th>
-              <th>Print colors</th>
+              <th>Kiểu SP gia công</th>
+              <th>Công đoạn gia công</th>
+              <th>Công đoạn hoàn thiện</th>
+              <th>Màu in</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -793,13 +793,13 @@ export const WareList: React.FC = () => {
                         className="btn btn-outline-secondary btn-sm"
                         onClick={() => openEdit(w)}
                       >
-                        Edit
+                        Sửa
                       </button>
                       <button
                         className="btn btn-outline-danger btn-sm"
                         onClick={() => handleSoftDelete(w)}
                       >
-                        Delete
+                        Xóa
                       </button>
                     </div>
                   </td>
@@ -836,7 +836,7 @@ export const WareList: React.FC = () => {
                   <div className="row g-3">
                     <div className="col-md-6">
                       <label className="form-label">
-                        Code
+                        Mã hàng
                         <input
                           className="form-control"
                           value={createForm.code}
@@ -850,7 +850,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Unit price
+                        Đơn giá
                         <input
                           className="form-control"
                           type="number"
@@ -865,7 +865,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Flute combination
+                        Sóng
                         <select
                           className="form-control"
                           value={createForm.fluteCombination}
@@ -890,7 +890,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Ware manufacturing type
+                        Kiểu SP gia công
                         <select
                           className="form-control"
                           value={createForm.wareManufacturingProcessType}
@@ -914,7 +914,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Ware width
+                        Rộng
                         <input
                           className="form-control"
                           type="number"
@@ -929,7 +929,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Ware length
+                        Dài
                         <input
                           className="form-control"
                           type="number"
@@ -944,7 +944,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Ware height
+                        Cao
                         <input
                           className="form-control"
                           type="number"
@@ -961,7 +961,7 @@ export const WareList: React.FC = () => {
 
                     <div className="col-md-6">
                       <label className="form-label">
-                        Paper width
+                        Khổ giấy 
                         <input
                           className="form-control"
                           type="number"
@@ -976,7 +976,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Cross cut count
+                        Part SX
                         <input
                           className="form-control"
                           type="number"
@@ -1007,7 +1007,7 @@ export const WareList: React.FC = () => {
 
                       <br></br>
 
-                      <label className="form-label">Print colors</label>
+                      <label className="form-label">Màu in</label>
                       <MultiSelectInline
                         id="create-printcolor"
                         options={printColorList}
@@ -1023,7 +1023,7 @@ export const WareList: React.FC = () => {
                       />
 
                       <label className="form-label" style={{ marginTop: 8 }}>
-                        Finishing processes
+                        Công đoạn hoàn thiện
                       </label>
                       <MultiSelectInline
                         id="create-finishing"
@@ -1042,7 +1042,7 @@ export const WareList: React.FC = () => {
                       />
 
                       <label className="form-label" style={{ marginTop: 8 }}>
-                        Manufacturing processes
+                        Công đoạn gia công
                       </label>
                       <MultiSelectInline
                         id="create-mp"
@@ -1082,14 +1082,14 @@ export const WareList: React.FC = () => {
                     className="btn btn-secondary"
                     onClick={() => setCreateOpen(false)}
                   >
-                    Cancel
+                    Đóng
                   </button>
                   <button
                     className="btn btn-primary"
                     onClick={handleCreateSubmit}
                     disabled={creating}
                   >
-                    {creating ? "Creating..." : "Create"}
+                    {creating ? "Đang tạo..." : "Tạo"}
                   </button>
                 </div>
               </div>
@@ -1105,7 +1105,7 @@ export const WareList: React.FC = () => {
             <div className="modal-dialog modal-lg">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Edit Ware {editForm.code}</h5>
+                  <h5 className="modal-title">Sửa {editForm.code}</h5>
                   <button
                     type="button"
                     className="btn-close"
@@ -1117,7 +1117,7 @@ export const WareList: React.FC = () => {
                   <div className="row g-3">
                     <div className="col-md-6">
                       <label className="form-label">
-                        Code
+                        Mã hàng
                         <input
                           className="form-control"
                           value={editForm.code}
@@ -1131,7 +1131,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Unit price
+                        Đơn giá
                         <input
                           className="form-control"
                           type="number"
@@ -1146,7 +1146,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Flute combination
+                        Sóng
                         <select
                           className="form-control"
                           value={editForm.fluteCombination}
@@ -1171,7 +1171,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Ware manufacturing type
+                        Kiểu SP gia công
                         <select
                           className="form-control"
                           value={editForm.wareManufacturingProcessType}
@@ -1195,7 +1195,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Ware width
+                        Rộng
                         <input
                           className="form-control"
                           type="number"
@@ -1210,7 +1210,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Ware length
+                        Dài
                         <input
                           className="form-control"
                           type="number"
@@ -1225,7 +1225,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Ware height
+                        Cao
                         <input
                           className="form-control"
                           type="number"
@@ -1242,7 +1242,7 @@ export const WareList: React.FC = () => {
 
                     <div className="col-md-6">
                       <label className="form-label">
-                        Paper width
+                        Khổ giấy
                         <input
                           className="form-control"
                           type="number"
@@ -1257,7 +1257,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Cross cut count
+                        Part SX
                         <input
                           className="form-control"
                           type="number"
@@ -1287,7 +1287,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       {/* Print colors - inline multi select */}
-                      <label className="form-label">Print colors</label>
+                      <label className="form-label">Màu in</label>
                       <MultiSelectInline
                         id="edit-printcolor"
                         options={printColorList}
@@ -1302,7 +1302,7 @@ export const WareList: React.FC = () => {
 
                       {/* Finishing */}
                       <label className="form-label" style={{ marginTop: 8 }}>
-                        Finishing processes
+                        Công đoạn hoàn thiện
                       </label>
                       <MultiSelectInline
                         id="edit-finishing"
@@ -1320,7 +1320,7 @@ export const WareList: React.FC = () => {
 
                       {/* Manufacturing processes */}
                       <label className="form-label" style={{ marginTop: 8 }}>
-                        Manufacturing processes
+                        Công đoạn gia công
                       </label>
                       <MultiSelectInline
                         id="edit-mp"
@@ -1360,13 +1360,13 @@ export const WareList: React.FC = () => {
                     className="btn btn-secondary"
                     onClick={() => setEditOpen(false)}
                   >
-                    Cancel
+                    Đóng
                   </button>
                   <button
                     className="btn btn-primary"
                     onClick={handleEditSubmit}
                   >
-                    Save
+                    Lưu
                   </button>
                 </div>
               </div>
