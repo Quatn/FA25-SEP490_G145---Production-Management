@@ -10,7 +10,10 @@ import {
   AssembledCreateManufacturingOrderRequestDto,
   CreateManufacturingOrderRequestDto,
 } from "./dto/create-order-request.dto";
-import { UpdateManufacturingOrderRequestDto } from "./dto/update-order-request.dto";
+import {
+  AssembledUpdateManufacturingOrderRequestDto,
+  UpdateManufacturingOrderRequestDto,
+} from "./dto/update-order-request.dto";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
 import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
 import {
@@ -86,9 +89,12 @@ export class ManufacturingOrderService {
   }
 
   async getLastOrder() {
-    const order = await this.manufacturingOrderModel.find().sort({
-      _id: -1,
-    }).limit(1);
+    const order = await this.manufacturingOrderModel
+      .find()
+      .sort({
+        _id: -1,
+      })
+      .limit(1);
     if (order.length < 1) {
       throw Error("Cannot get last order since no orders exist in the system");
     }
@@ -98,14 +104,13 @@ export class ManufacturingOrderService {
   async queryListFullDetails({
     page,
     limit,
+    filter = {},
   }: {
     page: number;
     limit: number;
+    filter?: object;
   }): Promise<PaginatedList<FullDetailManufacturingOrderDto>> {
     const skip = (page - 1) * limit;
-
-    // temp
-    const filter = {};
 
     const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
     const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
@@ -221,16 +226,16 @@ export class ManufacturingOrderService {
         poi.purchaseOrderItem.subPurchaseOrder.deliveryDate,
         poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
       ),
-      manufacturingDateAdjustment: null,
-      requestedDatetime: null,
+      manufacturingDateAdjustment: poi.manufacturingDateAdjustment,
+      requestedDatetime: poi.requestedDatetime,
       corrugatorLine: getCorrugatorLine(
         poi.purchaseOrderItem.ware.fluteCombination.code,
         poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
       ),
-      corrugatorLineAdjustment: null,
+      corrugatorLineAdjustment: poi.corrugatorLineAdjustment,
       amount: poi.purchaseOrderItem.amount,
-      manufacturingDirective: "",
-      note: "",
+      manufacturingDirective: poi.manufacturingDirective,
+      note: poi.note,
       recalculateFlag: false,
       isDeleted: false,
     }));
@@ -252,6 +257,72 @@ export class ManufacturingOrderService {
   async updateOne(dto: UpdateManufacturingOrderRequestDto) {
     // const doc = new this.manufacturingOrderModel(dto);
     // return await doc.save();
+  }
+
+  async updateMany(
+    dtos: AssembledUpdateManufacturingOrderRequestDto[],
+  ): Promise<PatchResult<{ codes: string[] }>> {
+    const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
+    const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
+    const warePath = PurchaseOrderItemSchema.path("ware");
+    const fluteCombinationPath = WareSchema.path("fluteCombination");
+    const finishingProcessesPath = WareSchema.path("finishingProcesses");
+    const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
+    const productPath = SubPurchaseOrderSchema.path("product");
+    const customerPath = PurchaseOrderSchema.path("customer");
+
+    const populate = {
+      path: poiPath.path,
+      populate: [
+        {
+          path: warePath.path,
+          populate: [fluteCombinationPath, finishingProcessesPath],
+        },
+        {
+          path: subpoPath.path,
+          populate: [
+            productPath,
+            {
+              path: poPath.path,
+              populate: { path: customerPath.path },
+            },
+          ],
+        },
+      ],
+    };
+
+    const items = await this.manufacturingOrderModel
+      .find({
+        _id: { $in: dtos.map((d) => d.id) },
+      })
+      .populate(populate);
+
+    for (const dto of dtos) {
+      const doc = items.find((x) => x.id === dto.id);
+      if (!doc) continue;
+
+      const poi = doc.purchaseOrderItem as FullDetailPurchaseOrderItemDto;
+
+      doc.manufacturingDate = getManufacturingDate(
+        poi.subPurchaseOrder.deliveryDate,
+        poi.subPurchaseOrder.purchaseOrder.customer.code,
+      );
+      doc.corrugatorLine = getCorrugatorLine(
+        poi.ware.fluteCombination.code,
+        poi.subPurchaseOrder.purchaseOrder.customer.code,
+      );
+
+      Object.assign(doc, dto);
+      await doc.save();
+    }
+
+    return {
+      requestedAmount: dtos.length,
+      patchedAmount: items.length,
+      echo: {
+        codes: items.map((item) => item.code),
+      },
+    };
   }
 
   async deleteOne(
@@ -287,7 +358,7 @@ export class ManufacturingOrderService {
       };
     } catch (e) {
       if (check.instance(e, MongooseError)) {
-        console.log(e)
+        console.log(e);
       }
       return {
         patchedAmount: 1,

@@ -37,6 +37,11 @@ import {
 import { DeleteResult } from "@/common/dto/delete-result.dto";
 import { DeleteManufacturingOrderRequestDto } from "./dto/delete-order-request.dto";
 import { PatchResult } from "@/common/dto/patch-result.dto";
+import {
+  UpdateManyManufacturingOrdersRequestDto,
+  UpdateManyManufacturingOrdersResponseDto,
+} from "./dto/update-many-orders.dto";
+import { AssembledUpdateManufacturingOrderRequestDto } from "./dto/update-order-request.dto";
 
 @Controller("manufacturing-order")
 // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -128,7 +133,7 @@ export class ManufacturingOrderController {
 
   @Post("create-many")
   @ApiOperation({ summary: "Create many manufacturing orders" })
-  @ApiResponseWith(FullDetailManufacturingOrderDto)
+  // @ApiResponseWith(FullDetailManufacturingOrderDto)
   async createMany(
     @Body() body: CreateManyManufacturingOrdersRequestDto,
   ): Promise<CreateManyManufacturingOrdersResponseDto> {
@@ -149,6 +154,26 @@ export class ManufacturingOrderController {
       }));
 
     const docs = await this.moService.createMany(assembledDto);
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
+    };
+  }
+
+  @Patch("update-many")
+  @ApiOperation({ summary: "Update many manufacturing orders" })
+  // @ApiResponseWith(FullDetailManufacturingOrderDto)
+  async updateMany(
+    @Body() body: UpdateManyManufacturingOrdersRequestDto,
+  ): Promise<UpdateManyManufacturingOrdersResponseDto> {
+    const assembledDto: AssembledUpdateManufacturingOrderRequestDto[] =
+      body.orders.map((mo, _i) => ({
+        ...mo,
+        // purchaseOrderItem: pois[i],
+      }));
+
+    const docs = await this.moService.updateMany(assembledDto);
     return {
       success: true,
       message: "Fetch successful",
