@@ -39,6 +39,10 @@ export class CreateManufacturingOrderRequestDto {
   manufacturingDirective: string | null;
 
   @ApiProperty()
+  @IsNumber()
+  amount: number;
+
+  @ApiProperty()
   @IsOptional()
   @IsString()
   note: string = "";

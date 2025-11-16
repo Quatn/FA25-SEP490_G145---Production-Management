@@ -11,6 +11,7 @@ import {
   CreateManyManufacturingOrdersRequestDto,
   CreateManyManufacturingOrdersResponseDto,
 } from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
+import { DeleteManufacturingOrderRequestDto, DeleteManufacturingOrderResponseDto } from "@/types/DTO/manufacturing-order/DeleteManufacturingOrderDto";
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -67,6 +68,18 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["ManufacturingOrder"],
     }),
+
+    deleteManufacturingOrder: builder.mutation<
+      DeleteManufacturingOrderResponseDto,
+      DeleteManufacturingOrderRequestDto
+    >({
+      query: (params) => ({
+        url: `${MANUFACTURING_ORDER_URL}/id/${params.id}`,
+        method: "DELETE",
+        credentials: "include",
+      }),
+      invalidatesTags: ["ManufacturingOrder"],
+    }),
   }),
 });
 
@@ -74,4 +87,6 @@ export const {
   useGetManufacturingOrdersQuery,
   useGetFullDetailManufacturingOrdersQuery,
   useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery,
+  useCreateManyManufacturingOrdersMutation,
+  useDeleteManufacturingOrderMutation,
 } = manufacturingOrderApiSlice;

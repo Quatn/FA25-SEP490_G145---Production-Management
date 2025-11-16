@@ -15,6 +15,10 @@ import {
   CorrugatorProcessSchema,
 } from "../schemas/corrugator-process.schema";
 import { PurchaseOrderItemModule } from "../purchase-order-item/purchase-order-item.module";
+import {
+  OrderFinishingProcess,
+  OrderFinishingProcessSchema,
+} from "../schemas/order-finishing-process.schema";
 
 @Module({
   imports: [
@@ -28,6 +32,7 @@ import { PurchaseOrderItemModule } from "../purchase-order-item/purchase-order-i
         name: CorrugatorProcess.name,
         schema: CorrugatorProcessSchema,
       },
+      { name: OrderFinishingProcess.name, schema: OrderFinishingProcessSchema },
     ]),
     PurchaseOrderItemModule,
   ],
@@ -35,4 +40,4 @@ import { PurchaseOrderItemModule } from "../purchase-order-item/purchase-order-i
   providers: [ManufacturingOrderService],
   exports: [ManufacturingOrderService],
 })
-export class ManufacturingOrderModule {}
+export class ManufacturingOrderModule { }

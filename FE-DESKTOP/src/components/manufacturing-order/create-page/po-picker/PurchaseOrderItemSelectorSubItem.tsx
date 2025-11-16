@@ -37,11 +37,12 @@ export default function PurchaseOrderItemSelectorSubItem(
   const indeterminate = indeterminateOrderNodes[orderId] ||
     false;
 
-  const handleToggle = () =>
+  const handleToggle = () => {
     dispatch({
       type: "TOGGLE_ORDER_TREE_NODE",
       payload: { id: orderId, tree: props.tree },
     });
+  }
 
   const poiCount = props.subpo.purchaseOrderItems.length;
 

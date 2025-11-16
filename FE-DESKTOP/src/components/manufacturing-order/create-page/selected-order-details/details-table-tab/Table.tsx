@@ -7,7 +7,9 @@ import {
 import {
   Box,
   BoxProps,
+  Button,
   Center,
+  HStack,
   Stack,
   Table,
   TableRootProps,
@@ -18,9 +20,10 @@ import {
 import { useState } from "react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
-import { useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
+import { useCreateManyManufacturingOrdersMutation, useDeleteManufacturingOrderMutation, useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
 import { manufacturingOrderTableColumnsByTabs } from "@/components/manufacturing-order/full-detail-table/tableDefinition";
 import check from "check-types";
+import { CreateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
 
 type TableProps = {
   rootProps?: BoxProps;
@@ -44,6 +47,9 @@ export default function CreatePageManufacturingOrderTable(
   } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
     ids: selectedPOIsIds,
   });
+
+
+  const [createOrders] = useCreateManyManufacturingOrdersMutation();
 
   if (selectedPOIsIds.length < 1) {
     return (
@@ -70,6 +76,41 @@ export default function CreatePageManufacturingOrderTable(
 
   if (check.undefined(moPaginatedList)) {
     return <Text>Unable to load table</Text>;
+  }
+
+  console.log(moPaginatedList)
+
+  const formValue: CreateManyManufacturingOrdersRequestDto = {
+    orders: moPaginatedList.filter(order => !check.undefined(order.purchaseOrderItem)).map((order) => ({
+      purchaseOrderItemId: order.purchaseOrderItem!._id,
+      corrugatorLineAdjustment: null,
+      manufacturingDateAdjustment: null,
+      manufacturingDirective: null,
+      requestedDatetime: null,
+      amount: order.purchaseOrderItem!.amount,
+      note: "",
+    }))
+  }
+
+  function handleEditOrder(
+    orders: CreateManyManufacturingOrdersRequestDto["orders"],
+    id: string,
+    field: keyof Omit<CreateManyManufacturingOrdersRequestDto["orders"][number], "purchaseOrderItemId">,
+    value: string
+  ): CreateManyManufacturingOrdersRequestDto["orders"] {
+    return orders.map(order => {
+      if (order.purchaseOrderItemId === id) {
+        return {
+          ...order,
+          [field]: value,
+        };
+      }
+      return order;
+    });
+  }
+
+  const handleCreateOrder = () => {
+    createOrders(formValue)
   }
 
   return (
@@ -201,6 +242,10 @@ export default function CreatePageManufacturingOrderTable(
           </Table.Body>
         </Table.Root>
       </Table.ScrollArea>
+      <HStack my={3} justifyContent={"end"}>
+        <Button colorPalette={"blue"} onClick={handleCreateOrder}>Tạo {selectedPOIsIds.length} lệnh</Button>
+        <Button colorPalette={"red"}>Đặt lại</Button>
+      </HStack>
     </Box>
   );
 }

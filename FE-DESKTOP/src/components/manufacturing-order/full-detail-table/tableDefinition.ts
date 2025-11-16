@@ -48,7 +48,7 @@ export const manufacturingOrderTableColumns:
     {
       key: "amount",
       header: "Số lượng",
-      render: (order) => order.purchaseOrderItem?.amount,
+      render: (order) => order.amount,
     },
     {
       key: "orderDate",

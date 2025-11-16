@@ -27,7 +27,7 @@ export enum OrderStatus {
 @Schema({ timestamps: true })
 export class ManufacturingOrder extends BaseDenormalizedSchema {
   @ApiProperty()
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   @IsString()
   code: string;
 
@@ -70,8 +70,7 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   })
   @Prop({
     required: true,
-    unique: true,
-    type: Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: PurchaseOrderItem.name,
   })
   @IsMongoId()
@@ -83,13 +82,13 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   manufacturingDate: Date;
 
   @ApiProperty()
-  @Prop({ type: Date, default: null })
+  @Prop({ required: false, type: Date, default: null })
   @IsOptional()
   @IsDate()
   manufacturingDateAdjustment?: Date | null;
 
   @ApiProperty()
-  @Prop({ type: Date, default: null })
+  @Prop({ required: false, type: Date, default: null })
   @IsOptional()
   @IsDate()
   requestedDatetime?: Date | null;
@@ -100,7 +99,7 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   corrugatorLine: number;
 
   @ApiProperty()
-  @Prop({ type: Number, default: null })
+  @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   corrugatorLineAdjustment?: number | null;
@@ -108,7 +107,7 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
-  manufacturedAmount: number;
+  amount: number;
 
   @ApiProperty()
   @Prop({ type: String, default: null })
@@ -126,5 +125,11 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
 export type ManufacturingOrderDocument =
   HydratedDocument<ManufacturingOrder>;
 
-export const ManufacturingOrderSchema =
-  SchemaFactory.createForClass(ManufacturingOrder).plugin(softDeletePlugin);
+export const ManufacturingOrderSchema = SchemaFactory.createForClass(
+  ManufacturingOrder,
+).plugin(softDeletePlugin);
+
+ManufacturingOrderSchema.index(
+  { code: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } }
+);

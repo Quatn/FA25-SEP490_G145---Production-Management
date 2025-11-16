@@ -23,6 +23,7 @@ export interface TreeNode {
   id: string;
   name: string;
   children?: TreeNode[];
+  isPOI?: boolean;
 }
 
 interface PageState {
@@ -36,6 +37,8 @@ interface PageState {
   checkedOrderNodes: Record<string, boolean>;
   indeterminateOrderNodes: Record<string, boolean>;
   selectedPOIsIds: string[];
+  hasUnsavedChanges: boolean;
+  displayUnsavedChangeWarning: boolean;
 }
 
 type POTreeActionPayload = {
@@ -113,6 +116,7 @@ type PageAction =
   | { type: "SET_SEARCH"; payload: string }
   | { type: "SET_GROUP_TYPE"; payload: GroupType }
   | { type: "SET_TAB"; payload: TabType }
+  | { type: "SET_DISPLAY_UNSAVED_CHANGE_WARNING"; payload: boolean }
   | {
     type: "TOGGLE_ORDER_TREE_NODE";
     payload: { id: string; tree: TreeNode[] };
@@ -130,6 +134,8 @@ const initialState: PageState = {
   checkedOrderNodes: {},
   indeterminateOrderNodes: {},
   selectedPOIsIds: [],
+  hasUnsavedChanges: false,
+  displayUnsavedChangeWarning: false,
 };
 
 function pageReducer(state: PageState, action: PageAction): PageState {
@@ -146,7 +152,13 @@ function pageReducer(state: PageState, action: PageAction): PageState {
       return { ...state, groupType: action.payload };
     case "SET_TAB":
       return { ...state, tab: action.payload };
+    case "SET_DISPLAY_UNSAVED_CHANGE_WARNING":
+      return { ...state, displayUnsavedChangeWarning: action.payload };
     case "TOGGLE_ORDER_TREE_NODE":
+      if (state.hasUnsavedChanges) {
+        return { ...state, displayUnsavedChangeWarning: true }
+      }
+
       const { id, tree } = action.payload;
       const node = getNodeById(tree, id);
       if (!node) return state;
@@ -180,11 +192,13 @@ function pageReducer(state: PageState, action: PageAction): PageState {
       } else {
         // It's a child
         newState.checkedOrderNodes[id] = isChecked;
-        if (isChecked) newState.selectedPOIsIds.push(id);
-        else {
-          newState.selectedPOIsIds = newState.selectedPOIsIds.filter((
-            c,
-          ) => c !== id);
+        if (node.isPOI) {
+          if (isChecked) newState.selectedPOIsIds.push(id);
+          else {
+            newState.selectedPOIsIds = newState.selectedPOIsIds.filter((
+              c,
+            ) => c !== id);
+          }
         }
       }
       // Update ancestors recursively

@@ -1,5 +1,5 @@
-import { Injectable, ForbiddenException } from "@nestjs/common";
-import mongoose,{ Model, Types, FilterQuery } from "mongoose";
+import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common";
+import mongoose, { Model, MongooseError, Types, FilterQuery } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import {
   ManufacturingOrder,
@@ -30,22 +30,33 @@ import { ManufacturingOrderProcess, ManufacturingOrderProcessDocument, ProcessSt
 import { CorrugatorProcess, CorrugatorProcessDocument, CorrugatorProcessStatus } from "../schemas/corrugator-process.schema";
 import { FindAllMoQueryDto } from "./dto/find-all-mo-query.dto";
 import { UpdateOverallStatusDto } from "./dto/update-overall-status.dto";
+import { OrderFinishingProcess } from "../schemas/order-finishing-process.schema";
+import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
+import { DeleteResult } from "@/common/dto/delete-result.dto";
+import { PatchResult } from "@/common/dto/patch-result.dto";
+import check from "check-types";
+
+type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
 @Injectable()
 export class ManufacturingOrderService {
   constructor(
-   
+
     @InjectModel(
       ManufacturingOrder.name,
     ) private readonly manufacturingOrderModel: Model<ManufacturingOrder>,
- 
 
-    @InjectModel(ManufacturingOrderProcess.name) 
-    private readonly manufacturingOrderProcessModel: Model<ManufacturingOrderProcessDocument>, 
+
+    @InjectModel(ManufacturingOrderProcess.name)
+    private readonly manufacturingOrderProcessModel: Model<ManufacturingOrderProcessDocument>,
 
     @InjectModel(CorrugatorProcess.name)
     private readonly corrugatorProcessModel: Model<CorrugatorProcessDocument>,
-  ) {}
+
+    @InjectModel(OrderFinishingProcess.name)
+    private readonly orderFinishingProcessModel: Model<OrderFinishingProcess>,
+  ) { }
+
 
   /**
    * Lấy danh sách MO đã populate đầy đủ dữ liệu (có phân trang và filter)
@@ -618,9 +629,9 @@ export class ManufacturingOrderService {
   }
 
   async getLastOrder() {
-    const order = await this.manufacturingOrderModel.find().limit(1).sort({
-      code: -1,
-    });
+    const order = await this.manufacturingOrderModel.find().sort({
+      _id: -1,
+    }).limit(1);
     if (order.length < 1) {
       throw Error("Cannot get last order since no orders exist in the system");
     }
@@ -725,7 +736,7 @@ export class ManufacturingOrderService {
           poi.subPurchaseOrder.purchaseOrder.customer.code,
         ),
         corrugatorLineAdjustment: null,
-        manufacturedAmount: 0,
+        amount: poi.amount,
         manufacturingDirective: "",
         note: "",
         recalculateFlag: false,
@@ -766,7 +777,7 @@ export class ManufacturingOrderService {
         poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
       ),
       corrugatorLineAdjustment: null,
-      manufacturedAmount: 0,
+      amount: poi.purchaseOrderItem.amount,
       manufacturingDirective: "",
       note: "",
       recalculateFlag: false,
@@ -790,5 +801,47 @@ export class ManufacturingOrderService {
   async updateOne(dto: UpdateManufacturingOrderRequestDto) {
     // const doc = new this.manufacturingOrderModel(dto);
     // return await doc.save();
+  }
+
+  async deleteOne(
+    id: mongoose.Types.ObjectId,
+  ): Promise<DeleteResult<{ code: string }>> {
+    const doc = (await this.manufacturingOrderModel.findById(
+      id,
+    )) as DocWithSoftDelete;
+    if (!doc) throw new NotFoundException("Manufacturing Order not found");
+    const code = doc.code;
+    await doc.softDelete();
+    return {
+      deletedAmount: 1,
+      requestedAmount: 1,
+      echo: { code },
+    };
+  }
+
+  async restoreOne(
+    id: mongoose.Types.ObjectId,
+  ): Promise<PatchResult<{ code: string }>> {
+    try {
+      const doc = (await this.manufacturingOrderModel.findById(
+        id,
+      )) as DocWithSoftDelete;
+      if (!doc) throw new NotFoundException("Manufacturing Order not found");
+      const code = doc.code;
+      await doc.restore();
+      return {
+        patchedAmount: 1,
+        requestedAmount: 1,
+        echo: { code },
+      };
+    } catch (e) {
+      if (check.instance(e, MongooseError)) {
+        console.log(e)
+      }
+      return {
+        patchedAmount: 1,
+        requestedAmount: 1,
+      };
+    }
   }
 }
