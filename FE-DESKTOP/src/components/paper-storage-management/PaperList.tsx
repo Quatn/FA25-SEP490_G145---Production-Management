@@ -203,7 +203,27 @@ export const PaperList: React.FC = () => {
       grammage != null &&
       seq != null
     ) {
-      return `${colorCode}/${supplierCode}/${width}/${grammage}/${seq}XC${String(
+      if (seq > 0 && seq < 10) {
+        return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}0000${seq}XC${String(
+          yy
+        ).padStart(2, "0")}`;
+      }
+      if (seq >= 10 && seq < 100) {
+        return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}000${seq}XC${String(
+          yy
+        ).padStart(2, "0")}`;
+      }
+      if (seq >= 100 && seq < 1000) {
+        return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}00${seq}XC${String(
+          yy
+        ).padStart(2, "0")}`;
+      }
+      if (seq >= 1000 && seq < 10000) {
+        return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}0${seq}XC${String(
+          yy
+        ).padStart(2, "0")}`;
+      }
+      return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}${seq}XC${String(
         yy
       ).padStart(2, "0")}`;
     }

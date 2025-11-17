@@ -94,11 +94,11 @@ export const PaperDetailModal: React.FC<Props> = ({
                     <td>{supplierName ?? paper.paperSupplier?.name ?? "-"}</td>
                   </tr>
                   <tr>
-                    <th>Rộng (mm)</th>
+                    <th>Khổ (mm)</th>
                     <td>{paper.paperType?.width ?? "-"}</td>
                   </tr>
                   <tr>
-                    <th>Khổ giấy (grammage)</th>
+                    <th>Định lượng (gram/m2)</th>
                     <td>{paper.paperType?.grammage ?? "-"}</td>
                   </tr>
                   <tr>

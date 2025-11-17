@@ -125,6 +125,18 @@ const initialCollection = createTreeCollection<Node>({
         ],
       },
       {
+        id: "paper-roll",
+        name: "Paper Roll",
+        children: [
+          {
+            id: "paper-roll",
+            name: "Paper Roll",
+            href: "/paper-list",
+            children: [],
+          },
+        ],
+      },
+      {
         id: "ware-manufacturing-process-type",
         name: "Ware Manufacturing Process Type",
         children: [
@@ -204,6 +216,18 @@ const initialCollection = createTreeCollection<Node>({
             id: "finished-good-daily-report",
             name: "Finished Good Daily Report",
             href: "/finished-good/daily-report",
+            children: [],
+          },
+        ],
+      },
+      {
+        id: "ware",
+        name: "Ware",
+        children: [
+          {
+            id: "ware-list",
+            name: "Ware List",
+            href: "/ware",
             children: [],
           },
         ],

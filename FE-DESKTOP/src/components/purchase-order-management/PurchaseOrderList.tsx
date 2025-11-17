@@ -18,12 +18,10 @@ import {
 } from "@/service/api/purchaseOrderItemApiSlice";
 import { useCreateFromProductsMutation } from "@/service/api/subPurchaseOrderApiSlice";
 
-/* Helper: generate temporary local ids for UI-created items */
 function makeId(prefix = "") {
   return `${prefix}${Date.now()}${Math.floor(Math.random() * 9000 + 1000)}`;
 }
 
-/* Normalize server PO -> UI PurchaseOrder type */
 function normalizeServerPo(raw: any): PurchaseOrder {
   const id = raw._id?.$oid ?? raw._id ?? raw.id ?? String(Math.random());
   let customerId: string | undefined = undefined;
@@ -264,9 +262,6 @@ const PurchaseOrderList: React.FC = () => {
     setExpandedPoId((prev) => (prev === poId ? null : poId));
   };
 
-  /* --------------------------
-     Inline local-only subPO & item handlers (UI-only)
-     -------------------------- */
   const handleAddSubPO = (poId: string) => {
     const newSub: SubPO = {
       id: makeId("sub-"),
@@ -674,12 +669,11 @@ const PurchaseOrderList: React.FC = () => {
                                   }}
                                 >
                                   <div>
-                                    <strong>{s.code ?? s._id}</strong>
-                                    <div className="small text-muted">
+                                    <strong>
                                       {s.product?.name ??
                                         s.product?.code ??
                                         "-"}
-                                    </div>
+                                    </strong>
                                     <div className="small text-muted">
                                       Delivery:{" "}
                                       {s.deliveryDate
@@ -720,7 +714,7 @@ const PurchaseOrderList: React.FC = () => {
                                           it.ware?.unitPrice ?? 0;
                                         return (
                                           <tr key={itemId}>
-                                            <td>{it.code ?? it.code}</td>
+                                            <td>{s.product.code ?? it.id ?? ""}</td>
 
                                             <td>
                                               {it.ware
