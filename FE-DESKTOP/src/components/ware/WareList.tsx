@@ -14,7 +14,7 @@ import { useGetAllFluteCombinationQuery } from "@/service/api/fluteCombinationAp
 import { useGetAllPrintColorsQuery } from "@/service/api/printColorApiSlice";
 import { useGetAllWareManufacturingTypesQuery } from "@/service/api/wareManufacturingProcessTypeApiSlice";
 import { useGetAllWareFinishingTypesQuery } from "@/service/api/wareFinishingProcessTypeApiSlice";
-import { useGetAllManufacturingProcessesQuery } from "@/service/api/manufacturingProcessApiSlice";
+// import { useGetAllManufacturingProcessesQuery } from "@/service/api/manufacturingProcessApiSlice";
 
 /** Helpers to normalize IDs and labels across shapes */
 function getIdFromDoc(doc: any): string | undefined {
@@ -304,8 +304,8 @@ export const WareList: React.FC = () => {
   const { data: finishingResp } = useGetAllWareFinishingTypesQuery();
   const finishingList: any[] = finishingResp?.data ?? finishingResp ?? [];
 
-  const { data: mpResp } = useGetAllManufacturingProcessesQuery();
-  const mpList: any[] = mpResp?.data ?? mpResp ?? [];
+  // const { data: mpResp } = useGetAllManufacturingProcessesQuery();
+  // const mpList: any[] = mpResp?.data ?? mpResp ?? [];
 
   // mutations
   const [createWare, { isLoading: creating }] = useCreateWareMutation();
@@ -680,11 +680,11 @@ export const WareList: React.FC = () => {
     return m;
   }, [finishingList]);
 
-  const mpMap = useMemo(() => {
-    const m = new Map<string, any>();
-    (mpList || []).forEach((p: any) => m.set(getIdFromDoc(p) ?? p.code, p));
-    return m;
-  }, [mpList]);
+  // const mpMap = useMemo(() => {
+  //   const m = new Map<string, any>();
+  //   (mpList || []).forEach((p: any) => m.set(getIdFromDoc(p) ?? p.code, p));
+  //   return m;
+  // }, [mpList]);
 
   // For rendering use displayWares / displayDeletedWares (optimistic)
   const displayed = displayWares;
@@ -735,7 +735,7 @@ export const WareList: React.FC = () => {
               <th>Part SX</th>
               <th>Volume</th>
               <th>Kiểu SP gia công</th>
-              <th>Công đoạn gia công</th>
+              {/* <th>Công đoạn gia công</th> */}
               <th>Công đoạn hoàn thiện</th>
               <th>Màu in</th>
               <th>Actions</th>
@@ -759,11 +759,11 @@ export const WareList: React.FC = () => {
                   ?.code ??
                 w.wareManufacturingProcessType?.name ??
                 "-";
-              const manufProcesses = labelsFromIdArray(
-                w.manufacturingProcesses,
-                mpMap,
-                "code"
-              );
+              // const manufProcesses = labelsFromIdArray(
+              //   w.manufacturingProcesses,
+              //   mpMap,
+              //   "code"
+              // );
               const finishingProcesses = labelsFromIdArray(
                 w.finishingProcesses,
                 finishingMap,
@@ -784,7 +784,7 @@ export const WareList: React.FC = () => {
                   </td>
                   <td style={{ textAlign: "right" }}>{w.volume ?? "-"}</td>
                   <td>{manufTypeLabel}</td>
-                  <td style={{ maxWidth: 220 }}>{manufProcesses}</td>
+                  {/* <td style={{ maxWidth: 220 }}>{manufProcesses}</td> */}
                   <td style={{ maxWidth: 220 }}>{finishingProcesses}</td>
                   <td>{pcolors}</td>
                   <td>
@@ -1041,7 +1041,7 @@ export const WareList: React.FC = () => {
                         placeholder="-- choose finishing processes --"
                       />
 
-                      <label className="form-label" style={{ marginTop: 8 }}>
+                      {/* <label className="form-label" style={{ marginTop: 8 }}>
                         Công đoạn gia công
                       </label>
                       <MultiSelectInline
@@ -1058,7 +1058,7 @@ export const WareList: React.FC = () => {
                           o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
                         }
                         placeholder="-- choose manufacturing processes --"
-                      />
+                      /> */}
 
                       <label className="form-label" style={{ marginTop: 8 }}>
                         Note
@@ -1319,7 +1319,7 @@ export const WareList: React.FC = () => {
                       />
 
                       {/* Manufacturing processes */}
-                      <label className="form-label" style={{ marginTop: 8 }}>
+                      {/* <label className="form-label" style={{ marginTop: 8 }}>
                         Công đoạn gia công
                       </label>
                       <MultiSelectInline
@@ -1336,7 +1336,7 @@ export const WareList: React.FC = () => {
                           o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
                         }
                         placeholder="-- choose manufacturing processes --"
-                      />
+                      /> */}
 
                       <label className="form-label" style={{ marginTop: 8 }}>
                         Note

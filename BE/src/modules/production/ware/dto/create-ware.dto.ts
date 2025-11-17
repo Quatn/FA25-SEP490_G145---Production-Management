@@ -174,14 +174,14 @@ export class CreateWareDto {
   @IsOptional()
   finishingProcesses?: string[];
 
-  @ApiProperty({
-    type: [String],
-    description: "Array of ManufacturingProcess ObjectIds",
-  })
-  @IsArray()
-  @IsMongoId({ each: true })
-  @IsOptional()
-  manufacturingProcesses?: string[];
+  // @ApiProperty({
+  //   type: [String],
+  //   description: "Array of ManufacturingProcess ObjectIds",
+  // })
+  // @IsArray()
+  // @IsMongoId({ each: true })
+  // @IsOptional()
+  // manufacturingProcesses?: string[];
 
   @ApiProperty({ required: false })
   @IsOptional()

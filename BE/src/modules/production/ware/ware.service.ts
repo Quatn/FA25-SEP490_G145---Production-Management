@@ -44,7 +44,7 @@ export class WareService {
         .populate("wareManufacturingProcessType")
         .populate("printColors")
         .populate("finishingProcesses")
-        .populate("manufacturingProcesses")
+        // .populate("manufacturingProcesses")
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
@@ -73,7 +73,7 @@ export class WareService {
       .populate("wareManufacturingProcessType")
       .populate("printColors")
       .populate("finishingProcesses")
-      .populate("manufacturingProcesses")
+      // .populate("manufacturingProcesses")
       .exec();
     if (!doc) {
       throw new NotFoundException("Ware not found");
@@ -103,7 +103,7 @@ export class WareService {
         .populate("wareManufacturingProcessType")
         .populate("printColors")
         .populate("finishingProcesses")
-        .populate("manufacturingProcesses")
+        // .populate("manufacturingProcesses")
         .exec();
 
       return populated;
@@ -134,7 +134,7 @@ export class WareService {
       .populate("wareManufacturingProcessType")
       .populate("printColors")
       .populate("finishingProcesses")
-      .populate("manufacturingProcesses")
+      // .populate("manufacturingProcesses")
       .exec();
 
     return populated;
@@ -146,7 +146,7 @@ export class WareService {
       .populate("wareManufacturingProcessType")
       .populate("printColors")
       .populate("finishingProcesses")
-      .populate("manufacturingProcesses")
+      // .populate("manufacturingProcesses")
       .lean()
       .exec();
     return docs;
@@ -170,7 +170,7 @@ export class WareService {
       .populate("wareManufacturingProcessType")
       .populate("printColors")
       .populate("finishingProcesses")
-      .populate("manufacturingProcesses")
+      // .populate("manufacturingProcesses")
       .exec();
     return { success: true, data: populated };
   }
@@ -193,7 +193,7 @@ export class WareService {
       { path: "wareManufacturingProcessType" },
       { path: "printColors" },
       { path: "finishingProcesses" },
-      { path: "manufacturingProcesses" },
+      // { path: "manufacturingProcesses" },
     ]);
 
     const totalPages = Math.ceil((total || 0) / limit);
