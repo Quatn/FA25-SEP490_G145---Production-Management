@@ -17,6 +17,7 @@ import {
   useDeletePurchaseOrderItemMutation,
 } from "@/service/api/purchaseOrderItemApiSlice";
 import { useCreateFromProductsMutation } from "@/service/api/subPurchaseOrderApiSlice";
+import { useUpdateSubPurchaseOrderMutation } from "@/service/api/subPurchaseOrderApiSlice";
 
 function makeId(prefix = "") {
   return `${prefix}${Date.now()}${Math.floor(Math.random() * 9000 + 1000)}`;
@@ -78,6 +79,48 @@ const SearchInput: React.FC<{
   />
 );
 
+// --- Status enums as arrays for selects (values match backend enums)
+const PO_STATUS_OPTIONS = [
+  "DRAFT",
+  "PENDINGAPPROVAL",
+  "APPROVED",
+  "SCHEDULED",
+  "CANCELLED",
+  "INPRODUCTION",
+  "PAUSED",
+  "PARTIALLYCOMPLETED",
+  "COMPLETED",
+  "PARTIALLYFINISHED",
+  "FINISHED",
+  "CLOSED",
+];
+
+const SUBPO_STATUS_OPTIONS = [
+  "PENDINGAPPROVAL",
+  "APPROVED",
+  "SCHEDULED",
+  "CANCELLED",
+  "INPRODUCTION",
+  "PAUSED",
+  "PARTIALLYCOMPLETED",
+  "COMPLETED",
+  "INDELIVERY",
+  "DELIVERED",
+];
+
+const POITEM_STATUS_OPTIONS = [
+  "PENDINGAPPROVAL",
+  "APPROVED",
+  "SCHEDULED",
+  "ONHOLD",
+  "CANCELLED",
+  "INPRODUCTION",
+  "PAUSED",
+  "FINISHEDPRODUCTION",
+  "QUALITYCHECK",
+  "COMPLETED",
+];
+
 const PurchaseOrderList: React.FC = () => {
   const [query, setQuery] = useState<string>("");
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
@@ -105,6 +148,9 @@ const PurchaseOrderList: React.FC = () => {
   const [updatePo] = useUpdatePurchaseOrderMutation();
   const [deletePo] = useDeletePurchaseOrderMutation();
   const [createSubFromProducts] = useCreateFromProductsMutation();
+
+  // subPO update mutation
+  const [updateSub] = useUpdateSubPurchaseOrderMutation();
 
   // PO item update/delete hooks
   const [updatePoItem] = useUpdatePurchaseOrderItemMutation();
@@ -470,7 +516,40 @@ const PurchaseOrderList: React.FC = () => {
       // revert: fetch expanded PO from server to restore authoritative state
       console.error("Update failed, refetching sub-POs", err);
       if (refetchSubs) await refetchSubs();
-      // also re-sync totals once server data arrives (the useEffect above will set expandedLocalDoc)
+    }
+  };
+
+  // Handler: update server item status
+  const handleUpdateServerItemStatus = async (
+    itemRaw: any,
+    newStatus: string
+  ) => {
+    const idStr = String(resolveId(itemRaw));
+    // Optimistic
+    setExpandedLocalDoc((prev: any) => {
+      if (!prev) return prev;
+      const copy = JSON.parse(JSON.stringify(prev));
+      let touched = false;
+      (copy.subPurchaseOrders || []).forEach((s: any) => {
+        (s.items || []).forEach((it: any) => {
+          if (String(resolveId(it)) === idStr) {
+            it.status = newStatus;
+            touched = true;
+          }
+        });
+      });
+      if (touched) return copy;
+      return prev;
+    });
+
+    try {
+      await updatePoItem({ id: idStr, body: { status: newStatus } }).unwrap();
+    } catch (err: any) {
+      console.error("Update item status failed", err);
+      if (refetchSubs) await refetchSubs();
+      alert(
+        "Update failed: " + (err?.data?.message || err?.message || "unknown")
+      );
     }
   };
 
@@ -511,6 +590,86 @@ const PurchaseOrderList: React.FC = () => {
       );
     }
   };
+
+  // Handler: update PO status (top-level PO)
+  const handleUpdatePoStatus = async (poId: string, newStatus: string) => {
+    // optimistic update in list
+    setOrders((prev) =>
+      prev.map((p) =>
+        String(p.id) === String(poId) ? { ...p, status: newStatus } : p
+      )
+    );
+    try {
+      await updatePo({ id: poId, body: { status: newStatus } }).unwrap();
+    } catch (err: any) {
+      console.error("Update PO status failed", err);
+      // revert by refetch entire list (cheapest reliable fallback)
+      await refetch();
+      alert(
+        "Update PO status failed: " +
+          (err?.data?.message || err?.message || "unknown")
+      );
+    }
+  };
+
+  // Handler: update sub-PO status (server expanded sub)
+  const handleUpdateSubStatus = async (subIdRaw: any, newStatus: string) => {
+    const subId = String(resolveId(subIdRaw));
+    // optimistic in expandedLocalDoc
+    setExpandedLocalDoc((prev: any) => {
+      if (!prev) return prev;
+      const copy = JSON.parse(JSON.stringify(prev));
+      (copy.subPurchaseOrders || []).forEach((s: any) => {
+        if (String(s._id ?? s.id) === subId) s.status = newStatus;
+      });
+      return copy;
+    });
+
+    try {
+      await updateSub({ id: subId, body: { status: newStatus } }).unwrap();
+    } catch (err: any) {
+      console.error("Update sub-PO status failed", err);
+      if (refetchSubs) await refetchSubs();
+      alert(
+        "Update failed: " + (err?.data?.message || err?.message || "unknown")
+      );
+    }
+  };
+
+  // Handler: update sub-PO delivery date
+  const handleUpdateSubDeliveryDate = async (
+    subIdRaw: any,
+    newDateStr: string
+  ) => {
+    const subId = String(resolveId(subIdRaw));
+    // optimistic
+    setExpandedLocalDoc((prev: any) => {
+      if (!prev) return prev;
+      const copy = JSON.parse(JSON.stringify(prev));
+      (copy.subPurchaseOrders || []).forEach((s: any) => {
+        if (String(s._id ?? s.id) === subId)
+          s.deliveryDate = newDateStr || null;
+      });
+      return copy;
+    });
+
+    try {
+      // backend expects a Date, but a string ISO date is fine
+      await updateSub({
+        id: subId,
+        body: { deliveryDate: newDateStr },
+      }).unwrap();
+    } catch (err: any) {
+      console.error("Update sub-PO delivery failed", err);
+      if (refetchSubs) await refetchSubs();
+      alert(
+        "Update failed: " + (err?.data?.message || err?.message || "unknown")
+      );
+    }
+  };
+
+  // Handler: update sub-PO status + delivery date when creating from products (we already call createSubFromProducts elsewhere)
+  // (No extra code needed here)
 
   return (
     <div style={{ padding: 16 }}>
@@ -582,12 +741,24 @@ const PurchaseOrderList: React.FC = () => {
                     </div>
 
                     <div style={{ textAlign: "right" }}>
-                      {/* <div>
-                        Total items: <strong>{totals.items}</strong>
+                      {/* PO status dropdown on the right */}
+                      <div style={{ marginBottom: 8 }}>
+                        <select
+                          className="form-select form-select-sm"
+                          value={po.status ?? ""}
+                          onChange={(e) =>
+                            handleUpdatePoStatus(po.id, e.target.value)
+                          }
+                        >
+                          <option value="">-- Status --</option>
+                          {PO_STATUS_OPTIONS.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                      <div>
-                        Total value: <strong>{totals.value}</strong>
-                      </div> */}
+
                       <div
                         style={{
                           marginTop: 8,
@@ -685,8 +856,50 @@ const PurchaseOrderList: React.FC = () => {
                                   </div>
 
                                   <div style={{ textAlign: "right" }}>
-                                    <div className="small text-muted">
-                                      Status: {s.status}
+                                    <div style={{ marginBottom: 6 }}>
+                                      {/* Sub-PO status dropdown */}
+                                      <select
+                                        className="form-select form-select-sm"
+                                        value={s.status ?? ""}
+                                        onChange={(e) =>
+                                          handleUpdateSubStatus(
+                                            s._id ?? s.id,
+                                            e.target.value
+                                          )
+                                        }
+                                      >
+                                        <option value="">-- Status --</option>
+                                        {SUBPO_STATUS_OPTIONS.map((st) => (
+                                          <option key={st} value={st}>
+                                            {st}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    <div>
+                                      {/* delivery date input */}
+                                      <input
+                                        type="date"
+                                        className="form-control form-control-sm"
+                                        style={{ width: 160 }}
+                                        value={
+                                          s.deliveryDate
+                                            ? typeof s.deliveryDate === "string"
+                                              ? s.deliveryDate.slice(0, 10)
+                                              : new Date(s.deliveryDate)
+                                                  .toISOString()
+                                                  .slice(0, 10)
+                                            : ""
+                                        }
+                                        onChange={(e) =>
+                                          // optimistic update locally, send on change (immediate)
+                                          handleUpdateSubDeliveryDate(
+                                            s._id ?? s.id,
+                                            e.target.value
+                                          )
+                                        }
+                                      />
                                     </div>
                                   </div>
                                 </div>
@@ -698,6 +911,7 @@ const PurchaseOrderList: React.FC = () => {
                                       <tr>
                                         <th>Mã sản phẩm</th>
                                         <th>Mã hàng</th>
+                                        <th>Trạng thái</th>
                                         <th>Số lượng</th>
                                         <th>Đơn giá</th>
                                         <th style={{ textAlign: "right" }}>
@@ -714,12 +928,39 @@ const PurchaseOrderList: React.FC = () => {
                                           it.ware?.unitPrice ?? 0;
                                         return (
                                           <tr key={itemId}>
-                                            <td>{s.product.code ?? it.id ?? ""}</td>
+                                            <td>
+                                              {s.product?.code ?? it.id ?? ""}
+                                            </td>
 
                                             <td>
                                               {it.ware
                                                 ? it.ware.code ?? it.ware._id
                                                 : "-"}
+                                            </td>
+
+                                            <td>
+                                              <select
+                                                className="form-select form-select-sm"
+                                                value={it.status ?? ""}
+                                                onChange={(e) =>
+                                                  handleUpdateServerItemStatus(
+                                                    it,
+                                                    e.target.value
+                                                  )
+                                                }
+                                              >
+                                                <option value="">--</option>
+                                                {POITEM_STATUS_OPTIONS.map(
+                                                  (opt) => (
+                                                    <option
+                                                      key={opt}
+                                                      value={opt}
+                                                    >
+                                                      {opt}
+                                                    </option>
+                                                  )
+                                                )}
+                                              </select>
                                             </td>
 
                                             <td>
@@ -743,21 +984,21 @@ const PurchaseOrderList: React.FC = () => {
                                                       (
                                                         copy.subPurchaseOrders ||
                                                         []
-                                                      ).forEach((s: any) => {
-                                                        (s.items || []).forEach(
-                                                          (ii: any) => {
-                                                            if (
-                                                              String(
-                                                                resolveId(ii)
-                                                              ) ===
-                                                              String(
-                                                                resolveId(it)
-                                                              )
-                                                            ) {
-                                                              ii.amount = v;
-                                                            }
+                                                      ).forEach((s2: any) => {
+                                                        (
+                                                          s2.items || []
+                                                        ).forEach((ii: any) => {
+                                                          if (
+                                                            String(
+                                                              resolveId(ii)
+                                                            ) ===
+                                                            String(
+                                                              resolveId(it)
+                                                            )
+                                                          ) {
+                                                            ii.amount = v;
                                                           }
-                                                        );
+                                                        });
                                                       });
                                                       syncTotalsToOrders(copy);
                                                       return copy;
@@ -810,7 +1051,7 @@ const PurchaseOrderList: React.FC = () => {
                                       {(s.items || []).length === 0 && (
                                         <tr>
                                           <td
-                                            colSpan={6}
+                                            colSpan={7}
                                             className="text-muted"
                                           >
                                             No items for this sub-PO
@@ -826,292 +1067,6 @@ const PurchaseOrderList: React.FC = () => {
                         )}
                       </div>
                     )}
-
-                    {(po.subPOs || []).map((s) => (
-                      <div key={s.id} className="card mb-2">
-                        <div className="card-body">
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: 8,
-                              alignItems: "center",
-                              marginBottom: 8,
-                            }}
-                          >
-                            <input
-                              className="form-control"
-                              style={{ maxWidth: 420 }}
-                              value={s.title}
-                              onChange={(e) =>
-                                handleChangeSubTitle(
-                                  po.id,
-                                  s.id,
-                                  e.target.value
-                                )
-                              }
-                            />
-                            <select
-                              className="form-select"
-                              style={{ width: 160 }}
-                              value={s.status ?? "Open"}
-                              onChange={(e) =>
-                                handleChangeSubStatus(
-                                  po.id,
-                                  s.id,
-                                  e.target.value
-                                )
-                              }
-                            >
-                              <option value="Open">Open</option>
-                              <option value="Waiting">Waiting</option>
-                              <option value="InProgress">InProgress</option>
-                              <option value="Done">Done</option>
-                              <option value="Cancelled">Cancelled</option>
-                            </select>
-
-                            <div
-                              style={{
-                                marginLeft: 8,
-                                display: "flex",
-                                gap: 8,
-                                alignItems: "center",
-                              }}
-                            >
-                              <select
-                                className="form-select form-select-sm"
-                                style={{ width: 120 }}
-                                value={(s as any).productType ?? "Bộ"}
-                                onChange={(e) =>
-                                  handleChangeSubProductType(
-                                    po.id,
-                                    s.id,
-                                    e.target.value
-                                  )
-                                }
-                              >
-                                <option value="Bộ">Bộ</option>
-                                <option value="Lẻ">Lẻ</option>
-                              </select>
-
-                              <input
-                                className="form-control form-control-sm"
-                                style={{ width: 160 }}
-                                placeholder="Khách"
-                                value={(s as any).customerCode ?? ""}
-                                onChange={(e) =>
-                                  handleChangeSubCustomerCode(
-                                    po.id,
-                                    s.id,
-                                    e.target.value
-                                  )
-                                }
-                              />
-
-                              <input
-                                className="form-control form-control-sm"
-                                style={{ width: 160 }}
-                                placeholder="Size (L×W×H)"
-                                value={(s as any).size ?? ""}
-                                onChange={(e) =>
-                                  handleChangeSubSize(
-                                    po.id,
-                                    s.id,
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </div>
-
-                            <div style={{ flex: 1 }} />
-
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => handleRemoveSubPO(po.id, s.id)}
-                            >
-                              Remove sub-PO
-                            </button>
-                          </div>
-
-                          {/* items */}
-                          <div style={{ marginTop: 6 }}>
-                            <div style={{ marginBottom: 6 }}>
-                              <button
-                                className="btn btn-outline-primary btn-sm"
-                                onClick={() => handleAddItem(po.id, s.id)}
-                              >
-                                + Add item
-                              </button>
-                            </div>
-
-                            <div style={{ overflowX: "auto" }}>
-                              <table className="table table-sm table-bordered">
-                                <thead>
-                                  <tr>
-                                    <th>Mã hàng</th>
-                                    <th>Mô tả</th>
-                                    <th>Sóng</th>
-                                    <th>Khổ</th>
-                                    <th>Đơn vị</th>
-                                    <th style={{ textAlign: "right" }}>
-                                      Số lượng
-                                    </th>
-                                    <th style={{ textAlign: "right" }}>
-                                      Đơn giá
-                                    </th>
-                                    <th style={{ textAlign: "right" }}>Tổng</th>
-                                    <th style={{ width: 120 }}>Actions</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {(s.items || []).map((it) => (
-                                    <tr key={it.id}>
-                                      <td>
-                                        <input
-                                          className="form-control form-control-sm"
-                                          value={it.sku}
-                                          onChange={(e) =>
-                                            handleChangeItemField(
-                                              po.id,
-                                              s.id,
-                                              it.id,
-                                              "sku",
-                                              e.target.value
-                                            )
-                                          }
-                                        />
-                                      </td>
-                                      <td>
-                                        <input
-                                          className="form-control form-control-sm"
-                                          value={it.description ?? ""}
-                                          onChange={(e) =>
-                                            handleChangeItemField(
-                                              po.id,
-                                              s.id,
-                                              it.id,
-                                              "description",
-                                              e.target.value
-                                            )
-                                          }
-                                        />
-                                      </td>
-                                      <td>
-                                        <input
-                                          className="form-control form-control-sm"
-                                          value={(it as any).waveType ?? ""}
-                                          onChange={(e) =>
-                                            handleChangeItemField(
-                                              po.id,
-                                              s.id,
-                                              it.id,
-                                              "waveType" as any,
-                                              e.target.value
-                                            )
-                                          }
-                                        />
-                                      </td>
-                                      <td>
-                                        <input
-                                          className="form-control form-control-sm"
-                                          type="number"
-                                          value={(it as any).grammage ?? ""}
-                                          onChange={(e) =>
-                                            handleChangeItemField(
-                                              po.id,
-                                              s.id,
-                                              it.id,
-                                              "grammage" as any,
-                                              e.target.value === ""
-                                                ? undefined
-                                                : Number(e.target.value)
-                                            )
-                                          }
-                                        />
-                                      </td>
-                                      <td>
-                                        <input
-                                          className="form-control form-control-sm"
-                                          value={it.uom ?? ""}
-                                          onChange={(e) =>
-                                            handleChangeItemField(
-                                              po.id,
-                                              s.id,
-                                              it.id,
-                                              "uom",
-                                              e.target.value
-                                            )
-                                          }
-                                        />
-                                      </td>
-                                      <td style={{ textAlign: "right" }}>
-                                        <input
-                                          className="form-control form-control-sm"
-                                          type="number"
-                                          value={it.quantity}
-                                          onChange={(e) =>
-                                            handleChangeItemField(
-                                              po.id,
-                                              s.id,
-                                              it.id,
-                                              "quantity",
-                                              Number(e.target.value)
-                                            )
-                                          }
-                                        />
-                                      </td>
-                                      <td style={{ textAlign: "right" }}>
-                                        <input
-                                          className="form-control form-control-sm"
-                                          type="number"
-                                          value={it.unitPrice}
-                                          onChange={(e) =>
-                                            handleChangeItemField(
-                                              po.id,
-                                              s.id,
-                                              it.id,
-                                              "unitPrice",
-                                              Number(e.target.value)
-                                            )
-                                          }
-                                        />
-                                      </td>
-                                      <td style={{ textAlign: "right" }}>
-                                        {Number(it.total ?? 0).toLocaleString()}
-                                      </td>
-                                      <td>
-                                        <div
-                                          style={{ display: "flex", gap: 6 }}
-                                        >
-                                          <button
-                                            className="btn btn-danger btn-sm"
-                                            onClick={() =>
-                                              handleRemoveItem(
-                                                po.id,
-                                                s.id,
-                                                it.id
-                                              )
-                                            }
-                                          >
-                                            Remove
-                                          </button>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                  {(s.items || []).length === 0 && (
-                                    <tr>
-                                      <td colSpan={9} className="text-muted">
-                                        No items yet
-                                      </td>
-                                    </tr>
-                                  )}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </div>

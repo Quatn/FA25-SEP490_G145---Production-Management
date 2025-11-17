@@ -11,5 +11,9 @@ export class UpdatePurchaseOrderItemDto {
 
   @IsOptional()
   @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsString()
   note?: string;
 }
