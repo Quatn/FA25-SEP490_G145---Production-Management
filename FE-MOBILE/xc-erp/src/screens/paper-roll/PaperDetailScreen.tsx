@@ -1,5 +1,5 @@
-// src/screens/DetailScreen.tsx
-import React, { useMemo, useState } from "react";
+// src/screens/paper-roll/PaperDetailScreen.tsx
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -17,10 +17,13 @@ import { parseMaCuon } from "../../utils/parseMaCuon";
 
 // RTK Query hooks from your slice
 import {
-  useGetPaperRollByPaperRollIdQuery,
+  useGetPaperRollDetailQuery,
   useGetPaperRollsQuery,
   useUpdatePaperRollMutation,
 } from "../../service/api/paperRollApiSlice";
+import { useGetAllPaperColorsQuery } from "@/service/api/paperColorApiSlice";
+import { useGetAllPaperSuppliersQuery } from "@/service/api/paperSupplierApiSlice";
+import { useGetAllPaperTypesQuery } from "@/service/api/paperTypeApiSlice";
 import { PAPER_ROLL_URL } from "@/service/constants";
 
 type RootStackParamList = {
@@ -47,8 +50,8 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
     isLoading: detailLoading,
     isError: detailError,
     refetch: refetchDetail,
-  } = useGetPaperRollByPaperRollIdQuery({
-    paperRollId: encodeURIComponent(qrText),
+  } = useGetPaperRollDetailQuery({
+    id: encodeURIComponent(qrText),
   });
 
   const {
@@ -57,9 +60,112 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
     refetch: refetchList,
   } = useGetPaperRollsQuery({
     page: 1,
-    limit: 5,
+    limit: 1000,
     search: qrText,
   });
+
+  const getColorIdFromPaperType = (pt: any) => {
+    if (!pt) return undefined;
+    if (pt.paperColorId && typeof pt.paperColorId === "object")
+      return getIdFromDoc(pt.paperColorId);
+    return getIdFromDoc(pt.paperColorId) ?? undefined;
+  };
+
+  const { data: colorsResp } = useGetAllPaperColorsQuery();
+  const allColors: any[] = colorsResp?.data ?? colorsResp ?? [];
+
+  const { data: suppliersResp } = useGetAllPaperSuppliersQuery();
+  const allSuppliers: any[] = suppliersResp?.data ?? suppliersResp ?? [];
+
+  const { data: typesResp } = useGetAllPaperTypesQuery();
+  const allTypes: any[] = typesResp?.data ?? typesResp ?? [];
+
+  // build maps for lookups
+  const colorMap = useMemo(() => {
+    const m = new Map<string, any>();
+    (allColors || []).forEach((c: any) =>
+      m.set(String(getIdFromDoc(c) ?? c.code ?? c.title), c)
+    );
+    return m;
+  }, [allColors]);
+
+  const supplierMap = useMemo(() => {
+    const m = new Map<string, any>();
+    (allSuppliers || []).forEach((s: any) =>
+      m.set(String(getIdFromDoc(s) ?? s.code ?? s.name), s)
+    );
+    return m;
+  }, [allSuppliers]);
+
+  const typeMap = useMemo(() => {
+    const m = new Map<string, any>();
+    (allTypes || []).forEach((t: any) =>
+      m.set(
+        String(
+          getIdFromDoc(t) ??
+            t._id ??
+            `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColorId)}`
+        ),
+        t
+      )
+    );
+    return m;
+  }, [allTypes]);
+
+  const computePaperRollId = (r: any) => {
+    const pt = r.paperType ?? r.paperTypeId ?? null;
+    const colorId = getColorIdFromPaperType(pt);
+    const colorObj = colorId ? colorMap.get(String(colorId)) : undefined;
+    const colorCode = colorObj?.code;
+
+    const supplierObj =
+      r.paperSupplier ??
+      (r.paperSupplierId
+        ? supplierMap.get(String(getIdFromDoc(r.paperSupplierId)))
+        : undefined);
+    const supplierCode = supplierObj?.code ?? r.paperSupplier?.code;
+
+    const width = pt?.width ?? r.width;
+    const grammage = pt?.grammage ?? r.grammage;
+    const seq = r.sequenceNumber ?? r.sequence;
+    const receiving = r.receivingDate ?? r.createdAt;
+    const yy = receiving
+      ? new Date(receiving).getFullYear() % 100
+      : new Date().getFullYear() % 100;
+
+    if (
+      colorCode &&
+      supplierCode &&
+      width != null &&
+      grammage != null &&
+      seq != null
+    ) {
+      if (seq > 0 && seq < 10) {
+        return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}0000${seq}XC${String(
+          yy
+        ).padStart(2, "0")}`;
+      }
+      if (seq >= 10 && seq < 100) {
+        return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}000${seq}XC${String(
+          yy
+        ).padStart(2, "0")}`;
+      }
+      if (seq >= 100 && seq < 1000) {
+        return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}00${seq}XC${String(
+          yy
+        ).padStart(2, "0")}`;
+      }
+      if (seq >= 1000 && seq < 10000) {
+        return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}0${seq}XC${String(
+          yy
+        ).padStart(2, "0")}`;
+      }
+      return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}${seq}XC${String(
+        yy
+      ).padStart(2, "0")}`;
+    }
+    return r.paperRollId ?? "-";
+  };
 
   const [updatePaperRoll, { isLoading: updating }] =
     useUpdatePaperRollMutation();
@@ -67,27 +173,8 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
   const foundFromDetail =
     detailResp?.data?.data?.[0] ?? detailResp?.data ?? null;
 
-  console.log("qrtext: ", qrText);
-  console.log("foundFromDetail: ", foundFromDetail);
-  console.log("detailResp:", detailResp);
-  console.log("detailLoading:", detailLoading);
-  console.log("detailError:", detailError);
-  console.log("PAPER_ROLL_URL:", PAPER_ROLL_URL);
-  console.log("built url:", `${PAPER_ROLL_URL}/detail-by-paper-roll/${qrText}`);
-
-  React.useEffect(() => {
-    const url = `${PAPER_ROLL_URL}/detail-by-paper-roll/${encodeURIComponent(
-      qrText
-    )}`;
-    console.log("fetch test url:", url);
-    fetch(url, { method: "GET", credentials: "include" })
-      .then((r) => r.text())
-      .then((txt) => console.log("fetch raw response:", txt))
-      .catch((err) => console.log("fetch error:", err));
-  }, [qrText]);
-
   let foundFromList: any = null;
-  const paginated = listResp?.data ?? listResp;
+  const paginated = listResp?.data?.data ?? listResp;
   if (paginated) {
     if (Array.isArray(paginated?.data)) foundFromList = paginated.data[0];
     else if (Array.isArray(paginated?.data?.data))
@@ -120,7 +207,9 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
 
     Alert.alert(
       "Xác nhận",
-      `Bạn muốn xuất toàn bộ cuộn ${qrText}? (sẽ set trọng lượng = 0)`,
+      `Bạn muốn xuất toàn bộ cuộn ${computePaperRollId(
+        doc
+      )}? (sẽ set trọng lượng = 0)`,
       [
         { text: "Hủy", style: "cancel" },
         {
@@ -140,7 +229,10 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
               refetchDetail?.();
               refetchList?.();
 
-              Alert.alert("Đã xuất", res?.message ?? `Đã xuất ${qrText}`);
+              Alert.alert(
+                "Đã xuất",
+                res?.message ?? `Đã xuất ${computePaperRollId(doc)}`
+              );
             } catch (err: any) {
               console.error("Export failed", err);
               // rollback local weight if something failed
@@ -179,7 +271,7 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
 
       Alert.alert(
         "Nhập lại",
-        res?.message ?? `Đã nhập lại ${val} kg cho ${qrText}`
+        res?.message ?? `Đã nhập lại ${val} kg cho ${computePaperRollId(doc)}`
       );
       setReimportValue("");
     } catch (err: any) {
@@ -211,7 +303,7 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
       <View style={styles.container}>
         <Text style={styles.header}>Chi tiết</Text>
         <Text style={{ marginTop: 16 }}>
-          Không tìm thấy cuộn có mã: {qrText}
+          Không tìm thấy cuộn có mã: {computePaperRollId(doc)}
         </Text>
         <View style={{ marginTop: 16 }}>
           <Button title="Quay lại" onPress={() => navigation.goBack()} />
@@ -234,13 +326,14 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
             <View style={styles.left}>
               <Text style={styles.label}>Mã giấy</Text>
               <Text style={styles.value}>
-                <Text style={styles.bold}>{qrText}</Text>
+                <Text style={styles.bold}>{computePaperRollId(doc)}</Text>
               </Text>
 
               <View style={styles.attrRow}>
                 <Text style={styles.labelSmall}>Màu</Text>
                 <Text style={styles.valueSmall}>
-                  {parsed?.color || (doc.paperType?.paperColor?.title ?? "-")}
+                  {colorMap.get(getColorIdFromPaperType(doc.paperType) ?? "")
+                    ?.title ?? "-"}
                 </Text>
               </View>
 
@@ -276,14 +369,6 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
         <View style={styles.actionsRow}>
           <View style={styles.actionBtn}>
             <Button title="Xuất" onPress={onExport} disabled={updating} />
-          </View>
-          <View style={styles.actionBtn}>
-            <Button
-              title="Nhập"
-              onPress={() => {
-                /* focus reimport input if needed */
-              }}
-            />
           </View>
         </View>
 

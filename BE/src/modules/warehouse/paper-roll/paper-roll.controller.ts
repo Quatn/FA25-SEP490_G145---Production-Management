@@ -4,7 +4,7 @@ import { CreatePaperRollDto, CreateMultiplePaperRollDto } from './dto/create-pap
 import { UpdatePaperRollDto } from './dto/update-paper-roll.dto';
 import { PaperRollDocument } from '../schemas/paper-roll.schema';
 import { BaseResponse } from '@/common/dto/response.dto';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
 
 @Controller('paper-roll')
@@ -146,10 +146,29 @@ export class PaperRollController {
     return { success: true, message: "Fetch deleted", data: docs };
   }
 
-  @Get('detail-by-paper-roll/:paperRollId')
+  @Get('detail-by-paper-roll')
   @ApiOperation({ summary: 'Paper roll detail by paperRollId' })
-  async findByPaperRollId(@Param('paperRollId') paperRollId: string): Promise<BaseResponse<PaperRollDocument>> {
-    const doc = await this.prService.findByPaperRollId(paperRollId);
+  @ApiQuery({ name: 'paperRollId', required: true })
+  async findByPaperRollId(
+    @Query('paperRollId') paperRollIdRaw: string
+  ): Promise<BaseResponse<PaperRollDocument>> {
+    const raw = paperRollIdRaw ?? '';
+    const decoded = decodeURIComponent(raw);
+
+    // Temporary logging for debugging — remove in production
+    console.log('🔍 GET detail-by-paper-roll received raw:', JSON.stringify(raw));
+    console.log('🔍 decoded paperRollId:', JSON.stringify(decoded));
+
+    const doc = await this.prService.findByPaperRollId(decoded);
+
+    if (!doc) {
+      return {
+        success: false,
+        message: `Paper roll with paperRollId #${decoded} not found`,
+        error: { message: 'No error message', status: 404 },
+      };
+    }
+
     return {
       success: true,
       message: 'Fetch successful',
