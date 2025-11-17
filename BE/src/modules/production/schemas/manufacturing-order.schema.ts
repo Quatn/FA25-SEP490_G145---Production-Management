@@ -50,7 +50,7 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   })
   @IsArray()
   @IsMongoId({ each: true })
-  processes: Types.ObjectId[];
+  processes: Types.ObjectId[] | ManufacturingOrderProcess[];
 
   @ApiProperty({
     description: "Corrugator Process ObjectId",

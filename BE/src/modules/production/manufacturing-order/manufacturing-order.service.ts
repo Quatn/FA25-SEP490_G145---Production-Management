@@ -50,6 +50,7 @@ import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
 import { DeleteResult } from "@/common/dto/delete-result.dto";
 import { PatchResult } from "@/common/dto/patch-result.dto";
 import check from "check-types";
+import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type.schema";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -748,7 +749,7 @@ export class ManufacturingOrderService {
     console.log(corrugatorProcessPath)
 
     const populate = [
-       corrugatorProcessPath,
+      corrugatorProcessPath,
       {
         path: poiPath.path,
         populate: [
@@ -865,7 +866,7 @@ export class ManufacturingOrderService {
       .catch(() => undefined);
     const codeGenerator = new MOCodeGenerator(lastOrder?.code);
 
-    const mos = dtos.map((poi, index) => ({
+    const mos: ManufacturingOrder[] = dtos.map((poi, index) => ({
       code: codeGenerator.getCode(index),
       purchaseOrderItem: poi.purchaseOrderItemId,
       overallStatus: OrderStatus.NOTSTARTED,
@@ -889,9 +890,9 @@ export class ManufacturingOrderService {
       isDeleted: false,
     }));
 
-    const result = await this.manufacturingOrderModel.create(mos);
+    const moCreateRes = await this.manufacturingOrderModel.create(mos);
 
-    const corrugatorProcessDocs: CorrugatorProcess[] = result.map((mo) => ({
+    const corrugatorProcessDocs: CorrugatorProcess[] = moCreateRes.map((mo) => ({
       manufacturingOrder: mo._id,
       manufacturedAmount: 0,
       status: CorrugatorProcessStatus.NOTSTARTED,
@@ -899,25 +900,35 @@ export class ManufacturingOrderService {
       isDeleted: false,
     }));
 
-    const result2 = await this.corrugatorProcessModel.create(
+    const fpCreateRes = await this.corrugatorProcessModel.create(
       corrugatorProcessDocs,
     );
 
-    for (const res of result2) {
-      const id = res._id;
+    for (const res of fpCreateRes) {
+      const id = res.manufacturingOrder;
       await this.manufacturingOrderModel.findOneAndUpdate(
         { _id: id },
-        { corrugatorProcess: id },
+        { corrugatorProcess: res._id },
       );
     }
 
+    /* bro....
     // TODO: create finishing processes
+    const finishingProcesses: WareFinishingProcessType[][] = moCreateRes.map((mo, index) => 
+      mo.processes.map((p) => ({
+        code: p,
+        process
+        note: "",
+        isDeleted: false,
+      }))
+    );
+    */
 
     return {
       requestedAmount: dtos.length,
-      createdAmount: result.length,
+      createdAmount: moCreateRes.length,
       echo: {
-        codes: result.map((item) => item.code),
+        codes: moCreateRes.map((item) => item.code),
       },
     };
   }
