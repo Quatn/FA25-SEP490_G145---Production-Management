@@ -16,19 +16,6 @@ import { ProductType } from "./product-type.schema";
 @Schema({ timestamps: true })
 export class Product extends BaseSchema {
 
-
-  @ApiProperty()
-  @Prop({ required: true })
-  productLength: number;
-
-  @ApiProperty()
-  @Prop({ required: true })
-  productWidth: number;
-
-  @ApiProperty()
-  @Prop({ required: false, default: 0 })
-  productHeight: number;
-
   // Loại sản phẩm
   @ApiProperty()
   @Prop({

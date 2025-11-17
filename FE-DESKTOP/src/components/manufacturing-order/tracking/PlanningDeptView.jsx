@@ -116,7 +116,7 @@ export default function PlanningDeptView({ data, isLoading, isFetching }) {
                     {formatShortDate(item?.manufacturingDate)}
                   </td>
                   <td className="text-center" style={{ ...rowStyles }}>
-                    {formatShortDate(item?.requestedDatetime)}
+                    {formatShortDate(item?.purchaseOrderItem?.subPurchaseOrder?.deliveryDate)}
                   </td>
                 </tr>
               );
