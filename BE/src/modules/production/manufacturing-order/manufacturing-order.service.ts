@@ -762,31 +762,39 @@ export class ManufacturingOrderService {
       .catch(() => undefined);
     const codeGenerator = new MOCodeGenerator(lastOrder?.code);
 
+    const draftId = new Types.ObjectId();
+
     const mos: FullDetailManufacturingOrderDto[] = purchaseOrderItems.map(
-      (poi, index) =>
-        ({
-          code: codeGenerator.getCode(index),
-          purchaseOrderItem: poi,
-          overallStatus: OrderStatus.NOTSTARTED,
-          processes: [],
-          corrugatorProcess: null as any, // Will be set when creating actual order
-          manufacturingDate: getManufacturingDate(
-            poi.subPurchaseOrder.deliveryDate,
-            poi.subPurchaseOrder.purchaseOrder.customer.code,
-          ),
-          manufacturingDateAdjustment: null,
-          requestedDatetime: null,
-          corrugatorLine: getCorrugatorLine(
-            poi.ware.fluteCombination.code,
-            poi.subPurchaseOrder.purchaseOrder.customer.code,
-          ),
-          corrugatorLineAdjustment: null,
-          amount: poi.amount,
-          manufacturingDirective: "",
-          note: "",
-          recalculateFlag: false,
+      (poi, index) => ({
+        code: codeGenerator.getCode(index),
+        purchaseOrderItem: poi,
+        overallStatus: OrderStatus.NOTSTARTED,
+        processes: [],
+        corrugatorProcess: {
+          _id: draftId,
+          manufacturingOrder: draftId,
+          manufacturedAmount: 0,
+          status: CorrugatorProcessStatus.NOTSTARTED,
           isDeleted: false,
-        }) as any,
+          note: "",
+        }, // Will be set when creating actual order
+        manufacturingDate: getManufacturingDate(
+          poi.subPurchaseOrder.deliveryDate,
+          poi.subPurchaseOrder.purchaseOrder.customer.code,
+        ),
+        manufacturingDateAdjustment: null,
+        requestedDatetime: null,
+        corrugatorLine: getCorrugatorLine(
+          poi.ware.fluteCombination.code,
+          poi.subPurchaseOrder.purchaseOrder.customer.code,
+        ),
+        corrugatorLineAdjustment: null,
+        amount: poi.amount,
+        manufacturingDirective: "",
+        note: "",
+        recalculateFlag: false,
+        isDeleted: false,
+      }),
     );
 
     return mos;
@@ -805,34 +813,51 @@ export class ManufacturingOrderService {
       .catch(() => undefined);
     const codeGenerator = new MOCodeGenerator(lastOrder?.code);
 
-    const mos = dtos.map(
-      (poi, index) =>
-        ({
-          code: codeGenerator.getCode(index),
-          purchaseOrderItem: poi.purchaseOrderItemId,
-          overallStatus: OrderStatus.NOTSTARTED,
-          processes: [],
-          corrugatorProcess: new Types.ObjectId(), // TODO: Get actual corrugatorProcess ID
-          manufacturingDate: getManufacturingDate(
-            poi.purchaseOrderItem.subPurchaseOrder.deliveryDate,
-            poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
-          ),
-          manufacturingDateAdjustment: poi.manufacturingDateAdjustment,
-          requestedDatetime: poi.requestedDatetime,
-          corrugatorLine: getCorrugatorLine(
-            poi.purchaseOrderItem.ware.fluteCombination.code,
-            poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
-          ),
-          corrugatorLineAdjustment: poi.corrugatorLineAdjustment,
-          amount: poi.purchaseOrderItem.amount,
-          manufacturingDirective: poi.manufacturingDirective,
-          note: poi.note,
-          recalculateFlag: false,
-          isDeleted: false,
-        }) as any,
-    );
+    const mos = dtos.map((poi, index) => ({
+      code: codeGenerator.getCode(index),
+      purchaseOrderItem: poi.purchaseOrderItemId,
+      overallStatus: OrderStatus.NOTSTARTED,
+      processes: [],
+      corrugatorProcess: new Types.ObjectId(), // TODO: Get actual corrugatorProcess ID
+      manufacturingDate: getManufacturingDate(
+        poi.purchaseOrderItem.subPurchaseOrder.deliveryDate,
+        poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
+      ),
+      manufacturingDateAdjustment: poi.manufacturingDateAdjustment,
+      requestedDatetime: poi.requestedDatetime,
+      corrugatorLine: getCorrugatorLine(
+        poi.purchaseOrderItem.ware.fluteCombination.code,
+        poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
+      ),
+      corrugatorLineAdjustment: poi.corrugatorLineAdjustment,
+      amount: poi.purchaseOrderItem.amount,
+      manufacturingDirective: poi.manufacturingDirective,
+      note: poi.note,
+      recalculateFlag: false,
+      isDeleted: false,
+    }));
 
     const result = await this.manufacturingOrderModel.create(mos);
+
+    const corrugatorProcessDocs: CorrugatorProcess[] = result.map((mo) => ({
+      manufacturingOrder: mo._id,
+      manufacturedAmount: 0,
+      status: CorrugatorProcessStatus.NOTSTARTED,
+      note: "",
+      isDeleted: false,
+    }));
+
+    const result2 = await this.corrugatorProcessModel.create(
+      corrugatorProcessDocs,
+    );
+
+    for (const res of result2) {
+      const id = res._id;
+      await this.manufacturingOrderModel.findOneAndUpdate(
+        { _id: id },
+        { corrugatorProcess: id },
+      );
+    }
 
     // TODO: create finishing processes
 

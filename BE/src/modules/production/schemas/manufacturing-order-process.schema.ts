@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { BaseSchema } from "@/common/schemas/base.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
-import { ManufacturingProcess } from "./manufacturing-process.schema"; // Import "từ điển" công đoạn
+import { WareFinishingProcessType } from "./ware-finishing-process-type.schema";
 
 // Định nghĩa các trạng thái cho một công đoạn
 export enum ProcessStatus {
@@ -26,9 +26,10 @@ export class ManufacturingOrderProcess extends BaseSchema {
   @Prop({
     required: true,
     type: Types.ObjectId,
-    ref: ManufacturingProcess.name, // Liên kết tới "từ điển" (ví dụ: "BE" -> "Bế")
+    ref: WareFinishingProcessType.name, // Liên kết tới "từ điển" (ví dụ: "BE" -> "Bế")
   })
-  processDefinition: Types.ObjectId; // Hoặc Types.ObjectId
+  processDefinition: Types.ObjectId | WareFinishingProcessType;
+  // processDefinition: Types.ObjectId; // Hoặc Types.ObjectId
 
   @Prop({ required: true })
   processNumber: number; // Thứ tự công đoạn (1, 2, 3...)

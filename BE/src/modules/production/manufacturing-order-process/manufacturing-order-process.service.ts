@@ -36,7 +36,7 @@ export class ManufacturingOrderProcessService {
 
     @InjectModel(CorrugatorProcess.name)
     private readonly corrugatorProcessModel: Model<CorrugatorProcessDocument>,
-  ) {} /**
+  ) { } /**
    * Cập nhật một công đoạn (status hoặc amount)
    */
 
@@ -146,7 +146,7 @@ export class ManufacturingOrderProcessService {
     } // 4. --- LOGIC CẬP NHẬT TRẠNG THÁI & SỐ LƯỢNG ---
 
     let newCalculatedStatus = originalStatus;
-    let newAmount = manufacturedAmount ?? originalAmount;
+    const newAmount = manufacturedAmount ?? originalAmount;
     let amountDrivenStatus: ProcessStatus | null = null; // A. Xử lý logic tự động dựa trên SỐ LƯỢNG
 
     if (manufacturedAmount !== undefined) {
