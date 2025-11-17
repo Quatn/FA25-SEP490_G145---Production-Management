@@ -129,16 +129,25 @@ export default function PrintingTab({
     // Filter theo khách hàng
     if (propCustomerFilter !== "all") {
       filtered = filtered.filter((process) => {
-        const customer = process.manufacturingOrder?.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.customer;
-        const customerCode = typeof customer === "object" && customer !== null
-          ? customer.code
-          : null;
+        const customer =
+          process.manufacturingOrder?.purchaseOrderItem?.subPurchaseOrder
+            ?.purchaseOrder?.customer;
+        const customerCode =
+          typeof customer === "object" && customer !== null
+            ? customer.code
+            : null;
         return customerCode === propCustomerFilter;
       });
     }
 
     return filtered;
-  }, [allProcesses, processCode, propStatusFilter, propCustomerFilter, pendingStatuses]);
+  }, [
+    allProcesses,
+    processCode,
+    propStatusFilter,
+    propCustomerFilter,
+    pendingStatuses,
+  ]);
 
   // --- PAGINATION ---
   const totalItems = processes.length;
@@ -203,7 +212,12 @@ export default function PrintingTab({
     setPage(1);
   };
 
-  const handleChangePendingAmount = (processId, currentAmount, delta, originalAmount) => {
+  const handleChangePendingAmount = (
+    processId,
+    currentAmount,
+    delta,
+    originalAmount
+  ) => {
     if (!processId) return;
     const newAmount = Math.max(0, currentAmount + delta);
 
@@ -222,29 +236,42 @@ export default function PrintingTab({
     }
   };
 
-
-  const handleChangePendingStatus = (processId, newStatus) => {
+  const handleChangePendingStatus = (processId, newStatus, originalStatus) => {
     if (!processId) return;
 
-    setPendingStatuses((prev) => ({
-      ...prev,
-      [processId]: newStatus,
-    }));
+    if (newStatus === originalStatus) {
+      setPendingStatuses((prev) => {
+        const newState = { ...prev };
+        delete newState[processId];
+        return newState;
+      });
+    } else {
+      // Ngược lại, thêm/cập nhật nó
+      setPendingStatuses((prev) => ({
+        ...prev,
+        [processId]: newStatus,
+      }));
+    }
   };
 
-  const handleSave = async (processId, manufacturingOrderId, originalAmount) => {
+  const handleSave = async (
+    processId,
+    manufacturingOrderId,
+    originalAmount
+  ) => {
     const newAmount = pendingAmounts[processId];
     const newStatus = pendingStatuses[processId];
 
     // Kiểm tra xem số lượng có thay đổi thực sự không (không bằng số lượng ban đầu)
-    const hasPendingAmount = newAmount !== undefined && newAmount !== originalAmount;
+    const hasPendingAmount =
+      newAmount !== undefined && newAmount !== originalAmount;
     const hasPendingStatus = newStatus !== undefined;
 
     if (!hasPendingAmount && !hasPendingStatus) {
       showToast("Không có thay đổi để lưu.", "info");
       return;
     }
-    
+
     const body = {
       processId,
       manufacturingOrderId,
@@ -288,23 +315,23 @@ export default function PrintingTab({
   // --- TABLE HEADERS ---
   const getTableHeaders = () => {
     const baseHeaders = ["Lệnh SX"];
-    
+
     // Thêm cột Khách hàng cho các tabs khác (trừ Sóng - không áp dụng ở đây vì đây là PrintingTab)
     // Tất cả các tabs process đều có cột Khách hàng
     baseHeaders.push("Khách hàng");
-    
+
     baseHeaders.push("Số lượng", "Đã SX", "Trạng thái");
-    
+
     // Thêm cột đặc biệt cho tab IN
     if (processCode === "IN") {
-      baseHeaders.push("Loại máy in", "Màu in");
+      baseHeaders.push("Loại máy in", "Màu 1", "Màu 2", "Màu 3", "Màu 4");
     }
-    
+
     baseHeaders.push("Lưu", "Ngày nhận");
-    
+
     return baseHeaders;
   };
-  
+
   const TABLE_HEADERS = getTableHeaders();
 
   const amountCellStyle = { textDecoration: "underline", fontWeight: "600" };
@@ -402,8 +429,7 @@ export default function PrintingTab({
               const originalAmount = process.manufacturedAmount ?? 0;
               const originalStatus = process.status;
 
-              const currentAmount =
-                pendingAmounts[processId] ?? originalAmount;
+              const currentAmount = pendingAmounts[processId] ?? originalAmount;
 
               const currentStatus =
                 pendingStatuses[processId] ?? originalStatus;
@@ -423,19 +449,28 @@ export default function PrintingTab({
                 processItem.manufacturingOrder?.manufacturingDate;
               const totalAmount =
                 processItem.manufacturingOrder?.purchaseOrderItem?.amount || 0;
-              
+
               // Lấy thông tin khách hàng
-              const customer = processItem.manufacturingOrder?.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.customer;
-              const customerName = typeof customer === "object" && customer !== null
-                ? customer.code || "-"
-                : "-";
-              
+              const customer =
+                processItem.manufacturingOrder?.purchaseOrderItem
+                  ?.subPurchaseOrder?.purchaseOrder?.customer;
+              const customerName =
+                typeof customer === "object" && customer !== null
+                  ? customer.code || "-"
+                  : "-";
+
               // Lấy thông tin in ấn (chỉ cho tab IN)
-              const ware = processItem.manufacturingOrder?.purchaseOrderItem?.ware;
+              const ware =
+                processItem.manufacturingOrder?.purchaseOrderItem?.ware;
               const typeOfPrinter = ware?.typeOfPrinter || "-";
-              const printColors = Array.isArray(ware?.printColors) 
-                ? ware.printColors.join(", ") 
-                : "-";
+              // Trích xuất mã màu từ mảng object
+              const colorCodes = Array.isArray(ware?.printColors)
+                ? ware.printColors.map((colorObj) => colorObj.code || "-")
+                : [];
+
+              // Gán vào 4 biến riêng biệt, điền "-" nếu không đủ
+              const [color1 = "-", color2 = "-", color3 = "-", color4 = "-"] =
+                colorCodes;
 
               const rowStyles = getProcessRowStyles(currentStatus);
               const cellBackgroundColor = rowStyles.backgroundColor || "white";
@@ -449,7 +484,7 @@ export default function PrintingTab({
                     backgroundColor: cellBackgroundColor,
                   }}
                 >
-                  <td 
+                  <td
                     className="text-center"
                     style={{
                       backgroundColor: cellBackgroundColor,
@@ -457,9 +492,8 @@ export default function PrintingTab({
                   >
                     {moCode}
                   </td>
-                  
                   {/* Cột Khách hàng - hiển thị cho tất cả các tabs process */}
-                  <td 
+                  <td
                     className="text-center"
                     style={{
                       ...amountCellStyle,
@@ -469,7 +503,6 @@ export default function PrintingTab({
                   >
                     {customerName}
                   </td>
-                  
                   <td
                     className="text-center"
                     style={{
@@ -503,10 +536,7 @@ export default function PrintingTab({
                             originalAmount
                           )
                         }
-                        disabled={
-                          isUpdating || 
-                          originalStatus === "COMPLETED"
-                        }
+                        disabled={isUpdating || originalStatus === "COMPLETED"}
                         style={{ textDecoration: "none" }}
                         title={`Giảm ${propStepAmount}`}
                       >
@@ -539,10 +569,7 @@ export default function PrintingTab({
                             originalAmount
                           )
                         }
-                        disabled={
-                          isUpdating || 
-                          originalStatus === "COMPLETED"
-                        }
+                        disabled={isUpdating || originalStatus === "COMPLETED"}
                         style={{ textDecoration: "none" }}
                         title={`Tăng ${propStepAmount}`}
                       >
@@ -552,7 +579,7 @@ export default function PrintingTab({
                   </td>
                   <td
                     className="text-center"
-                    style={{ 
+                    style={{
                       minWidth: "130px",
                       backgroundColor: cellBackgroundColor,
                     }}
@@ -563,20 +590,18 @@ export default function PrintingTab({
                       onChange={(e) =>
                         handleChangePendingStatus(
                           processId,
-                          e.target.value
+                          e.target.value,
+                          originalStatus
                         )
                       }
-                      disabled={
-                        isUpdating || originalStatus === "COMPLETED"
-                      }
+                      disabled={isUpdating || originalStatus === "COMPLETED"}
                       style={{
                         fontWeight: 600,
-                        borderColor: hasPendingChanges
-                          ? "#0d6efd"
-                          : "default",
+                        borderColor: hasPendingChanges ? "#0d6efd" : "default",
                         backgroundColor: cellBackgroundColor,
                       }}
                     >
+                      {/* 1. Hiển thị tất cả các trạng thái có thể chỉnh sửa */}
                       {EDITABLE_STATUSES.map((status) => (
                         <option key={status.value} value={status.value}>
                           {status.label}
@@ -585,16 +610,23 @@ export default function PrintingTab({
                       {!EDITABLE_STATUSES.some(
                         (s) => s.value === originalStatus
                       ) && (
-                        <option value={originalStatus} disabled>
-                          {getStatus(originalStatus)}
-                        </option>
+                        <>
+                          {originalStatus === "NOTSTARTED" ? (
+                            <option value="NOTSTARTED">
+                              {getStatus("NOTSTARTED")}
+                            </option>
+                          ) : (
+                            <option value={originalStatus} disabled>
+                              {getStatus(originalStatus)}
+                            </option>
+                          )}
+                        </>
                       )}
                     </Form.Select>
                   </td>
-                  
                   {/* Cột Loại máy in - chỉ cho tab IN */}
                   {processCode === "IN" && (
-                    <td 
+                    <td
                       className="text-center"
                       style={{
                         backgroundColor: cellBackgroundColor,
@@ -603,31 +635,45 @@ export default function PrintingTab({
                       {typeOfPrinter}
                     </td>
                   )}
-                  
-                  {/* Cột Màu in - chỉ cho tab IN */}
+                  {/* Cột Màu 1 - 4 - chỉ cho tab IN */}
                   {processCode === "IN" && (
-                    <td 
-                      className="text-center"
-                      style={{
-                        backgroundColor: cellBackgroundColor,
-                      }}
-                    >
-                      {printColors}
-                    </td>
+                    <>
+                      <td
+                        className="text-center"
+                        style={{ backgroundColor: cellBackgroundColor }}
+                      >
+                         {color1}
+                      </td>
+                      <td
+                        className="text-center"
+                        style={{ backgroundColor: cellBackgroundColor }}
+                      >
+                        {color2}
+                      </td>
+                      <td
+                        className="text-center"
+                        style={{ backgroundColor: cellBackgroundColor }}
+                      >
+                        {color3}
+                      </td>
+                      <td
+                        className="text-center"
+                        style={{ backgroundColor: cellBackgroundColor }}
+                      >
+                         {color4}
+                      </td>
+                    </>
                   )}
-                  
-                  <td 
-                    className="text-center" 
-                    style={{ 
+                  <td
+                    className="text-center"
+                    style={{
                       minWidth: "100px",
                       backgroundColor: cellBackgroundColor,
                     }}
                   >
                     <Button
                       variant={
-                        hasPendingChanges
-                          ? "success"
-                          : "outline-secondary"
+                        hasPendingChanges ? "success" : "outline-secondary"
                       }
                       size="sm"
                       onClick={() =>
@@ -650,7 +696,7 @@ export default function PrintingTab({
                       {hasPendingChanges && <span>Lưu</span>}
                     </Button>
                   </td>
-                  <td 
+                  <td
                     className="text-center"
                     style={{
                       backgroundColor: cellBackgroundColor,

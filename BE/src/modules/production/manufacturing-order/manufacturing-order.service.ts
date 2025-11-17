@@ -64,10 +64,10 @@ export class ManufacturingOrderService {
     private readonly manufacturingOrderProcessModel: Model<ManufacturingOrderProcessDocument>,
     @InjectModel(CorrugatorProcess.name)
     private readonly corrugatorProcessModel: Model<CorrugatorProcessDocument>,
-  ) { }
+  ) {}
 
   async findAll() {
-    return await this.manufacturingOrderModel.find();
+    return await this.manufacturingOrderModel.find({}).exec();
   }
 
   /**
@@ -93,6 +93,49 @@ export class ManufacturingOrderService {
 
     const skip = (page - 1) * limit;
     const filter: FilterQuery<ManufacturingOrderDocument> = {};
+
+    let defaultStartDate: Date | undefined = undefined;
+    let defaultEndDate: Date | undefined = undefined;
+
+    if (!mfg_date_from && !mfg_date_to) {
+      const today = new Date();
+
+      const getMondayOfWeek = (date: Date, weekOffset: number) => {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1) + weekOffset * 7;
+        d.setDate(diff);
+        d.setHours(0, 0, 0, 0);
+        return d;
+      };
+
+      const getSundayOfWeek = (date: Date, weekOffset: number) => {
+        const monday = getMondayOfWeek(date, weekOffset);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+        return sunday;
+      };
+
+      defaultStartDate = getMondayOfWeek(today, -2); // Monday of week -2
+      defaultEndDate = getSundayOfWeek(today, -1); // Sunday of week -1
+    }
+
+    // Apply default or user custom filter
+    if (mfg_date_from || mfg_date_to || defaultStartDate !== undefined) {
+      filter.manufacturingDate = {};
+
+      filter.manufacturingDate.$gte = mfg_date_from
+        ? new Date(mfg_date_from)
+        : (defaultStartDate as Date);
+
+      const toDate = mfg_date_to
+        ? new Date(mfg_date_to)
+        : (defaultEndDate as Date);
+
+      toDate.setHours(23, 59, 59, 999);
+      filter.manufacturingDate.$lte = toDate;
+    }
 
     if (search_code) {
       filter.code = { $regex: search_code, $options: "i" };
@@ -489,9 +532,8 @@ export class ManufacturingOrderService {
     const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
     const warePath = PurchaseOrderItemSchema.path("ware");
     const fluteCombinationPath = WareSchema.path("fluteCombination");
-    const manufacturingProcessesPath = WareSchema.path(
-      "manufacturingProcesses",
-    );
+    const wareFinishingProcessTypePath = WareSchema.path("finishingProcesses");
+    const printColorPath = WareSchema.path("printColors");
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
     const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
@@ -506,7 +548,8 @@ export class ManufacturingOrderService {
             path: warePath.path,
             populate: [
               { path: fluteCombinationPath.path },
-              { path: manufacturingProcessesPath.path },
+              { path: wareFinishingProcessTypePath.path },
+              { path: printColorPath.path },
             ],
           },
           {

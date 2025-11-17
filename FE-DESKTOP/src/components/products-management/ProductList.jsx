@@ -145,9 +145,6 @@ export default function ProductList() {
     name: "",
     customer: "",
     description: "",
-    productLength: 0,
-    productWidth: 0,
-    productHeight: 0,
     productType: "",
     wares: [],
   };
@@ -221,9 +218,6 @@ export default function ProductList() {
       name: productToUpdateWareCodes.name?.trim() ?? "",
       customer: customerId,
       description: productToUpdateWareCodes.description ?? "",
-      productLength: Number(productToUpdateWareCodes.productLength) || 0,
-      productWidth: Number(productToUpdateWareCodes.productWidth) || 0,
-      productHeight: Number(productToUpdateWareCodes.productHeight) || 0,
       productType:
         typeof productToUpdateWareCodes.productType === "string"
           ? productToUpdateWareCodes.productType
@@ -290,9 +284,6 @@ export default function ProductList() {
       name: product.name?.trim() ?? "",
       customer: customerId,
       description: product.description ?? "",
-      productLength: Number(product.productLength) || 0,
-      productWidth: Number(product.productWidth) || 0,
-      productHeight: Number(product.productHeight) || 0,
       productType:
         typeof product.productType === "string"
           ? product.productType
@@ -353,11 +344,13 @@ export default function ProductList() {
 
     // Extract productType ID (can be ObjectId string or ProductType object)
     // When from select, it's already a string (ObjectId)
-    const productTypeId = 
+    const productTypeId =
       typeof editingProduct.productType === "string"
         ? editingProduct.productType
-        : editingProduct.productType?._id || editingProduct.productType?.id || "";
-// editingProduct.productType || "";
+        : editingProduct.productType?._id ||
+          editingProduct.productType?.id ||
+          "";
+    // editingProduct.productType || "";
     const payload = {
       code: editingProduct.code?.trim() ?? "",
       name: editingProduct.name?.trim() ?? "",
@@ -368,8 +361,7 @@ export default function ProductList() {
       productWidth: Number(editingProduct.productWidth) || 0,
       productHeight: Number(editingProduct.productHeight) || 0,
       productType: productTypeId,
-      //sẽ thêm sau
-      // image: "",
+      image: "",
       wares: waresIds,
     };
 
@@ -654,7 +646,7 @@ export default function ProductList() {
 
                 {/* Basic Info */}
                 <Row style={{ marginTop: "1rem" }}>
-                  <Col xs={12} sm={4} style={{ marginBottom: "0.5rem" }}>
+                  {/* <Col xs={12} sm={4} style={{ marginBottom: "0.5rem" }}>
                     <div
                       style={{
                         background: "#f9fafb",
@@ -674,8 +666,8 @@ export default function ProductList() {
                         cm
                       </strong>
                     </div>
-                  </Col>
-                  <Col xs={12} sm={4} style={{ marginBottom: "0.5rem" }}>
+                  </Col> */}
+                  <Col xs={12} sm={6} style={{ marginBottom: "0.5rem" }}>
                     <div
                       style={{
                         background: "#f9fafb",
@@ -685,7 +677,8 @@ export default function ProductList() {
                     >
                       <i className="bi bi-box me-2"></i>
                       <small style={{ color: "#6b7280" }}>
-                        Type: <br />
+                        Loại:
+                        <br />
                       </small>{" "}
                       <strong>
                         {typeof product.productType === "object" &&
@@ -697,7 +690,7 @@ export default function ProductList() {
                       </strong>
                     </div>
                   </Col>
-                  <Col xs={12} sm={4}>
+                  <Col xs={12} sm={6}>
                     <div
                       style={{
                         background: "#f9fafb",
@@ -707,7 +700,8 @@ export default function ProductList() {
                     >
                       <i className="bi bi-person-badge me-2"></i>
                       <small style={{ color: "#6b7280" }}>
-                        Customer: <br />
+                        Khách Hàng:
+                        <br />
                       </small>{" "}
                       <strong>
                         {typeof product.customer === "object" &&
@@ -1165,7 +1159,7 @@ export default function ProductList() {
               </Form.Group>
 
               {/* --- Kích thước & loại sản phẩm --- */}
-              <Row className="mb-3">
+              {/* <Row className="mb-3">
                 {["productLength", "productWidth", "productHeight"].map(
                   (field, idx) => (
                     <Col md={4} key={idx}>
@@ -1191,7 +1185,7 @@ export default function ProductList() {
                     </Col>
                   )
                 )}
-              </Row>
+              </Row> */}
 
               {/* --- Chọn mã hàng (card style) - Đã khôi phục logic ban đầu --- */}
               <hr />

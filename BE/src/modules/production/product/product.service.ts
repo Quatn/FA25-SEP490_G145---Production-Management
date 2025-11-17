@@ -18,7 +18,7 @@ export class ProductService {
       .populate({
         path: "wares",
         populate: {
-          path: "manufacturingProcesses",
+          path: "finishingProcesses",
         },
       })
       .populate("customer")
@@ -65,7 +65,7 @@ export class ProductService {
         .populate({
           path: "wares",
           populate:  [
-            { path: "manufacturingProcesses" },
+            { path: "finishingProcesses" },
             { path: "fluteCombination" }
           ],
         })
@@ -87,7 +87,7 @@ export class ProductService {
       .populate({
         path: "wares",
         populate: {
-          path: "manufacturingProcesses",
+          path: "finishingProcesses",
         },
       })
       .populate("customer")
@@ -105,7 +105,7 @@ export class ProductService {
       .populate({
         path: "wares",
         populate: {
-          path: "manufacturingProcesses",
+          path: "finishingProcesses",
         },
       })
       .populate("customer")
@@ -119,7 +119,7 @@ export class ProductService {
       .populate({
         path: "wares",
         populate: {
-          path: "manufacturingProcesses",
+          path: "finishingProcesses",
         },
       })
       .populate("customer")
