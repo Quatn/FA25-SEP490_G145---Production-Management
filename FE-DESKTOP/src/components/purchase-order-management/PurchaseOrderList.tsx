@@ -777,7 +777,7 @@ const PurchaseOrderList: React.FC = () => {
                           className="btn btn-outline-info btn-sm"
                           onClick={() => toggleExpandSubs(po.id)}
                         >
-                          {isExpanded ? "Hide Sub-POs" : "Show Sub-POs"}
+                          {isExpanded ? "Hiện sản phẩm" : "Ẩn sản phẩm"}
                         </button>
                         <button
                           className="btn btn-danger btn-sm"
@@ -799,7 +799,7 @@ const PurchaseOrderList: React.FC = () => {
                         marginBottom: 8,
                       }}
                     >
-                      <h6 className="m-0">Sub-POs</h6>
+                      <h6 className="m-0">Sản phẩm</h6>
                       <div style={{ display: "flex", gap: 8 }}>
                         <button
                           className="btn btn-outline-success btn-sm"
@@ -825,9 +825,9 @@ const PurchaseOrderList: React.FC = () => {
                     {isExpanded && (
                       <div style={{ marginBottom: 12 }}>
                         {isFetchingSubs ? (
-                          <div className="text-muted">Loading sub-POs...</div>
+                          <div className="text-muted">Loading sản phẩm...</div>
                         ) : serverSubs.length === 0 ? (
-                          <div className="text-muted">No server sub-POs</div>
+                          <div className="text-muted">Không có sản phẩm</div>
                         ) : (
                           serverSubs.map((s: any) => (
                             <div key={s._id ?? s.id} className="card mb-2">
