@@ -10,6 +10,52 @@ type Props = {
   transactions?: any[];
   colorName?: string;
   supplierName?: string;
+  paperRollId?: string;
+};
+
+function getIdFromDoc(doc: any) {
+  if (!doc) return undefined;
+  if (typeof doc === "string") return doc;
+  if (doc._id?.$oid) return String(doc._id.$oid);
+  if (doc._id) return String(doc._id);
+  if (doc.id) return String(doc.id);
+  return undefined;
+}
+
+const computePaperRollIdForPaper = (paper: any) => {
+  if (!paper) return "-";
+  const pt = paper.paperType ?? paper.paperTypeId ?? null;
+
+  // color code: prefer populated color.code, then color.title
+  const colorCode =
+    pt?.paperColor?.code ??
+    pt?.paperColor?.title ??
+    paper.paperType?.paperColor?.title ??
+    undefined;
+
+  const supplierCode = paper.paperSupplier?.code ?? paper.paperSupplier?.name;
+
+  const width = pt?.width ?? paper.width;
+  const grammage = pt?.grammage ?? paper.grammage;
+  const seq = paper.sequenceNumber ?? paper.sequence;
+  const receiving = paper.receivingDate ?? paper.createdAt;
+  const yy = receiving
+    ? new Date(receiving).getFullYear() % 100
+    : new Date().getFullYear() % 100;
+
+  if (
+    colorCode &&
+    supplierCode &&
+    width != null &&
+    grammage != null &&
+    seq != null
+  ) {
+    return `${colorCode}/${supplierCode}/${width}/${grammage}/${seq}XC${String(
+      yy
+    ).padStart(2, "0")}`;
+  }
+  // fallback
+  return paper.paperRollId ?? getIdFromDoc(paper) ?? "-";
 };
 
 export const PaperDetailModal: React.FC<Props> = ({
@@ -19,6 +65,7 @@ export const PaperDetailModal: React.FC<Props> = ({
   transactions = [],
   colorName,
   supplierName,
+  paperRollId,
 }) => {
   if (!show) return null;
 
@@ -50,6 +97,8 @@ export const PaperDetailModal: React.FC<Props> = ({
     );
   }
 
+  const computedId = computePaperRollIdForPaper(paper);
+
   return (
     <div className="modal-backdrop" style={{ display: "block" }}>
       <div className="modal" role="dialog" style={{ display: "block" }}>
@@ -69,17 +118,17 @@ export const PaperDetailModal: React.FC<Props> = ({
                 <tbody>
                   <tr>
                     <th style={{ width: 200 }}>Mã cuộn</th>
-                    <td>{paper.paperRollId}</td>
+                    <td>{paperRollId}</td>
                   </tr>
                   <tr>
-                    <th>Sequence #</th>
+                    <th>Số thứ tự</th>
                     <td>{paper.sequenceNumber}</td>
                   </tr>
                   <tr>
                     <th>Loại giấy</th>
                     <td>
                       {paper.paperType
-                        ? `${paper.paperType.width} mm • ${paper.paperType.grammage} g`
+                        ? `${paper.paperType.width} mm • ${paper.paperType.grammage} g/m2`
                         : "-"}
                     </td>
                   </tr>
@@ -108,7 +157,11 @@ export const PaperDetailModal: React.FC<Props> = ({
                   <tr>
                     <th>Ngày nhận</th>
                     <td>
-                      {new Date(paper.receivingDate).toISOString().slice(0, 10)}
+                      {paper.receivingDate
+                        ? new Date(paper.receivingDate)
+                            .toISOString()
+                            .slice(0, 10)
+                        : "-"}
                     </td>
                   </tr>
                   <tr>

@@ -1,4 +1,4 @@
-// src/screens/ScanScreen.tsx
+// src/screens/paper-roll/ScanScreen.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,

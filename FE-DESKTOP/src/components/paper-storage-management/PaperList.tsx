@@ -1,3 +1,4 @@
+// src/components/paper-storage-management/PaperList.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -21,6 +22,10 @@ import {
   useAddPaperTypeMutation,
 } from "@/service/api/paperTypeApiSlice";
 
+function uniqueIdTimeStamp() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 function getIdFromDoc(doc: any) {
   if (!doc) return undefined;
   if (typeof doc === "string") return doc;
@@ -28,6 +33,11 @@ function getIdFromDoc(doc: any) {
   if (doc._id) return String(doc._id);
   if (doc.id) return String(doc.id);
   return undefined;
+}
+
+/** stable DB id helper — use everywhere for selection keys */
+function getDbId(doc: any) {
+  return getIdFromDoc(doc) ?? doc._id ?? doc.paperRollId ?? undefined;
 }
 
 export const PaperList: React.FC = () => {
@@ -239,27 +249,39 @@ export const PaperList: React.FC = () => {
     return !isNaN(w) && w > 0 && w < LOW_WEIGHT_THRESHOLD;
   };
 
+  // --- SELECTION logic using DB id keys everywhere ---
   const selectedRolls = useMemo(
-    () => paperRolls.filter((r) => selectedIds[r.paperRollId]),
+    () => paperRolls.filter((r) => !!selectedIds[getDbId(r)]),
     [paperRolls, selectedIds]
   );
   const visibleRows = useMemo(() => {
-    const sel = new Set(selectedRolls.map((r) => r.paperRollId));
+    const sel = new Set(selectedRolls.map((r) => getDbId(r)));
     return [
       ...selectedRolls,
-      ...paperRolls.filter((r) => !sel.has(r.paperRollId)),
+      ...paperRolls.filter((r) => !sel.has(getDbId(r))),
     ];
   }, [paperRolls, selectedRolls]);
 
-  const toggleSelect = (id: string) =>
+  // toggleSelect accepts either a roll object or a DB id string
+  const toggleSelect = (rollOrId: any) => {
+    const id = typeof rollOrId === "string" ? rollOrId : getDbId(rollOrId);
+    if (!id) return;
     setSelectedIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   const selectAllVisible = (checked: boolean) => {
     const newSel: Record<string, boolean> = { ...selectedIds };
-    visibleRows.forEach((r) => (newSel[r.paperRollId] = checked));
+    visibleRows.forEach((r) => {
+      const id = getDbId(r);
+      if (id) newSel[id] = checked;
+    });
     setSelectedIds(newSel);
   };
+
   const getSelectedRolls = () =>
-    paperRolls.filter((r) => selectedIds[r.paperRollId]);
+    paperRolls
+      .filter((r) => !!selectedIds[getDbId(r)])
+      .map((r) => ({ ...r, paperRollId: computePaperRollId(r) })); // include computed id for UI
 
   const handleCreateSubmit = async () => {
     try {
@@ -633,10 +655,11 @@ export const PaperList: React.FC = () => {
 
       await updatePaperRoll({ id: dbId, data: { weight: newW } }).unwrap();
 
+      // remove selection by DB id key
       setSelectedIds((prevSel) => {
         const next = { ...prevSel };
-        const prId = roll.paperRollId ?? dbId;
-        delete next[prId];
+        const key = getDbId(roll) ?? dbId;
+        if (key) delete next[key];
         return next;
       });
 
@@ -816,7 +839,7 @@ export const PaperList: React.FC = () => {
         <button
           className="btn btn-outline-primary"
           onClick={() => {
-            const any = visibleRows.some((r) => selectedIds[r.paperRollId]);
+            const any = visibleRows.some((r) => !!selectedIds[getDbId(r)]);
             selectAllVisible(!any);
           }}
         >
@@ -837,7 +860,7 @@ export const PaperList: React.FC = () => {
                   onChange={(e) => selectAllVisible(e.target.checked)}
                   checked={
                     visibleRows.length > 0 &&
-                    visibleRows.every((r) => selectedIds[r.paperRollId])
+                    visibleRows.every((r) => !!selectedIds[getDbId(r)])
                   }
                 />
               </th>
@@ -864,13 +887,15 @@ export const PaperList: React.FC = () => {
                   ? supplierMap.get(String(getIdFromDoc(r.paperSupplierId)))
                   : undefined);
 
+              const dbId = getDbId(r) ?? uniqueIdTimeStamp();
+
               return (
-                <tr key={r.paperRollId ?? getIdFromDoc(r) ?? Math.random()}>
+                <tr key={dbId}>
                   <td>
                     <input
                       type="checkbox"
-                      checked={!!selectedIds[r.paperRollId]}
-                      onChange={() => toggleSelect(r.paperRollId)}
+                      checked={!!selectedIds[getDbId(r)]}
+                      onChange={() => toggleSelect(r)}
                     />
                   </td>
                   <td style={{ whiteSpace: "nowrap" }}>
@@ -970,14 +995,16 @@ export const PaperList: React.FC = () => {
                         className="btn btn-secondary btn-sm"
                         onClick={() => {
                           setSingleModal({ open: true, roll: r });
-                          setSelectedIds({ [r.paperRollId]: true });
+                          // ensure selection keyed by DB id (replace selection with this single row)
+                          const id = getDbId(r);
+                          if (id) setSelectedIds({ [id]: true });
                         }}
                       >
                         Nhập lại
                       </button>
                       <button
                         className="btn btn-warning btn-sm"
-                        onClick={() => handleCreateQR(computePaperRollId(r))}
+                        onClick={() => handleCreateQR(r._id)}
                       >
                         Tạo QR
                       </button>
@@ -1098,7 +1125,6 @@ export const PaperList: React.FC = () => {
                       )}
                     </div>
                   </td>
-
                   <td>
                     {r.deletedAt
                       ? new Date(r.deletedAt)
@@ -1770,6 +1796,9 @@ export const PaperList: React.FC = () => {
         transactions={undefined}
         colorName={detailOpen.roll?.paperType?.paperColor?.title}
         supplierName={detailOpen.roll?.paperSupplier?.name}
+        paperRollId={
+          detailOpen.roll ? computePaperRollId(detailOpen.roll) : undefined
+        }
       />
 
       <BulkActionModal
@@ -1839,10 +1868,15 @@ export const PaperList: React.FC = () => {
       {qrModal.open && (
         <div className="modal-backdrop" style={{ display: "block" }}>
           <div className="modal" role="dialog" style={{ display: "block" }}>
-            <div className="modal-dialog modal-sm">
+            <div className="modal-dialog" style={{ width: 'min(70vw, 600px)', maxWidth: '400px' }}>
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">QR: {qrModal.text}</h5>
+                  <h5 className="modal-title">
+                    QR:{" "}
+                    {computePaperRollId(
+                      paperRolls.find((r) => r._id === qrModal.text)
+                    )}
+                  </h5>
                   <button
                     type="button"
                     className="btn-close"
