@@ -17,3 +17,21 @@ export function formatDateToDDMMYYYY(date: Date | string | null | undefined) {
 
   return `${day}/${month}/${year}`;
 }
+export function formatDateToYYYYMMDD(date: Date | string | null | undefined) {
+  if (!check.assigned(date)) {
+    return "";
+  }
+
+  const d = (check.date(date)) ? date : new Date(date as string);
+
+  if (!check.date(d)) {
+    return "";
+  }
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+

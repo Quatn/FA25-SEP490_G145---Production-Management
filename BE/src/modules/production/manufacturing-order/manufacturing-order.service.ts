@@ -489,8 +489,8 @@ export class ManufacturingOrderService {
     const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
     const warePath = PurchaseOrderItemSchema.path("ware");
     const fluteCombinationPath = WareSchema.path("fluteCombination");
-    const manufacturingProcessesPath = WareSchema.path(
-      "manufacturingProcesses",
+    const finishingProcessesPath = WareSchema.path(
+      "finishingProcesses",
     );
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
     const productPath = SubPurchaseOrderSchema.path("product");
@@ -506,7 +506,7 @@ export class ManufacturingOrderService {
             path: warePath.path,
             populate: [
               { path: fluteCombinationPath.path },
-              { path: manufacturingProcessesPath.path },
+              { path: finishingProcessesPath.path },
             ],
           },
           {
@@ -698,6 +698,9 @@ export class ManufacturingOrderService {
     const wareManufacturingProcessTypePath = WareSchema.path(
       "wareManufacturingProcessType",
     );
+    const printColorsPath = WareSchema.path(
+      "printColors",
+    );
 
     const populate = {
       path: poiPath.path,
@@ -708,6 +711,7 @@ export class ManufacturingOrderService {
             fluteCombinationPath,
             finishingProcessesPath,
             wareManufacturingProcessTypePath,
+            printColorsPath,
           ],
         },
         {

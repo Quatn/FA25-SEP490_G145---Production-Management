@@ -3,6 +3,7 @@ import { createListCollection, ListCollection } from "@chakra-ui/react";
 import { CellContext } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
 import { ManufacturingOrderTableDataType } from "./tableDefinition";
+import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
 
 export enum ManufacturingTableEditableCellInputTypes {
   text = "TEXT",
@@ -85,11 +86,11 @@ const RequestedDatetimeCell = (props: NodeCellProps) => {
 
   if (meta?.allowEdit) {
     if (meta.editableCellNode) {
-      return meta.editableCellNode({ value, updateTableData, setValue, onBlur, type: ManufacturingTableEditableCellInputTypes.text })
+      return meta.editableCellNode({ value, updateTableData, setValue, onBlur, type: ManufacturingTableEditableCellInputTypes.date })
     }
   }
 
-  return value;
+  return formatDateToDDMMYYYY(value as string);
 }
 
 const ManufacturingDateCell = (props: NodeCellProps) => {
@@ -115,11 +116,13 @@ const ManufacturingDateCell = (props: NodeCellProps) => {
 
   if (meta?.allowEdit) {
     if (meta.editableCellNode) {
-      return meta.editableCellNode({ value, updateTableData, setValue, onBlur, type: ManufacturingTableEditableCellInputTypes.text })
+      console.log(value)
+      console.log(new Date(value))
+      return meta.editableCellNode({ value: new Date(value), updateTableData, setValue, onBlur, type: ManufacturingTableEditableCellInputTypes.date })
     }
   }
 
-  return value;
+  return formatDateToDDMMYYYY(value as string);
 }
 
 const corrugatorLines = [{ label: "Dàn 5", value: "5" }, { label: "Dàn 7", value: "7" }]

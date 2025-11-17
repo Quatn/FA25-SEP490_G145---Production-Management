@@ -62,53 +62,51 @@ export function useSelectedOrdersDispatch() {
 }
 
 export default function ManufacturingOrderCreatePageSelectedOrdersDetails() {
-  const { groupType, selectedPOIsIds } = useManufacturingOrderCreatePageState();
-  const dispatch = useManufacturingOrderCreatePageDispatch();
+  // const { groupType, selectedPOIsIds } = useManufacturingOrderCreatePageState();
+  // const dispatch = useManufacturingOrderCreatePageDispatch();
 
-  const {
-    data: fullDetailMOsResponse,
-    error: fetchError,
-    isLoading: isFetchingList,
-  } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
-    ids: selectedPOIsIds,
-  });
+  // const {
+  //   data: fullDetailMOsResponse,
+  //   error: fetchError,
+  //   isLoading: isFetchingList,
+  // } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
+  //   ids: selectedPOIsIds,
+  // });
 
-  const moPaginatedList = fullDetailMOsResponse?.data;
+  // const moPaginatedList = fullDetailMOsResponse?.data;
 
-  const [state, selectedOrdersDispatch] = useReducer(reducer, initialState);
+  // const [state, selectedOrdersDispatch] = useReducer(reducer, initialState);
 
-  useEffect(() => {
-    selectedOrdersDispatch({ type: "SET_ORDERS", payload: moPaginatedList })
-  }, [moPaginatedList])
+  // useEffect(() => {
+  // selectedOrdersDispatch({ type: "SET_ORDERS", payload: moPaginatedList })
+  // }, [moPaginatedList])
+  // 
+  // <OrdersStateContext.Provider value={{ selectedManufacturingOrders: moPaginatedList }}>
+  // <OrdersDispatchContext.Provider value={selectedOrdersDispatch}>
+
 
   return (
-    <OrdersStateContext.Provider value={state}>
-      <OrdersDispatchContext.Provider value={selectedOrdersDispatch}>
-
-        <Tabs.Root defaultValue="members">
-          <Tabs.List>
-            <Tabs.Trigger value="members">
-              <LuUser />
-              Thông tin các lệnh sẽ tạo
-            </Tabs.Trigger>
-            <Tabs.Trigger value="projects">
-              <LuFolder />
-              Kiểm tra nguyên phụ liệu
-            </Tabs.Trigger>
-            <Tabs.Trigger value="tasks">
-              <LuSquareCheck />
-              Kiểm tra tồn kho hàng
-            </Tabs.Trigger>
-          </Tabs.List>
-          <Tabs.Content value="members">
-            <CreatePageManufacturingOrderTable />
-          </Tabs.Content>
-          <Tabs.Content value="projects"><MaterialRequirementContainer /></Tabs.Content>
-          <Tabs.Content value="tasks">
-          </Tabs.Content>
-        </Tabs.Root>
-      </OrdersDispatchContext.Provider>
-    </OrdersStateContext.Provider>
-
+    <Tabs.Root defaultValue="members">
+      <Tabs.List>
+        <Tabs.Trigger value="members">
+          <LuUser />
+          Thông tin các lệnh sẽ tạo
+        </Tabs.Trigger>
+        <Tabs.Trigger value="projects">
+          <LuFolder />
+          Kiểm tra nguyên phụ liệu
+        </Tabs.Trigger>
+        <Tabs.Trigger value="tasks">
+          <LuSquareCheck />
+          Kiểm tra tồn kho hàng
+        </Tabs.Trigger>
+      </Tabs.List>
+      <Tabs.Content value="members">
+        <CreatePageManufacturingOrderTable />
+      </Tabs.Content>
+      <Tabs.Content value="projects">{/*<MaterialRequirementContainer />*/}</Tabs.Content>
+      <Tabs.Content value="tasks">
+      </Tabs.Content>
+    </Tabs.Root>
   );
 }

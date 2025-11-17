@@ -18,12 +18,12 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getManufacturingOrders: createApiEndpoint<
       PageResponse<Serialized<ManufacturingOrder>>,
-      { page: number; limit: number }
+      { page: number; limit: number, query?: string }
     >(builder, {
-      query: ({ page, limit }) => ({
+      query: ({ page, limit, query }) => ({
         url: `${MANUFACTURING_ORDER_URL}/query/full-details`,
         method: "GET",
-        params: { page, limit },
+        params: { page, limit, query },
         credentials: "include",
       }),
       providesTags: ["ManufacturingOrder"],
@@ -32,12 +32,12 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
 
     getFullDetailManufacturingOrders: createApiEndpoint<
       PageResponse<Serialized<ManufacturingOrder>>,
-      { page: number; limit: number }
+      { page: number; limit: number, query?: string }
     >(builder, {
-      query: ({ page, limit }) => ({
+      query: ({ page, limit, query }) => ({
         url: `${MANUFACTURING_ORDER_URL}/query/full-details`,
         method: "GET",
-        params: { page, limit },
+        params: { page, limit, query },
         credentials: "include",
       }),
       providesTags: ["ManufacturingOrder"],
