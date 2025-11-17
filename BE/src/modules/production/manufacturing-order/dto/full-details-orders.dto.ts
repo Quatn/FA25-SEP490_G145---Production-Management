@@ -11,7 +11,6 @@ import { FluteCombination } from "../../schemas/flute-combination.schema";
 import { WareFinishingProcessType } from "../../schemas/ware-finishing-process-type.schema";
 import { WareManufacturingProcessType } from "../../schemas/ware-manufacturing-process-type.schema";
 import { PrintColor } from "../../schemas/print-color.schema";
-import { ManufacturingProcess } from "../../schemas/manufacturing-process.schema";
 
 // Change the ref fields from id or object (unpopulated or populated) to just object since you are supposed to populate all of the full detail dto's fields
 class PopulatedPurchaseOrder extends PurchaseOrder {
@@ -55,12 +54,6 @@ class PopulatedWare extends Ware {
   })
   declare finishingProcesses: WareFinishingProcessType[];
 
-  @ApiProperty({
-    type: Array<ManufacturingProcess>,
-    description: "Populated manufacturingProcesses",
-  })
-  declare manufacturingProcesses: ManufacturingProcess[];
-
   constructor(ware: Ware) {
     if (!isRefPopulated(ware.fluteCombination)) {
       throw Error(
@@ -77,12 +70,6 @@ class PopulatedWare extends Ware {
     this.printColors = (ware.printColors || []) as PrintColor[];
     this.finishingProcesses = (ware.finishingProcesses ||
       []) as WareFinishingProcessType[];
-    this.manufacturingProcesses = (ware.manufacturingProcesses ||
-      []) as ManufacturingProcess[];
-    this.finishingProcesses = (ware.finishingProcesses ||
-      []) as WareFinishingProcessType[];
-    this.manufacturingProcesses = (ware.manufacturingProcesses ||
-      []) as ManufacturingProcess[];
   }
 }
 

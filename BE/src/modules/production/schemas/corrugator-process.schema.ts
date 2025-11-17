@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument, Types } from "mongoose";
+import mongoose, { HydratedDocument, Types } from "mongoose";
 import { BaseSchema } from "@/common/schemas/base.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
 import { ManufacturingOrder } from "../../production/schemas/manufacturing-order.schema";
@@ -19,10 +19,10 @@ export class CorrugatorProcess extends BaseSchema {
 
   @Prop({
     required: true,
-    type: Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "ManufacturingOrder",
   })
-  manufacturingOrder: ManufacturingOrder;
+  manufacturingOrder: Types.ObjectId | ManufacturingOrder;
 
   // Số lượng đã sản xuất
   @Prop({ required: true, default: 0 })
