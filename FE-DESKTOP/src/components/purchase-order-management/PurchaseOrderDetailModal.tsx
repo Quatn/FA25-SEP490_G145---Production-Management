@@ -322,7 +322,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                 <table className="table table-borderless">
                   <tbody>
                     <tr>
-                      <th style={{ width: 180 }}>PO Number</th>
+                      <th style={{ width: 180 }}>Mã PO</th>
                       <td>
                         <input
                           className="form-control"
@@ -333,7 +333,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                         />
                       </td>
 
-                      <th style={{ width: 180 }}>Date</th>
+                      <th style={{ width: 180 }}>Ngày nhập</th>
                       <td>
                         <input
                           className="form-control"
@@ -355,14 +355,14 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                     </tr>
 
                     <tr>
-                      <th>Customer</th>
+                      <th>Khách hàng</th>
                       <td>
                         <select
                           className="form-select"
                           value={selectedCustomerId ?? ""}
                           onChange={(e) => handleCustomerSelect(e.target.value)}
                         >
-                          <option value="">-- Select Customer --</option>
+                          <option value="">-- Chọn --</option>
                           {customers.map((c: any) => {
                             const id = c._id?.$oid ?? c._id ?? c;
                             const label = c.name ?? c.code ?? String(id);
@@ -375,7 +375,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                         </select>
                       </td>
 
-                      <th>Phone / Email</th>
+                      <th>Điện thoại / Email</th>
                       <td>
                         <div style={{ display: "flex", gap: 8 }}>
                           <input
@@ -399,7 +399,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                     </tr>
 
                     <tr>
-                      <th>Delivery Address</th>
+                      <th>Địa chỉ giao hàng</th>
                       <td>
                         <input
                           className="form-control"
@@ -410,7 +410,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                         />
                       </td>
 
-                      <th>Payment Terms</th>
+                      <th>Phương thức thanh toán</th>
                       <td>
                         <input
                           className="form-control"
@@ -441,10 +441,10 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
 
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={onClose}>
-                Close
+                Đóng
               </button>
               <button className="btn btn-primary" onClick={handleSave}>
-                Save changes
+                Lưu
               </button>
             </div>
           </div>

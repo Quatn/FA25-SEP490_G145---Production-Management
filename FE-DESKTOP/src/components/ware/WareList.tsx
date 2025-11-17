@@ -824,7 +824,7 @@ export const WareList: React.FC = () => {
             <div className="modal-dialog modal-lg">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Create Ware</h5>
+                  <h5 className="modal-title">Tạo mã hàng</h5>
                   <button
                     type="button"
                     className="btn-close"
