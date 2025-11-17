@@ -771,7 +771,7 @@ const PurchaseOrderList: React.FC = () => {
                           className="btn btn-outline-secondary btn-sm"
                           onClick={() => setSelected(po)}
                         >
-                          View detail
+                          Xem chi tiết
                         </button>
                         <button
                           className="btn btn-outline-info btn-sm"
@@ -783,7 +783,7 @@ const PurchaseOrderList: React.FC = () => {
                           className="btn btn-danger btn-sm"
                           onClick={() => handleDeleteFromList(po)}
                         >
-                          Delete
+                          Xóa
                         </button>
                       </div>
                     </div>
@@ -816,7 +816,7 @@ const PurchaseOrderList: React.FC = () => {
                           className="btn btn-outline-success btn-sm"
                           onClick={() => handleAddSubPO(po.id)}
                         >
-                          + Add Sub-PO (empty)
+                          + Tạo Sub-PO (trống)
                         </button>
                       </div>
                     </div>
