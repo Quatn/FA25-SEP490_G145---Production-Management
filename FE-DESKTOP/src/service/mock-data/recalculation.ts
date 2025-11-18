@@ -3,8 +3,8 @@ import { getDb } from "./mockDb";
 import { Ware } from "@/types/Ware";
 import check from "check-types";
 
-const conditionalMeasurement = (n: number | undefined | null) => {
-  return (check.null(n)) ? 0 : (check.number(n) && n > 0) ? n : NaN;
+const conditionalMeasurement = (n: number | undefined | null, ret?: number) => {
+  return (check.null(n)) ? 0 : (check.number(n) && n > 0) ? n : (ret ?? NaN);
 };
 
 const paperConsumptionCalculation = (
@@ -22,9 +22,10 @@ const paperConsumptionCalculation = (
 export function recalculatePurchaseOrderItem(
   item: Serialized<PurchaseOrderItem>,
 ): Serialized<PurchaseOrderItem> {
-  refreshWares();
-  const { wares } = getDb();
-  const ware = wares.find((w) => w.code == item.wareCode);
+  // refreshWares();
+  // const { wares } = getDb();
+  // const ware = wares.find((w) => w.code == item.ware?.code);
+  const ware = item.ware;
 
   if (check.undefined(ware)) {
     throw "Error while trying to recalculate po item data: ware not found";
@@ -32,9 +33,7 @@ export function recalculatePurchaseOrderItem(
 
   const numberOfBlanks = Math.ceil(item.amount / ware.warePerBlank);
   const longitudinalCutCount = Math.ceil(numberOfBlanks / ware.crossCutCount);
-  const runningLength = Math.floor(
-    longitudinalCutCount * ware.blankLength / 1000,
-  );
+  const runningLength = longitudinalCutCount * ware.blankLength / 1000
 
   const faceLayerPaperWeight = check.null(ware.faceLayerPaperType)
     ? null
@@ -71,28 +70,34 @@ export function recalculatePurchaseOrderItem(
     ACFlutePaperWeight,
     backLayerPaperWeight,
     totalVolume: ware.volume * item.amount,
-    totalWeight: conditionalMeasurement(faceLayerPaperWeight) +
-      conditionalMeasurement(EFlutePaperWeight) +
-      conditionalMeasurement(EBLinerLayerPaperWeight) +
-      conditionalMeasurement(BFlutePaperWeight) +
-      conditionalMeasurement(BACLinerLayerPaperWeight) +
-      conditionalMeasurement(ACFlutePaperWeight) +
-      conditionalMeasurement(backLayerPaperWeight),
+    totalWeight: conditionalMeasurement(faceLayerPaperWeight, 0) +
+      conditionalMeasurement(EFlutePaperWeight, 0) +
+      conditionalMeasurement(EBLinerLayerPaperWeight, 0) +
+      conditionalMeasurement(BFlutePaperWeight, 0) +
+      conditionalMeasurement(BACLinerLayerPaperWeight, 0) +
+      conditionalMeasurement(ACFlutePaperWeight, 0) +
+      conditionalMeasurement(backLayerPaperWeight, 0),
   };
 }
 
-function recalculateWare(ware: Serialized<Ware>): Serialized<Ware> {
+export function recalculateWare(ware?: Serialized<Ware>): Serialized<Ware> {
+  if (check.undefined(ware)) {
+    throw "Error while trying to recalculate po item data: ware not found";
+  }
+
+  const manuType = check.string(ware.wareManufacturingProcessType) ? ware.wareManufacturingProcessType : ware.wareManufacturingProcessType.code
+  const fluteType = check.string(ware.fluteCombination) ? ware.fluteCombination : ware.fluteCombination.code
   const warePerBlank = check.number(ware.warePerBlankAdjustment)
     ? ware.warePerBlankAdjustment
-    : (check.in("GHEP", ware.wareManufacturingProcessType))
+    : (check.in("GHEP", manuType))
       ? 0.5
       : 1;
 
   const flapLength: number | null = (() => {
-    if (ware.wareManufacturingProcessType === "TAM") return null;
+    if (manuType === "TAM") return null;
 
     if (
-      check.in(ware.wareManufacturingProcessType, [
+      check.in(manuType, [
         "LIEN",
         "LIEN1NAP",
         "GHEP",
@@ -105,7 +110,7 @@ function recalculateWare(ware: Serialized<Ware>): Serialized<Ware> {
       }
 
       if (
-        check.in(ware.fluteCombinationCode, [
+        check.in(fluteType, [
           "5AB",
           "5BC",
           "5CB",
@@ -115,14 +120,14 @@ function recalculateWare(ware: Serialized<Ware>): Serialized<Ware> {
           "3C",
         ])
       ) return E2 + 2;
-      else if (ware.fluteCombinationCode === "3B") return E2 + 1;
-      else if (ware.fluteCombinationCode === "3E") return E2;
-      else if (ware.fluteCombinationCode === "7CBE") return E2 + 2.5;
+      else if (fluteType === "3B") return E2 + 1;
+      else if (fluteType === "3E") return E2;
+      else if (fluteType === "7CBE") return E2 + 2.5;
       else return NaN;
     }
 
     if (
-      check.in(ware.wareManufacturingProcessType, [
+      check.in(manuType, [
         "KHAY",
         "TAM1LAN",
         "VACHU",
@@ -132,7 +137,7 @@ function recalculateWare(ware: Serialized<Ware>): Serialized<Ware> {
     }
 
     if (
-      check.in(ware.wareManufacturingProcessType, [
+      check.in(manuType, [
         "LIENCHONGNAP",
         "GHEPCHONGNAP",
       ])
@@ -146,7 +151,7 @@ function recalculateWare(ware: Serialized<Ware>): Serialized<Ware> {
 
   const blankLength: number = (() => {
     if (
-      check.in(ware.wareManufacturingProcessType, [
+      check.in(manuType, [
         "LIEN",
         "LIEN1NAP",
         "LIENCHONGNAP",
@@ -157,7 +162,7 @@ function recalculateWare(ware: Serialized<Ware>): Serialized<Ware> {
     }
 
     if (
-      check.in(ware.wareManufacturingProcessType, [
+      check.in(manuType, [
         "GHEP",
         "GHEP1NAP",
         "GHEPCHONGNAP",
@@ -167,16 +172,16 @@ function recalculateWare(ware: Serialized<Ware>): Serialized<Ware> {
         ((check.number(ware.flapAdjustment)) ? ware.flapAdjustment : 35);
     }
 
-    if (ware.wareManufacturingProcessType === "TAM") {
+    if (manuType === "TAM") {
       return ware.wareLength;
     }
 
-    if (ware.wareManufacturingProcessType === "KHAY") {
+    if (manuType === "KHAY") {
       return ware.wareWidth + 2 * ware.wareLength;
     }
 
     if (
-      check.in(ware.wareManufacturingProcessType, [
+      check.in(manuType, [
         "TAM1LAN",
         "VACHU",
       ])
@@ -190,7 +195,7 @@ function recalculateWare(ware: Serialized<Ware>): Serialized<Ware> {
 
   const blankWidth: number = (() => {
     if (
-      check.in(ware.wareManufacturingProcessType, [
+      check.in(manuType, [
         "LIEN",
         "GHEP",
         "LIENCHONGNAP",
@@ -201,7 +206,7 @@ function recalculateWare(ware: Serialized<Ware>): Serialized<Ware> {
         conditionalMeasurement(flapLength) * 2;
     }
     if (
-      check.in(ware.wareManufacturingProcessType, [
+      check.in(manuType, [
         "LIEN1NAP",
         "GHEP1NAP",
       ])
@@ -209,11 +214,11 @@ function recalculateWare(ware: Serialized<Ware>): Serialized<Ware> {
       return conditionalMeasurement(ware.wareHeight) +
         conditionalMeasurement(flapLength);
     }
-    if (ware.wareManufacturingProcessType === "TAM") {
+    if (manuType === "TAM") {
       return ware.wareWidth;
     }
     if (
-      check.in(ware.wareManufacturingProcessType, [
+      check.in(manuType, [
         "KHAY",
         "VACHU",
       ])
@@ -221,7 +226,7 @@ function recalculateWare(ware: Serialized<Ware>): Serialized<Ware> {
       return conditionalMeasurement(ware.wareHeight) +
         conditionalMeasurement(ware.wareLength) * 2;
     }
-    if (ware.wareManufacturingProcessType === "TAM1LAN") {
+    if (manuType === "TAM1LAN") {
       return conditionalMeasurement(ware.wareHeight) +
         conditionalMeasurement(ware.wareLength);
     }
@@ -234,9 +239,9 @@ function recalculateWare(ware: Serialized<Ware>): Serialized<Ware> {
 
   const paperWidth = (() => {
     const width = blankWidth * crossCutCount +
-      ((ware.fluteCombinationCode === "7CBE")
+      ((fluteType === "7CBE")
         ? 30
-        : check.in(ware.fluteCombinationCode, ["2E", "3E", "2B", "3B"])
+        : check.in(fluteType, ["2E", "3E", "2B", "3B"])
           ? 20
           : 25);
 

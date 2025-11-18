@@ -1,5 +1,14 @@
 import { PurchaseOrderItem } from "./PurchaseOrderItem";
 
+export enum OrderStatus {
+  NOTSTARTED = "NOTSTARTED",
+  RUNNING = "RUNNING",
+  COMPLETED = "COMPLETED",
+  OVERCOMPLETED = "OVERCOMPLETED",
+  PAUSED = "PAUSED",
+  CANCELLED = "CANCELLED",
+}
+
 export interface ManufacturingOrder extends BaseSchema {
   code: string;
   manufacturingDate: Date;
@@ -10,6 +19,7 @@ export interface ManufacturingOrder extends BaseSchema {
   amount: number;
   manufacturingDirective: string | null;
   note: string;
+  overallStatus: OrderStatus;
 
   purchaseOrderItem?: PurchaseOrderItem;
 }

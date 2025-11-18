@@ -1,8 +1,9 @@
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
-import { createListCollection, ListCollection } from "@chakra-ui/react";
+import { createListCollection, Highlight, ListCollection } from "@chakra-ui/react";
 import { CellContext } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
 import { ManufacturingOrderTableDataType } from "./tableDefinition";
+import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
 
 export enum ManufacturingTableEditableCellInputTypes {
   text = "TEXT",
@@ -26,10 +27,19 @@ export type ManufacturingTableMeta = {
   allowEdit?: boolean;
   updateData?: (rowIndex: number, columnId: string, value: unknown) => void;
   editableCellNode?: (props: ManufacturingTableEditableCellProps) => React.ReactNode
+  query?: string;
 };
 
 type NodeCellProps = {
   context: CellContext<ManufacturingOrderTableDataType, unknown>
+}
+
+const HighlightCell = (props: NodeCellProps & { value: string | undefined }) => {
+  const { table } = props.context;
+  const meta = (table.options.meta as ManufacturingTableMeta | undefined)
+  const query = meta?.query ?? ""
+
+  return <Highlight query={[query]} styles={{ bg: "yellow.emphasized" }}>{props.value ?? ""}</Highlight>;
 }
 
 const NoteCell = (props: NodeCellProps) => {
@@ -85,11 +95,11 @@ const RequestedDatetimeCell = (props: NodeCellProps) => {
 
   if (meta?.allowEdit) {
     if (meta.editableCellNode) {
-      return meta.editableCellNode({ value, updateTableData, setValue, onBlur, type: ManufacturingTableEditableCellInputTypes.text })
+      return meta.editableCellNode({ value, updateTableData, setValue, onBlur, type: ManufacturingTableEditableCellInputTypes.date })
     }
   }
 
-  return value;
+  return formatDateToDDMMYYYY(value as string);
 }
 
 const ManufacturingDateCell = (props: NodeCellProps) => {
@@ -115,11 +125,13 @@ const ManufacturingDateCell = (props: NodeCellProps) => {
 
   if (meta?.allowEdit) {
     if (meta.editableCellNode) {
-      return meta.editableCellNode({ value, updateTableData, setValue, onBlur, type: ManufacturingTableEditableCellInputTypes.text })
+      console.log(value)
+      console.log(new Date(value))
+      return meta.editableCellNode({ value: new Date(value), updateTableData, setValue, onBlur, type: ManufacturingTableEditableCellInputTypes.date })
     }
   }
 
-  return value;
+  return formatDateToDDMMYYYY(value as string);
 }
 
 const corrugatorLines = [{ label: "Dàn 5", value: "5" }, { label: "Dàn 7", value: "7" }]
@@ -224,6 +236,7 @@ const ManufacturingDirectiveCell = (props: NodeCellProps) => {
 }
 
 export const manufacturingOrderTableCells = {
+  highlight: HighlightCell,
   note: NoteCell,
   requestedDatetime: RequestedDatetimeCell,
   manufacturingDate: ManufacturingDateCell,

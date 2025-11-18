@@ -51,23 +51,23 @@ export default function CreatePageManufacturingOrderTable(
 
   const [createOrders] = useCreateManyManufacturingOrdersMutation();
 
-  const { selectedManufacturingOrders } = useSelectedOrdersState();
+  // const { selectedManufacturingOrders } = useSelectedOrdersState();
 
-  if (check.undefined(selectedManufacturingOrders) || selectedManufacturingOrders.length < 1) {
-    return (
-      <Center>
-        <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
-          <Stack alignItems={"center"}>
-            <Text>Các lệnh sẽ được tạo sẽ được hiển thị ở đây</Text>
-            <Text>Hãy chọn PO Item bên trên</Text>
-          </Stack>
-        </Box>
-      </Center>
-    );
-  }
+  // if (check.undefined(selectedManufacturingOrders) || selectedManufacturingOrders.length < 1) {
+    // return (
+      // <Center>
+        // <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
+          // <Stack alignItems={"center"}>
+            // <Text>Các lệnh sẽ được tạo sẽ được hiển thị ở đây</Text>
+            // <Text>Hãy chọn PO Item bên trên</Text>
+          // </Stack>
+        // </Box>
+      // </Center>
+    // );
+  // }
 
-  // const moPaginatedList = fullDetailMOsResponse?.data;
-  const moPaginatedList = selectedManufacturingOrders;
+  const moPaginatedList = fullDetailMOsResponse?.data;
+  // const moPaginatedList = selectedManufacturingOrders;
 
   if (isFetchingList) {
     return <Text>Loading table</Text>;

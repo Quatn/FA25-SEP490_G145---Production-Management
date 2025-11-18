@@ -31,9 +31,9 @@ export const getCorrugatorLine = (
     if (
       check.like({ customer: customerCode, combination: fluteCommination }, o)
     ) {
-      return 7;
+      return "7";
     }
   }
 
-  return check.in(fluteCommination, specialFluteComminations) ? 7 : 5;
+  return check.in(fluteCommination, specialFluteComminations) ? "7" : "5";
 };

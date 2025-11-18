@@ -50,6 +50,8 @@ import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
 import { DeleteResult } from "@/common/dto/delete-result.dto";
 import { PatchResult } from "@/common/dto/patch-result.dto";
 import check from "check-types";
+import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type.schema";
+import { fullDetailsFilterAggregationPipeline } from "./aggregate-pipes/full-details-filter";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -67,7 +69,7 @@ export class ManufacturingOrderService {
   ) { }
 
   async findAll() {
-    return await this.manufacturingOrderModel.find();
+    return await this.manufacturingOrderModel.find({}).exec();
   }
 
   /**
@@ -93,6 +95,49 @@ export class ManufacturingOrderService {
 
     const skip = (page - 1) * limit;
     const filter: FilterQuery<ManufacturingOrderDocument> = {};
+
+    let defaultStartDate: Date | undefined = undefined;
+    let defaultEndDate: Date | undefined = undefined;
+
+    if (!mfg_date_from && !mfg_date_to) {
+      const today = new Date();
+
+      const getMondayOfWeek = (date: Date, weekOffset: number) => {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1) + weekOffset * 7;
+        d.setDate(diff);
+        d.setHours(0, 0, 0, 0);
+        return d;
+      };
+
+      const getSundayOfWeek = (date: Date, weekOffset: number) => {
+        const monday = getMondayOfWeek(date, weekOffset);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+        return sunday;
+      };
+
+      defaultStartDate = getMondayOfWeek(today, -2); // Monday of week -2
+      defaultEndDate = getSundayOfWeek(today, -1); // Sunday of week -1
+    }
+
+    // Apply default or user custom filter
+    if (mfg_date_from || mfg_date_to || defaultStartDate !== undefined) {
+      filter.manufacturingDate = {};
+
+      filter.manufacturingDate.$gte = mfg_date_from
+        ? new Date(mfg_date_from)
+        : (defaultStartDate as Date);
+
+      const toDate = mfg_date_to
+        ? new Date(mfg_date_to)
+        : (defaultEndDate as Date);
+
+      toDate.setHours(23, 59, 59, 999);
+      filter.manufacturingDate.$lte = toDate;
+    }
 
     if (search_code) {
       filter.code = { $regex: search_code, $options: "i" };
@@ -489,9 +534,8 @@ export class ManufacturingOrderService {
     const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
     const warePath = PurchaseOrderItemSchema.path("ware");
     const fluteCombinationPath = WareSchema.path("fluteCombination");
-    const manufacturingProcessesPath = WareSchema.path(
-      "manufacturingProcesses",
-    );
+    const wareFinishingProcessTypePath = WareSchema.path("finishingProcesses");
+    const printColorPath = WareSchema.path("printColors");
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
     const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
@@ -506,7 +550,8 @@ export class ManufacturingOrderService {
             path: warePath.path,
             populate: [
               { path: fluteCombinationPath.path },
-              { path: manufacturingProcessesPath.path },
+              { path: wareFinishingProcessTypePath.path },
+              { path: printColorPath.path },
             ],
           },
           {
@@ -687,6 +732,7 @@ export class ManufacturingOrderService {
   }): Promise<PaginatedList<FullDetailManufacturingOrderDto>> {
     const skip = (page - 1) * limit;
 
+    /*
     const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
     const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
     const warePath = PurchaseOrderItemSchema.path("ware");
@@ -698,30 +744,37 @@ export class ManufacturingOrderService {
     const wareManufacturingProcessTypePath = WareSchema.path(
       "wareManufacturingProcessType",
     );
+    const printColorsPath = WareSchema.path("printColors");
+    const corrugatorProcessPath =
+      ManufacturingOrderSchema.path("corrugatorProcess");
 
-    const populate = {
-      path: poiPath.path,
-      populate: [
-        {
-          path: warePath.path,
-          populate: [
-            fluteCombinationPath,
-            finishingProcessesPath,
-            wareManufacturingProcessTypePath,
-          ],
-        },
-        {
-          path: subpoPath.path,
-          populate: [
-            productPath,
-            {
-              path: poPath.path,
-              populate: { path: customerPath.path },
-            },
-          ],
-        },
-      ],
-    };
+    const populate = [
+      corrugatorProcessPath,
+      {
+        path: poiPath.path,
+        populate: [
+          {
+            path: warePath.path,
+            populate: [
+              fluteCombinationPath,
+              finishingProcessesPath,
+              wareManufacturingProcessTypePath,
+              printColorsPath,
+            ],
+          },
+          {
+            path: subpoPath.path,
+            populate: [
+              productPath,
+              {
+                path: poPath.path,
+                populate: { path: customerPath.path },
+              },
+            ],
+          },
+        ],
+      },
+    ];
 
     const [totalItems, data] = await Promise.all([
       this.manufacturingOrderModel.countDocuments(filter),
@@ -732,6 +785,23 @@ export class ManufacturingOrderService {
         .populate(populate)
         .lean(),
     ]);
+    */
+
+    const pipeline = fullDetailsFilterAggregationPipeline({
+      filter,
+      skip,
+      limit,
+    });
+
+    const [data, countArr] = await Promise.all([
+      this.manufacturingOrderModel.aggregate([...pipeline]),
+      this.manufacturingOrderModel.aggregate([
+        ...pipeline.filter((stage) => !("$skip" in stage || "$limit" in stage)),
+        { $count: "total" },
+      ]),
+    ]);
+    const totalItems =
+      (countArr[0] as { total: number } | undefined)?.total ?? 0;
 
     const totalPages = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
@@ -813,7 +883,7 @@ export class ManufacturingOrderService {
       .catch(() => undefined);
     const codeGenerator = new MOCodeGenerator(lastOrder?.code);
 
-    const mos = dtos.map((poi, index) => ({
+    const mos: ManufacturingOrder[] = dtos.map((poi, index) => ({
       code: codeGenerator.getCode(index),
       purchaseOrderItem: poi.purchaseOrderItemId,
       overallStatus: OrderStatus.NOTSTARTED,
@@ -837,35 +907,47 @@ export class ManufacturingOrderService {
       isDeleted: false,
     }));
 
-    const result = await this.manufacturingOrderModel.create(mos);
+    const moCreateRes = await this.manufacturingOrderModel.create(mos);
 
-    const corrugatorProcessDocs: CorrugatorProcess[] = result.map((mo) => ({
-      manufacturingOrder: mo._id,
-      manufacturedAmount: 0,
-      status: CorrugatorProcessStatus.NOTSTARTED,
-      note: "",
-      isDeleted: false,
-    }));
+    const corrugatorProcessDocs: CorrugatorProcess[] = moCreateRes.map(
+      (mo) => ({
+        manufacturingOrder: mo._id,
+        manufacturedAmount: 0,
+        status: CorrugatorProcessStatus.NOTSTARTED,
+        note: "",
+        isDeleted: false,
+      }),
+    );
 
-    const result2 = await this.corrugatorProcessModel.create(
+    const fpCreateRes = await this.corrugatorProcessModel.create(
       corrugatorProcessDocs,
     );
 
-    for (const res of result2) {
-      const id = res._id;
+    for (const res of fpCreateRes) {
+      const id = res.manufacturingOrder;
       await this.manufacturingOrderModel.findOneAndUpdate(
         { _id: id },
-        { corrugatorProcess: id },
+        { corrugatorProcess: res._id },
       );
     }
 
+    /* bro....
     // TODO: create finishing processes
+    const finishingProcesses: WareFinishingProcessType[][] = moCreateRes.map((mo, index) => 
+      mo.processes.map((p) => ({
+        code: p,
+        process
+        note: "",
+        isDeleted: false,
+      }))
+    );
+    */
 
     return {
       requestedAmount: dtos.length,
-      createdAmount: result.length,
+      createdAmount: moCreateRes.length,
       echo: {
-        codes: result.map((item) => item.code),
+        codes: moCreateRes.map((item) => item.code),
       },
     };
   }

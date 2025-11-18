@@ -45,6 +45,8 @@ import { AssembledUpdateManufacturingOrderRequestDto } from "./dto/update-order-
 import mongoose from "mongoose";
 import { FindAllMoQueryDto } from "./dto/find-all-mo-query.dto";
 import { UpdateOverallStatusDto } from "./dto/update-overall-status.dto";
+import { QueryListFullDetailsManufacturingOrderRequestDto } from "./dto/query-list-full-details.dto";
+import check from "check-types";
 
 @Controller("manufacturing-order")
 // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -59,21 +61,22 @@ export class ManufacturingOrderController {
     private poiService: PurchaseOrderItemService,
   ) { }
 
-  @Get('tracking-list')
+  @Get("tracking-list")
   @ApiOperation({
-    summary: 'List all manufacturing orders (populated, filtered, paginated)',
+    summary: "List all manufacturing orders (populated, filtered, paginated)",
   })
   async findAll(
     // 1. Dùng @Query() để nhận DTO chứa các tham số filter/pagination
     @Query() queryDto: FindAllMoQueryDto,
-  ): Promise<BaseResponse<any>> { // 2. Cập nhật kiểu trả về (hoặc dùng 'any')
+  ): Promise<BaseResponse<any>> {
+    // 2. Cập nhật kiểu trả về (hoặc dùng 'any')
 
     // 3. Truyền DTO vào service
     const paginatedResult = await this.moService.findAllPopulated(queryDto);
 
     return {
       success: true,
-      message: 'Fetch successful',
+      message: "Fetch successful",
       // 4. Trả về toàn bộ đối tượng phân trang (data, total, page, limit)
       data: paginatedResult,
     };
@@ -106,16 +109,16 @@ export class ManufacturingOrderController {
     };
   }
 
-  @Patch(':id/status') // Endpoint mới: PATCH /manufacturing-order/some-id/status
-  @ApiOperation({ summary: 'Update MO overall status (Pause/Cancel)' })
+  @Patch(":id/status") // Endpoint mới: PATCH /manufacturing-order/some-id/status
+  @ApiOperation({ summary: "Update MO overall status (Pause/Cancel)" })
   async updateOverallStatus(
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body() body: UpdateOverallStatusDto,
   ): Promise<BaseResponse<ManufacturingOrderDocument>> {
     const result = await this.moService.updateOverallStatus(id, body);
     return {
       success: true,
-      message: 'Cập nhật trạng thái tổng thể thành công',
+      message: "Cập nhật trạng thái tổng thể thành công",
       data: result,
     };
   }
@@ -126,9 +129,23 @@ export class ManufacturingOrderController {
   // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
   @ApiResponseWith(FullDetailManufacturingOrderDto, { paginated: true })
   async queryListFullDetails(
-    @Query() query: QueryListManufacturingOrderRequestDto,
+    @Query() query: QueryListFullDetailsManufacturingOrderRequestDto,
   ): Promise<QueryListManufacturingOrderResponseDto> {
-    const docs = await this.moService.queryListFullDetails(query);
+    const docs = await this.moService.queryListFullDetails({
+      ...query,
+      filter: check.undefined(query.query)
+        ? {}
+        : {
+          $or: [
+            { code: { $regex: query.query, $options: "i" } },
+            { "purchaseOrderItem.code": { $regex: query.query, $options: "i" } },
+            { "purchaseOrderItem.ware.code": { $regex: query.query, $options: "i" } },
+            // { "purchaseOrderItem.subPurchaseOrder.product.code": { $regex: query.query, $options: "i" } },
+            // { "purchaseOrderItem.subPurchaseOrder.purchaseOrder.code": { $regex: query.query, $options: "i" } },
+            { "purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code": { $regex: query.query, $options: "i" } },
+          ],
+        },
+    });
     return {
       success: true,
       message: "Fetch successful",
@@ -163,7 +180,7 @@ export class ManufacturingOrderController {
     const result = await this.moService.createOne(body);
     return {
       success: true,
-      message: 'Fetch successful',
+      message: "Fetch successful",
       data: result,
     };
   }

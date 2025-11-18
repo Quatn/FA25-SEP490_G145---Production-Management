@@ -35,19 +35,6 @@ export class CreateProductDto {
   description?: string;
 
   @ApiProperty()
-  @IsNumber()
-  productLength: number;
-
-  @ApiProperty()
-  @IsNumber()
-  productWidth: number;
-
-  @ApiProperty()
-  @IsOptional()
-  @IsNumber()
-  productHeight?: number;
-
-  @ApiProperty()
   @IsOptional()
   @IsString()
   image?: string;

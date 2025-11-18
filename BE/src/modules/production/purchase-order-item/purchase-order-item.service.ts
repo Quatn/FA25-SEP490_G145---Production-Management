@@ -78,9 +78,6 @@ export class PurchaseOrderItemService {
     const warePath = PurchaseOrderItemSchema.path("ware");
     const fluteCombinationPath = WareSchema.path("fluteCombination");
     const finishingProcessesPath = WareSchema.path("finishingProcesses");
-    const manufacturingProcessesPath = WareSchema.path(
-      "manufacturingProcesses",
-    );
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
     const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
@@ -94,7 +91,6 @@ export class PurchaseOrderItemService {
         populate: [
           fluteCombinationPath,
           finishingProcessesPath,
-          manufacturingProcessesPath,
           wareManufacturingProcessTypePath,
         ],
       },
@@ -150,9 +146,6 @@ export class PurchaseOrderItemService {
     const warePath = PurchaseOrderItemSchema.path("ware");
     const fluteCombinationPath = WareSchema.path("fluteCombination");
     const finishingProcessesPath = WareSchema.path("finishingProcesses");
-    const manufacturingProcessesPath = WareSchema.path(
-      "manufacturingProcesses",
-    );
     const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
     const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
@@ -164,7 +157,6 @@ export class PurchaseOrderItemService {
         populate: [
           fluteCombinationPath,
           finishingProcessesPath,
-          manufacturingProcessesPath,
           wareManufacturingProcessTypePath,
         ],
       },

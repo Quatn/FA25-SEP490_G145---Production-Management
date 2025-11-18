@@ -50,7 +50,7 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   })
   @IsArray()
   @IsMongoId({ each: true })
-  processes: Types.ObjectId[];
+  processes: Types.ObjectId[] | ManufacturingOrderProcess[];
 
   @ApiProperty({
     description: "Corrugator Process ObjectId",
@@ -93,10 +93,11 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   @IsDate()
   requestedDatetime?: Date | null;
 
+  // This should have its own table or at least be an enum
   @ApiProperty()
   @Prop({ required: true })
   @IsNumber()
-  corrugatorLine: number;
+  corrugatorLine: string;
 
   @ApiProperty()
   @Prop({ required: false, type: Number, default: null })
