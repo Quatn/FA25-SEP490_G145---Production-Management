@@ -61,7 +61,7 @@ const getCommonPinningStyles = (column: Column<ManufacturingOrderTableDataType>)
 export default function CreatePageManufacturingOrderTable(
   props: TableProps,
 ) {
-  const { groupType, selectedPOIsIds } = useManufacturingOrderCreatePageState();
+  const { selectedPOIsIds } = useManufacturingOrderCreatePageState();
   const dispatch = useManufacturingOrderCreatePageDispatch();
 
   const [tab, setTab] = useState<ManufacturingTableTabType>("all");
@@ -98,14 +98,10 @@ export default function CreatePageManufacturingOrderTable(
     }
   }, [fullDetailMOsResponse?.data])
 
-  console.log(moPaginatedList?.data)
-
   const tableData = useMemo<ManufacturingOrderTableDataType[]>(() => (moPaginatedList?.data?.map((mo) => ({
     ...mo,
     isEdited: false,
   })) ?? []), [moPaginatedList?.data])
-
-  console.log(tableData)
 
   const table = useReactTable({
     data: tableData,
@@ -117,8 +113,7 @@ export default function CreatePageManufacturingOrderTable(
       },
     },
     getRowId: (row) => row._id,
-  }
-  );
+  });
 
   const [createOrders] = useCreateManyManufacturingOrdersMutation();
 

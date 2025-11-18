@@ -104,7 +104,7 @@ export default function ManufacturingOrderCreatePageSelectedOrdersDetails() {
       <Tabs.Content value="members">
         <CreatePageManufacturingOrderTable />
       </Tabs.Content>
-      <Tabs.Content value="projects">{/*<MaterialRequirementContainer />*/}</Tabs.Content>
+      <Tabs.Content value="projects"><MaterialRequirementContainer /></Tabs.Content>
       <Tabs.Content value="tasks">
       </Tabs.Content>
     </Tabs.Root>
