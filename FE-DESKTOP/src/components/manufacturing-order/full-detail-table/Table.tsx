@@ -475,7 +475,10 @@ export default function ManufacturingOrderTable(
                 Đã sửa {editedItemsNum} lệnh
               </ActionBar.SelectionTrigger>
               <ActionBar.Separator />
-              <Button colorPalette={"blue"} size="sm" onClick={handleUpdateOrders}>
+              <Button colorPalette={"blue"} size="sm" onClick={() => {
+                dispatch({ type: "SET_PREPARED_SUBMIT_ASK_TEXT", payload: `Lưu tất cả ${editedItemsNum} lệnh?` })
+                dispatch({ type: "SET_PREPARED_SUBMIT_FUNCTION", payload: handleUpdateOrders })
+              }}>
                 Lưu tất cả
               </Button>
               <Button colorPalette={"yellow"} size="sm" onClick={forceDataReset}>
@@ -484,6 +487,7 @@ export default function ManufacturingOrderTable(
             </ActionBar.Content>
           </ActionBar.Positioner>
         </Portal>
-      </ActionBar.Root>    </Box >
+      </ActionBar.Root>
+    </Box >
   );
 }

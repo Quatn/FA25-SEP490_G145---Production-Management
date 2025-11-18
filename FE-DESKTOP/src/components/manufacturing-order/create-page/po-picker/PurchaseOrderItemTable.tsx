@@ -164,8 +164,8 @@ export default function PurchaseOrderItemPickerTable(
             {sorted.map((item) => (
               <Table.Row
                 key={item._id}
-                colorPalette={"gray"}
-                bg={item.isManufactured ? "gray.muted" : "gray.subtle"}
+                colorPalette={item.isManufactured ? "green" : "gray"}
+                bg={item.isManufactured ? "colorPalette.muted" : "colorPalette.subtle"}
                 h="50px"
               >
                 <Table.Cell>

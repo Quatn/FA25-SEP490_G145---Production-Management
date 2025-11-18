@@ -39,6 +39,7 @@ interface PageState {
   selectedPOIsIds: string[];
   hasUnsavedChanges: boolean;
   displayUnsavedChangeWarning: boolean;
+  preparedSubmitFunction?: () => void;
 }
 
 type POTreeActionPayload = {
@@ -122,6 +123,7 @@ type PageAction =
     payload: { id: string; tree: TreeNode[] };
   }
   | { type: "RESET_TREE_STATE" }
+  | { type: "SET_PREPARED_SUBMIT_FUNCTION"; payload: (() => void) | undefined }
   | { type: "RESET" };
 
 const initialState: PageState = {
@@ -213,6 +215,8 @@ function pageReducer(state: PageState, action: PageAction): PageState {
         selectedPOIsIds: [],
         hasUnsavedChanges: false,
       };
+    case "SET_PREPARED_SUBMIT_FUNCTION":
+      return { ...state, preparedSubmitFunction: action.payload }
     case "RESET":
       return initialState;
     default:

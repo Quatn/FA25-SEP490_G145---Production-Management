@@ -1,3 +1,5 @@
+"use client"
+
 import { ManufacturingOrderCreatePageComponents as CreatePage } from "@/components/manufacturing-order/create-page/components";
 import { ManufacturingOrderCreatePageProvider } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { Box, Stack, Text } from "@chakra-ui/react";
@@ -55,6 +57,7 @@ export default function PurchaseOrderCreatePage() {
           </Box>
         </Box>
       </Box>
+      <CreatePage.ConfirmDialog />
     </ManufacturingOrderCreatePageProvider>
   );
 }

@@ -1,3 +1,4 @@
+import ManufacturingOrderCreatePageConfirmSaveDialog from "./ConfirmSaveDialog";
 import PurchaseOrderItemListGroupTypeControl from "./po-picker/GroupTypeControl";
 import PurchaseOrderItemSelector from "./po-picker/PurchaseOrderItemSelector";
 import PurchaseOrderItemSelectorItem from "./po-picker/PurchaseOrderItemSelectorItem";
@@ -13,4 +14,5 @@ export const ManufacturingOrderCreatePageComponents = {
   SelectedOrderDetailsContainer:
     ManufacturingOrderCreatePageSelectedOrdersDetails,
   SelectedOrdersCounter: ManufacturingOrderCreatePageSelectedOrdersCounter,
+  ConfirmDialog: ManufacturingOrderCreatePageConfirmSaveDialog,
 };
