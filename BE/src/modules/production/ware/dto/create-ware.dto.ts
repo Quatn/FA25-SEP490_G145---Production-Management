@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { Transform, Type } from "class-transformer";
 import {
   IsArray,
   IsMongoId,
@@ -64,40 +65,56 @@ export class CreateWareDto {
   @IsNumber()
   crossCutCountAdjustment?: number | null;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value === "" ? undefined : value)
+  @Type(() => Number)
   @IsNumber()
-  @IsNotEmpty()
-  warePerBlank: number;
-
-  @ApiProperty()
-  @IsNumber()
-  @IsNotEmpty()
-  blankWidth: number;
-
-  @ApiProperty()
-  @IsNumber()
-  @IsNotEmpty()
-  blankLength: number;
+  warePerBlank?: number | null;
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @Transform(({ value }) => value === "" ? undefined : value)
+  @Type(() => Number)
+  @IsNumber()
+  blankWidth?: number | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value === "" ? undefined : value)
+  @Type(() => Number)
+  @IsNumber()
+  blankLength?: number | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => (value === "" ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
   flapLength?: number | null;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value === "" ? undefined : value)
+  @Type(() => Number)
   @IsNumber()
-  @IsNotEmpty()
-  margin: number;
+  margin?: number | null;
 
-  @ApiProperty()
+  // make paperWidth optional (no longer required by frontend)
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value === "" ? undefined : value)
+  @Type(() => Number)
   @IsNumber()
-  @IsNotEmpty()
-  paperWidth: number;
+  paperWidth?: number | null;
 
-  @ApiProperty()
+  // make crossCutCount optional (no longer required by frontend)
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value === "" ? undefined : value)
+  @Type(() => Number)
   @IsNumber()
-  @IsNotEmpty()
-  crossCutCount: number;
+  crossCutCount?: number | null;
 
   @ApiProperty({ required: false })
   @IsOptional()
