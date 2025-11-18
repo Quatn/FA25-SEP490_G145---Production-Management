@@ -5,15 +5,44 @@ import {
   IsOptional,
   IsString,
   IsArray,
+  IsObject,
 } from "class-validator";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import mongoose, { HydratedDocument, Types } from "mongoose";
 import { BaseDenormalizedSchema } from "@/common/schemas/base.denormalized.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
 import { ManufacturingOrderProcess } from "./manufacturing-order-process.schema";
-import { CorrugatorProcess } from "./corrugator-process.schema";
 import { PurchaseOrderItem } from "./purchase-order-item.schema";
 import { ApiProperty } from "@nestjs/swagger";
+
+export enum CorrugatorProcessStatus {
+  NOTSTARTED = "NOTSTARTED",
+  RUNNING = "RUNNING",
+  COMPLETED = "COMPLETED",
+  OVERCOMPLETED = "OVERCOMPLETED",
+  PAUSED = "PAUSED",
+  CANCELLED = "CANCELLED",
+}
+
+export class CorrugatorProcess {
+  // Số lượng đã sản xuất
+  @Prop({ required: true, default: 0 })
+  manufacturedAmount: number;
+
+  // Trạng thái (Tương tự MO)
+  @Prop({
+    required: true,
+    enum: CorrugatorProcessStatus,
+    default: CorrugatorProcessStatus.NOTSTARTED,
+  })
+  status: CorrugatorProcessStatus;
+
+  // Ghi chú
+  @Prop({ required: false, default: "" })
+  note: string;
+}
+
+export type CorrugatorProcessDocument = HydratedDocument<CorrugatorProcess>;
 
 export enum OrderStatus {
   NOTSTARTED = "NOTSTARTED",
@@ -53,20 +82,19 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   processes: Types.ObjectId[];
 
   @ApiProperty({
-    description: "Corrugator Process ObjectId",
+    description: "Corrugator Process Object",
     type: String,
   })
   @Prop({
     required: true,
-    type: Types.ObjectId,
-    ref: CorrugatorProcess.name,
   })
-  @IsMongoId()
-  corrugatorProcess: Types.ObjectId | CorrugatorProcess;
+  @IsObject()
+  corrugatorProcess: CorrugatorProcess;
 
   @ApiProperty({
     type: String,
-    description: "ObjectId normally, populated PurchaseOrderItem when populated",
+    description:
+      "ObjectId normally, populated PurchaseOrderItem when populated",
   })
   @Prop({
     required: true,
@@ -122,14 +150,12 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   note?: string;
 }
 
-export type ManufacturingOrderDocument =
-  HydratedDocument<ManufacturingOrder>;
+export type ManufacturingOrderDocument = HydratedDocument<ManufacturingOrder>;
 
-export const ManufacturingOrderSchema = SchemaFactory.createForClass(
-  ManufacturingOrder,
-).plugin(softDeletePlugin);
+export const ManufacturingOrderSchema =
+  SchemaFactory.createForClass(ManufacturingOrder).plugin(softDeletePlugin);
 
 ManufacturingOrderSchema.index(
   { code: 1 },
-  { unique: true, partialFilterExpression: { isDeleted: false } }
+  { unique: true, partialFilterExpression: { isDeleted: false } },
 );

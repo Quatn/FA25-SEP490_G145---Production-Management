@@ -2,10 +2,12 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from "@nestjs/common";
 import mongoose, { Model, MongooseError, Types, FilterQuery } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import {
+  CorrugatorProcessStatus,
   ManufacturingOrder,
   ManufacturingOrderDocument,
   ManufacturingOrderSchema,
@@ -23,6 +25,7 @@ import { PaginatedList } from "@/common/dto/paginated-list.dto";
 import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
 import {
   PurchaseOrderItem,
+  PurchaseOrderItemDocument,
   PurchaseOrderItemSchema,
 } from "../schemas/purchase-order-item.schema";
 import { SubPurchaseOrderSchema } from "../schemas/sub-purchase-order.schema";
@@ -38,11 +41,11 @@ import {
   ManufacturingOrderProcessDocument,
   ProcessStatus,
 } from "../schemas/manufacturing-order-process.schema";
-import {
-  CorrugatorProcess,
-  CorrugatorProcessDocument,
-  CorrugatorProcessStatus,
-} from "../schemas/corrugator-process.schema";
+// import {
+//   CorrugatorProcess,
+//   CorrugatorProcessDocument,
+//   CorrugatorProcessStatus,
+// } from "../schemas/corrugator-process.schema";
 import { FindAllMoQueryDto } from "./dto/find-all-mo-query.dto";
 import { UpdateOverallStatusDto } from "./dto/update-overall-status.dto";
 import { OrderFinishingProcess } from "../schemas/order-finishing-process.schema";
@@ -50,6 +53,9 @@ import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
 import { DeleteResult } from "@/common/dto/delete-result.dto";
 import { PatchResult } from "@/common/dto/patch-result.dto";
 import check from "check-types";
+import { isRefPopulated } from "@/common/utils/populate-check";
+import { UpdateManyCorrugatorProcessesDto } from "./dto/update-many-corrugator-processes.dto";
+import { UpdateCorrugatorProcessDto } from "./dto/update-corrugator-process.dto";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -62,8 +68,8 @@ export class ManufacturingOrderService {
     private readonly orderFinishingProcessModel: Model<OrderFinishingProcess>,
     @InjectModel(ManufacturingOrderProcess.name)
     private readonly manufacturingOrderProcessModel: Model<ManufacturingOrderProcessDocument>,
-    @InjectModel(CorrugatorProcess.name)
-    private readonly corrugatorProcessModel: Model<CorrugatorProcessDocument>,
+    // @InjectModel(CorrugatorProcess.name)
+    // private readonly corrugatorProcessModel: Model<CorrugatorProcessDocument>,
   ) {}
 
   async findAll() {
@@ -146,6 +152,11 @@ export class ManufacturingOrderService {
     if (overallStatus) {
       filter.overallStatus = overallStatus;
     }
+
+    if (corrugatorProcessStatus) {
+      filter["corrugatorProcess.status"] = corrugatorProcessStatus;
+    }
+
     if (mfg_date_from || mfg_date_to) {
       filter.manufacturingDate = {};
       if (mfg_date_from) {
@@ -216,21 +227,23 @@ export class ManufacturingOrderService {
           preserveNullAndEmptyArrays: true,
         },
       },
+      //Hiện tại bỏ
       // Lookup corrugatorProcess để filter theo status
-      {
-        $lookup: {
-          from: "corrugatorprocesses",
-          localField: "corrugatorProcess",
-          foreignField: "_id",
-          as: "corrugatorProcessData",
-        },
-      },
-      {
-        $unwind: {
-          path: "$corrugatorProcessData",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
+      // {
+      //   $lookup: {
+      //     from: "corrugatorprocesses",
+      //     localField: "corrugatorProcess",
+      //     foreignField: "_id",
+      //     as: "corrugatorProcessData",
+      //   },
+      // },
+      // {
+      //   $unwind: {
+      //     path: "$corrugatorProcessData",
+      //     preserveNullAndEmptyArrays: true,
+      //   },
+      // },
+
       // Lookup subPurchaseOrder để filter theo customer
       {
         $lookup: {
@@ -291,14 +304,14 @@ export class ManufacturingOrderService {
       } as any);
     }
 
-    // Filter theo corrugatorProcessStatus nếu có
-    if (corrugatorProcessStatus) {
-      pipeline.push({
-        $match: {
-          "corrugatorProcessData.status": corrugatorProcessStatus,
-        },
-      } as any);
-    }
+    // Hiện tại bỏ filter theo corrugatorProcessStatus nếu có
+    // if (corrugatorProcessStatus) {
+    //   pipeline.push({
+    //     $match: {
+    //       "corrugatorProcessData.status": corrugatorProcessStatus,
+    //     },
+    //   } as any);
+    // }
 
     // Filter theo customer nếu có
     if (customer) {
@@ -327,7 +340,6 @@ export class ManufacturingOrderService {
           statusOrder: {
             $switch: {
               branches: [
-                // <-- THAY ĐỔI: Đã xóa OVERCOMPLETED và sắp xếp lại
                 {
                   case: { $eq: ["$overallStatus", OrderStatus.RUNNING] },
                   then: 1,
@@ -362,7 +374,7 @@ export class ManufacturingOrderService {
     // Tính lại total sau khi filter corrugatorProcessStatus, paperWidth, customer, và fluteCombination
     let total = await this.manufacturingOrderModel.countDocuments(filter);
     if (
-      corrugatorProcessStatus ||
+      // corrugatorProcessStatus ||
       (paperWidth !== undefined && paperWidth !== null) ||
       customer ||
       fluteCombination
@@ -413,20 +425,22 @@ export class ManufacturingOrderService {
             preserveNullAndEmptyArrays: true,
           },
         },
-        {
-          $lookup: {
-            from: "corrugatorprocesses",
-            localField: "corrugatorProcess",
-            foreignField: "_id",
-            as: "corrugatorProcessData",
-          },
-        },
-        {
-          $unwind: {
-            path: "$corrugatorProcessData",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
+        //Bỏ lookup corrugatorProcess
+        // {
+        //   $lookup: {
+        //     from: "corrugatorprocesses",
+        //     localField: "corrugatorProcess",
+        //     foreignField: "_id",
+        //     as: "corrugatorProcessData",
+        //   },
+        // },
+        // {
+        //   $unwind: {
+        //     path: "$corrugatorProcessData",
+        //     preserveNullAndEmptyArrays: true,
+        //   },
+        // },
+
         // Lookup subPurchaseOrder để filter theo customer
         {
           $lookup: {
@@ -487,14 +501,14 @@ export class ManufacturingOrderService {
         });
       }
 
-      // Thêm filter corrugatorProcessStatus nếu có
-      if (corrugatorProcessStatus) {
-        countPipeline.push({
-          $match: {
-            "corrugatorProcessData.status": corrugatorProcessStatus,
-          },
-        });
-      }
+      // Bỏ filter corrugatorProcessStatus nếu có
+      // if (corrugatorProcessStatus) {
+      //   countPipeline.push({
+      //     $match: {
+      //       "corrugatorProcessData.status": corrugatorProcessStatus,
+      //     },
+      //   });
+      // }
 
       // Thêm filter customer nếu có
       if (customer) {
@@ -540,7 +554,7 @@ export class ManufacturingOrderService {
 
     // Populate các field gốc từ aggregated data
     const data = await this.manufacturingOrderModel.populate(aggregatedData, [
-      { path: "corrugatorProcess" },
+      // { path: "corrugatorProcess" },
       {
         path: poiPath.path,
         populate: [
@@ -624,45 +638,45 @@ export class ManufacturingOrderService {
     }
     // (Kết thúc logic kiểm tra)
 
+    // Cập nhật trạng thái chính của MO
     mo.overallStatus = newStatus;
 
     let newProcessStatus: ProcessStatus | null = null;
-    // <-- THAY ĐỔI: Thêm biến cho trạng thái Sóng
     let newCorrugatorStatus: CorrugatorProcessStatus | null = null;
 
     if (newStatus === OrderStatus.CANCELLED) {
       newProcessStatus = ProcessStatus.CANCELLED;
-      newCorrugatorStatus = CorrugatorProcessStatus.CANCELLED; // <-- THAY ĐỔI
+      newCorrugatorStatus = CorrugatorProcessStatus.CANCELLED;
     } else if (newStatus === OrderStatus.PAUSED) {
       newProcessStatus = ProcessStatus.PAUSED;
-      newCorrugatorStatus = CorrugatorProcessStatus.PAUSED; // <-- THAY ĐỔI
+      newCorrugatorStatus = CorrugatorProcessStatus.PAUSED;
     } else if (newStatus === OrderStatus.RUNNING) {
+      // Logic của bạn không đồng bộ RUNNING xuống, điều này là hợp lý.
+      // Nếu muốn đồng bộ RUNNING, bạn cần sửa logic if bên dưới.
       newProcessStatus = ProcessStatus.RUNNING;
-      newCorrugatorStatus = CorrugatorProcessStatus.RUNNING; // <-- THAY ĐỔI
+      newCorrugatorStatus = CorrugatorProcessStatus.RUNNING;
     } else if (newStatus === OrderStatus.NOTSTARTED) {
       newProcessStatus = ProcessStatus.NOTSTARTED;
-      newCorrugatorStatus = CorrugatorProcessStatus.NOTSTARTED; // <-- THAY ĐỔI
+      newCorrugatorStatus = CorrugatorProcessStatus.NOTSTARTED;
     }
 
-    // <-- THAY ĐỔI: Mở rộng logic đồng bộ
-    // Nếu chuyển sang PAUSED, CANCELLED, hoặc NOTSTARTED, đồng bộ xuống tất cả MOP và Sóng
+    // Mở rộng logic đồng bộ
     if (
       newProcessStatus === ProcessStatus.PAUSED ||
       newProcessStatus === ProcessStatus.CANCELLED ||
-      newProcessStatus === ProcessStatus.NOTSTARTED // <-- THÊM NOTSTARTED
+      newProcessStatus === ProcessStatus.NOTSTARTED
     ) {
-      // Cập nhật MOPs
+      // 1. Cập nhật MOPs (Finishing) - Giữ nguyên
       await this.manufacturingOrderProcessModel.updateMany(
         { manufacturingOrder: new Types.ObjectId(moId) },
         { $set: { status: newProcessStatus } },
       );
 
-      // <-- THAY ĐỔI: Cập nhật cả Corrugator Process
-      await this.corrugatorProcessModel.updateMany(
-        { manufacturingOrder: new Types.ObjectId(moId) },
-        { $set: { status: newCorrugatorStatus } },
-      );
+      if (newCorrugatorStatus) {
+        mo.corrugatorProcess.status = newCorrugatorStatus;
+      }
     }
+
     return await mo.save();
   }
 
@@ -861,7 +875,11 @@ export class ManufacturingOrderService {
       purchaseOrderItem: poi.purchaseOrderItemId,
       overallStatus: OrderStatus.NOTSTARTED,
       processes: [],
-      corrugatorProcess: new Types.ObjectId(), // TODO: Get actual corrugatorProcess ID
+      corrugatorProcess: {
+        manufacturedAmount: 0,
+        status: CorrugatorProcessStatus.NOTSTARTED,
+        note: "",
+      },
       manufacturingDate: getManufacturingDate(
         poi.purchaseOrderItem.subPurchaseOrder.deliveryDate,
         poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
@@ -881,26 +899,6 @@ export class ManufacturingOrderService {
     }));
 
     const result = await this.manufacturingOrderModel.create(mos);
-
-    const corrugatorProcessDocs: CorrugatorProcess[] = result.map((mo) => ({
-      manufacturingOrder: mo._id,
-      manufacturedAmount: 0,
-      status: CorrugatorProcessStatus.NOTSTARTED,
-      note: "",
-      isDeleted: false,
-    }));
-
-    const result2 = await this.corrugatorProcessModel.create(
-      corrugatorProcessDocs,
-    );
-
-    for (const res of result2) {
-      const id = res._id;
-      await this.manufacturingOrderModel.findOneAndUpdate(
-        { _id: id },
-        { corrugatorProcess: id },
-      );
-    }
 
     // TODO: create finishing processes
 
@@ -1033,4 +1031,362 @@ export class ManufacturingOrderService {
       };
     }
   }
+
+  //Add corrugator process start heare
+
+  async runSelectedCorrugatorProcesses(moIds: string[]): Promise<any> {
+    const moObjectIds = moIds.map((id) => new Types.ObjectId(id));
+
+    // 1. Cập nhật trạng thái corrugatorProcess bên trong MO
+    const cpUpdateResult = await this.manufacturingOrderModel.updateMany(
+      {
+        _id: { $in: moObjectIds },
+        "corrugatorProcess.status": CorrugatorProcessStatus.NOTSTARTED,
+      },
+      {
+        $set: { "corrugatorProcess.status": CorrugatorProcessStatus.RUNNING },
+      },
+    );
+
+    if (cpUpdateResult.matchedCount === 0) {
+      throw new BadRequestException(
+        "Không tìm thấy quy trình sóng nào ở trạng thái 'NOTSTARTED' cho các MO đã chọn.",
+      );
+    }
+
+    // 2. Cập nhật trạng thái tổng thể của MO
+    await this.manufacturingOrderModel.updateMany(
+      { _id: { $in: moObjectIds }, overallStatus: OrderStatus.NOTSTARTED },
+      { $set: { overallStatus: OrderStatus.RUNNING } },
+    );
+
+    return cpUpdateResult;
+  }
+
+  async updateCorrugatorProcess(
+    moId: string, // <-- Nhận moId thay vì processId
+    dto: UpdateCorrugatorProcessDto,
+  ): Promise<ManufacturingOrderDocument> {
+    const { manufacturedAmount, status: newStatusFromDto } = dto;
+
+    // 1. Lấy MO cha và PO Item
+    const parentMO = await this.manufacturingOrderModel // <-- Sửa tên model
+      .findById(moId) // <-- Tìm bằng moId
+      .populate("purchaseOrderItem");
+
+    if (!parentMO) {
+      throw new NotFoundException("Không tìm thấy Lệnh sản xuất.");
+    }
+
+    // 2. Lấy thông tin CP từ trong MO
+    const targetProcess = parentMO.corrugatorProcess; // <-- Lấy object lồng
+    const originalStatus = targetProcess.status;
+    const originalAmount = targetProcess.manufacturedAmount;
+
+    if (!isRefPopulated(parentMO.purchaseOrderItem)) {
+      throw new NotFoundException(
+        "Không tìm thấy PO Item liên kết với Lệnh sản xuất này.",
+      );
+    }
+    const poItem =
+      parentMO.purchaseOrderItem as unknown as PurchaseOrderItemDocument;
+    const targetAmount = poItem.longitudinalCutCount;
+    const maxAmountForCompletion = targetAmount * 1.1;
+
+    // 3. Xử lý logic cập nhật (Logic giữ nguyên)
+    let newCalculatedStatus = originalStatus;
+    let newAmount = manufacturedAmount ?? originalAmount;
+
+    if (
+      manufacturedAmount !== undefined &&
+      manufacturedAmount !== originalAmount
+    ) {
+      if (
+        originalStatus === CorrugatorProcessStatus.PAUSED ||
+        originalStatus === CorrugatorProcessStatus.CANCELLED
+      ) {
+        if (newStatusFromDto !== CorrugatorProcessStatus.RUNNING) {
+          throw new ForbiddenException(
+            `Không thể cập nhật số lượng khi quy trình đang ở trạng thái '${originalStatus}'.`,
+          );
+        }
+      }
+    }
+
+    // A. Tự động chạy khi có số lượng
+    if (
+      manufacturedAmount !== undefined &&
+      newAmount > 0 &&
+      originalStatus === CorrugatorProcessStatus.NOTSTARTED
+    ) {
+      newCalculatedStatus = CorrugatorProcessStatus.RUNNING;
+      // (Việc cập nhật overallStatus sẽ được xử lý ở logic đồng bộ bên dưới)
+    }
+
+    // B. Xử lý trạng thái thủ công
+    if (newStatusFromDto) {
+      if (newStatusFromDto === CorrugatorProcessStatus.COMPLETED) {
+        if (originalStatus !== CorrugatorProcessStatus.RUNNING) {
+          throw new ForbiddenException(
+            `Chỉ có thể chuyển sang 'COMPLETED' từ trạng thái 'RUNNING'.`,
+          );
+        }
+        if (newAmount < targetAmount) {
+          throw new BadRequestException(
+            `Không thể hoàn thành khi số lượng (${newAmount}) chưa đạt mục tiêu (${targetAmount}).`,
+          );
+        }
+        if (newAmount > maxAmountForCompletion) {
+          throw new BadRequestException(
+            `Không thể hoàn thành do số lượng (${newAmount}) vượt quá 110% cho phép (${maxAmountForCompletion.toFixed(
+              0,
+            )}).`,
+          );
+        }
+        newCalculatedStatus = CorrugatorProcessStatus.COMPLETED;
+      } else if (
+        newStatusFromDto === CorrugatorProcessStatus.PAUSED ||
+        newStatusFromDto === CorrugatorProcessStatus.CANCELLED
+      ) {
+        if (
+          originalStatus === CorrugatorProcessStatus.NOTSTARTED ||
+          originalStatus === CorrugatorProcessStatus.COMPLETED
+        ) {
+          throw new ForbiddenException(
+            `Không thể chuyển từ '${originalStatus}' sang '${newStatusFromDto}'.`,
+          );
+        }
+        newCalculatedStatus = newStatusFromDto;
+      } else if (newStatusFromDto === CorrugatorProcessStatus.RUNNING) {
+        if (
+          newAmount <= 0 &&
+          originalStatus !== CorrugatorProcessStatus.CANCELLED &&
+          originalStatus !== CorrugatorProcessStatus.PAUSED
+        ) {
+          throw new BadRequestException(
+            `Không thể 'RUNNING' khi số lượng bằng 0 (trừ khi resume từ 'CANCELLED' hoặc 'PAUSED').`,
+          );
+        }
+        newCalculatedStatus = CorrugatorProcessStatus.RUNNING;
+      } else if (newStatusFromDto === CorrugatorProcessStatus.NOTSTARTED) {
+        if (newAmount > 0) {
+          throw new ForbiddenException(
+            "Không thể về 'NOTSTARTED' khi đã có số lượng.",
+          );
+        }
+        newCalculatedStatus = CorrugatorProcessStatus.NOTSTARTED;
+      }
+    }
+
+    // 4. Cập nhật giá trị vào parentMO (chưa save)
+    parentMO.corrugatorProcess.status = newCalculatedStatus;
+    parentMO.corrugatorProcess.manufacturedAmount = newAmount;
+
+    // 5. --- LOGIC ĐỒNG BỘ TRẠNG THÁI (ĐÃ TÁI CẤU TRÚC THEO YÊU CẦU) ---
+    // Đồng bộ trạng thái từ Sóng (Corrugator) xuống MO và MOPs (Finishing)
+
+    // A. Trường hợp Sóng PAUSED hoặc CANCELLED
+    if (
+      (newCalculatedStatus === CorrugatorProcessStatus.PAUSED ||
+        newCalculatedStatus === CorrugatorProcessStatus.CANCELLED) &&
+      originalStatus !== newCalculatedStatus // Chỉ khi trạng thái thay đổi
+    ) {
+      const mopStatusToSet =
+        newCalculatedStatus === CorrugatorProcessStatus.PAUSED
+          ? ProcessStatus.PAUSED
+          : ProcessStatus.CANCELLED;
+
+      // Đồng bộ xuống MOPs
+      await this.manufacturingOrderProcessModel.updateMany(
+        { manufacturingOrder: parentMO._id },
+        { $set: { status: mopStatusToSet } },
+      );
+
+      // Đồng bộ lên MO
+      parentMO.overallStatus =
+        newCalculatedStatus === CorrugatorProcessStatus.PAUSED
+          ? OrderStatus.PAUSED
+          : OrderStatus.CANCELLED;
+    }
+    // B. Trường hợp Sóng RUNNING
+    else if (
+      newCalculatedStatus === CorrugatorProcessStatus.RUNNING &&
+      (parentMO.overallStatus === OrderStatus.NOTSTARTED ||
+        parentMO.overallStatus === OrderStatus.PAUSED ||
+        parentMO.overallStatus === OrderStatus.CANCELLED)
+    ) {
+      // Nếu Sóng chạy (từ NOTSTARTED, PAUSED, CANCELLED) -> MO cũng chạy
+      parentMO.overallStatus = OrderStatus.RUNNING;
+      // (Không cần đồng bộ RUNNING xuống MOPs, vì MOPs có logic riêng)
+    }
+    // C. Trường hợp Sóng NOTSTARTED
+    else if (
+      newCalculatedStatus === CorrugatorProcessStatus.NOTSTARTED &&
+      parentMO.overallStatus !== OrderStatus.COMPLETED // Không reset MO đã hoàn thành
+    ) {
+      // Nếu Sóng bị reset -> MO cũng bị reset
+      parentMO.overallStatus = OrderStatus.NOTSTARTED;
+      // Đồng bộ xuống MOPs
+      await this.manufacturingOrderProcessModel.updateMany(
+        { manufacturingOrder: parentMO._id },
+        { $set: { status: ProcessStatus.NOTSTARTED } },
+      );
+    }
+    // D. Trường hợp Sóng COMPLETED
+    else if (newCalculatedStatus === CorrugatorProcessStatus.COMPLETED) {
+      // Sóng hoàn thành, kiểm tra xem MOPs đã xong chưa
+      const allMOPs = await this.manufacturingOrderProcessModel.find({
+        manufacturingOrder: parentMO._id,
+      });
+
+      // .every() trả về true nếu allMOPs là mảng rỗng (không có MOPs)
+      const allMOPsDone = allMOPs.every(
+        (p) => p.status === ProcessStatus.COMPLETED,
+      );
+
+      // Nếu MOPs cũng xong (hoặc không có MOPs) -> MO hoàn thành
+      if (allMOPsDone) {
+        parentMO.overallStatus = OrderStatus.COMPLETED;
+      }
+      // Nếu MOPs chưa xong, MO vẫn ở trạng thái RUNNING (hoặc bất cứ trạng thái nào trước đó)
+    }
+
+    // Đánh dấu object lồng đã bị thay đổi (quan trọng)
+    parentMO.markModified("corrugatorProcess");
+
+    // Lưu MO cha một lần duy nhất
+    await parentMO.save();
+    return parentMO;
+  }
+
+  async updateManyCorrugatorProcesses(
+    dto: UpdateManyCorrugatorProcessesDto,
+  ): Promise<{ successCount: number; failedCount: number; errors: string[] }> {
+    const { moIds, status: newStatus } = dto; // <-- Lấy moIds
+
+    const processObjectIds = moIds.map((id) => new Types.ObjectId(id));
+    // Tìm các MO (thay vì CP)
+    const processes = await this.manufacturingOrderModel
+      .find({
+        _id: { $in: processObjectIds },
+      })
+      .populate("purchaseOrderItem");
+
+    if (processes.length === 0) {
+      throw new NotFoundException("Không tìm thấy Lệnh sản xuất nào.");
+    }
+
+    let successCount = 0;
+    let failedCount = 0;
+    const errors: string[] = [];
+
+    // Xử lý từng MO
+    for (const parentMO of processes) {
+      // <-- Loop qua MO
+      try {
+        const process = parentMO.corrugatorProcess; // <-- Lấy object lồng
+        const originalStatus = process.status;
+
+        // Validate chuyển đổi trạng thái (Logic giữ nguyên)
+        if (newStatus === CorrugatorProcessStatus.COMPLETED) {
+          if (originalStatus !== CorrugatorProcessStatus.RUNNING) {
+            throw new ForbiddenException(
+              `Chỉ có thể chuyển sang 'COMPLETED' từ trạng thái 'RUNNING'.`,
+            );
+          }
+          if (!isRefPopulated(parentMO.purchaseOrderItem)) {
+            throw new NotFoundException(
+              "Không tìm thấy PO Item liên kết với Lệnh sản xuất này.",
+            );
+          }
+          const poItem =
+            parentMO.purchaseOrderItem as unknown as PurchaseOrderItemDocument;
+          const targetAmount = poItem.longitudinalCutCount;
+          const maxAmountForCompletion = targetAmount * 1.1;
+
+          if (process.manufacturedAmount < targetAmount) {
+            throw new BadRequestException(
+              `Không thể hoàn thành khi số lượng (${process.manufacturedAmount}) chưa đạt mục tiêu (${targetAmount}).`,
+            );
+          }
+          if (process.manufacturedAmount > maxAmountForCompletion) {
+            throw new BadRequestException(
+              `Không thể hoàn thành do số lượng (${process.manufacturedAmount}) vượt quá 110% cho phép (${maxAmountForCompletion.toFixed(0)}).`,
+            );
+          }
+        } else if (newStatus === CorrugatorProcessStatus.RUNNING) {
+          if (originalStatus === CorrugatorProcessStatus.COMPLETED) {
+            throw new ForbiddenException(
+              `Không thể chuyển từ 'COMPLETED' sang 'RUNNING'.`,
+            );
+          }
+          if (
+            process.manufacturedAmount <= 0 &&
+            originalStatus !== CorrugatorProcessStatus.CANCELLED
+          ) {
+            throw new ForbiddenException(
+              `Không thể chuyển từ '${originalStatus}' sang 'RUNNING' khi số lượng bằng 0 (trừ khi resume từ 'CANCELLED').`,
+            );
+          }
+        } else if (
+          newStatus === CorrugatorProcessStatus.PAUSED ||
+          newStatus === CorrugatorProcessStatus.CANCELLED
+        ) {
+          if (
+            originalStatus === CorrugatorProcessStatus.NOTSTARTED ||
+            originalStatus === CorrugatorProcessStatus.COMPLETED
+          ) {
+            throw new ForbiddenException(
+              `Không thể chuyển từ '${originalStatus}' sang '${newStatus}'.`,
+            );
+          }
+        }
+
+        // Cập nhật trạng thái
+        parentMO.corrugatorProcess.status = newStatus; // <-- Cập nhật object lồng
+        parentMO.markModified("corrugatorProcess");
+
+        // Đồng bộ với MO và MOPs
+        if (
+          newStatus === CorrugatorProcessStatus.PAUSED ||
+          newStatus === CorrugatorProcessStatus.CANCELLED
+        ) {
+          parentMO.overallStatus =
+            newStatus === CorrugatorProcessStatus.PAUSED
+              ? OrderStatus.PAUSED
+              : OrderStatus.CANCELLED;
+
+          const mopStatusToSet =
+            newStatus === CorrugatorProcessStatus.PAUSED
+              ? ProcessStatus.PAUSED
+              : ProcessStatus.CANCELLED;
+          await this.manufacturingOrderProcessModel.updateMany(
+            { manufacturingOrder: parentMO._id },
+            { $set: { status: mopStatusToSet } },
+          );
+        } else if (newStatus === CorrugatorProcessStatus.COMPLETED) {
+          parentMO.overallStatus = OrderStatus.COMPLETED;
+        } else if (
+          newStatus === CorrugatorProcessStatus.RUNNING &&
+          (parentMO.overallStatus === OrderStatus.NOTSTARTED ||
+            parentMO.overallStatus === OrderStatus.CANCELLED ||
+            parentMO.overallStatus === OrderStatus.PAUSED)
+        ) {
+          parentMO.overallStatus = OrderStatus.RUNNING;
+        }
+
+        await parentMO.save(); // <-- Save MO 1 lần
+        successCount++;
+      } catch (error) {
+        failedCount++;
+        errors.push(
+          `MO ${parentMO._id}: ${error.message || "Lỗi không xác định"}`,
+        );
+      }
+    }
+
+    return { successCount, failedCount, errors };
+  }
+
+  // --- END: CÁC HÀM MỚI ---
 }

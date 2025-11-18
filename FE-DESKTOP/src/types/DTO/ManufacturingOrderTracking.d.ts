@@ -45,14 +45,10 @@ export type CorrugatorProcessStatus =
   | "CANCELLED";
 
 export type CorrugatorProcessDTO = {
-  id: string;
   // reference back to manufacturing order id
-  manufacturingOrder: string;
   manufacturedAmount: number;
   status: CorrugatorProcessStatus;
   note?: string;
-  createdAt?: string;
-  updatedAt?: string;
 };
 
 export type FluteCombinationDTO = {

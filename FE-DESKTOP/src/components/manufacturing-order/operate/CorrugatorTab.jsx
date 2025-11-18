@@ -42,7 +42,7 @@ export default function CorrugatorTab({
   const [selectedMoIds, setSelectedMoIds] = useState(new Set());
   const [isUpdatingStatusMode, setIsUpdatingStatusMode] = useState(false);
   const [isMarkingCompletedMode, setIsMarkingCompletedMode] = useState(false);
-  const [selectedProcessIdsForComplete, setSelectedProcessIdsForComplete] =
+  const [selectedMoIdsForComplete, setSelectedMoIdsForComplete] =
     useState(new Set());
   const [toasts, setToasts] = useState([]);
   const [pendingAmounts, setPendingAmounts] = useState({});
@@ -127,10 +127,8 @@ export default function CorrugatorTab({
           ? item.corrugatorProcess.status
           : null;
 
-      const processId = String(
-        item.corrugatorProcess?._id || item.corrugatorProcess?.id
-      );
-      const hasPendingStatus = Object.keys(pendingStatuses).includes(processId);
+      const moId = item.id;
+      const hasPendingStatus = Object.keys(pendingStatuses).includes(moId);
 
       // Hiển thị tất cả các trạng thái trừ NOTSTARTED
       // Bao gồm: RUNNING, PAUSED, COMPLETED, CANCELLED, OVERCOMPLETED
@@ -144,10 +142,8 @@ export default function CorrugatorTab({
     // Filter theo statusFilter nếu được chọn
     if (propStatusFilter !== "all") {
       filtered = filtered.filter((item) => {
-        const processId = String(
-          item.corrugatorProcess?._id || item.corrugatorProcess?.id
-        );
-        const currentStatus = pendingStatuses[processId] ?? item.corrugatorProcess?.status;
+        const moId = item.id;
+        const currentStatus = pendingStatuses[moId] ?? item.corrugatorProcess?.status;
         return currentStatus === propStatusFilter;
       });
     }
@@ -165,10 +161,8 @@ export default function CorrugatorTab({
           ? item.corrugatorProcess.status
           : null;
 
-      const processId = String(
-        item.corrugatorProcess?._id || item.corrugatorProcess?.id
-      );
-      const hasPendingStatus = Object.keys(pendingStatuses).includes(processId);
+      const moId = item.id;
+      const hasPendingStatus = Object.keys(pendingStatuses).includes(moId);
 
       return (
         (corrugatorStatus !== null && corrugatorStatus !== "NOTSTARTED") ||
@@ -179,10 +173,8 @@ export default function CorrugatorTab({
     // Filter theo statusFilter nếu được chọn
     if (propStatusFilter !== "all") {
       filtered = filtered.filter((item) => {
-        const processId = String(
-          item.corrugatorProcess?._id || item.corrugatorProcess?.id
-        );
-        const currentStatus = pendingStatuses[processId] ?? item.corrugatorProcess?.status;
+        const moId = item.id;
+        const currentStatus = pendingStatuses[moId] ?? item.corrugatorProcess?.status;
         return currentStatus === propStatusFilter;
       });
     }
@@ -201,9 +193,7 @@ export default function CorrugatorTab({
       // Chỉ hiển thị NOTSTARTED và không có trong pendingStatuses (đã được chuyển sang active)
       return (
         corrugatorStatus === "NOTSTARTED" &&
-        !Object.keys(pendingStatuses).includes(
-          String(item.corrugatorProcess?._id || item.corrugatorProcess?.id)
-        )
+        !Object.keys(pendingStatuses).includes(item.id)
       );
     });
 
@@ -226,9 +216,7 @@ export default function CorrugatorTab({
           : null;
       return (
         corrugatorStatus === "NOTSTARTED" &&
-        !Object.keys(pendingStatuses).includes(
-          String(item.corrugatorProcess?._id || item.corrugatorProcess?.id)
-        )
+        !Object.keys(pendingStatuses).includes(item.id)
       );
     });
 
@@ -329,7 +317,7 @@ export default function CorrugatorTab({
     setSelectedStatusesForRows({});
     // Tắt chế độ mark as completed nếu đang bật
     setIsMarkingCompletedMode(false);
-    setSelectedProcessIdsForComplete(new Set());
+    setSelectedMoIdsForComplete(new Set());
   };
 
   const handleCancelUpdateStatus = () => {
@@ -339,7 +327,7 @@ export default function CorrugatorTab({
 
   const handleStartMarkAsCompleted = () => {
     setIsMarkingCompletedMode(true);
-    setSelectedProcessIdsForComplete(new Set());
+    setSelectedMoIdsForComplete(new Set());
     // Tắt chế độ update status nếu đang bật
     setIsUpdatingStatusMode(false);
     setSelectedStatusesForRows({});
@@ -347,58 +335,53 @@ export default function CorrugatorTab({
 
   const handleCancelMarkAsCompleted = () => {
     setIsMarkingCompletedMode(false);
-    setSelectedProcessIdsForComplete(new Set());
+    setSelectedMoIdsForComplete(new Set());
   };
 
-  const handleSelectProcessForComplete = (processId, checked) => {
-    const newSelected = new Set(selectedProcessIdsForComplete);
+  const handleSelectProcessForComplete = (moId, checked) => {
+    const newSelected = new Set(selectedMoIdsForComplete);
     if (checked) {
-      newSelected.add(processId);
+      newSelected.add(moId);
     } else {
-      newSelected.delete(processId);
+      newSelected.delete(moId);
     }
-    setSelectedProcessIdsForComplete(newSelected);
+    setSelectedMoIdsForComplete(newSelected);
   };
 
-  const handleSelectAllProcessesForComplete = (checked) => {
+  const handleSelectAllMosForComplete = (checked) => {
     if (checked) {
-      const allProcessIds = activeProcesses
+      const allMoIds = activeProcesses
         .map((item) => {
-          const processId =
-            item.corrugatorProcess?._id || item.corrugatorProcess?.id;
-          // Chỉ chọn các process chưa hoàn thành
-          if (processId && item.corrugatorProcess?.status !== "COMPLETED") {
-            return processId;
+          if (item.corrugatorProcess?.status !== "COMPLETED") {
+            return item.id;
           }
           return null;
         })
         .filter((id) => id);
-      setSelectedProcessIdsForComplete(new Set(allProcessIds));
+      setSelectedMoIdsForComplete(new Set(allMoIds));
     } else {
-      setSelectedProcessIdsForComplete(new Set());
+      setSelectedMoIdsForComplete(new Set());
     }
   };
 
   // Handler để cập nhật trạng thái cho một hàng cụ thể
-  const handleRowStatusChange = (processId, newStatus) => {
+  const handleRowStatusChange = (moId, newStatus) => {
     setSelectedStatusesForRows((prev) => ({
       ...prev,
-      [processId]: newStatus,
+      [moId]: newStatus, // [SỬA] Key bằng moId
     }));
   };
 
   // Handler để xác nhận và cập nhật tất cả các trạng thái đã chọn
   const handleConfirmUpdateManyStatus = async () => {
     // Lọc ra các process có trạng thái đã chọn và khác với trạng thái hiện tại
-    const processIdsToUpdate = Object.keys(selectedStatusesForRows).filter(
+    const moIdsToUpdate = Object.keys(selectedStatusesForRows).filter(
       (id) => {
         const selectedStatus = selectedStatusesForRows[id];
         if (!selectedStatus) return false;
 
         // Tìm process tương ứng để so sánh trạng thái hiện tại
-        const item = activeProcesses.find(
-          (p) => (p.corrugatorProcess?._id || p.corrugatorProcess?.id) === id
-        );
+        const item = activeProcesses.find((p) => p.id === id);
         if (!item) return false;
 
         const currentStatus = item.corrugatorProcess?.status;
@@ -406,7 +389,7 @@ export default function CorrugatorTab({
       }
     );
 
-    if (processIdsToUpdate.length === 0) {
+    if (moIdsToUpdate.length === 0) {
       showToast(
         "Vui lòng chọn trạng thái mới cho ít nhất một quy trình",
         "danger"
@@ -415,10 +398,10 @@ export default function CorrugatorTab({
     }
 
     try {
-      const updatePromises = processIdsToUpdate.map((processId) =>
+      const updatePromises = moIdsToUpdate.map((moId) =>
         updateCorrugatorProcess({
-          id: processId,
-          status: selectedStatusesForRows[processId],
+          moId: moId,
+          status: selectedStatusesForRows[moId],
         }).unwrap()
       );
 
@@ -426,7 +409,7 @@ export default function CorrugatorTab({
       setIsUpdatingStatusMode(false);
       setSelectedStatusesForRows({});
       showToast(
-        `Đã cập nhật ${processIdsToUpdate.length} quy trình sóng thành công!`,
+        `Đã cập nhật ${moIdsToUpdate.length} quy trình sóng thành công!`,
         "success"
       );
       refetch();
@@ -441,7 +424,7 @@ export default function CorrugatorTab({
 
   // Handler để xác nhận và đánh dấu nhiều process là hoàn thành
   const handleConfirmMarkAsCompleted = async () => {
-    if (selectedProcessIdsForComplete.size === 0) {
+    if (selectedMoIdsForComplete.size === 0) {
       showToast(
         "Vui lòng chọn ít nhất một quy trình để đánh dấu hoàn thành",
         "danger"
@@ -449,29 +432,25 @@ export default function CorrugatorTab({
       return;
     }
 
-    const processIdsArray = Array.from(selectedProcessIdsForComplete);
+    const moIdsArray = Array.from(selectedMoIdsForComplete);
     const results = [];
     const failedItems = [];
 
     try {
       // Update từng process và lưu kết quả
-      for (const processId of processIdsArray) {
+      for (const moId of moIdsArray) {
         try {
           await updateCorrugatorProcess({
-            id: processId,
+            moId: moId,
             status: "COMPLETED",
           }).unwrap();
-          results.push({ processId, success: true });
+          results.push({ moId, success: true });
         } catch (error) {
-          // Tìm tên lệnh sản xuất từ processId trong rawDataList (toàn bộ dữ liệu)
-          const item = rawDataList.find(
-            (p) =>
-              (p.corrugatorProcess?._id || p.corrugatorProcess?.id) ===
-              processId
-          );
-          const moCode = item?.code || processId;
+          // Tìm tên lệnh sản xuất từ moId trong rawDataList (toàn bộ dữ liệu)
+          const item = rawDataList.find((p) => p.id === moId);
+          const moCode = item?.code || moId;
           failedItems.push(moCode);
-          results.push({ processId, success: false, error, moCode });
+          results.push({ moId, success: false, error, moCode });
         }
       }
 
@@ -493,7 +472,7 @@ export default function CorrugatorTab({
       }
 
       setIsMarkingCompletedMode(false);
-      setSelectedProcessIdsForComplete(new Set());
+      setSelectedMoIdsForComplete(new Set());
       refetch();
     } catch (error) {
       console.error("Error marking processes as completed:", error);
@@ -505,16 +484,16 @@ export default function CorrugatorTab({
   };
 
   const handleChangePendingAmount = (
-    corrugatorProcessId,
+    moId,
     currentAmount,
     delta
   ) => {
-    if (!corrugatorProcessId) return;
+    if (!moId) return;
     const newAmount = Math.max(0, currentAmount + delta);
 
     setPendingAmounts((prev) => ({
       ...prev,
-      [corrugatorProcessId]: newAmount,
+      [moId]: newAmount,
     }));
   };
 
@@ -527,9 +506,9 @@ export default function CorrugatorTab({
     }));
   };
 
-  const handleSave = async (corrugatorProcessId) => {
-    const newAmount = pendingAmounts[corrugatorProcessId];
-    const newStatus = pendingStatuses[corrugatorProcessId];
+  const handleSave = async (moId) => {
+    const newAmount = pendingAmounts[moId];
+    const newStatus = pendingStatuses[moId];
 
     const hasPendingAmount = newAmount !== undefined;
     const hasPendingStatus = newStatus !== undefined;
@@ -539,7 +518,7 @@ export default function CorrugatorTab({
       return;
     }
 
-    const body = { id: corrugatorProcessId };
+    const body = { moId: moId };
     if (hasPendingAmount) {
       body.manufacturedAmount = newAmount;
     }
@@ -554,14 +533,14 @@ export default function CorrugatorTab({
       if (hasPendingAmount) {
         setPendingAmounts((prev) => {
           const newState = { ...prev };
-          delete newState[corrugatorProcessId];
+          delete newState[moId];
           return newState;
         });
       }
       if (hasPendingStatus) {
         setPendingStatuses((prev) => {
           const newState = { ...prev };
-          delete newState[corrugatorProcessId];
+          delete newState[moId];
           return newState;
         });
       }
@@ -706,7 +685,7 @@ export default function CorrugatorTab({
                   size="sm"
                   onClick={handleConfirmMarkAsCompleted}
                   disabled={
-                    isUpdatingMany || selectedProcessIdsForComplete.size === 0
+                    isUpdatingMany || selectedMoIdsForComplete.size === 0
                   }
                 >
                   <i className="bi bi-check-circle me-2"></i>
@@ -786,17 +765,12 @@ export default function CorrugatorTab({
                                   item.corrugatorProcess?.status !== "COMPLETED"
                               )
                               .every((item) => {
-                                const processId =
-                                  item.corrugatorProcess?._id ||
-                                  item.corrugatorProcess?.id;
-                                return (
-                                  !processId ||
-                                  selectedProcessIdsForComplete.has(processId)
-                                );
+                                // [SỬA] Check bằng moId (item.id)
+                                return selectedMoIdsForComplete.has(item.id);
                               })
                           }
                           onChange={(e) =>
-                            handleSelectAllProcessesForComplete(
+                            handleSelectAllMosForComplete(
                               e.target.checked
                             )
                           }
@@ -822,31 +796,29 @@ export default function CorrugatorTab({
 
                     if (!corrugatorProcess) return null;
 
-                    const processId =
-                      corrugatorProcess._id || corrugatorProcess.id;
+                    const moId = item.id;
 
                     const originalAmount =
                       corrugatorProcess.manufacturedAmount ?? 0;
                     const originalStatus = corrugatorProcess.status;
 
                     const currentAmount =
-                      pendingAmounts[processId] ?? originalAmount;
-
+                      pendingAmounts[moId] ?? originalAmount;
                     const currentStatus =
-                      pendingStatuses[processId] ?? originalStatus;
+                      pendingStatuses[moId] ?? originalStatus;
 
                     // Kiểm tra xem có thay đổi thực sự so với giá trị ban đầu không
                     const hasAmountChange =
-                      pendingAmounts[processId] !== undefined &&
-                      pendingAmounts[processId] !== originalAmount;
+                      pendingAmounts[moId] !== undefined &&
+                      pendingAmounts[moId] !== originalAmount;
                     const hasStatusChange =
-                      pendingStatuses[processId] !== undefined &&
-                      pendingStatuses[processId] !== originalStatus;
+                      pendingStatuses[moId] !== undefined &&
+                      pendingStatuses[moId] !== originalStatus;
 
                     const hasPendingChanges = hasAmountChange || hasStatusChange;
 
                     const isSelectedForComplete =
-                      selectedProcessIdsForComplete.has(processId);
+                      selectedMoIdsForComplete.has(moId);
                     const isCompleted =
                       corrugatorProcess?.status === "COMPLETED";
 
@@ -870,8 +842,8 @@ export default function CorrugatorTab({
                               type="checkbox"
                               checked={isSelectedForComplete}
                               onChange={(e) =>
-                                handleSelectProcessForComplete(
-                                  processId,
+                                handleSelectAllMosForComplete(
+                                  moId,
                                   e.target.checked
                                 )
                               }
@@ -938,18 +910,18 @@ export default function CorrugatorTab({
                             <Form.Select
                               size="sm"
                               value={
-                                selectedStatusesForRows[processId] ||
+                                selectedStatusesForRows[moId] ||
                                 currentStatus
                               }
                               onChange={(e) =>
-                                handleRowStatusChange(processId, e.target.value)
+                                handleRowStatusChange(moId, e.target.value)
                               }
                               disabled={isUpdating}
                               style={{
                                 fontWeight: 600,
                                 borderColor:
-                                  selectedStatusesForRows[processId] &&
-                                  selectedStatusesForRows[processId] !==
+                                  selectedStatusesForRows[moId] &&
+                                  selectedStatusesForRows[moId] !==
                                     currentStatus
                                     ? "#0d6efd"
                                     : "default",
@@ -1004,7 +976,7 @@ export default function CorrugatorTab({
                               className="text-danger p-1"
                               onClick={() =>
                                 handleChangePendingAmount(
-                                  processId,
+                                  moId,
                                   currentAmount,
                                   -propStepAmount
                                 )
@@ -1039,7 +1011,7 @@ export default function CorrugatorTab({
                               className="text-success p-1"
                               onClick={() =>
                                 handleChangePendingAmount(
-                                  processId,
+                                  moId,
                                   currentAmount,
                                   propStepAmount
                                 )
@@ -1063,7 +1035,7 @@ export default function CorrugatorTab({
                                 : "outline-secondary"
                             }
                             size="sm"
-                            onClick={() => handleSave(processId)}
+                            onClick={() => handleSave(moId)}
                             disabled={!hasPendingChanges || isUpdating}
                             className="d-flex align-items-center justify-content-center gap-1"
                             style={{
