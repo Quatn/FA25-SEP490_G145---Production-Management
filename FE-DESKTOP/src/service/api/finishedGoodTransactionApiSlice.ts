@@ -8,12 +8,12 @@ export const FinishedGoodTransactionApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         getFinishedGoodTransactions: builder.query<
             BaseResponse<PaginatedList<FinishedGoodTransaction>>,
-            { page?: number; limit?: number; search?: string, finishedGoodId: string }
+            { page?: number; limit?: number; finishedGood: string, search?: string, transactionType?: string }
         >({
-            query: ({ page = 1, limit = 10, search = "", finishedGoodId }) => ({
+            query: ({ page = 1, limit = 10, finishedGood, search, transactionType }) => ({
                 url: `${FINISHED_GOOD_TRANSACTION_URL}/list`,
                 method: "GET",
-                params: { page, limit, search, finishedGoodId },
+                params: { page, limit, finishedGood, search, transactionType },
                 credentials: "include",
             }),
             providesTags: ["FinishedGoodTransaction"],
@@ -29,11 +29,11 @@ export const FinishedGoodTransactionApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: ["FinishedGoodTransaction", "FinishedGood"],
         }),
 
-        getFGDailyReport: builder.query<BaseResponse<DailyReportDto>, { date: string }>({
-            query: ({ date }) => ({
+        getFGDailyReport: builder.query<BaseResponse<DailyReportDto>, { startDate: string, endDate: string, transactionType: string}>({
+            query: ({ startDate, endDate, transactionType }) => ({
                 url: `${FINISHED_GOOD_TRANSACTION_URL}/report/daily`,
                 method: "GET",
-                params: { date },
+                params: { startDate, endDate, transactionType },
                 credentials: "include",
             }),
             providesTags: ["FinishedGoodTransaction"],

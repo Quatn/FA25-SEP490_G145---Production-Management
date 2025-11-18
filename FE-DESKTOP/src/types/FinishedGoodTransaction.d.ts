@@ -3,9 +3,7 @@ import { FinishedGood } from "./FinishedGood";
 
 export type FinishedGoodTransaction = {
     _id?: string;
-    finishedGoodId: string;
     finishedGood?: FinishedGood;
-    employeeId: string;
     employee?: Employee;
     transactionType: string;
     initialQuantity: number;

@@ -23,7 +23,6 @@ const PaperTypeTable = ({
         <Table.ScrollArea
             borderWidth="1px"
             rounded="md"
-            height="701px"
             mt={5}
         >
             <Table.Root

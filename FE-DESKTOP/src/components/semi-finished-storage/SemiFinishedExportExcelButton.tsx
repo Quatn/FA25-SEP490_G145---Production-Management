@@ -5,7 +5,7 @@ const exportDailyReportToExcel = (data: any[], date: string) => {
   const worksheetData = data.map((item, index) => ({
     STT: index + 1,
     "Mã lệnh": item.semiFinishedGood?.manufacturingOrder?.code ?? "-",
-    "Loại giao dịch": item.transactionType == "IMPORT" ? "Nhập" : "Xuất",
+    "Thao tác": item.transactionType == "IMPORT" ? "Nhập" : "Xuất",
     "Số lượng": item.transactionType == "IMPORT" ? item.finalQuantity - item.initialQuantity : item.initialQuantity - item.finalQuantity,
     "Tồn đầu": item.initialQuantity,
     "Tồn cuối": item.finalQuantity,

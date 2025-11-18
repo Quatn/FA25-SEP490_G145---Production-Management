@@ -26,8 +26,8 @@ const SemiFinishedList: React.FC = () => {
 
     const { data: sfData, error: sfError, isLoading: sfLoading } = useGetSemiFinishedGoodsQuery({ page, limit, search: debouncedSearch });
     const { data: moData, error: moError, isLoading: moLoading } = useGetAllManufacturingOrdersQuery();
-    const sfGoods: SemiFinishedGood[] = (sfData as any)?.data?.data ?? [];
-    const mos: ManufacturingOrder[] = (moData as any)?.data ?? [];
+    const sfGoods: SemiFinishedGood[] = sfData?.data?.data ?? [];
+    const mos: ManufacturingOrder[] = moData?.data ?? [];
     const totalPages = (sfData as any)?.data?.totalPages ?? 1;
 
     const [detailOpen, setDetailOpen] = useState(false);
@@ -86,7 +86,7 @@ const SemiFinishedList: React.FC = () => {
                         colorPalette="green"
                         onClick={() => handleOpenTx("IMPORT", undefined)}
                     >
-                        <FaPlus /> Tạo phiếu nhập 
+                        <FaPlus /> Tạo phiếu nhập
                     </Button>
 
                 </Stack>
