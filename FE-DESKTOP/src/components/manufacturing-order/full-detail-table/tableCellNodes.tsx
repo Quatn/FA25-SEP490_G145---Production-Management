@@ -1,5 +1,5 @@
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
-import { createListCollection, ListCollection } from "@chakra-ui/react";
+import { createListCollection, Highlight, ListCollection } from "@chakra-ui/react";
 import { CellContext } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
 import { ManufacturingOrderTableDataType } from "./tableDefinition";
@@ -27,10 +27,19 @@ export type ManufacturingTableMeta = {
   allowEdit?: boolean;
   updateData?: (rowIndex: number, columnId: string, value: unknown) => void;
   editableCellNode?: (props: ManufacturingTableEditableCellProps) => React.ReactNode
+  query?: string;
 };
 
 type NodeCellProps = {
   context: CellContext<ManufacturingOrderTableDataType, unknown>
+}
+
+const HighlightCell = (props: NodeCellProps & { value: string | undefined }) => {
+  const { table } = props.context;
+  const meta = (table.options.meta as ManufacturingTableMeta | undefined)
+  const query = meta?.query ?? ""
+
+  return <Highlight query={[query]} styles={{ bg: "yellow.emphasized" }}>{props.value ?? ""}</Highlight>;
 }
 
 const NoteCell = (props: NodeCellProps) => {
@@ -227,6 +236,7 @@ const ManufacturingDirectiveCell = (props: NodeCellProps) => {
 }
 
 export const manufacturingOrderTableCells = {
+  highlight: HighlightCell,
   note: NoteCell,
   requestedDatetime: RequestedDatetimeCell,
   manufacturingDate: ManufacturingDateCell,

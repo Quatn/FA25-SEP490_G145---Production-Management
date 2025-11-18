@@ -51,6 +51,7 @@ import { DeleteResult } from "@/common/dto/delete-result.dto";
 import { PatchResult } from "@/common/dto/patch-result.dto";
 import check from "check-types";
 import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type.schema";
+import { fullDetailsFilterAggregationPipeline } from "./aggregate-pipes/full-details-filter";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -731,6 +732,7 @@ export class ManufacturingOrderService {
   }): Promise<PaginatedList<FullDetailManufacturingOrderDto>> {
     const skip = (page - 1) * limit;
 
+    /*
     const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
     const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
     const warePath = PurchaseOrderItemSchema.path("ware");
@@ -745,8 +747,6 @@ export class ManufacturingOrderService {
     const printColorsPath = WareSchema.path("printColors");
     const corrugatorProcessPath =
       ManufacturingOrderSchema.path("corrugatorProcess");
-
-    console.log(corrugatorProcessPath)
 
     const populate = [
       corrugatorProcessPath,
@@ -785,6 +785,23 @@ export class ManufacturingOrderService {
         .populate(populate)
         .lean(),
     ]);
+    */
+
+    const pipeline = fullDetailsFilterAggregationPipeline({
+      filter,
+      skip,
+      limit,
+    });
+
+    const [data, countArr] = await Promise.all([
+      this.manufacturingOrderModel.aggregate([...pipeline]),
+      this.manufacturingOrderModel.aggregate([
+        ...pipeline.filter((stage) => !("$skip" in stage || "$limit" in stage)),
+        { $count: "total" },
+      ]),
+    ]);
+    const totalItems =
+      (countArr[0] as { total: number } | undefined)?.total ?? 0;
 
     const totalPages = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
@@ -892,13 +909,15 @@ export class ManufacturingOrderService {
 
     const moCreateRes = await this.manufacturingOrderModel.create(mos);
 
-    const corrugatorProcessDocs: CorrugatorProcess[] = moCreateRes.map((mo) => ({
-      manufacturingOrder: mo._id,
-      manufacturedAmount: 0,
-      status: CorrugatorProcessStatus.NOTSTARTED,
-      note: "",
-      isDeleted: false,
-    }));
+    const corrugatorProcessDocs: CorrugatorProcess[] = moCreateRes.map(
+      (mo) => ({
+        manufacturingOrder: mo._id,
+        manufacturedAmount: 0,
+        status: CorrugatorProcessStatus.NOTSTARTED,
+        note: "",
+        isDeleted: false,
+      }),
+    );
 
     const fpCreateRes = await this.corrugatorProcessModel.create(
       corrugatorProcessDocs,

@@ -1,5 +1,5 @@
 import { CellContext, createColumnHelper } from "@tanstack/react-table";
-import type { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import type { ManufacturingOrder, OrderStatus } from "@/types/ManufacturingOrder";
 import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
 import check from "check-types";
 import type { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
@@ -11,6 +11,15 @@ import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";
 export type ManufacturingOrderTableDataType = Serialized<ManufacturingOrder> & { isEdited: boolean }
 
 const columnHelper = createColumnHelper<ManufacturingOrderTableDataType>();
+
+const orderStatusNameMap: Record<OrderStatus, string> = {
+  NOTSTARTED: "Chưa bắt đầu",
+  RUNNING: "Đang chạy",
+  COMPLETED: "Đã hoàn thành",
+  OVERCOMPLETED: "Đã hoàn thành",
+  PAUSED: "Tạm dừng",
+  CANCELLED: "Đã hủy",
+}
 
 const colSize = {
   sm: {
@@ -43,20 +52,34 @@ export const manufacturingOrderColumns = [
     header: "Mã lệnh",
     enablePinning: true,
     ...colSize.sm,
-    cell: ({ row }) =>
-      row.original.code,
+    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.highlight({
+      context,
+      value: context.row.original.code
+    }),
   }),
   columnHelper.display({
     id: "customerCode",
     header: "Khách hàng",
-    cell: ({ row }) =>
-      row.original.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.customer
+    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.highlight({
+      context,
+      value: context.row.original.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.customer
         ?.code,
+    }),
+
   }),
   columnHelper.display({
     id: "wareCode",
     header: "Mã hàng",
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.code,
+    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.highlight({
+      context,
+      value: context.row.original.purchaseOrderItem?.ware?.code
+    }),
+
+  }),
+  columnHelper.display({
+    id: "overallStatus",
+    header: "Trạng thái chạy",
+    cell: ({ row }) => orderStatusNameMap[row.original.overallStatus],
   }),
   columnHelper.display({
     id: "fluteCombo",
@@ -121,8 +144,11 @@ export const manufacturingOrderColumns = [
   columnHelper.display({
     id: "purchaseOrderCode",
     header: "Đơn hàng",
-    cell: ({ row }) =>
-      row.original.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.code,
+    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.highlight({
+      context,
+      value: context.row.original.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.code
+    }),
+
   }),
   columnHelper.display({
     id: "blankWidth",
@@ -359,6 +385,7 @@ export const manufacturingOrderColumnsByTabs: Record<
   manufacture: manufacturingOrderColumns.filter((col) =>
     check.in(col.id, [
       "manufacturingDirective",
+      "overallStatus",
       "code",
       "amount",
       "orderDate",

@@ -258,6 +258,7 @@ export default function ManufacturingOrderTable(
       editableCellNode: (props: ManufacturingTableEditableCellProps) => {
         return <EditableCell {...props} />
       },
+      query: search,
     },
   }
   );
