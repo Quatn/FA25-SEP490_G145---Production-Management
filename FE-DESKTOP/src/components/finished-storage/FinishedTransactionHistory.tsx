@@ -6,12 +6,13 @@ import { useGetFinishedGoodTransactionsQuery } from "@/service/api/finishedGoodT
 
 interface Props {
     id: string | undefined;
+    transactionType?: string;
 }
 
-const FinishedTransactionHistory: React.FC<Props> = ({ id }) => {
+const FinishedTransactionHistory: React.FC<Props> = ({ id, transactionType }) => {
     const [page, setPage] = useState(1);
     const limit = 10;
-    const { data, error, isLoading } = useGetFinishedGoodTransactionsQuery({ page, limit, search: '', finishedGoodId: id ?? '' });
+    const { data, error, isLoading } = useGetFinishedGoodTransactionsQuery({ page, limit, finishedGood: id ?? '', search: '', transactionType: transactionType ?? '' });
     const items: FinishedGoodTransaction[] = (data as any)?.data?.data ?? [];
     const totalPages = (data as any)?.data?.totalPages ?? 1;
 
@@ -36,7 +37,14 @@ const FinishedTransactionHistory: React.FC<Props> = ({ id }) => {
                     <Table.Body>
                         {items.map((it) => (
                             <Table.Row key={it._id}>
-                                <Table.Cell fontSize={"lg"}>{new Date(it.createdAt ?? '').toLocaleString()}</Table.Cell>
+                                <Table.Cell fontSize={"lg"}>{new Date(it.createdAt ?? '').toLocaleString("vi-VN", {
+                                    year: "numeric",
+                                    month: "2-digit",
+                                    day: "2-digit",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    second: "2-digit",
+                                })}</Table.Cell>
                                 <Table.Cell fontSize={"lg"}>{it.transactionType === 'IMPORT' ? 'Nhập' : 'Xuất'}</Table.Cell>
                                 <Table.Cell fontSize={"lg"}>{Math.abs(it.finalQuantity - it.initialQuantity)}</Table.Cell>
                                 <Table.Cell fontSize={"lg"}>{it.initialQuantity}</Table.Cell>

@@ -9,17 +9,17 @@ export class CreateFinishedGoodDto {
     })
     @IsNotEmpty()
     @IsMongoId()
-    manufacturingOrderId: string;
+    manufacturingOrder: string;
 
     @ApiProperty({
-        description: 'Current quantity of the finished good',
+        description: 'Imported quantity of the finished good',
         type: Number,
         example: 0,
         default: 0,
     })
     @IsOptional()
     @IsNumber()
-    currentQuantity?: number = 0;
+    importedQuantity?: number = 0;
 
     @ApiProperty({
         description: 'Optional note for the finished good',

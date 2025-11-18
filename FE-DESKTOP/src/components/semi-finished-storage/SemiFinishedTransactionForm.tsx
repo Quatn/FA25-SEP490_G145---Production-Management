@@ -50,7 +50,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                 manufacturingOrderCode: initialData?.manufacturingOrder?.code ?? "",
                 transactionType: transactionType ?? "IMPORT",
                 quantity: 0,
-                employeeId: "69146dd889bf8e8ca320bcff", //TODO: hardcode employee
+                employeeId: "691ae7bd1fd408511051a7f4", //TODO: hardcode employee
                 note: "",
             });
         }
@@ -77,6 +77,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                 type: "success",
                 closable: true
             });
+            moFilter("");
             onClose();
         } catch (err: any) {
             const msg = err?.data?.message || err?.message || "Lỗi khi tạo giao dịch";
@@ -144,6 +145,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                                     <NumberInput.Root
                                         size="lg"
                                         width="200px"
+                                        step={100}
                                         min={0}
                                         max={
                                             transaction.transactionType === "IMPORT"
@@ -170,13 +172,20 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                                     >
                                         <NumberInput.Input
                                             onKeyDown={(e) => {
-                                                if (e.key === "-" || e.key === "e") {
+                                                const target = e.target as HTMLInputElement;
+
+                                                const isDigit = /^[0-9]$/.test(e.key);
+
+                                                if (target.selectionStart === 0 && target.value === "0" && isDigit) {
                                                     e.preventDefault();
+                                                    const newValue = e.key;
+
+                                                    target.value = newValue;
+                                                    target.dispatchEvent(new Event("input", { bubbles: true }));
                                                 }
-                                            }}
-                                            onPaste={(e) => {
-                                                const text = e.clipboardData.getData("text");
-                                                if (text.includes("-")) {
+
+                                                // Chặn symbols
+                                                if (e.key === "-" || e.key === "e" || e.key === " ") {
                                                     e.preventDefault();
                                                 }
                                             }}

@@ -10,10 +10,10 @@ import { FinishedGood } from "./finished-good.schema";
 export class FinishedGoodTransaction extends BaseSchema {
 
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: FinishedGood.name, required: true })
-    finishedGoodId: mongoose.Types.ObjectId | FinishedGood;
+    finishedGood: mongoose.Types.ObjectId | FinishedGood;
 
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: Employee.name, required: true })
-    employeeId: mongoose.Types.ObjectId | Employee;
+    employee: mongoose.Types.ObjectId | Employee;
 
     @Prop({
         type: String,
@@ -30,6 +30,8 @@ export class FinishedGoodTransaction extends BaseSchema {
 
     @Prop({ required: false })
     note: string;
+
+    createdAt: string;
 }
 
 export type FinishedGoodTransactionDocument = HydratedDocument<FinishedGoodTransaction>;
