@@ -118,10 +118,10 @@ export default function CoverterDeptView({ data, isLoading, isFetching }) {
             }}
           >
             <tr>
-              <th colSpan={3} className="fw-bold">
+              <th colSpan={3} className="fw-bold" style={{backgroundColor: '#b4facfff'}}>
                 BP In Máy
               </th>
-              <th colSpan={12} className="fw-bold">
+              <th colSpan={12} className="fw-bold" style={{backgroundColor: '#fdd4e4ff'}}>
                 BP Chế Biến
               </th>
             </tr>

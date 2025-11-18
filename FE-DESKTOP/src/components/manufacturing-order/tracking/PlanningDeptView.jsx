@@ -151,10 +151,10 @@ export default function PlanningDeptView({ data, isLoading, isFetching }) {
             }}
           >
             <tr>
-              <th colSpan={4} className="fw-bold">
+              <th colSpan={4} className="fw-bold" style={{backgroundColor: "#f7d6b2ff"}}>
                 Quy Trình Sóng
               </th>
-              <th colSpan={12} className="fw-bold">
+              <th colSpan={12} className="fw-bold" style={{backgroundColor: "#fbcdeeff"}}>
                 Công Đoạn Chế Biến
               </th>
             </tr>
