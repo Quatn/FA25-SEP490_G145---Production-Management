@@ -85,6 +85,8 @@ export function recalculateWare(ware?: Serialized<Ware>): Serialized<Ware> {
     throw "Error while trying to recalculate po item data: ware not found";
   }
 
+  const wareHeight = check.zero(ware.wareHeight) ? null : ware.wareHeight
+
   const manuType = check.string(ware.wareManufacturingProcessType) ? ware.wareManufacturingProcessType : ware.wareManufacturingProcessType.code
   const fluteType = check.string(ware.fluteCombination) ? ware.fluteCombination : ware.fluteCombination.code
   const warePerBlank = check.number(ware.warePerBlankAdjustment)
@@ -202,7 +204,7 @@ export function recalculateWare(ware?: Serialized<Ware>): Serialized<Ware> {
         "GHEPCHONGNAP",
       ])
     ) {
-      return conditionalMeasurement(ware.wareHeight) +
+      return conditionalMeasurement(wareHeight) +
         conditionalMeasurement(flapLength) * 2;
     }
     if (
@@ -211,7 +213,7 @@ export function recalculateWare(ware?: Serialized<Ware>): Serialized<Ware> {
         "GHEP1NAP",
       ])
     ) {
-      return conditionalMeasurement(ware.wareHeight) +
+      return conditionalMeasurement(wareHeight) +
         conditionalMeasurement(flapLength);
     }
     if (manuType === "TAM") {
@@ -223,11 +225,11 @@ export function recalculateWare(ware?: Serialized<Ware>): Serialized<Ware> {
         "VACHU",
       ])
     ) {
-      return conditionalMeasurement(ware.wareHeight) +
+      return conditionalMeasurement(wareHeight) +
         conditionalMeasurement(ware.wareLength) * 2;
     }
     if (manuType === "TAM1LAN") {
-      return conditionalMeasurement(ware.wareHeight) +
+      return conditionalMeasurement(wareHeight) +
         conditionalMeasurement(ware.wareLength);
     }
     return 1;

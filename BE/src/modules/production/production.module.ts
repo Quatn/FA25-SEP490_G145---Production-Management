@@ -3,7 +3,7 @@ import { ManufacturingOrderModule } from "./manufacturing-order/manufacturing-or
 import { ManufacturingOrderProcessModule } from "./manufacturing-order-process/manufacturing-order-process.module";
 import { ProductModule } from "./product/product.module";
 import { WareModule } from "./ware/ware.module";
-import { CorrugatorProcessModule } from "./corrugator-process/corrugator-process.module";
+// import { CorrugatorProcessModule } from "./corrugator-process/corrugator-process.module";
 import { ProductionDevModule } from "./dev/dev.module";
 import { PurchaseOrderModule } from "./purchase-order/purchase-order.module";
 import { SubPurchaseOrderModule } from "./sub-purchase-order/sub-purchase-order.module";
@@ -22,7 +22,7 @@ import { PrintColorModule } from "./print-color/print-color.module";
     PurchaseOrderItemModule,
     ProductModule,
     WareModule,
-    CorrugatorProcessModule,
+    // CorrugatorProcessModule,
     PurchaseOrderModule,
     SubPurchaseOrderModule,
     PurchaseOrderItemModule,

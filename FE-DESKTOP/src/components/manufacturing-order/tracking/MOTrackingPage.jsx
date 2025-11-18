@@ -25,6 +25,7 @@ export default function MOTrackingPage() {
     customerFilter: "all",
     manufacturingDateFrom: "",
     manufacturingDateTo: "",
+    corrugatorProcessStatusFilter: "all", // <-- THÊM MỚI
   });
 
   // --- BUILD QUERY ARGS ---
@@ -38,6 +39,11 @@ export default function MOTrackingPage() {
       ...(filters.overallStatusFilter !== "all"
         ? { overallStatus: filters.overallStatusFilter }
         : {}),
+      // --- THÊM MỚI ---
+      ...(filters.corrugatorProcessStatusFilter !== "all"
+        ? { corrugatorProcessStatus: filters.corrugatorProcessStatusFilter }
+        : {}),
+      // --- KẾT THÚC THÊM MỚI ---
       ...(filters.fluteCombinationFilter !== "all"
         ? { fluteCombination: filters.fluteCombinationFilter }
         : {}),
@@ -86,7 +92,8 @@ export default function MOTrackingPage() {
   const handlePageChange = (newPage) => {
     let finalPage = newPage;
     if (newPage < 1) finalPage = 1;
-    if (newPage > paginationInfo.totalPages) finalPage = paginationInfo.totalPages;
+    if (newPage > paginationInfo.totalPages)
+      finalPage = paginationInfo.totalPages;
     setPage(finalPage);
   };
 
@@ -109,6 +116,7 @@ export default function MOTrackingPage() {
       customerFilter: "",
       manufacturingDateFrom: "",
       manufacturingDateTo: "",
+      corrugatorProcessStatusFilter: "all", // <-- THÊM MỚI
     });
     setPage(1);
   };
@@ -172,11 +180,11 @@ export default function MOTrackingPage() {
             isFetching={isFetching}
           />
         </Tab>
-        
+
         {/* Thêm các tab khác ở đây nếu cần */}
         {/* <Tab eventKey="finishing" title="Bộ Phận Chế Biến">
-          ...
-        </Tab> */}
+         ...
+       </Tab> */}
       </Tabs>
 
       {/* ======================= PAGINATION SECTION ======================= */}

@@ -23,7 +23,7 @@ type RawManufacturingOrder = {
   purchaseOrderItem?: any;
   overallStatus: ManufacturingOrderStatus;
   processes?: any[];
-  corrugatorProcess?: any;
+  corrugatorProcess?: any; // Đây giờ là một object lồng
   manufacturingDate?: string;
   requestedDatetime?: string;
   corrugatorLine?: number;
@@ -69,47 +69,37 @@ export type UpdateManufacturingOrderProcessPayload = {
   manufacturingOrderId?: string;
 };
 
+// --- SỬA ĐỔI ---
 export type UpdateCorrugatorProcessPayload = {
-  id: string;
+  moId: string; // <-- Đổi tên từ 'id' sang 'moId' cho rõ ràng
   status?: CorrugatorProcessStatus;
   manufacturedAmount?: number;
-  manufacturingOrderId?: string;
 };
 
 export type RunCorrugatorProcessesPayload = {
   moIds: string[];
 };
 
+// --- SỬA ĐỔI ---
 export type UpdateManyCorrugatorProcessesPayload = {
-  processIds: string[];
+  moIds: string[]; // <-- Đổi tên từ 'processIds' sang 'moIds'
   status: "RUNNING" | "PAUSED" | "CANCELLED" | "COMPLETED";
 };
 
+// --- SỬA ĐỔI ---
+// Logic normalize cho object lồng (embedded object)
 const normalizeCorrugatorProcess = (
   corrugatorProcess: any
-): CorrugatorProcessDTO | string | undefined => {
+): CorrugatorProcessDTO | undefined => {
   if (!corrugatorProcess) {
     return undefined;
   }
 
-  // If it's already a string (ObjectId), return it as is
-  if (typeof corrugatorProcess === "string") {
-    return corrugatorProcess;
-  }
 
-  // If it's an object, normalize it
   return {
-    id: corrugatorProcess._id ?? corrugatorProcess.id,
-    manufacturingOrder:
-      typeof corrugatorProcess.manufacturingOrder === "string"
-        ? corrugatorProcess.manufacturingOrder
-        : corrugatorProcess.manufacturingOrder?._id ??
-          corrugatorProcess.manufacturingOrder?.id,
     manufacturedAmount: corrugatorProcess.manufacturedAmount ?? 0,
     status: corrugatorProcess.status ?? "NOTSTARTED",
-    note: corrugatorProcess.note,
-    createdAt: corrugatorProcess.createdAt,
-    updatedAt: corrugatorProcess.updatedAt,
+    note: corrugatorProcess.note ?? "",
   };
 };
 
@@ -157,6 +147,7 @@ const normalizeManufacturingProcess = (
 };
 
 const normalizePurchaseOrderItem = (poItem: any) => {
+  // ... (Giữ nguyên logic này)
   if (!poItem) {
     return undefined;
   }
@@ -166,7 +157,9 @@ const normalizePurchaseOrderItem = (poItem: any) => {
     ? typeof poItem.ware.fluteCombination === "object" &&
       poItem.ware.fluteCombination !== null
       ? {
-          id: poItem.ware.fluteCombination._id ?? poItem.ware.fluteCombination.id,
+          id:
+            poItem.ware.fluteCombination._id ??
+            poItem.ware.fluteCombination.id,
           code: poItem.ware.fluteCombination.code,
           description: poItem.ware.fluteCombination.description,
           note: poItem.ware.fluteCombination.note,
@@ -253,7 +246,7 @@ const normalizeManufacturingOrder = (
   processes: Array.isArray(order.processes)
     ? order.processes.map(normalizeManufacturingProcess)
     : undefined,
-  corrugatorProcess: normalizeCorrugatorProcess(order.corrugatorProcess),
+  corrugatorProcess: normalizeCorrugatorProcess(order.corrugatorProcess), // <-- Đã cập nhật
   manufacturingDate: order.manufacturingDate,
   requestedDatetime: order.requestedDatetime,
   corrugatorLine: order.corrugatorLine,
@@ -264,7 +257,7 @@ const normalizeManufacturingOrder = (
   updatedAt: order.updatedAt,
 });
 
-// 🔥 CẬP NHẬT LOGIC toPaginatedList giống ProductList
+// ... (toPaginatedList, buildQueryParams, buildMockResponse giữ nguyên) ...
 const toPaginatedList = (
   response: BaseResponse<TrackingListApiResponse>
 ): PaginatedList<Serialized<ManufacturingOrderTrackingDTO>> => {
@@ -274,7 +267,7 @@ const toPaginatedList = (
   const totalItems = response.data?.total ?? normalizedList.length;
   const page = response.data?.page ?? 1;
   const limit = response.data?.limit ?? 50;
-  
+
   // Tính toán pagination info
   const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 1;
   const hasNextPage = page < totalPages;
@@ -376,7 +369,7 @@ export const trackingManufacturingOrderApiSlice = apiSlice.injectEndpoints({
           }
         : {
             query: (params: TrackingListQueryParams = {}) => ({
-              url: `${MANUFACTURING_ORDER_URL}/tracking-list`,
+              url: `${MANUFACTURING_ORDER_URL}/tracking-list`, // <-- URL này đã đúng
               method: "GET",
               params: buildQueryParams(params),
               credentials: "include",
@@ -384,15 +377,14 @@ export const trackingManufacturingOrderApiSlice = apiSlice.injectEndpoints({
             transformResponse: toPaginatedList,
           }),
       providesTags: (result) => {
+        // ... (Giữ nguyên logic providesTags,
+        // NHƯNG XÓA BỎ tag 'CorrugatorProcess')
         if (!result) {
           return [{ type: "ManufacturingOrderTracking" as const, id: "LIST" }];
         }
 
         const tags: {
-          type:
-            | "ManufacturingOrderTracking"
-            | "ManufacturingOrderProcess"
-            | "CorrugatorProcess";
+          type: "ManufacturingOrderTracking" | "ManufacturingOrderProcess";
           id: string;
         }[] = [{ type: "ManufacturingOrderTracking", id: "LIST" }];
 
@@ -405,16 +397,7 @@ export const trackingManufacturingOrderApiSlice = apiSlice.injectEndpoints({
               tags.push({ type: "ManufacturingOrderProcess", id: process.id });
             }
           });
-          // Add corrugator process tags
-          if (order.corrugatorProcess) {
-            const cpId =
-              typeof order.corrugatorProcess === "string"
-                ? order.corrugatorProcess
-                : order.corrugatorProcess.id;
-            if (cpId) {
-              tags.push({ type: "CorrugatorProcess", id: cpId });
-            }
-          }
+          // Xóa bỏ tag CorrugatorProcess
         });
 
         return tags;
@@ -425,6 +408,7 @@ export const trackingManufacturingOrderApiSlice = apiSlice.injectEndpoints({
       Serialized<ManufacturingOrderTrackingDTO>,
       UpdateManufacturingOrderStatusPayload
     >({
+      // ... (Giữ nguyên)
       query: ({ id, status }) => ({
         url: `${MANUFACTURING_ORDER_URL}/${id}/status`,
         method: "PATCH",
@@ -448,6 +432,7 @@ export const trackingManufacturingOrderApiSlice = apiSlice.injectEndpoints({
       Serialized<ManufacturingOrderProcessDTO>,
       UpdateManufacturingOrderProcessPayload
     >({
+      // ... (Giữ nguyên)
       query: ({ processId, status, manufacturedAmount }) => ({
         url: `/manufacturing-order-process/${processId}`,
         method: "PATCH",
@@ -484,12 +469,14 @@ export const trackingManufacturingOrderApiSlice = apiSlice.injectEndpoints({
       },
     }),
 
+    // --- SỬA ĐỔI ---
     updateCorrugatorProcess: builder.mutation<
-      Serialized<CorrugatorProcessDTO>,
+      Serialized<ManufacturingOrderTrackingDTO>, // <-- Trả về MO đã được normalize
       UpdateCorrugatorProcessPayload
     >({
-      query: ({ id, status, manufacturedAmount }) => ({
-        url: `/corrugator-process/${id}`,
+      query: ({ moId, status, manufacturedAmount }) => ({
+        // URL mới, dùng moId
+        url: `${MANUFACTURING_ORDER_URL}/${moId}/corrugator-process`,
         method: "PATCH",
         body: {
           ...(status ? { status } : {}),
@@ -497,35 +484,22 @@ export const trackingManufacturingOrderApiSlice = apiSlice.injectEndpoints({
         },
         credentials: "include",
       }),
-      transformResponse: (response: BaseResponse<any>) => {
-        const normalized = normalizeCorrugatorProcess(response.data);
-        if (typeof normalized === "string") {
-          // If it's just an ID, we need to return a minimal object
-          return {
-            id: normalized,
-            manufacturingOrder: "",
-            manufacturedAmount: 0,
-            status: "NOTSTARTED" as CorrugatorProcessStatus,
-          } as Serialized<CorrugatorProcessDTO>;
-        }
-        return normalized as Serialized<CorrugatorProcessDTO>;
+      // Backend trả về toàn bộ MO
+      transformResponse: (response: BaseResponse<RawManufacturingOrder>) => {
+        return normalizeManufacturingOrder(
+          response.data
+        ) as Serialized<ManufacturingOrderTrackingDTO>;
       },
-      invalidatesTags: (_, error, { id, manufacturingOrderId }) => {
+      // Invalidate MO cha
+      invalidatesTags: (_, error, { moId }) => {
         if (error) {
           return [];
         }
 
         const tags: {
-          type: "ManufacturingOrderTracking" | "CorrugatorProcess";
+          type: "ManufacturingOrderTracking";
           id: string;
-        }[] = [{ type: "CorrugatorProcess", id }];
-
-        if (manufacturingOrderId) {
-          tags.push({
-            type: "ManufacturingOrderTracking",
-            id: manufacturingOrderId,
-          });
-        }
+        }[] = [{ type: "ManufacturingOrderTracking", id: moId }];
 
         tags.push({ type: "ManufacturingOrderTracking", id: "LIST" });
 
@@ -533,12 +507,13 @@ export const trackingManufacturingOrderApiSlice = apiSlice.injectEndpoints({
       },
     }),
 
+    // --- SỬA ĐỔI ---
     runCorrugatorProcesses: builder.mutation<
       { modifiedCount: number },
       RunCorrugatorProcessesPayload
     >({
       query: ({ moIds }) => ({
-        url: `/corrugator-process/run`,
+        url: `${MANUFACTURING_ORDER_URL}/run-corrugator`, // <-- URL mới
         method: "PATCH",
         body: { moIds },
         credentials: "include",
@@ -550,8 +525,9 @@ export const trackingManufacturingOrderApiSlice = apiSlice.injectEndpoints({
           return [];
         }
 
+        // Xóa tag 'CorrugatorProcess'
         const tags: Array<{
-          type: "ManufacturingOrderTracking" | "CorrugatorProcess";
+          type: "ManufacturingOrderTracking";
           id: string;
         }> = [];
 
@@ -566,21 +542,24 @@ export const trackingManufacturingOrderApiSlice = apiSlice.injectEndpoints({
       },
     }),
 
+    // --- SỬA ĐỔI ---
     updateManyCorrugatorProcesses: builder.mutation<
       { successCount: number; failedCount: number; errors: string[] },
       UpdateManyCorrugatorProcessesPayload
     >({
-      query: ({ processIds, status }) => ({
-        url: `/corrugator-process/update-many`,
+      query: ({ moIds, status }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/update-many-corrugator`, // <-- URL mới
         method: "PATCH",
-        body: { processIds, status },
+        body: { moIds, status }, // <-- body mới
         credentials: "include",
       }),
-      transformResponse: (response: BaseResponse<{
-        successCount: number;
-        failedCount: number;
-        errors: string[];
-      }>) => response.data,
+      transformResponse: (
+        response: BaseResponse<{
+          successCount: number;
+          failedCount: number;
+          errors: string[];
+        }>
+      ) => response.data,
       invalidatesTags: (_, error) => {
         if (error) {
           return [];
@@ -596,7 +575,7 @@ export const {
   useLazyGetManufacturingOrderTrackingQuery,
   useUpdateManufacturingOrderStatusMutation,
   useUpdateManufacturingOrderProcessMutation,
-  useUpdateCorrugatorProcessMutation,
-  useRunCorrugatorProcessesMutation,
-  useUpdateManyCorrugatorProcessesMutation,
+  useUpdateCorrugatorProcessMutation, // <-- Tên hook không đổi
+  useRunCorrugatorProcessesMutation, // <-- Tên hook không đổi
+  useUpdateManyCorrugatorProcessesMutation, // <-- Tên hook không đổi
 } = trackingManufacturingOrderApiSlice;

@@ -10,10 +10,10 @@ import {
   ManufacturingOrderProcess,
   ManufacturingOrderProcessSchema,
 } from "../schemas/manufacturing-order-process.schema";
-import {
-  CorrugatorProcess,
-  CorrugatorProcessSchema,
-} from "../schemas/corrugator-process.schema";
+// import {
+//   CorrugatorProcess,
+//   CorrugatorProcessSchema,
+// } from "../schemas/corrugator-process.schema";
 import { PurchaseOrderItemModule } from "../purchase-order-item/purchase-order-item.module";
 import {
   OrderFinishingProcess,
@@ -29,10 +29,10 @@ import {
         name: ManufacturingOrderProcess.name,
         schema: ManufacturingOrderProcessSchema,
       },
-      {
-        name: CorrugatorProcess.name,
-        schema: CorrugatorProcessSchema,
-      },
+      // {
+      //   name: CorrugatorProcess.name,
+      //   schema: CorrugatorProcessSchema,
+      // },
     ]),
     PurchaseOrderItemModule,
   ],

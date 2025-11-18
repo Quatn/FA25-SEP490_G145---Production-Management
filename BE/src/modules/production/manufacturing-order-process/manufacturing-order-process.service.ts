@@ -15,15 +15,11 @@ import {
   ManufacturingOrder,
   ManufacturingOrderDocument,
   OrderStatus,
+  CorrugatorProcessStatus,
 } from "../schemas/manufacturing-order.schema";
 import { PurchaseOrderItemDocument } from "../schemas/purchase-order-item.schema";
 import { isRefPopulated } from "@/common/utils/populate-check";
 import { UpdateManufacturingOrderProcessDto } from "./dto/update-manufacturing-order-process.dto";
-import {
-  CorrugatorProcess,
-  CorrugatorProcessDocument,
-  CorrugatorProcessStatus,
-} from "../schemas/corrugator-process.schema";
 
 @Injectable()
 export class ManufacturingOrderProcessService {
@@ -33,9 +29,6 @@ export class ManufacturingOrderProcessService {
 
     @InjectModel(ManufacturingOrder.name)
     private readonly moModel: Model<ManufacturingOrderDocument>,
-
-    @InjectModel(CorrugatorProcess.name)
-    private readonly corrugatorProcessModel: Model<CorrugatorProcessDocument>,
   ) {}
 
   /**
@@ -88,18 +81,20 @@ export class ManufacturingOrderProcessService {
       parentMO.purchaseOrderItem as unknown as PurchaseOrderItemDocument;
     const targetAmount = poItem.amount;
 
-    // Lấy Quy trình sóng
-    if (!isRefPopulated(parentMO.corrugatorProcess)) {
-      throw new NotFoundException(
-        "Không tìm thấy Quy trình sóng liên kết với Lệnh sản xuất này.",
-      );
-    }
-    const corrugatorProcess =
-      parentMO.corrugatorProcess as unknown as CorrugatorProcessDocument;
+    // // Lấy Quy trình sóng
+    // if (!isRefPopulated(parentMO.corrugatorProcess)) {
+    //   throw new NotFoundException(
+    //     "Không tìm thấy Quy trình sóng liên kết với Lệnh sản xuất này.",
+    //   );
+    // }
+    // const corrugatorProcess =
+    //   parentMO.corrugatorProcess as unknown as CorrugatorProcessDocument;
 
     // --- START: YÊU CẦU (Từ lần trước) ---
     // RÀNG BUỘC: Nếu quy trình sóng đã bị hủy, không cho phép cập nhật bất kỳ công đoạn nào.
-    if (corrugatorProcess.status === CorrugatorProcessStatus.CANCELLED) {
+    if (
+      parentMO.corrugatorProcess.status === CorrugatorProcessStatus.CANCELLED
+    ) {
       throw new ForbiddenException(
         "Quy trình sóng (Corrugator) đã bị hủy. Không thể cập nhật công đoạn này.",
       );
@@ -121,7 +116,10 @@ export class ManufacturingOrderProcessService {
       );
 
       // Nếu có công đoạn trước và nó đã bị hủy
-      if (previousProcess && previousProcess.status === ProcessStatus.CANCELLED) {
+      if (
+        previousProcess &&
+        previousProcess.status === ProcessStatus.CANCELLED
+      ) {
         throw new ForbiddenException(
           "Công đoạn trước đã bị hủy. Không thể cập nhật công đoạn này.",
         );
@@ -148,12 +146,13 @@ export class ManufacturingOrderProcessService {
         targetProcess.status === ProcessStatus.NOTSTARTED);
 
     if (targetProcess.processNumber === 1 && isTryingToRun) {
+      // SỬA ĐỔI: Truy cập trực tiếp vào object lồng
       if (
-        corrugatorProcess.status !== CorrugatorProcessStatus.RUNNING &&
-        corrugatorProcess.status !== CorrugatorProcessStatus.COMPLETED
+        parentMO.corrugatorProcess.status !== CorrugatorProcessStatus.RUNNING &&
+        parentMO.corrugatorProcess.status !== CorrugatorProcessStatus.COMPLETED
       ) {
         throw new ForbiddenException(
-          'Không thể bắt đầu công đoạn 1 khi Quy trình sóng (Corrugator) chưa ở trạng thái "RUNNING" hoặc "COMPLETED".',
+          'Không thể bắt đầu công đoạn 1 khi Quy trình sóng (Corrugator) chưa ở trạng thái "CHẠY" hoặc "HOÀN THÀNH".',
         );
       }
     }
@@ -212,7 +211,7 @@ export class ManufacturingOrderProcessService {
           originalStatus !== ProcessStatus.CANCELLED
         ) {
           throw new BadRequestException(
-            "Không thể chuyển sang 'RUNNING' khi 'manufacturedAmount' bằng 0 (trừ khi resume từ 'PAUSED' hoặc 'CANCELLED').",
+            "Không thể chuyển sang 'CHẠY' khi 'manufacturedAmount' bằng 0 (trừ khi resume từ 'DỪNG' hoặc 'HỦY').",
           );
         }
         newCalculatedStatus = ProcessStatus.RUNNING;
@@ -231,7 +230,7 @@ export class ManufacturingOrderProcessService {
           originalStatus === ProcessStatus.CANCELLED;
         if (!canPause) {
           throw new ForbiddenException(
-            `Chỉ có thể chuyển sang 'PAUSED' từ trạng thái 'RUNNING' hoặc từ 'CANCELLED'.`,
+            `Chỉ có thể chuyển sang 'DỪNG' từ trạng thái 'CHẠY' hoặc từ 'HỦY'.`,
           );
         }
         newCalculatedStatus = ProcessStatus.PAUSED;
@@ -242,7 +241,7 @@ export class ManufacturingOrderProcessService {
           originalStatus !== ProcessStatus.CANCELLED
         ) {
           throw new ForbiddenException(
-            `Chỉ có thể chuyển sang 'CANCELLED' từ 'RUNNING', 'PAUSED' (hoặc nếu đã là 'CANCELLED').`,
+            `Chỉ có thể chuyển sang 'HỦY' từ 'CHẠY', 'DỪNG' (hoặc nếu đã là 'HỦY').`,
           );
         }
 
@@ -346,9 +345,8 @@ export class ManufacturingOrderProcessService {
     );
 
     const isCorrugatorDone =
-      corrugatorProcess.status === CorrugatorProcessStatus.COMPLETED;
+      parentMO.corrugatorProcess.status === CorrugatorProcessStatus.COMPLETED;
 
-    // 3. Kiểm tra điều kiện hoàn thành tổng thể
     if (allMOPsDone && isCorrugatorDone) {
       parentMO.overallStatus = OrderStatus.COMPLETED;
       await parentMO.save();

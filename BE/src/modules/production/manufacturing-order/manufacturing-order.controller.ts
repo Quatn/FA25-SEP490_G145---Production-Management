@@ -47,6 +47,9 @@ import { FindAllMoQueryDto } from "./dto/find-all-mo-query.dto";
 import { UpdateOverallStatusDto } from "./dto/update-overall-status.dto";
 import { QueryListFullDetailsManufacturingOrderRequestDto } from "./dto/query-list-full-details.dto";
 import check from "check-types";
+import { CorrugatorProcessesDto } from "./dto/corrugator-processes.dto";
+import { UpdateManyCorrugatorProcessesDto } from "./dto/update-many-corrugator-processes.dto";
+import { UpdateCorrugatorProcessDto } from "./dto/update-corrugator-process.dto";
 
 @Controller("manufacturing-order")
 // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -262,4 +265,46 @@ export class ManufacturingOrderController {
       data: result,
     };
   }
+
+  //New endpoints
+  @Patch('run-corrugator') 
+  @ApiOperation({ summary: 'Chạy quy trình sóng cho các MO đã chọn' })
+  async runProcesses(
+    @Body() dto: CorrugatorProcessesDto,
+  ): Promise<BaseResponse<any>> {
+    const result = await this.moService.runSelectedCorrugatorProcesses(dto.moIds);
+    return {
+      success: true,
+      message: `Đã cập nhật ${result.modifiedCount} quy trình sóng sang trạng thái RUNNING.`,
+      data: result,
+    };
+  }
+
+  @Patch('update-many-corrugator') 
+  @ApiOperation({ summary: 'Cập nhật trạng thái cho nhiều quy trình sóng cùng lúc' })
+  async updateManyCorrugatorProcesses(
+    @Body() dto: UpdateManyCorrugatorProcessesDto,
+  ): Promise<BaseResponse<any>> {
+    const result = await this.moService.updateManyCorrugatorProcesses(dto);
+    return {
+      success: true,
+      message: `Đã cập nhật ${result.successCount} quy trình sóng. ${result.failedCount > 0 ? `${result.failedCount} quy trình thất bại.` : ''}`,
+      data: result,
+    };
+  }
+
+  @Patch(':id/corrugator-process') 
+  @ApiOperation({ summary: 'Cập nhật quy trình sóng cho một MO' })
+  async updateOne(
+    @Param('id') id: string, 
+    @Body() dto: UpdateCorrugatorProcessDto,
+  ): Promise<BaseResponse<ManufacturingOrder>> {
+    const result = await this.moService.updateCorrugatorProcess(id, dto);
+    return {
+      success: true,
+      message: 'Cập nhật quy trình sóng thành công',
+      data: result,
+    };
+  }
+  
 }
