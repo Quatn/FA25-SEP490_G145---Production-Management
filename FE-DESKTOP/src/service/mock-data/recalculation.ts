@@ -86,11 +86,13 @@ export function recalculateWare(ware?: Serialized<Ware>): Serialized<Ware> {
   }
 
   const wareHeight = check.zero(ware.wareHeight) ? null : ware.wareHeight
+  const warePerBlankAdjustment = check.zero(ware.warePerBlankAdjustment) ? null : ware.warePerBlankAdjustment
+  const crossCutCountAdjustment = check.zero(ware.crossCutCountAdjustment) ? null : ware.crossCutCountAdjustment
 
   const manuType = check.string(ware.wareManufacturingProcessType) ? ware.wareManufacturingProcessType : ware.wareManufacturingProcessType.code
   const fluteType = check.string(ware.fluteCombination) ? ware.fluteCombination : ware.fluteCombination.code
-  const warePerBlank = check.number(ware.warePerBlankAdjustment)
-    ? ware.warePerBlankAdjustment
+  const warePerBlank = check.number(warePerBlankAdjustment)
+    ? warePerBlankAdjustment
     : (check.in("GHEP", manuType))
       ? 0.5
       : 1;
@@ -235,8 +237,8 @@ export function recalculateWare(ware?: Serialized<Ware>): Serialized<Ware> {
     return 1;
   })();
 
-  const crossCutCount = check.number(ware.crossCutCountAdjustment)
-    ? ware.crossCutCountAdjustment
+  const crossCutCount = check.number(crossCutCountAdjustment)
+    ? crossCutCountAdjustment
     : Math.min(Math.floor(1750 / blankWidth), 4);
 
   const paperWidth = (() => {
