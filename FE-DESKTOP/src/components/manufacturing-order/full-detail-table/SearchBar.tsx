@@ -1,16 +1,15 @@
 "use client";
 
-import {
-  useManufacturingTableDispatch,
-  useManufacturingTableState,
-} from "@/context/manufacturing-order/manufacturingOrderTableContext";
+import { useTableDispatch, useTableSelector } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { Input, InputGroup } from "@chakra-ui/react";
 import { ChangeEvent, useEffect, useState } from "react";
 import { LuSearch } from "react-icons/lu";
 
 export default function ManufacturingOrderSearchBar() {
-  const { search } = useManufacturingTableState();
-  const dispatch = useManufacturingTableDispatch();
+  const search = useTableSelector(s => s.search);
+  const dispatch = useTableDispatch();
+
+  console.log("search bar re-render")
 
   const [localSearch, setLocalSearch] = useState(search);
 

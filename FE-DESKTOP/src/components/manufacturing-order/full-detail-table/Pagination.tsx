@@ -1,8 +1,10 @@
 "use client";
 
 import {
-  useManufacturingTableDispatch,
-  useManufacturingTableState,
+  // useManufacturingTableDispatch,
+  // useManufacturingTableState,
+  useTableDispatch,
+  useTableSelector,
 } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import {
   Button,
@@ -31,8 +33,10 @@ const pageOptions = createListCollection({
 });
 
 export default function ManufacturingOrderPagination() {
-  const { page, limit, totalItems } = useManufacturingTableState();
-  const dispatch = useManufacturingTableDispatch();
+  const page = useTableSelector(s => s.page);
+  const limit = useTableSelector(s => s.limit);
+  const totalItems = useTableSelector(s => s.totalItems);
+  const dispatch = useTableDispatch();
 
   const pageSizeSelect = (e: SelectValueChangeDetails) => {
     const newPageSize = parseInt(e.value[0]);

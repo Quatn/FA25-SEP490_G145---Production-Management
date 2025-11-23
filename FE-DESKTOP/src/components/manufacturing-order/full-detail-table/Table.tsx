@@ -2,8 +2,10 @@
 
 import {
   ManufacturingTableTabType,
-  useManufacturingTableDispatch,
-  useManufacturingTableState,
+  // useManufacturingTableDispatch,
+  // useManufacturingTableState,
+  useTableDispatch,
+  useTableSelector,
 } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import {
   useDeleteManufacturingOrderMutation,
@@ -162,17 +164,27 @@ const EditableCell = (props: ManufacturingTableEditableCellProps) => {
 export default function ManufacturingOrderTable(
   props: ManufacturingOrderTableProps,
 ) {
-  const {
-    page,
-    limit,
-    tab,
-    search,
-    hoveredRowId,
-    selectedOrderId,
-    pinnedOrderIds,
-    allowEdit,
-  } = useManufacturingTableState();
-  const dispatch = useManufacturingTableDispatch();
+  // const {
+  //   page,
+  //   limit,
+  //   tab,
+  //   search,
+  //   hoveredRowId,
+  //   selectedOrderId,
+  //   pinnedOrderIds,
+  //   allowEdit,
+  // } = useManufacturingTableState();
+  // const dispatch = useManufacturingTableDispatch();
+  const page = useTableSelector(s => s.page)
+  const limit = useTableSelector(s => s.limit)
+  const tab = useTableSelector(s => s.tab)
+  const search = useTableSelector(s => s.search)
+  const hoveredRowId = useTableSelector(s => s.hoveredRowId)
+  const selectedOrderId = useTableSelector(s => s.selectedOrderId)
+  const pinnedOrderIds = useTableSelector(s => s.pinnedOrderIds)
+  const allowEdit = useTableSelector(s => s.allowEdit)
+
+  const dispatch = useTableDispatch();
 
   const {
     data: fullDetailMOPaginatedResponse,

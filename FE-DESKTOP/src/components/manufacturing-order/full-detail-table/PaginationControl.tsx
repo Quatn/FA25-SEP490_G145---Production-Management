@@ -1,14 +1,16 @@
 "use client";
 
 import {
-  useManufacturingTableDispatch,
-  useManufacturingTableState,
+  //useManufacturingTableDispatch,
+  //useManufacturingTableState,
+  useTableDispatch,
+  useTableSelector,
 } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { Button, Group, HStack } from "@chakra-ui/react";
 
 export default function ManufacturingOrderPaginationControl() {
-  const { paginationType } = useManufacturingTableState();
-  const dispatch = useManufacturingTableDispatch();
+  const paginationType = useTableSelector(s => s.paginationType);
+  const dispatch = useTableDispatch();
 
   return (
     <HStack>
