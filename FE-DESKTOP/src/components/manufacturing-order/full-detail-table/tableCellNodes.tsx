@@ -1,4 +1,3 @@
-import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { createListCollection, Highlight, ListCollection } from "@chakra-ui/react";
 import { CellContext } from "@tanstack/react-table";
 import { useEffect, useState } from "react";

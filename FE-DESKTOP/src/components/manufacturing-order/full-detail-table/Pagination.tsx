@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  // useManufacturingTableDispatch,
-  // useManufacturingTableState,
   useTableDispatch,
   useTableSelector,
 } from "@/context/manufacturing-order/manufacturingOrderTableContext";

@@ -3,7 +3,6 @@ import type { ManufacturingOrder, OrderStatus } from "@/types/ManufacturingOrder
 import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
 import check from "check-types";
 import type { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
-import { useEffect, useState } from "react";
 import { manufacturingOrderTableCells } from "./tableCellNodes";
 import { PrintColor } from "@/types/PrintColor";
 import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";

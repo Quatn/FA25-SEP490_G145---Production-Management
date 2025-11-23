@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  //useManufacturingTableDispatch,
-  //useManufacturingTableState,
   useTableDispatch,
   useTableSelector,
 } from "@/context/manufacturing-order/manufacturingOrderTableContext";
@@ -19,7 +17,6 @@ export default function ManufacturingOrderPaginationControl() {
           colorPalette={"teal"}
           bg={paginationType !== "paged" ? "bg" : "colorPalette.solid"}
           variant={"outline"}
-          // variant={paginationType === "paged" ? "solid" : "outline"}
           onClick={() =>
             dispatch({
               type: "SET_PAGINATION_TYPE",
