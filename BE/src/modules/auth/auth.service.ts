@@ -5,6 +5,9 @@ import { UserDocument } from "../user/schemas/user.schema";
 import { UserService } from "../user/user.service";
 import check from "check-types";
 import bcrypt from "bcrypt";
+import { isRefPopulated } from "@/common/utils/populate-check";
+import mongoose from "mongoose";
+import { AccessPrivilege } from "../user/schemas/access-privilege.schema";
 
 @Injectable()
 export class AuthService {
@@ -28,9 +31,15 @@ export class AuthService {
 
   async login(user: UserDocument): Promise<{ access_token?: string }> {
     const payload: JwtPayload = {
-      id: (user._id as any).toString(),
+      id: user._id.toString(),
       username: user.username,
-      role: user.role,
+      accessPrivileges: user.accessPrivileges
+        .map((ap) =>
+          isRefPopulated(ap as mongoose.Types.ObjectId | AccessPrivilege)
+            ? (ap as AccessPrivilege).code
+            : (ap as mongoose.Types.ObjectId).toString(),
+        )
+        .join(","),
     };
 
     // Yes, this could have been a sync sign, I just wanted to keep this function async without ts-server screaming at me

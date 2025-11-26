@@ -11,13 +11,12 @@ import { AuthService } from "./auth.service";
 import { ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import type { Response as ExpressResponse } from "express";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
-import { LoginRequestDto } from "./dto/login-request.dto";
 import { BaseResponse } from "@/common/dto/response.dto";
-import { LoginResponseDto } from "./dto/login-response.dto";
 import { accessTokenSignOptions } from "@/config/jwt.config";
 import check from "check-types";
 import ms from "ms";
 import type { AuthenticatedRequest } from "@/common/interfaces/authenticated-request";
+import { LoginRequestDto, LoginResponseDto } from "./dto/login.dto";
 
 @Controller("auth")
 @ApiBearerAuth("access-token") // IMPORTANT: Include this or else Swagger wont include the access token when testing

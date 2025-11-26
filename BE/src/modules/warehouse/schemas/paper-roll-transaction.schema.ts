@@ -3,7 +3,7 @@ import { BaseSchema } from "@/common/schemas/base.schema";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import mongoose, { HydratedDocument, Types } from "mongoose";
 import { PaperRoll } from "./paper-roll.schema";
-import { Employee } from "./employee.schema";
+import { Employee } from "@/modules/employee/schemas/employee.schema";
 
 @Schema({ timestamps: true })
 export class PaperRollTransaction extends BaseSchema {

@@ -10,3 +10,7 @@ export class LoginRequestDto {
   @IsString()
   password: string;
 }
+
+export class LoginResponseDto {
+  "access_token"?: string;
+}
