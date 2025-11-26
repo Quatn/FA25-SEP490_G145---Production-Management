@@ -1,19 +1,18 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { User } from "./schemas/user.schema";
-import { Model } from "mongoose";
+import mongoose, { Model } from "mongoose";
 import { Employee } from "../employee/schemas/employee.schema";
-import {
-  CreateUserRequestDto,
-  CreateUserResponseDto,
-} from "./dto/create-user.dto";
+import { CreateUserRequestDto } from "./dto/create-user.dto";
 import { CreateResult } from "@/common/dto/create-result.dto";
+import { CryptoService } from "@/common/services/crypto.service";
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
     @InjectModel(Employee.name) private readonly employeeModel: Model<Employee>,
+    private cryptoService: CryptoService,
   ) { }
 
   async findAll() {
@@ -24,12 +23,34 @@ export class UserService {
     return await this.userModel.findOne({ code });
   }
 
+  async findByEmployeeId(emplId: mongoose.Types.ObjectId) {
+    return await this.userModel.findOne({ employee: emplId });
+  }
+
   async createOne(
     dto: CreateUserRequestDto,
   ): Promise<CreateResult<{ code: string }>> {
-    const empl = this.employeeModel.findById(dto.employee);
+    const empl = await this.employeeModel.findById(dto.employee);
+    if (!empl) {
+      throw new BadRequestException(
+        `Employee with id ${dto.employee.toHexString()} does not exist.`,
+      );
+    }
 
-    const user = new this.userModel(dto);
+    const codeDup = await this.findByCode(dto.code);
+    if (codeDup) {
+      throw new BadRequestException(`Duplicate code: ${dto.code}.`);
+    }
+
+    const employeeDup = await this.findByEmployeeId(dto.employee);
+    if (employeeDup) {
+      throw new BadRequestException(
+        `Employee with id "${dto.employee.toHexString()}" is aldready an user.`,
+      );
+    }
+
+    const hashedPassword = await this.cryptoService.hash(dto.password);
+    const user = new this.userModel({ ...dto, password: hashedPassword });
     const res = await user.save();
 
     return {

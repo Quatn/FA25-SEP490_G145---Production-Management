@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ManufacturingOrderService } from "./manufacturing-order.service";
-import { ApiExtraModels, ApiOperation } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiExtraModels, ApiOperation } from "@nestjs/swagger";
 import { BaseResponse } from "@/common/dto/response.dto";
 import {
   ManufacturingOrder,
@@ -57,8 +57,8 @@ const ManufacturingOrderGetRequestGuard = PrivilegedJwtAuthGuard({
   requiredPrivileges: manufacturingOrderGetPrivileges,
 });
 
+@ApiBearerAuth("access-token")
 @Controller("manufacturing-order")
-// The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
 @ApiExtraModels(
   BaseResponse,
   ManufacturingOrder,

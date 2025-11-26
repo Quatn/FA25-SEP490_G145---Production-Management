@@ -4,7 +4,7 @@ import { UserController } from "./user.controller";
 import { MongooseModule } from "@nestjs/mongoose";
 import { User, UserSchema } from "./schemas/user.schema";
 import { Employee, EmployeeSchema } from "../employee/schemas/employee.schema";
-import { UserModuleAccessPrivilege } from "@/config/access-privileges-list";
+import { CommonServicesModule } from "@/common/services/services.module";
 
 @Module({
   imports: [
@@ -12,6 +12,7 @@ import { UserModuleAccessPrivilege } from "@/config/access-privileges-list";
       { name: User.name, schema: UserSchema },
       { name: Employee.name, schema: EmployeeSchema },
     ]),
+    CommonServicesModule,
   ],
   providers: [UserService],
   controllers: [UserController],
