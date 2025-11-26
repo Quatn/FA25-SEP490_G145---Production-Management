@@ -1,13 +1,13 @@
-import { Module } from '@nestjs/common';
-import { PaperSupplierModule } from './paper-supplier/paper-supplier.module';
-import { PaperColorModule } from './paper-color/paper-color.module';
-import { PaperTypeModule } from './paper-type/paper-type.module';
-import { PaperRollModule } from './paper-roll/paper-roll.module';
-import { PaperRollTransactionModule } from './paper-roll-transaction/paper-roll-transaction.module';
-import { SemiFinishedGoodModule } from './semi-finished-good/semi-finished-good.module';
-import { SemiFinishedGoodTransactionModule } from './semi-finished-good-transaction/semi-finished-good-transaction.module';
-import { FinishedGoodModule } from './finished-good/finished-good.module';
-import { FinishedGoodTransactionModule } from './finished-good-transaction/finished-good-transaction.module';
+import { Module } from "@nestjs/common";
+import { PaperSupplierModule } from "./paper-supplier/paper-supplier.module";
+import { PaperColorModule } from "./paper-color/paper-color.module";
+import { PaperTypeModule } from "./paper-type/paper-type.module";
+import { PaperRollModule } from "./paper-roll/paper-roll.module";
+import { PaperRollTransactionModule } from "./paper-roll-transaction/paper-roll-transaction.module";
+import { SemiFinishedGoodModule } from "./semi-finished-good/semi-finished-good.module";
+import { SemiFinishedGoodTransactionModule } from "./semi-finished-good-transaction/semi-finished-good-transaction.module";
+import { FinishedGoodModule } from "./finished-good/finished-good.module";
+import { FinishedGoodTransactionModule } from "./finished-good-transaction/finished-good-transaction.module";
 
 @Module({
   imports: [
@@ -19,7 +19,7 @@ import { FinishedGoodTransactionModule } from './finished-good-transaction/finis
     SemiFinishedGoodModule,
     SemiFinishedGoodTransactionModule,
     FinishedGoodModule,
-    FinishedGoodTransactionModule
-  ]
+    FinishedGoodTransactionModule,
+  ],
 })
 export class WarehouseModule { }

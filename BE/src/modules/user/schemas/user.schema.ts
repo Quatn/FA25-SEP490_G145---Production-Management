@@ -3,9 +3,8 @@ import { BaseSchema } from "@/common/schemas/base.schema";
 import { Employee } from "@/modules/employee/schemas/employee.schema";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum } from "class-validator";
 import mongoose, { HydratedDocument } from "mongoose";
-import { AccessPrivilege } from "./access-privilege.schema";
+import { ALL_ACCESS_PRIVILEGE_VALUES, AnyAccessPrivileges } from "@/config/access-privileges-list";
 
 export enum UserRole {
   Admin = "admin",
@@ -16,7 +15,7 @@ export enum UserRole {
 export class User extends BaseSchema {
   @ApiProperty()
   @Prop({ required: true, unique: true })
-  username: string;
+  code: string;
 
   // Should be encrypted before saving, although there's currently no way to enforce that
   @ApiProperty()
@@ -34,18 +33,15 @@ export class User extends BaseSchema {
 
   @ApiProperty()
   @Prop({
-    type: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: AccessPrivilege.name,
-      },
-    ],
+    type: [String],
+    enum: ALL_ACCESS_PRIVILEGE_VALUES,
+    required: true,
+    default: [],
   })
-  accessPrivileges: mongoose.Types.ObjectId[] | AccessPrivilege[];
+  accessPrivileges: AnyAccessPrivileges[];
 }
 
 export type UserDocument = HydratedDocument<User>;
 
-export const UserSchema = SchemaFactory.createForClass(User).plugin(
-  softDeletePlugin,
-);
+export const UserSchema =
+  SchemaFactory.createForClass(User).plugin(softDeletePlugin);

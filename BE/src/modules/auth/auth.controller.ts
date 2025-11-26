@@ -32,10 +32,7 @@ export class AuthController {
     @Body() body: LoginRequestDto,
     @Res({ passthrough: true }) res: ExpressResponse,
   ): Promise<BaseResponse<LoginResponseDto>> {
-    const user = await this.authService.validateUser(
-      body.username,
-      body.password,
-    );
+    const user = await this.authService.validateUser(body.code, body.password);
 
     const token = await this.authService.login(user);
 
@@ -69,6 +66,6 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Can only be accessed by authenticated users" })
   getProtected(@Req() req: AuthenticatedRequest): string {
-    return `SAND FOR USER '${req.user.username}'`;
+    return `SAND FOR USER '${req.user.code}'`;
   }
 }
