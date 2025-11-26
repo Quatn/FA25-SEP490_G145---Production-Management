@@ -1,4 +1,4 @@
-import Header from "@/components/Header";
+import Header from "@/components/layout/Header";
 import { Box, Flex, Link, Text } from "@chakra-ui/react";
 
 export default function Home() {

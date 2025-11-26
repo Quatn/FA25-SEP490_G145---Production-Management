@@ -1,12 +1,13 @@
 "use client";
 
-import { Button, Flex, IconButton } from "@chakra-ui/react";
-import UserDetailsStack from "./debug-components/UserDetailStack";
-import AuthenticatedContent from "./layout/AuthenticatedContent";
+import { Box, Button, Flex, IconButton } from "@chakra-ui/react";
 import Link from "next/link";
 import { OptionsMenu } from "./OptionsMenu";
 import { RiEqualizerLine } from "react-icons/ri";
-import { useColorModeValue } from "./ui/color-mode";
+import UserDetailsStack from "../debug-components/UserDetailStack";
+import { useColorModeValue } from "../ui/color-mode";
+import AuthenticatedContent from "./AuthenticatedContent";
+import UserAvatar from "./UserAvatar";
 
 export default function Header() {
   const bg = useColorModeValue("gray.200", "gray.900");
@@ -15,7 +16,8 @@ export default function Header() {
   return (
     <header>
       <Flex bg={bg} color={color} p={1} gap={2}>
-        <UserDetailsStack />
+        <UserAvatar />
+        <Box flexGrow={1} />
         <AuthenticatedContent
           unauthenticatedContent={
             <Link href={"/auth/login"}>

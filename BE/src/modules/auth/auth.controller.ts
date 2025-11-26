@@ -17,6 +17,9 @@ import check from "check-types";
 import ms from "ms";
 import type { AuthenticatedRequest } from "@/common/interfaces/authenticated-request";
 import { LoginRequestDto, LoginResponseDto } from "./dto/login.dto";
+import { isRefPopulated } from "@/common/utils/populate-check";
+import { Role } from "../employee/schemas/role.schema";
+import { LogoutResponseDto } from "./dto/logout.dto";
 
 @Controller("auth")
 @ApiBearerAuth("access-token") // IMPORTANT: Include this or else Swagger wont include the access token when testing
@@ -33,6 +36,12 @@ export class AuthController {
     @Res({ passthrough: true }) res: ExpressResponse,
   ): Promise<BaseResponse<LoginResponseDto>> {
     const user = await this.authService.validateUser(body.code, body.password);
+
+    if (!isRefPopulated(user.employee)) {
+      throw Error(
+        "authService.validateUser failed to populate user.employee, this could mean that an user doc is not referencing an actual employee!",
+      );
+    }
 
     const token = await this.authService.login(user);
 
@@ -54,12 +63,49 @@ export class AuthController {
       message: "Login successful",
     };
 
+    loginResponse.data = {
+      userState: {
+        code: user.code,
+        name: user.employee.name,
+        accessPrivileges: user.accessPrivileges,
+        address: user.employee.address,
+        contactNumber: user.employee.contactNumber,
+        email: user.employee.email,
+        employeeCode: user.employee.code,
+        role: (user.employee.role as Role).code,
+      },
+    };
+
     // For swagger testing, should be removed once security becomes a more pressing concern
     if (process.env.NODE_ENV === "development") {
-      loginResponse.data = { access_token: token.access_token };
+      loginResponse.data.access_token = token.access_token;
     }
 
     return loginResponse;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("logout")
+  @ApiOperation({
+    summary: "Logout",
+  })
+  logout(
+    @Req() req: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: ExpressResponse,
+  ): BaseResponse<LogoutResponseDto> {
+    res.clearCookie("access_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // only over HTTPS in prod
+      sameSite: "strict",
+    });
+
+    return {
+      success: true,
+      message: "Logged out successfully",
+      data: {
+        code: req.user.code,
+      },
+    };
   }
 
   @Get("test-protected-route")

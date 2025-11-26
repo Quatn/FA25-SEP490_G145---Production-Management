@@ -1,10 +1,11 @@
 import { JwtPayload } from "@/common/interfaces/jwt-payload.interface";
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { UserDocument } from "../user/schemas/user.schema";
+import { UserDocument, UserSchema } from "../user/schemas/user.schema";
 import { UserService } from "../user/user.service";
 import check from "check-types";
 import bcrypt from "bcrypt";
+import { EmployeeSchema } from "../employee/schemas/employee.schema";
 
 @Injectable()
 export class AuthService {
@@ -17,7 +18,15 @@ export class AuthService {
     const user = await this.userService.findByCode(code);
     if (!check.null(user) && !check.undefined(user)) {
       const isMatch = await bcrypt.compare(password, user.password);
-      if (isMatch) return user;
+      if (isMatch) {
+        const employeePath = UserSchema.path("employee");
+        const rolePath = EmployeeSchema.path("role");
+        await user.populate({
+          path: employeePath.path,
+          populate: rolePath.path,
+        });
+        return user;
+      }
       throw new UnauthorizedException("Invalid credentials");
     }
     throw new UnauthorizedException("User not found");
