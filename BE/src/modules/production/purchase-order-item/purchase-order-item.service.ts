@@ -204,4 +204,37 @@ export class PurchaseOrderItemService {
       .exec();
     if (!res) throw new NotFoundException("PurchaseOrderItem not found");
   }
+
+  async findDeleted(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const filter = { isDeleted: true };
+
+    const [rawDocs, totalCount] = await Promise.all([
+      this.purchaseOrderItemModel.collection.find(filter).skip(skip).limit(limit).toArray(),
+      this.purchaseOrderItemModel.collection.countDocuments(filter),
+    ]);
+
+    const populated = await this.purchaseOrderItemModel.populate(rawDocs, [
+      { path: "ware" },
+      { path: "subPurchaseOrder" },
+    ]);
+
+    const totalPages = Math.ceil((totalCount || 0) / limit);
+    return {
+      data: populated,
+      page,
+      limit,
+      totalItems: totalCount,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
+
+  async restore(id: string) {
+    const doc = await this.purchaseOrderItemModel.findById(id) as any;
+    if (!doc) throw new NotFoundException("Purchase order item not found");
+    await doc.restore();
+    return { success: true };
+  }
 }

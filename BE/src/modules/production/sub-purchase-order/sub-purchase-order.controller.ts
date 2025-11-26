@@ -14,6 +14,7 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { SubPurchaseOrderService } from "./sub-purchase-order.service";
 import { CreateSubFromProductsDto } from "./dto/create-sub-from-products.dto";
 import { UpdateSubPurchaseOrderDto } from "./dto/update-sub-purchase-order.dto";
+import { PaginationQueryDto } from "../purchase-order/dto/pagination-query.dto";
 
 @Controller("sub-purchase-order")
 @ApiTags("SubPurchaseOrder")
@@ -60,5 +61,17 @@ export class SubPurchaseOrderController {
   @ApiOperation({ summary: "Soft delete sub-PO" })
   remove(@Param("id") id: string) {
     return this.svc.softRemove(id);
+  }
+
+  @Get("deleted")
+  async findDeleted(@Query() q: PaginationQueryDto) {
+    const page = q.page ?? 1;
+    const limit = q.limit ?? 20;
+    return this.svc.findDeleted(page, limit);
+  }
+
+  @Patch("restore/:id")
+  async restore(@Param("id") id: string) {
+    return this.svc.restore(id);
   }
 }

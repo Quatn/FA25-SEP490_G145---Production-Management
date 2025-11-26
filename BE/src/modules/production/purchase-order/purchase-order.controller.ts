@@ -15,6 +15,7 @@ import {
   QueryOrdersWithUnmanufacturedItemsRequestDto,
   QueryOrdersWithUnmanufacturedItemsResponseDto,
 } from "./dto/query-orders-with-unmanufactured-items.dto";
+import { PaginationQueryDto } from "./dto/pagination-query.dto";
 
 @Controller("purchase-order")
 // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -79,6 +80,13 @@ export class PurchaseOrderController {
   async softDelete(@Param('id') id: string): Promise<BaseResponse<null>> {
     await this.poService.softDelete(id);
     return { success: true, message: 'Soft deleted successfully', data: null };
+  }
+
+  @Get("deleted")
+  async findDeleted(@Query() q: PaginationQueryDto) {
+    const page = q.page ?? 1;
+    const limit = q.limit ?? 20;
+    return this.poService.findDeleted(page, limit);
   }
 
   @Patch('restore/:id')
