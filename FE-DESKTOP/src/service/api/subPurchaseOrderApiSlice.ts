@@ -46,8 +46,34 @@ export const subPurchaseOrderApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: [{ type: "PurchaseOrder", id: "LIST" }],
     }),
+
+    getDeletedSubPurchaseOrders: builder.query<any, { page?: number; limit?: number }>({
+      query: ({ page = 1, limit = 20 }) => ({
+        url: `${SUB_PURCHASE_ORDER_URL}/deleted`,
+        method: "GET",
+        params: { page, limit },
+        credentials: "include",
+      }),
+      providesTags: (result) =>
+        result
+          ? [
+            ...((result.data || result) as any[]).map((r: any) => ({ type: "SubPurchaseOrder" as const, id: r._id ?? r._id?.$oid ?? r.id })),
+            { type: "SubPurchaseOrder" as const, id: "DELETED_LIST" },
+          ]
+          : [{ type: "SubPurchaseOrder" as const, id: "DELETED_LIST" }],
+    }),
+
+    restoreSubPurchaseOrder: builder.mutation<any, string>({
+      query: (id) => ({
+        url: `${SUB_PURCHASE_ORDER_URL}/restore/${id}`,
+        method: "PATCH",
+        credentials: "include",
+      }),
+      invalidatesTags: [{ type: "SubPurchaseOrder", id: "DELETED_LIST" }, { type: "PurchaseOrder", id: "LIST" }],
+    }),
   }),
 });
 
 export const { useCreateFromProductsMutation, useGetSubPurchaseOrdersQuery, useUpdateSubPurchaseOrderMutation,
-  useDeleteSubPurchaseOrderMutation, } = subPurchaseOrderApiSlice;
+  useDeleteSubPurchaseOrderMutation, useGetDeletedSubPurchaseOrdersQuery,
+  useRestoreSubPurchaseOrderMutation, } = subPurchaseOrderApiSlice;

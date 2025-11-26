@@ -16,8 +16,11 @@ import {
   useUpdatePurchaseOrderItemMutation,
   useDeletePurchaseOrderItemMutation,
 } from "@/service/api/purchaseOrderItemApiSlice";
-import { useCreateFromProductsMutation } from "@/service/api/subPurchaseOrderApiSlice";
-import { useUpdateSubPurchaseOrderMutation } from "@/service/api/subPurchaseOrderApiSlice";
+import {
+  useCreateFromProductsMutation,
+  useUpdateSubPurchaseOrderMutation,
+  useDeleteSubPurchaseOrderMutation,
+} from "@/service/api/subPurchaseOrderApiSlice";
 
 function makeId(prefix = "") {
   return `${prefix}${Date.now()}${Math.floor(Math.random() * 9000 + 1000)}`;
@@ -149,8 +152,9 @@ const PurchaseOrderList: React.FC = () => {
   const [deletePo] = useDeletePurchaseOrderMutation();
   const [createSubFromProducts] = useCreateFromProductsMutation();
 
-  // subPO update mutation
+  // subPO update / delete mutations
   const [updateSub] = useUpdateSubPurchaseOrderMutation();
+  const [deleteSub] = useDeleteSubPurchaseOrderMutation();
 
   // PO item update/delete hooks
   const [updatePoItem] = useUpdatePurchaseOrderItemMutation();
@@ -196,7 +200,7 @@ const PurchaseOrderList: React.FC = () => {
   const syncTotalsToOrders = (localDoc: any | null) => {
     if (!localDoc) return;
     const poId =
-      String(localDoc._id ?? localDoc.id ?? localDoc._id?.$oid ?? "") || "";
+      String(localDoc._id ?? localDoc._id?.$oid ?? "") || "";
     const totals = { items: 0, value: 0 };
     (localDoc.subPurchaseOrders || []).forEach((s: any) => {
       (s.items || []).forEach((it: any) => {
@@ -322,136 +326,6 @@ const PurchaseOrderList: React.FC = () => {
     updatePOLocal(poId, (po) => {
       po.subPOs = po.subPOs || [];
       po.subPOs.push(newSub);
-      return po;
-    });
-  };
-
-  const handleRemoveSubPO = (poId: string, subId: string) => {
-    if (!confirm("Remove this sub-PO?")) return;
-    updatePOLocal(poId, (po) => {
-      po.subPOs = (po.subPOs || []).filter((s) => s.id !== subId);
-      return po;
-    });
-  };
-
-  const handleChangeSubTitle = (poId: string, subId: string, value: string) => {
-    updatePOLocal(poId, (po) => {
-      (po.subPOs || []).forEach((s) => {
-        if (s.id === subId) s.title = value;
-      });
-      return po;
-    });
-  };
-
-  const handleChangeSubStatus = (
-    poId: string,
-    subId: string,
-    value: string
-  ) => {
-    updatePOLocal(poId, (po) => {
-      (po.subPOs || []).forEach((s) => {
-        if (s.id === subId) s.status = value;
-      });
-      return po;
-    });
-  };
-
-  const handleChangeSubProductType = (
-    poId: string,
-    subId: string,
-    value: string
-  ) => {
-    updatePOLocal(poId, (po) => {
-      (po.subPOs || []).forEach((s) => {
-        if (s.id === subId) (s as any).productType = value;
-      });
-      return po;
-    });
-  };
-
-  const handleChangeSubCustomerCode = (
-    poId: string,
-    subId: string,
-    value: string
-  ) => {
-    updatePOLocal(poId, (po) => {
-      (po.subPOs || []).forEach((s) => {
-        if (s.id === subId) (s as any).customerCode = value;
-      });
-      return po;
-    });
-  };
-
-  const handleChangeSubSize = (poId: string, subId: string, value: string) => {
-    updatePOLocal(poId, (po) => {
-      (po.subPOs || []).forEach((s) => {
-        if (s.id === subId) (s as any).size = value;
-      });
-      return po;
-    });
-  };
-
-  const handleAddItem = (poId: string, subId: string) => {
-    const newItem: POItem = {
-      id: makeId("item-"),
-      subPOId: subId,
-      sku: "",
-      description: "",
-      uom: "PCS",
-      unitPrice: 0,
-      quantity: 0,
-      total: 0,
-      status: "Pending",
-    };
-    updatePOLocal(poId, (po) => {
-      const s = (po.subPOs || []).find((x) => x.id === subId);
-      if (!s) {
-        po.subPOs = po.subPOs || [];
-        po.subPOs.push({
-          id: subId,
-          poId: po.id,
-          title: "Auto",
-          status: "Open",
-          items: [newItem],
-          productType: "Bộ",
-          customerCode: "",
-          size: "",
-        } as any);
-      } else {
-        s.items = s.items || [];
-        s.items.push(newItem);
-      }
-      return po;
-    });
-  };
-
-  const handleRemoveItem = (poId: string, subId: string, itemId: string) => {
-    if (!confirm("Remove this item?")) return;
-    updatePOLocal(poId, (po) => {
-      const s = (po.subPOs || []).find((x) => x.id === subId);
-      if (s) s.items = (s.items || []).filter((it) => it.id !== itemId);
-      return po;
-    });
-  };
-
-  const handleChangeItemField = (
-    poId: string,
-    subId: string,
-    itemId: string,
-    field: keyof POItem,
-    value: any
-  ) => {
-    updatePOLocal(poId, (po) => {
-      const s = (po.subPOs || []).find((x) => x.id === subId);
-      if (s) {
-        const it = (s.items || []).find((i) => i.id === itemId);
-        if (it) {
-          (it as any)[field] = value;
-          const qty = Number(it.quantity ?? 0);
-          const price = Number(it.unitPrice ?? 0);
-          it.total = Number(qty * price);
-        }
-      }
       return po;
     });
   };
@@ -591,6 +465,42 @@ const PurchaseOrderList: React.FC = () => {
     }
   };
 
+  // NEW Handler: delete server sub-PO (soft-delete)
+  const handleDeleteServerSub = async (subRaw: any) => {
+    const subId = String(resolveId(subRaw));
+    if (!confirm("Xác nhận xóa sản phẩm này?")) return;
+
+    // save copy for rollback
+    const prevCopy = expandedLocalDoc
+      ? JSON.parse(JSON.stringify(expandedLocalDoc))
+      : null;
+
+    // optimistic remove sub-PO and re-sync totals
+    setExpandedLocalDoc((prev: any) => {
+      if (!prev) return prev;
+      const copy = JSON.parse(JSON.stringify(prev));
+      copy.subPurchaseOrders = (copy.subPurchaseOrders || []).filter(
+        (s: any) => String(s._id ?? s.id) !== subId
+      );
+      syncTotalsToOrders(copy);
+      return copy;
+    });
+
+    try {
+      await deleteSub(subId).unwrap();
+      // success: leave optimistic state as-is
+    } catch (err: any) {
+      // rollback
+      console.error("Delete sub-PO failed, rolling back & refetching", err);
+      if (prevCopy) setExpandedLocalDoc(prevCopy);
+      if (refetchSubs) await refetchSubs();
+      alert(
+        "Xóa sản phẩm thất bại: " +
+          (err?.data?.message || err?.message || "unknown")
+      );
+    }
+  };
+
   // Handler: update PO status (top-level PO)
   const handleUpdatePoStatus = async (poId: string, newStatus: string) => {
     // optimistic update in list
@@ -668,8 +578,7 @@ const PurchaseOrderList: React.FC = () => {
     }
   };
 
-  // Handler: update sub-PO status + delivery date when creating from products (we already call createSubFromProducts elsewhere)
-  // (No extra code needed here)
+  // Handler: update sub-PO status + delivery date when creating from products handled elsewhere
 
   return (
     <div style={{ padding: 16 }}>
@@ -877,7 +786,14 @@ const PurchaseOrderList: React.FC = () => {
                                       </select>
                                     </div>
 
-                                    <div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        gap: 8,
+                                        justifyContent: "flex-end",
+                                        alignItems: "center",
+                                      }}
+                                    >
                                       {/* delivery date input */}
                                       <input
                                         type="date"
@@ -900,6 +816,14 @@ const PurchaseOrderList: React.FC = () => {
                                           )
                                         }
                                       />
+
+                                      {/* NEW: Delete sub-PO (soft-delete) */}
+                                      <button
+                                        className="btn btn-danger btn-sm"
+                                        onClick={() => handleDeleteServerSub(s)}
+                                      >
+                                        Xóa sản phẩm
+                                      </button>
                                     </div>
                                   </div>
                                 </div>
