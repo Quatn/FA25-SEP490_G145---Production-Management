@@ -1,11 +1,4 @@
-import ManufacturingOrderFullDetailTableConfirmDialog from "@/components/manufacturing-order/full-detail-table/ConfirmDialog";
-import ManufacturingOrderPagination from "@/components/manufacturing-order/full-detail-table/Pagination";
-import ManufacturingOrderPaginationControl from "@/components/manufacturing-order/full-detail-table/PaginationControl";
-import ManufacturingOrderSearchBar from "@/components/manufacturing-order/full-detail-table/SearchBar";
-import ManufacturingOrderSearchFilterControl from "@/components/manufacturing-order/full-detail-table/SearchFilterControl";
-import ManufacturingOrderTable from "@/components/manufacturing-order/full-detail-table/Table";
-import ManufacturingOrderTableControl from "@/components/manufacturing-order/full-detail-table/TableControl";
-import ManufacturingOrderDetailsDialog from "@/components/manufacturing-order/order-details-dialog/Dialog";
+import { ManufacturingOrderTableComponents } from "@/components/manufacturing-order/full-detail-table/components";
 import { ManufacturingOrderDialogProvider } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { ManufacturingOrderTableProvider } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { Box, Button, HStack, Stack, Text } from "@chakra-ui/react";
@@ -35,31 +28,31 @@ export default function ManufacturingOrderHome() {
                 Danh sách lệnh
               </Text>
               <HStack justifyContent={"space-between"}>
-                <ManufacturingOrderSearchBar />
+                <ManufacturingOrderTableComponents.SearchBar />
 
-                <ManufacturingOrderSearchFilterControl />
+                <ManufacturingOrderTableComponents.SearchFilterControl />
 
                 <Link href="/manufacturing-order/create">
                   <Button colorPalette={"cyan"}>Tạo mới</Button>
                 </Link>
               </HStack>
 
-              <ManufacturingOrderTableControl />
+              <ManufacturingOrderTableComponents.TableControl />
 
               <Stack flexGrow={1}>
-                <ManufacturingOrderTable rootProps={{ flexGrow: 1 }} />
+                <ManufacturingOrderTableComponents.Table rootProps={{ flexGrow: 1 }} />
               </Stack>
 
-              <ManufacturingOrderPaginationControl />
+              <ManufacturingOrderTableComponents.PaginationControl />
 
-              <ManufacturingOrderPagination />
+              <ManufacturingOrderTableComponents.Pagination />
             </Stack>
           </Box>
         </Box>
 
-        <ManufacturingOrderDetailsDialog />
+        <ManufacturingOrderTableComponents.DetailsDialog />
       </ManufacturingOrderDialogProvider>
-      <ManufacturingOrderFullDetailTableConfirmDialog />
+      <ManufacturingOrderTableComponents.ConfirmDialog />
     </ManufacturingOrderTableProvider>
   );
 }

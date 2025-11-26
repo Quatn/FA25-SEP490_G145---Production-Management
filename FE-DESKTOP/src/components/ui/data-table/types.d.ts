@@ -13,9 +13,6 @@ export type DataTableEditableCellProps = {
 }
 
 export type DataTableMeta = {
-  allowEdit?: boolean;
   updateData?: (rowIndex: number, columnId: string, value: DataTableEditableCellValueTypes) => void;
   editableCellNode?: (props: DataTableEditableCellProps) => React.ReactNode
-  hoveredRowId?: string | null;
-  query?: string;
 };

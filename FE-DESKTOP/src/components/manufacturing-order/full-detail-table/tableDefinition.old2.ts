@@ -1,4 +1,4 @@
-import { CellContext, ColumnDef, createColumnHelper } from "@tanstack/react-table";
+import { CellContext, createColumnHelper } from "@tanstack/react-table";
 import type { ManufacturingOrder, OrderStatus } from "@/types/ManufacturingOrder";
 import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
 import check from "check-types";
@@ -6,11 +6,10 @@ import type { ManufacturingTableTabType } from "@/context/manufacturing-order/ma
 import { manufacturingOrderTableCells } from "./tableCellNodes";
 import { PrintColor } from "@/types/PrintColor";
 import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";
-import { getDataTableColumnHelper } from "@/components/ui/data-table/utils/getDataTableColumnHelper";
 
 export type ManufacturingOrderTableDataType = Serialized<ManufacturingOrder> & { isEdited: boolean }
 
-const columnHelper = getDataTableColumnHelper<Serialized<ManufacturingOrder>>()
+const columnHelper = createColumnHelper<ManufacturingOrderTableDataType>();
 
 const orderStatusNameMap: Record<OrderStatus, string> = {
   NOTSTARTED: "Chưa bắt đầu",
@@ -39,14 +38,15 @@ const colSize = {
   },
 }
 
-export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder>>)[] = [
-  columnHelper.defineDataTableDisplayColumn({
+export const manufacturingOrderColumns = [
+  columnHelper.display({
     id: "manufacturingDirective",
     header: "KH Giao",
     enablePinning: true,
     ...colSize.md,
+    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.manufacturingDirective({ context }),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "code",
     header: "Mã lệnh",
     enablePinning: true,
@@ -56,7 +56,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
       value: context.row.original.code
     }),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "customerCode",
     header: "Khách hàng",
     cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.highlight({
@@ -66,7 +66,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     }),
 
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "wareCode",
     header: "Mã hàng",
     cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.highlight({
@@ -75,12 +75,12 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     }),
 
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "overallStatus",
     header: "Trạng thái chạy",
     cell: ({ row }) => orderStatusNameMap[row.original.overallStatus],
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "fluteCombo",
     header: "Sóng",
     cell: ({ row }) => {
@@ -88,7 +88,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
       return check.string(fc) ? fc : fc?.code;
     }
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "wareManufacturingProcessType",
     header: "Kiểu gia công",
     cell: ({ row }) => {
@@ -96,32 +96,32 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
       return check.string(fc) ? fc : fc?.name;
     }
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "wareWidth",
     header: "Dài / Khổ",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.wareWidth,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "wareLength",
     header: "Rộng",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.wareLength,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "wareHeight",
     header: "Cao",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.wareHeight,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "amount",
     header: "Số lượng",
     ...colSize.md,
     cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.amount({ context }),
 
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "orderDate",
     header: "Ngày nhận",
     ...colSize.md,
@@ -131,7 +131,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
           ?.orderDate,
       ),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "deliveryDate",
     header: "Ngày giao",
     ...colSize.md,
@@ -140,7 +140,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
         row.original.purchaseOrderItem?.subPurchaseOrder?.deliveryDate,
       ),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "purchaseOrderCode",
     header: "Đơn hàng",
     cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.highlight({
@@ -149,192 +149,192 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     }),
 
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "blankWidth",
     header: "Khổ",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.blankWidth,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "blankLength",
     header: "Cắt dài",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.blankLength,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "flapLength",
     header: "Cánh",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.flapLength,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "warePerBlank",
     header: "Số SP",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.warePerBlank,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "numberOfBlanks",
     header: "Số tấm",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.numberOfBlanks,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "longitudinalCutCount",
     header: "Tấm chặt",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.longitudinalCutCount,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "runningLength",
     header: "Mét dài",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.runningLength,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "crossCutCount",
     header: "Part SX",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.crossCutCount,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "paperWidth",
     header: "Khổ giấy",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.paperWidth,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "margin",
     header: "Lề biên",
     ...colSize.sm,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.margin,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "faceLayerPaperType",
     header: "Mặt SP",
     ...colSize.md,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.faceLayerPaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "EFlutePaperType",
     header: "Sóng E",
     ...colSize.md,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.EFlutePaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "EBLinerLayerPaperType",
     header: "Lớp giữa",
     ...colSize.md,
     cell: ({ row }) =>
       row.original.purchaseOrderItem?.ware?.EBLinerLayerPaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "BFlutePaperType",
     header: "Sóng B",
     ...colSize.md,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.BFlutePaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "BACLinerLayerPaperType",
     header: "Lớp giữa",
     ...colSize.md,
     cell: ({ row }) =>
       row.original.purchaseOrderItem?.ware?.BACLinerLayerPaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "ACFlutePaperType",
     header: "Sóng A/C",
     ...colSize.md,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.ACFlutePaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "backLayerPaperType",
     header: "Mặt trong",
     ...colSize.md,
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.backLayerPaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "purchaseOrderItemNote",
     header: "Ghi chú cố định",
     ...colSize.lg,
     cell: ({ row }) => row.original.purchaseOrderItem?.note,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "note",
     header: "Ghi chú tạm thời",
     ...colSize.lg,
     cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.note({ context }),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "manufacturingDateAdjustment",
     header: "Ngày SX",
     cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.manufacturingDate({ context }),
 
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "requestedDatetime",
     header: "Ngày và giờ cần",
     cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.requestedDatetime({ context }),
 
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "corrugatorLineAdjustment",
     header: "Dàn",
     cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.corrugatorLine({ context }),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "faceLayerPaperWeight",
     header: "Mặt SP",
     cell: ({ row }) => row.original.purchaseOrderItem?.faceLayerPaperWeight?.toFixed(4),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "EFlutePaperWeight",
     header: "Sóng E",
     cell: ({ row }) => row.original.purchaseOrderItem?.EFlutePaperWeight?.toFixed(4),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "EBLinerLayerPaperWeight",
     header: "Lớp giữa",
     cell: ({ row }) =>
       row.original.purchaseOrderItem?.EBLinerLayerPaperWeight?.toFixed(4),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "BFlutePaperWeight",
     header: "Sóng B",
     cell: ({ row }) => row.original.purchaseOrderItem?.BFlutePaperWeight?.toFixed(4),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "BACLinerLayerPaperWeight",
     header: "Lớp giữa",
     cell: ({ row }) =>
       row.original.purchaseOrderItem?.BACLinerLayerPaperWeight?.toFixed(4),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "ACFlutePaperWeight",
     header: "Sóng A/C",
     cell: ({ row }) => row.original.purchaseOrderItem?.ACFlutePaperWeight?.toFixed(4),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "backLayerPaperWeight",
     header: "Mặt trong",
     cell: ({ row }) => row.original.purchaseOrderItem?.backLayerPaperWeight?.toFixed(4),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "totalVolume",
     header: "Khối",
     cell: ({ row }) => row.original.purchaseOrderItem?.totalVolume,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "totalWeight",
     header: "Tổng trọng lượng",
     cell: ({ row }) => row.original.purchaseOrderItem?.totalWeight.toFixed(4),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "typeOfPrinter",
     header: "Máy In",
     cell: ({ row }) => row.original.purchaseOrderItem?.ware?.typeOfPrinter,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "printColors",
     header: "Màu In",
     cell: ({ row }) => {
@@ -344,7 +344,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     }
 
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "processes",
     header: "Công đoạn gia công",
     cell: ({ row }) => {
@@ -353,7 +353,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
       return (check.array.of.string(fps)) ? fps.join(", ") : fps?.map((p) => (p as Serialized<WareFinishingProcessType>).name).join(", ")
     }
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.display({
     id: "actions-column",
     header: undefined,
     cell: () => undefined,

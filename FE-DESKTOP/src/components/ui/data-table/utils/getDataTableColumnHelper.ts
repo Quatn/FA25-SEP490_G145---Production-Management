@@ -61,17 +61,6 @@ export function getDataTableColumnHelper<RowData>() {
         cell: cell as ColumnDefTemplate<CellContext<RowData, unknown>>,
       }
     },
-    defineDataTableDisplayColumn: () => {
-      /*
-      return columnHelper.display({
-        id: "manufacturingDirective",
-        header: "KH Giao",
-        enablePinning: true,
-        ...colSize.md,
-        cell: (context: CellContext<RowData, unknown>) => manufacturingOrderTableCells.manufacturingDirective({ context }),
-      }),
-      */
-
-    },
+    defineDataTableDisplayColumn: columnHelper.display,
   }
 }
