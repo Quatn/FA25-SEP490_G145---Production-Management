@@ -34,14 +34,14 @@ export const materialRequirementColumns = [
     header: "Trọng lượng sử dựng (kg)",
     ...colSize.sm,
     cell: ({ row }) =>
-      row.original.requirementWeight,
+      row.original.requirementWeight.toFixed(4),
   }),
   columnHelper.display({
     id: "inventoryWeight",
     header: "Tồn kho (kg)",
     ...colSize.sm,
     cell: ({ row }) =>
-      row.original.inventoryWeight,
+      row.original.inventoryWeight.toFixed(4),
   }),
   columnHelper.display({
     id: "status",

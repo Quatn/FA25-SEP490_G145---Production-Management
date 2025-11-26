@@ -14,22 +14,22 @@ interface Props {
 }
 
 type TransactionRequest = {
-    manufacturingOrderId: string;
+    manufacturingOrder: string;
     manufacturingOrderCode: string;
     transactionType: "IMPORT" | "EXPORT";
     quantity: number;
-    employeeId?: string;
+    employee?: string;
     note?: string;
 };
 
 const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData, transactionType, manufacturingOrders }) => {
     const [createFinishedGoodTransaction] = useCreateFinishedGoodTransactionMutation();
     const [transaction, setTransaction] = useState<TransactionRequest>({
-        manufacturingOrderId: "",
+        manufacturingOrder: "",
         manufacturingOrderCode: "",
         transactionType: transactionType ?? "IMPORT",
         quantity: 0,
-        employeeId: "",
+        employee: "",
         note: "",
     });
 
@@ -46,28 +46,28 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
     useEffect(() => {
         if (isOpen) {
             setTransaction({
-                manufacturingOrderId: initialData?.manufacturingOrderId ?? "",
+                manufacturingOrder: initialData?.manufacturingOrder?._id ?? "",
                 manufacturingOrderCode: initialData?.manufacturingOrder?.code ?? "",
                 transactionType: transactionType ?? "IMPORT",
                 quantity: 0,
-                employeeId: "69146dd889bf8e8ca320bcff", //TODO: hardcode employee
+                employee: "691b660f3a472fc27fde0c31", //TODO: hardcode employee
                 note: "",
             });
         }
     }, [isOpen]);
 
     const handleSubmit = async () => {
-        if (!transaction.manufacturingOrderId) {
-            toaster.create({ title: "Lỗi", description: "Chưa chọn thành phẩm", type: "error", closable: true });
+        if (!transaction.manufacturingOrder) {
+            toaster.create({ title: "Lỗi", description: "Chưa chọn mã hàng", type: "error", closable: true });
             return;
         }
 
         try {
             await createFinishedGoodTransaction({
-                manufacturingOrderId: transaction.manufacturingOrderId,
+                manufacturingOrder: transaction.manufacturingOrder,
                 transactionType: transaction.transactionType,
                 quantity: transaction.quantity,
-                employeeId: transaction.employeeId,
+                employee: transaction.employee,
                 note: transaction.note
             } as any).unwrap();
             toaster.create({
@@ -100,10 +100,10 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
                                     <Combobox.Root
                                         collection={moCollection}
                                         defaultInputValue={initialData?.manufacturingOrder?.code || ""}
-                                        readOnly={initialData?.manufacturingOrderId ? true : false}
+                                        readOnly={initialData?.manufacturingOrder ? true : false}
                                         onInputValueChange={(e) => moFilter(e.inputValue)}
                                         onValueChange={(details) => {
-                                            setTransaction({ ...transaction, manufacturingOrderId: details.value[0] });
+                                            setTransaction({ ...transaction, manufacturingOrder: details.value[0] });
                                         }}>
                                         <Combobox.Control>
                                             <Combobox.Input placeholder="Chọn hoặc tìm mã lệnh" />

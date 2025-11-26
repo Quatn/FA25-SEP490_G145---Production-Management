@@ -4,22 +4,27 @@ import { useGetMaterialRequirementsQuery } from "@/service/api/materialRequireme
 import { MaterialRequirementDto } from "@/types/DTO/material-requirement-summary/MaterialRequirement";
 import { Box, BoxProps, Center, Spinner, Stack, Table, TableRootProps, TabsRootProps, Text } from "@chakra-ui/react";
 import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { materialRequirementColumns } from "./materialTableDefinition";
 import check from "check-types";
 import { useSelectedOrdersState } from "../TabbedContainer";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { Ware } from "@/types/Ware";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
+import { useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
+import { useManufacturingOrderCreatePageState } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
+import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
 
 export type MaterialRequirementTableProps = {
   rootProps?: BoxProps;
   tabsRootProps?: TabsRootProps;
   tableRootProps?: TableRootProps;
+  type: "FACE" | "RAW"
 };
 
 function accumulateMaterialRequirements(
-  items: Serialized<ManufacturingOrder>[] | undefined
+  items: Serialized<ManufacturingOrder>[] | undefined,
+  type?: "FACE" | "RAW"
 ): MaterialRequirementDto[] {
   if (check.undefined(items)) return []
 
@@ -46,12 +51,15 @@ function accumulateMaterialRequirements(
       const code = item.purchaseOrderItem!.ware![pair.type] as string;
       const weight = item.purchaseOrderItem![pair.weight];
 
-      if (code && typeof weight === "number") {
+      if (code && check.equal(code.startsWith("M"), type === "RAW") && typeof weight === "number") {
         const current = requirementMap.get(code) || 0;
         requirementMap.set(code, current + weight);
       }
     }
   }
+
+  // temp
+  const inventoryWeight = 0
 
   // Convert map to array of MaterialRequirementDto
   const result: MaterialRequirementDto[] = [];
@@ -59,8 +67,8 @@ function accumulateMaterialRequirements(
     result.push({
       code,
       requirementWeight,
-      inventoryWeight: 0, // Set to 0 or update as needed
-      status: "Pending",  // Set a default status or update as needed
+      inventoryWeight, // Set to 0 or update as needed
+      status: (requirementWeight > inventoryWeight) ? `Thiếu ${(requirementWeight - inventoryWeight).toFixed(4)} kg` : "Đủ",  // Set a default status or update as needed
     });
   }
 
@@ -70,10 +78,41 @@ function accumulateMaterialRequirements(
 export default function MaterialRequirementTable(
   props: MaterialRequirementTableProps,
 ) {
-  const { selectedManufacturingOrders } = useSelectedOrdersState();
+  const { selectedPOIsIds } = useManufacturingOrderCreatePageState();
 
-  // const moPaginatedList = fullDetailMOsResponse?.data;
-  const tableData: MaterialRequirementDto[] = accumulateMaterialRequirements(selectedManufacturingOrders);
+  const {
+    data: fullDetailMOsResponse,
+    error: fetchError,
+    isLoading: isFetchingList,
+  } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
+    ids: selectedPOIsIds,
+  });
+
+  const moPaginatedList = useMemo(() => {
+    if (fullDetailMOsResponse?.data) {
+      const calculatedMoPaginatedList = fullDetailMOsResponse.data.map((mo) => {
+        const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
+        const calculatedPOI = recalculatePurchaseOrderItem({
+          ...mo.purchaseOrderItem!,
+          ware: calculatedWare
+        })
+
+        return {
+          ...mo,
+          purchaseOrderItem: calculatedPOI,
+        }
+      })
+      return {
+        data: calculatedMoPaginatedList
+      }
+    }
+    else {
+      return undefined
+    }
+  }, [fullDetailMOsResponse?.data])
+
+  const tableData: MaterialRequirementDto[] = useMemo(() => accumulateMaterialRequirements(moPaginatedList?.data ?? [], props.type),
+    [moPaginatedList, props.type]);
 
   const table = useReactTable({
     data: tableData,
@@ -82,9 +121,7 @@ export default function MaterialRequirementTable(
     getRowId: (row) => row.code,
   });
 
-  console.log("A")
-
-  if (check.undefined(selectedManufacturingOrders) || selectedManufacturingOrders.length < 1) {
+  if (check.undefined(moPaginatedList?.data) || moPaginatedList?.data.length < 1) {
     return (
       <Center>
         <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
@@ -99,6 +136,7 @@ export default function MaterialRequirementTable(
 
   return (
     <Box mt={3} {...props.rootProps}>
+      <Text textAlign={"center"} fontWeight={"bold"}>Trọng lượng giấy {props.type === "RAW" ? " mộc" : " mặt"}</Text>
       <Table.ScrollArea borderWidth="1px">
         <Table.Root
           minW={table.getTotalSize()}

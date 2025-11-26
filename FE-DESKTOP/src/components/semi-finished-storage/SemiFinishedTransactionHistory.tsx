@@ -11,7 +11,7 @@ interface Props {
 const SemiFinishedTransactionHistory: React.FC<Props> = ({ id }) => {
     const [page, setPage] = useState(1);
     const limit = 10;
-    const { data, error, isLoading } = useGetSemiFinishedGoodTransactionsQuery({ page, limit, search: '', finishedGoodId: id ?? '' });
+    const { data, error, isLoading } = useGetSemiFinishedGoodTransactionsQuery({ page, limit, search: '', semiFinishedGoodId: id ?? '' });
     const items: SemiFinishedGoodTransaction[] = (data as any)?.data?.data ?? [];
     const totalPages = (data as any)?.data?.totalPages ?? 1;
 
@@ -25,7 +25,7 @@ const SemiFinishedTransactionHistory: React.FC<Props> = ({ id }) => {
                     <Table.Header>
                         <Table.Row>
                             <Table.ColumnHeader fontSize={"lg"}>Thời gian</Table.ColumnHeader>
-                            <Table.ColumnHeader fontSize={"lg"}>Loại</Table.ColumnHeader>
+                            <Table.ColumnHeader fontSize={"lg"}>Thao tác</Table.ColumnHeader>
                             <Table.ColumnHeader fontSize={"lg"}>Số lượng</Table.ColumnHeader>
                             <Table.ColumnHeader fontSize={"lg"}>Tồn đầu</Table.ColumnHeader>
                             <Table.ColumnHeader fontSize={"lg"}>Tồn cuối</Table.ColumnHeader>

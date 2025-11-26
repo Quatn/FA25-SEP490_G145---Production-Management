@@ -17,7 +17,6 @@ const WareFinishingProcessTypeTable = ({ page, limit, items, onEdit, onDelete }:
         <Table.ScrollArea
             borderWidth="1px"
             rounded="md"
-            height="701px"
             mt={5}
         >
             <Table.Root

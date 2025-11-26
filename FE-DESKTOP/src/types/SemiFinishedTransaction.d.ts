@@ -13,3 +13,10 @@ export type SemiFinishedGoodTransaction = {
   createdAt?: string;
   updatedAt?: string;
 };
+
+export type EmployeeDailyStats = {
+  _id: string;
+  name: string;
+  email?: string;
+  transactionCount: number;
+};

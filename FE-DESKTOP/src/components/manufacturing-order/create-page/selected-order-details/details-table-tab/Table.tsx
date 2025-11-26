@@ -17,7 +17,7 @@ import {
   TabsRootProps,
   Text,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { CSSProperties, useMemo, useState } from "react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { useCreateManyManufacturingOrdersMutation, useDeleteManufacturingOrderMutation, useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
@@ -25,6 +25,9 @@ import { manufacturingOrderTableColumnsByTabs } from "@/components/manufacturing
 import check from "check-types";
 import { CreateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
 import { useSelectedOrdersState } from "../TabbedContainer";
+import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
+import { manufacturingOrderColumnsByTabs, ManufacturingOrderTableDataType } from "@/components/manufacturing-order/full-detail-table/tableDefinition";
 
 type TableProps = {
   rootProps?: BoxProps;
@@ -32,10 +35,33 @@ type TableProps = {
   tableRootProps?: TableRootProps;
 };
 
+const getCommonPinningStyles = (column: Column<ManufacturingOrderTableDataType>): CSSProperties => {
+  const isPinned = column.getIsPinned()
+  const isLastLeftPinnedColumn =
+    isPinned === 'left' && column.getIsLastColumn('left')
+  const isFirstRightPinnedColumn =
+    isPinned === 'right' && column.getIsFirstColumn('right')
+
+  return {
+    boxShadow: isLastLeftPinnedColumn
+      ? '-4px 0 4px -4px gray inset'
+      : isFirstRightPinnedColumn
+        ? '4px 0 4px -4px gray inset'
+        : undefined,
+    left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
+    right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
+    opacity: isPinned ? 0.95 : 1,
+    position: isPinned ? 'sticky' : 'relative',
+    // width: column.getIsLastColumn() ? "100%" : column.getSize(),
+    width: column.getSize(),
+    zIndex: isPinned ? 1 : 0,
+  }
+}
+
 export default function CreatePageManufacturingOrderTable(
   props: TableProps,
 ) {
-  const { groupType, selectedPOIsIds } = useManufacturingOrderCreatePageState();
+  const { selectedPOIsIds } = useManufacturingOrderCreatePageState();
   const dispatch = useManufacturingOrderCreatePageDispatch();
 
   const [tab, setTab] = useState<ManufacturingTableTabType>("all");
@@ -49,11 +75,51 @@ export default function CreatePageManufacturingOrderTable(
     ids: selectedPOIsIds,
   });
 
+  const moPaginatedList = useMemo(() => {
+    if (fullDetailMOsResponse?.data) {
+      const calculatedMoPaginatedList = fullDetailMOsResponse.data.map((mo) => {
+        const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
+        const calculatedPOI = recalculatePurchaseOrderItem({
+          ...mo.purchaseOrderItem!,
+          ware: calculatedWare
+        })
+
+        return {
+          ...mo,
+          purchaseOrderItem: calculatedPOI,
+        }
+      })
+      return {
+        data: calculatedMoPaginatedList
+      }
+    }
+    else {
+      return undefined
+    }
+  }, [fullDetailMOsResponse?.data])
+
+  const tableData = useMemo<ManufacturingOrderTableDataType[]>(() => (moPaginatedList?.data?.map((mo) => ({
+    ...mo,
+    isEdited: false,
+  })) ?? []), [moPaginatedList?.data])
+
+  const table = useReactTable({
+    data: tableData,
+    columns: manufacturingOrderColumnsByTabs[tab].filter((r) => r.id !== "actions-column"),
+    getCoreRowModel: getCoreRowModel(),
+    initialState: {
+      columnPinning: {
+        left: ['manufacturingDirective', "code"],
+      },
+    },
+    getRowId: (row) => row._id,
+  });
+
   const [createOrders] = useCreateManyManufacturingOrdersMutation();
 
-  const { selectedManufacturingOrders } = useSelectedOrdersState();
+  // const { selectedManufacturingOrders } = useSelectedOrdersState();
 
-  if (check.undefined(selectedManufacturingOrders) || selectedManufacturingOrders.length < 1) {
+  if (check.undefined(selectedPOIsIds) || selectedPOIsIds.length < 1) {
     return (
       <Center>
         <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
@@ -66,8 +132,7 @@ export default function CreatePageManufacturingOrderTable(
     );
   }
 
-  // const moPaginatedList = fullDetailMOsResponse?.data;
-  const moPaginatedList = selectedManufacturingOrders;
+  // const moPaginatedList = selectedManufacturingOrders;
 
   if (isFetchingList) {
     return <Text>Loading table</Text>;
@@ -82,7 +147,7 @@ export default function CreatePageManufacturingOrderTable(
   }
 
   const formValue: CreateManyManufacturingOrdersRequestDto = {
-    orders: moPaginatedList.filter(order => !check.undefined(order.purchaseOrderItem)).map((order) => ({
+    orders: moPaginatedList?.data.filter(order => !check.undefined(order.purchaseOrderItem)).map((order) => ({
       purchaseOrderItemId: order.purchaseOrderItem!._id,
       corrugatorLineAdjustment: null,
       manufacturingDateAdjustment: null,
@@ -115,6 +180,15 @@ export default function CreatePageManufacturingOrderTable(
     dispatch({ type: "RESET_TREE_STATE" })
   }
 
+  const getTabBarOffset = () => {
+    try {
+      return (table.getColumn("code")?.getStart("left") ?? 0) + (table.getColumn("code")?.getSize() ?? 0);
+    }
+    catch {
+      return 0
+    }
+  }
+
   return (
     <Box mt={3} {...props.rootProps}>
       <Tabs.Root
@@ -122,7 +196,7 @@ export default function CreatePageManufacturingOrderTable(
         onValueChange={(e) => setTab(e.value as ManufacturingTableTabType)}
         {...props.tabsRootProps}
       >
-        <Tabs.List ms="200px">
+        <Tabs.List ms={`${getTabBarOffset()}px`}>
           <Tabs.Trigger value="all">
             <LuUser />
             Tổng quan
@@ -154,90 +228,44 @@ export default function CreatePageManufacturingOrderTable(
         </Tabs.List>
       </Tabs.Root>
 
-      <Table.ScrollArea borderWidth="1px" rounded="md">
+      <Table.ScrollArea borderWidth="1px">
         <Table.Root
+          minW={table.getTotalSize()}
           size="sm"
-          css={{
-            "& [data-sticky]": {
-              position: "sticky",
-              zIndex: 1,
-              bg: "bg",
-
-              _after: {
-                content: '""',
-                position: "absolute",
-                pointerEvents: "none",
-                top: "0",
-                bottom: "-1px",
-                width: "32px",
-              },
-            },
-
-            "& [data-sticky=end]": {
-              _after: {
-                insetInlineEnd: "0",
-                translate: "100% 0",
-                shadow: "inset 8px 0px 8px -8px rgba(0, 0, 0, 0.16)",
-              },
-            },
-
-            "& [data-sticky=start]": {
-              _after: {
-                insetInlineStart: "0",
-                translate: "-100% 0",
-                shadow: "inset -8px 0px 8px -8px rgba(0, 0, 0, 0.16)",
-              },
-            },
-          }}
+          variant={"outline"}
+          showColumnBorder
           {...props.tableRootProps}
         >
-          <Table.Header bgColor={"blue.100"}>
-            <Table.Row h="60px">
-              <Table.ColumnHeader
-                data-sticky
-                minW="100px"
-                w="100px"
-                left="0"
-              >
-                KH Giao
-              </Table.ColumnHeader>
-              <Table.ColumnHeader
-                minW="100px"
-                w="100px"
-                left="100px"
-                data-sticky="end"
-              >
-                Mã lệnh
-              </Table.ColumnHeader>
-              {columnsForTab.map((col) => (
-                <Table.ColumnHeader key={col.key}>
-                  {col.header}
-                </Table.ColumnHeader>
-              ))}
-
-              <Table.ColumnHeader w="120px" border="none" />
-            </Table.Row>
+          <Table.Header colorPalette={"blue"} bgColor={"colorPalette.muted"}>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <Table.Row key={headerGroup.id} h={"3rem"}>
+                {headerGroup.headers.map((header) => (
+                  <Table.ColumnHeader key={header.id}
+                    colorPalette={"blue"} bgColor={"colorPalette.muted"}
+                    style={{ ...getCommonPinningStyles(header.column) }}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                  </Table.ColumnHeader>
+                ))}
+              </Table.Row>
+            ))}
           </Table.Header>
           <Table.Body>
-            {moPaginatedList?.map((item) => (
+            {table.getRowModel().rows.map((row) => (
               <Table.Row
-                key={item.code}
-                bg={"gray.50"}
-                h="50px"
+                key={row.id}
+                h={"3.2rem"}
               >
-                <Table.Cell minW="100px" w="100px" left="0" data-sticky>
-                  {item.manufacturingDirective}
-                </Table.Cell>
-                <Table.Cell
-                  minW="100px"
-                  w="100px"
-                  left="100px"
-                  data-sticky="end"
-                >
-                  {item.code}
-                </Table.Cell>
-                {columnsForTab.map((col) => (
-                  <Table.Cell key={col.key}>{col.render(item)}</Table.Cell>
+                {row.getVisibleCells().map((cell) => (
+                  <Table.Cell
+                    key={cell.id}
+                    style={{
+                      ...getCommonPinningStyles(cell.column),
+                      background: cell.column.getIsPinned() ? "#fefefe" : "white"
+                    }}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </Table.Cell>
                 ))}
               </Table.Row>
             ))}
@@ -245,7 +273,7 @@ export default function CreatePageManufacturingOrderTable(
         </Table.Root>
       </Table.ScrollArea>
       <HStack my={3} justifyContent={"end"}>
-        <Button colorPalette={"blue"} onClick={handleCreateOrder}>Tạo {selectedPOIsIds.length} lệnh</Button>
+        <Button colorPalette={"blue"} onClick={() => dispatch({ type: "SET_PREPARED_SUBMIT_FUNCTION", payload: handleCreateOrder })}>Tạo {selectedPOIsIds.length} lệnh</Button>
         <Button colorPalette={"red"}>Đặt lại</Button>
       </HStack>
     </Box>

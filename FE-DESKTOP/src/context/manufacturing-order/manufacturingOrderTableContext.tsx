@@ -32,6 +32,8 @@ interface TableState {
   searchFilterType: SearchFilterType;
   paginationType: PaginationType;
   allowEdit: boolean | string;
+  preparedSubmitFunction?: () => void;
+  preparedSubmitAskText: string;
 }
 
 type TableAction =
@@ -48,6 +50,8 @@ type TableAction =
   | { type: "SET_SEARCH_FILTER_TYPE"; payload: SearchFilterType }
   | { type: "SET_PAGINATION_TYPE"; payload: PaginationType }
   | { type: "SET_ALLOW_EDIT"; payload: boolean | string }
+  | { type: "SET_PREPARED_SUBMIT_FUNCTION"; payload: (() => void) | undefined }
+  | { type: "SET_PREPARED_SUBMIT_ASK_TEXT"; payload: string }
   | { type: "RESET" };
 
 const initialState: TableState = {
@@ -62,6 +66,7 @@ const initialState: TableState = {
   searchFilterType: "searchAndFilter",
   paginationType: "paged",
   allowEdit: false,
+  preparedSubmitAskText: "",
 };
 
 function tableReducer(state: TableState, action: TableAction): TableState {
@@ -106,6 +111,10 @@ function tableReducer(state: TableState, action: TableAction): TableState {
       };
     case "SET_ALLOW_EDIT":
       return { ...state, allowEdit: action.payload };
+    case "SET_PREPARED_SUBMIT_FUNCTION":
+      return { ...state, preparedSubmitFunction: action.payload }
+    case "SET_PREPARED_SUBMIT_ASK_TEXT":
+      return { ...state, preparedSubmitAskText: action.payload }
     case "RESET":
       return initialState;
     default:

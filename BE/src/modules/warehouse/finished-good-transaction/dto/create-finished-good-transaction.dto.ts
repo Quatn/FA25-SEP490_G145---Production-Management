@@ -10,7 +10,7 @@ export class CreateFinishedGoodTransactionDto {
     })
     @IsNotEmpty()
     @IsMongoId()
-    manufacturingOrderId: string;
+    manufacturingOrder: string;
 
     @ApiProperty({
         description: 'Type of transaction (IMPORT or EXPORT)',
@@ -39,7 +39,7 @@ export class CreateFinishedGoodTransactionDto {
     })
     @IsNotEmpty()
     @IsMongoId()
-    employeeId: string;
+    employee: string;
 
     @ApiPropertyOptional({
         description: 'Optional note for this transaction',

@@ -6,12 +6,10 @@ import { BaseResponse } from '@/common/dto/response.dto';
 import { ApiOperation } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
 import { SemiFinishedGoodTransaction } from '../schemas/semi-finished-good-transaction.schema';
+import { TransactionType } from '../enums/transaction-type.enum';
 
-export type DailyReportDto= {
+export type DailyReportDto = {
   date: string;
-  totalImport: number;
-  totalExport: number;
-  net: number;
   data: SemiFinishedGoodTransaction[];
 }
 
@@ -59,12 +57,22 @@ export class SemiFinishedGoodTransactionController {
     return { success: true, message: 'Updated successfully', data: doc };
   }
 
+  @Get("employees/daily")
+  async getSFGDailyEmployees(@Query("date") date: string) {
+    return this.semiFinishedGoodTransactionService.getDailyEmployees(date);
+  }
+
   @Get('report/daily')
   @ApiOperation({ summary: 'Get daily report of transactions' })
-  async getDailyReport(
+  async getSFGDailyReport(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
     @Query('date') date: string,
-  ): Promise<BaseResponse<DailyReportDto>> {
-    const docs = await this.semiFinishedGoodTransactionService.getDailyReport(date);
+    @Query('transactionType') transactionType?: TransactionType,
+    @Query('employeeId') employeeId?: string,
+    @Query('manufacturingOrderId') manufacturingOrderId?: string,
+  ): Promise<BaseResponse<PaginatedList<SemiFinishedGoodTransaction>>> {
+    const docs = await this.semiFinishedGoodTransactionService.getDailyReport(page, limit, date, transactionType, employeeId, manufacturingOrderId);
     return { success: true, message: 'Fetch successful', data: docs };
   }
 

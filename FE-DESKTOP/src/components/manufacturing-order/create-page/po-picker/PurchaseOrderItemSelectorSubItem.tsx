@@ -50,7 +50,7 @@ export default function PurchaseOrderItemSelectorSubItem(
     <CheckboxCard.Root
       checked={props.subpo.unmanufacturedItemCount < 1 ? true : (indeterminate ? "indeterminate" : checked)}
       onCheckedChange={() => handleToggle()}
-      colorPalette={"yellow"}
+      colorPalette={props.subpo.unmanufacturedItemCount < 1 ? "green" : "yellow"}
       bgColor={"colorPalette.subtle"}
       disabled={props.subpo.unmanufacturedItemCount < 1}
     >

@@ -6,13 +6,24 @@ import { FinishedGoodTransaction } from '../schemas/finished-good-transaction.sc
 import { ApiOperation } from '@nestjs/swagger';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { PaginatedList } from '@/common/dto/paginated-list.dto';
+import { TransactionType } from '../enums/transaction-type.enum';
+import { FinishedGood } from '../schemas/finished-good.schema';
 
-export type DailyReportDto = {
+interface FinishedGoodSummary {
+  finishedGood: FinishedGood;
+  total: number;
+}
+
+interface DailySummaryItem {
   date: string;
-  totalImport: number;
-  totalExport: number;
-  net: number;
-  data: FinishedGoodTransaction[];
+  dailyTotal: number;
+  summaryPerFinishedGood: FinishedGoodSummary[];
+}
+
+interface DailyReportResponse {
+  startDate: string;
+  endDate: string;
+  dailySummary: DailySummaryItem[];
 }
 @Controller('finished-good-transaction')
 export class FinishedGoodTransactionController {
@@ -23,10 +34,11 @@ export class FinishedGoodTransactionController {
   async findPaginated(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
+    @Query('finishedGood') finishedGood: string,
     @Query('search') search?: string,
-    @Query('finishedGoodId') finishedGoodId?: string,
+    @Query('transactionType') transactionType?: TransactionType,
   ): Promise<BaseResponse<PaginatedList<FinishedGoodTransaction>>> {
-    const docs = await this.finishedGoodTransactionService.findPaginated(page, limit, search, finishedGoodId);
+    const docs = await this.finishedGoodTransactionService.findPaginated(page, limit, finishedGood, search, transactionType);
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
@@ -45,7 +57,7 @@ export class FinishedGoodTransactionController {
   }
 
   @Post('create')
-  @ApiOperation({ summary: 'Create a new transaction (by manufacturingOrderId)' })
+  @ApiOperation({ summary: 'Create a new transaction (by manufacturingOrder)' })
   async create(@Body() dto: CreateFinishedGoodTransactionDto): Promise<BaseResponse<FinishedGoodTransaction>> {
     const doc = await this.finishedGoodTransactionService.createOne(dto);
     return { success: true, message: 'Created successfully', data: doc };
@@ -61,9 +73,11 @@ export class FinishedGoodTransactionController {
   @Get('report/daily')
   @ApiOperation({ summary: 'Get daily report of transactions' })
   async getDailyReport(
-    @Query('date') date: string,
-  ): Promise<BaseResponse<DailyReportDto>> {
-    const docs = await this.finishedGoodTransactionService.getDailyReport(date);
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('transactionType') transactionType: TransactionType,
+  ): Promise<BaseResponse<DailyReportResponse>> {
+    const docs = await this.finishedGoodTransactionService.getDailyReport(startDate, endDate, transactionType);
     return { success: true, message: 'Fetch successful', data: docs };
   }
 

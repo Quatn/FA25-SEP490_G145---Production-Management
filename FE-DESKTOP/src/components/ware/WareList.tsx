@@ -114,15 +114,7 @@ const Chip: React.FC<{ label: string; onRemove?: () => void }> = ({
 );
 
 /**
- * Inline multi-select control:
- * - shows chips inline (replacing placeholder when at least one is selected)
- * - clicking the field toggles dropdown
- * - click option to add it immediately
- * - supports onAdd(id), onRemove(id)
- *
- * options: array of { _id/$oid/other id, code?, name? }
- * selected: array of ids (string)
- * labelKey: "code" or "name" (what to show on the option/chip)
+ * Inline multi-select control
  */
 const MultiSelectInline: React.FC<{
   options: any[];
@@ -131,7 +123,7 @@ const MultiSelectInline: React.FC<{
   onRemove: (id: string) => void;
   getLabel?: (opt: any) => string;
   placeholder?: string;
-  id?: string; // optional id for testability/accessibility
+  id?: string;
 }> = ({ options, selected, onAdd, onRemove, getLabel, placeholder, id }) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -154,7 +146,6 @@ const MultiSelectInline: React.FC<{
     return opt.code ?? opt.name ?? getIdFromDoc(opt) ?? "";
   };
 
-  // available options (not selected)
   const avail = (options || []).filter(
     (o) => !selected.includes(getIdFromDoc(o) ?? String(o))
   );
@@ -199,7 +190,6 @@ const MultiSelectInline: React.FC<{
           </span>
         )}
 
-        {/* caret */}
         <div style={{ marginLeft: "auto", paddingLeft: 8 }}>
           <svg
             width="16"
@@ -215,7 +205,6 @@ const MultiSelectInline: React.FC<{
         </div>
       </div>
 
-      {/* dropdown */}
       {open && (
         <div
           style={{
@@ -245,9 +234,6 @@ const MultiSelectInline: React.FC<{
                   key={idv}
                   onClick={() => {
                     onAdd(idv);
-                    // keep dropdown open so user can add multiple quickly
-                    // if you'd prefer to close after add, uncomment next line:
-                    // setOpen(false);
                   }}
                   style={{
                     padding: "6px 8px",
@@ -284,7 +270,6 @@ export const WareList: React.FC = () => {
     isLoading: waresLoading,
   } = useGetWaresQuery({ page, limit, search });
 
-  // deleted list (may be optional in your api slice)
   const deletedQuery = useGetDeletedWaresQuery
     ? useGetDeletedWaresQuery({ page: 1, limit: 200 })
     : null;
@@ -304,16 +289,13 @@ export const WareList: React.FC = () => {
   const { data: finishingResp } = useGetAllWareFinishingTypesQuery();
   const finishingList: any[] = finishingResp?.data ?? finishingResp ?? [];
 
-  // const { data: mpResp } = useGetAllManufacturingProcessesQuery();
-  // const mpList: any[] = mpResp?.data ?? mpResp ?? [];
-
   // mutations
   const [createWare, { isLoading: creating }] = useCreateWareMutation();
   const [updateWare] = useUpdateWareMutation();
   const [deleteWare] = useDeleteWareMutation();
   const [restoreWare] = useRestoreWareMutation();
 
-  // ----- normalize wares array from various shapes -----
+  // normalize wares array
   let wares: any[] = [];
   if (waresResp?.data?.data && Array.isArray(waresResp.data.data))
     wares = waresResp.data.data;
@@ -327,11 +309,10 @@ export const WareList: React.FC = () => {
   const deletedWaresFromQuery: any[] =
     deletedResp?.data?.data ?? deletedResp?.data ?? [];
 
-  // ------------------- local display state (optimistic) -------------------
+  // local display state
   const [displayWares, setDisplayWares] = useState<any[]>([]);
   const [displayDeletedWares, setDisplayDeletedWares] = useState<any[]>([]);
 
-  // seed local display state when query changes (keeps ordering from server)
   const displayWaresRef = React.useRef<any[]>(displayWares);
   useEffect(() => {
     displayWaresRef.current = displayWares;
@@ -356,18 +337,16 @@ export const WareList: React.FC = () => {
 
   // modal/form state
   const [createOpen, setCreateOpen] = useState(false);
+
+  // default/create form — numeric fields kept as strings/null so empty => null
   const [createForm, setCreateForm] = useState<any>({
     code: "",
-    unitPrice: 0,
+    unitPrice: "",
     fluteCombination: "",
-    wareWidth: 0,
-    wareLength: 0,
-    wareHeight: 0,
+    wareWidth: "",
+    wareLength: "",
+    wareHeight: "",
     wareManufacturingProcessType: "",
-    warePerBlankAdjustment: 0,
-    flapAdjustment: 0,
-    flapOverlapAdjustment: 0,
-    crossCutCountAdjustment: 0,
     warePerBlank: 0,
     blankWidth: 0,
     blankLength: 0,
@@ -382,10 +361,10 @@ export const WareList: React.FC = () => {
     BACLinerLayerPaperType: "",
     ACFlutePaperType: "",
     backLayerPaperType: "",
-    volume: 0,
-    warePerSet: 0,
-    warePerCombinedSet: 0,
-    horizontalWareSplit: 0,
+    volume: "",
+    warePerSet: "",
+    warePerCombinedSet: "",
+    horizontalWareSplit: "",
     printColors: [] as string[],
     typeOfPrinter: "",
     finishingProcesses: [] as string[],
@@ -396,36 +375,63 @@ export const WareList: React.FC = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
 
-  // helpers to open edit modal with normalized ids
   const openEdit = (ware: any) => {
     setEditForm({
       id: getIdFromDoc(ware) ?? ware._id ?? ware.code,
       code: ware.code ?? "",
-      unitPrice: ware.unitPrice ?? 0,
+      unitPrice:
+        ware.unitPrice !== undefined && ware.unitPrice !== null
+          ? String(ware.unitPrice)
+          : "",
       fluteCombination:
         getIdFromDoc(ware.fluteCombination) ?? ware.fluteCombination?._id ?? "",
-      wareWidth: ware.wareWidth ?? 0,
-      wareLength: ware.wareLength ?? 0,
-      wareHeight: ware.wareHeight ?? 0,
+      wareWidth:
+        ware.wareWidth !== undefined && ware.wareWidth !== null
+          ? String(ware.wareWidth)
+          : "",
+      wareLength:
+        ware.wareLength !== undefined && ware.wareLength !== null
+          ? String(ware.wareLength)
+          : "",
+      wareHeight:
+        ware.wareHeight !== undefined && ware.wareHeight !== null
+          ? String(ware.wareHeight)
+          : "",
       wareManufacturingProcessType:
         getIdFromDoc(ware.wareManufacturingProcessType) ??
         ware.wareManufacturingProcessType?._id ??
         "",
-      warePerBlankAdjustment: ware.warePerBlankAdjustment ?? 0,
-      flapAdjustment: ware.flapAdjustment ?? 0,
-      flapOverlapAdjustment: ware.flapOverlapAdjustment ?? 0,
-      crossCutCountAdjustment: ware.crossCutCountAdjustment ?? 0,
-      warePerBlank: ware.warePerBlank ?? 0,
-      blankWidth: ware.blankWidth ?? 0,
-      blankLength: ware.blankLength ?? 0,
-      flapLength: ware.flapLength ?? 0,
-      margin: ware.margin ?? 0,
-      paperWidth: ware.paperWidth ?? 0,
-      crossCutCount: ware.crossCutCount ?? 0,
-      volume: ware.volume ?? 0,
-      warePerSet: ware.warePerSet ?? 0,
-      warePerCombinedSet: ware.warePerCombinedSet ?? 0,
-      horizontalWareSplit: ware.horizontalWareSplit ?? 0,
+      warePerBlank: 0,
+      blankWidth: 0,
+      blankLength: 0,
+      flapLength: 0,
+      margin: 0,
+      paperWidth:
+        ware.paperWidth !== undefined && ware.paperWidth !== null
+          ? String(ware.paperWidth)
+          : 0,
+      crossCutCount:
+        ware.crossCutCount !== undefined && ware.crossCutCount !== null
+          ? String(ware.crossCutCount)
+          : 0,
+      volume:
+        ware.volume !== undefined && ware.volume !== null
+          ? String(ware.volume)
+          : "",
+      warePerSet:
+        ware.warePerSet !== undefined && ware.warePerSet !== null
+          ? String(ware.warePerSet)
+          : "",
+      warePerCombinedSet:
+        ware.warePerCombinedSet !== undefined &&
+        ware.warePerCombinedSet !== null
+          ? String(ware.warePerCombinedSet)
+          : "",
+      horizontalWareSplit:
+        ware.horizontalWareSplit !== undefined &&
+        ware.horizontalWareSplit !== null
+          ? String(ware.horizontalWareSplit)
+          : "",
       printColors:
         (ware.printColors || []).map((p: any) => getIdFromDoc(p) ?? p) ?? [],
       typeOfPrinter: ware.typeOfPrinter ?? "",
@@ -437,6 +443,13 @@ export const WareList: React.FC = () => {
           (p: any) => getIdFromDoc(p) ?? p
         ) ?? [],
       note: ware.note ?? "",
+      faceLayerPaperType: ware.faceLayerPaperType ?? "",
+      EFlutePaperType: ware.EFlutePaperType ?? "",
+      EBLinerLayerPaperType: ware.EBLinerLayerPaperType ?? "",
+      BFlutePaperType: ware.BFlutePaperType ?? "",
+      BACLinerLayerPaperType: ware.BACLinerLayerPaperType ?? "",
+      ACFlutePaperType: ware.ACFlutePaperType ?? "",
+      backLayerPaperType: ware.backLayerPaperType ?? "",
     });
     setEditOpen(true);
   };
@@ -485,7 +498,7 @@ export const WareList: React.FC = () => {
     }));
   };
 
-  // payload helpers for create/update
+  // payload helpers
   const normalizePayloadRefs = (payload: any) => {
     payload.printColors = (payload.printColors || []).map(
       (x: any) => getIdFromDoc(x) ?? x
@@ -504,32 +517,188 @@ export const WareList: React.FC = () => {
     return payload;
   };
 
-  // create handler (optimistic update + background refetch)
+  const parsePositiveNumberOrNull = (s: string | number | undefined | null) => {
+    if (s === undefined || s === null) return null;
+    if (s === "" || s === 0) return null;
+    const n = Number(s);
+    if (!Number.isFinite(n)) return null;
+    return n;
+  };
+
+  // create handler
   const handleCreateSubmit = async () => {
     try {
-      const payload: any = { ...createForm };
+      if (!createForm.code || String(createForm.code).trim() === "")
+        return alert("Please provide code");
+      const unitPrice = parsePositiveNumberOrNull(createForm.unitPrice);
+      if (!unitPrice || unitPrice <= 0)
+        return alert("Please provide unitPrice > 0");
+
+      const fluteCombination = String(createForm.fluteCombination || "");
+      if (!fluteCombination) return alert("Please select flute (sóng)");
+
+      const wareWidth = parsePositiveNumberOrNull(createForm.wareWidth);
+      const wareLength = parsePositiveNumberOrNull(createForm.wareLength);
+      if (!wareWidth || wareWidth <= 0)
+        return alert("Please provide wareWidth > 0");
+      if (!wareLength || wareLength <= 0)
+        return alert("Please provide wareLength > 0");
+
+      const wareManufacturingProcessType = String(
+        createForm.wareManufacturingProcessType || ""
+      );
+      if (!wareManufacturingProcessType)
+        return alert("Please select Kiểu SP gia công");
+
+      // keep paperWidth & crossCutCount required (per earlier behavior)
+      // const paperWidth = parsePositiveNumberOrNull(createForm.paperWidth);
+      // const crossCutCount = parsePositiveNumberOrNull(createForm.crossCutCount);
+      // if (!paperWidth || paperWidth <= 0)
+      //   return alert("Please provide paperWidth > 0");
+      // if (!crossCutCount || crossCutCount <= 0)
+      //   return alert("Please provide crossCutCount > 0");
+
+      const volume = parsePositiveNumberOrNull(createForm.volume);
+      const warePerSet = parsePositiveNumberOrNull(createForm.warePerSet);
+      const warePerCombinedSet = parsePositiveNumberOrNull(
+        createForm.warePerCombinedSet
+      );
+      const horizontalWareSplit = parsePositiveNumberOrNull(
+        createForm.horizontalWareSplit
+      );
+
+      if (!volume || volume <= 0) return alert("Please provide volume > 0");
+      if (!warePerSet || warePerSet <= 0)
+        return alert("Please provide warePerSet > 0");
+      if (!warePerCombinedSet || warePerCombinedSet <= 0)
+        return alert("Please provide warePerCombinedSet > 0");
+      if (!horizontalWareSplit || horizontalWareSplit <= 0)
+        return alert("Please provide horizontalWareSplit > 0");
+
+      if (
+        !Array.isArray(createForm.printColors) ||
+        createForm.printColors.length === 0
+      )
+        return alert("Please select at least one print color");
+
+      const oneLayerSelected = [
+        createForm.faceLayerPaperType,
+        createForm.EFlutePaperType,
+        createForm.EBLinerLayerPaperType,
+        createForm.BFlutePaperType,
+        createForm.BACLinerLayerPaperType,
+        createForm.ACFlutePaperType,
+        createForm.backLayerPaperType,
+      ].some((v) => v && String(v).trim() !== "");
+      if (!oneLayerSelected)
+        return alert(
+          "Please select at least one paper layer (face/inner/back)"
+        );
+
+      // build payload: removed-from-input fields set to null
+      const payload: any = {
+        code: String(createForm.code).trim(),
+        unitPrice: unitPrice,
+        fluteCombination: fluteCombination,
+        wareWidth: wareWidth,
+        wareLength: wareLength,
+        wareHeight: parsePositiveNumberOrNull(createForm.wareHeight),
+        wareManufacturingProcessType: wareManufacturingProcessType,
+        // these fields removed from input -> send null so backend can decide
+        warePerBlank: 0,
+        blankWidth: 0,
+        blankLength: 0,
+        flapLength: 0,
+        margin: 0,
+        paperWidth: 0,
+        crossCutCount: 0,
+        faceLayerPaperType:
+          createForm.faceLayerPaperType && createForm.faceLayerPaperType !== ""
+            ? createForm.faceLayerPaperType
+            : 0,
+        EFlutePaperType:
+          createForm.EFlutePaperType && createForm.EFlutePaperType !== ""
+            ? createForm.EFlutePaperType
+            : 0,
+        EBLinerLayerPaperType:
+          createForm.EBLinerLayerPaperType &&
+          createForm.EBLinerLayerPaperType !== ""
+            ? createForm.EBLinerLayerPaperType
+            : null,
+        BFlutePaperType:
+          createForm.BFlutePaperType && createForm.BFlutePaperType !== ""
+            ? createForm.BFlutePaperType
+            : null,
+        BACLinerLayerPaperType:
+          createForm.BACLinerLayerPaperType &&
+          createForm.BACLinerLayerPaperType !== ""
+            ? createForm.BACLinerLayerPaperType
+            : null,
+        ACFlutePaperType:
+          createForm.ACFlutePaperType && createForm.ACFlutePaperType !== ""
+            ? createForm.ACFlutePaperType
+            : null,
+        backLayerPaperType:
+          createForm.backLayerPaperType && createForm.backLayerPaperType !== ""
+            ? createForm.backLayerPaperType
+            : null,
+        volume: volume,
+        warePerSet: warePerSet,
+        warePerCombinedSet: warePerCombinedSet,
+        horizontalWareSplit: horizontalWareSplit,
+        printColors: createForm.printColors || [],
+        typeOfPrinter:
+          createForm.typeOfPrinter && createForm.typeOfPrinter !== ""
+            ? createForm.typeOfPrinter
+            : null,
+        finishingProcesses: createForm.finishingProcesses || [],
+        manufacturingProcesses: createForm.manufacturingProcesses || [],
+        note: createForm.note ? String(createForm.note) : "",
+      };
+
       normalizePayloadRefs(payload);
+
       const resp: any = await createWare(payload).unwrap();
 
-      // extract created doc from response (guard various response shapes)
       let createdDoc = resp?.data ?? resp;
       if (createdDoc?.data) createdDoc = createdDoc.data;
 
-      // optimistic: add to local list
       setDisplayWares((prev) => [createdDoc, ...prev]);
 
-      // close modal
       setCreateOpen(false);
-      setCreateForm((p: any) => ({
-        ...p,
+      setCreateForm({
         code: "",
-        note: "",
+        unitPrice: "",
+        fluteCombination: "",
+        wareWidth: "",
+        wareLength: "",
+        wareHeight: "",
+        wareManufacturingProcessType: "",
+        warePerBlank: 0,
+        blankWidth: 0,
+        blankLength: 0,
+        flapLength: 0,
+        margin: 0,
+        paperWidth: 0,
+        crossCutCount: 0,
+        faceLayerPaperType: "",
+        EFlutePaperType: "",
+        EBLinerLayerPaperType: "",
+        BFlutePaperType: "",
+        BACLinerLayerPaperType: "",
+        ACFlutePaperType: "",
+        backLayerPaperType: "",
+        volume: "",
+        warePerSet: "",
+        warePerCombinedSet: "",
+        horizontalWareSplit: "",
         printColors: [],
+        typeOfPrinter: "",
         finishingProcesses: [],
         manufacturingProcesses: [],
-      }));
+        note: "",
+      });
 
-      // background refetch to sync with server (small delay to reduce jump)
       setTimeout(() => {
         try {
           refetchWares?.();
@@ -544,20 +713,145 @@ export const WareList: React.FC = () => {
     }
   };
 
-  // edit handler (optimistic)
+  // edit handler
   const handleEditSubmit = async () => {
     try {
-      const id = editForm.id;
-      const payload: any = { ...editForm };
-      delete payload.id;
+      if (!editForm?.id) return alert("No id");
+
+      if (!editForm.code || String(editForm.code).trim() === "")
+        return alert("Please provide code");
+      const unitPrice = parsePositiveNumberOrNull(editForm.unitPrice);
+      if (!unitPrice || unitPrice <= 0)
+        return alert("Please provide unitPrice > 0");
+
+      const fluteCombination = String(editForm.fluteCombination || "");
+      if (!fluteCombination) return alert("Please select flute (sóng)");
+
+      const wareWidth = parsePositiveNumberOrNull(editForm.wareWidth);
+      const wareLength = parsePositiveNumberOrNull(editForm.wareLength);
+      if (!wareWidth || wareWidth <= 0)
+        return alert("Please provide wareWidth > 0");
+      if (!wareLength || wareLength <= 0)
+        return alert("Please provide wareLength > 0");
+
+      const wareManufacturingProcessType = String(
+        editForm.wareManufacturingProcessType || ""
+      );
+      if (!wareManufacturingProcessType)
+        return alert("Please select Kiểu SP gia công");
+
+      // const paperWidth = parsePositiveNumberOrNull(editForm.paperWidth);
+      // const crossCutCount = parsePositiveNumberOrNull(editForm.crossCutCount);
+      // if (!paperWidth || paperWidth <= 0)
+      //   return alert("Please provide paperWidth > 0");
+      // if (!crossCutCount || crossCutCount <= 0)
+      //   return alert("Please provide crossCutCount > 0");
+
+      const volume = parsePositiveNumberOrNull(editForm.volume);
+      const warePerSet = parsePositiveNumberOrNull(editForm.warePerSet);
+      const warePerCombinedSet = parsePositiveNumberOrNull(
+        editForm.warePerCombinedSet
+      );
+      const horizontalWareSplit = parsePositiveNumberOrNull(
+        editForm.horizontalWareSplit
+      );
+
+      if (!volume || volume <= 0) return alert("Please provide volume > 0");
+      if (!warePerSet || warePerSet <= 0)
+        return alert("Please provide warePerSet > 0");
+      if (!warePerCombinedSet || warePerCombinedSet <= 0)
+        return alert("Please provide warePerCombinedSet > 0");
+      if (!horizontalWareSplit || horizontalWareSplit <= 0)
+        return alert("Please provide horizontalWareSplit > 0");
+
+      if (
+        !Array.isArray(editForm.printColors) ||
+        editForm.printColors.length === 0
+      )
+        return alert("Please select at least one print color");
+
+      const oneLayerSelected = [
+        editForm.faceLayerPaperType,
+        editForm.EFlutePaperType,
+        editForm.EBLinerLayerPaperType,
+        editForm.BFlutePaperType,
+        editForm.BACLinerLayerPaperType,
+        editForm.ACFlutePaperType,
+        editForm.backLayerPaperType,
+      ].some((v) => v && String(v).trim() !== "");
+      if (!oneLayerSelected)
+        return alert(
+          "Please select at least one paper layer (face/inner/back)"
+        );
+
+      const payload: any = {
+        code: String(editForm.code).trim(),
+        unitPrice: unitPrice,
+        fluteCombination: fluteCombination,
+        wareWidth: wareWidth,
+        wareLength: wareLength,
+        wareHeight: parsePositiveNumberOrNull(editForm.wareHeight),
+        wareManufacturingProcessType: wareManufacturingProcessType,
+        // removed-from-input fields -> send null
+        warePerBlank: 0,
+        blankWidth: 0,
+        blankLength: 0,
+        flapLength: 0,
+        margin: 0,
+        paperWidth: 0,
+        crossCutCount: 0,
+        faceLayerPaperType:
+          editForm.faceLayerPaperType && editForm.faceLayerPaperType !== ""
+            ? editForm.faceLayerPaperType
+            : null,
+        EFlutePaperType:
+          editForm.EFlutePaperType && editForm.EFlutePaperType !== ""
+            ? editForm.EFlutePaperType
+            : null,
+        EBLinerLayerPaperType:
+          editForm.EBLinerLayerPaperType &&
+          editForm.EBLinerLayerPaperType !== ""
+            ? editForm.EBLinerLayerPaperType
+            : null,
+        BFlutePaperType:
+          editForm.BFlutePaperType && editForm.BFlutePaperType !== ""
+            ? editForm.BFlutePaperType
+            : null,
+        BACLinerLayerPaperType:
+          editForm.BACLinerLayerPaperType &&
+          editForm.BACLinerLayerPaperType !== ""
+            ? editForm.BACLinerLayerPaperType
+            : null,
+        ACFlutePaperType:
+          editForm.ACFlutePaperType && editForm.ACFlutePaperType !== ""
+            ? editForm.ACFlutePaperType
+            : null,
+        backLayerPaperType:
+          editForm.backLayerPaperType && editForm.backLayerPaperType !== ""
+            ? editForm.backLayerPaperType
+            : null,
+        volume: volume,
+        warePerSet: warePerSet,
+        warePerCombinedSet: warePerCombinedSet,
+        horizontalWareSplit: horizontalWareSplit,
+        printColors: editForm.printColors || [],
+        typeOfPrinter:
+          editForm.typeOfPrinter && editForm.typeOfPrinter !== ""
+            ? editForm.typeOfPrinter
+            : null,
+        finishingProcesses: editForm.finishingProcesses || [],
+        manufacturingProcesses: editForm.manufacturingProcesses || [],
+        note: editForm.note ? String(editForm.note) : "",
+      };
+
       normalizePayloadRefs(payload);
+
+      const id = editForm.id;
       const res: any = await updateWare({ id, data: payload }).unwrap();
 
-      // extract updated doc
       let updatedDoc = res?.data ?? res;
       if (updatedDoc?.data) updatedDoc = updatedDoc.data;
 
-      // optimistic replace
       setDisplayWares((prev) =>
         prev.map((p) =>
           (getIdFromDoc(p) ?? p._id ?? p.code) ===
@@ -569,7 +863,6 @@ export const WareList: React.FC = () => {
 
       setEditOpen(false);
 
-      // background refetch
       setTimeout(() => {
         try {
           refetchWares?.();
@@ -589,7 +882,6 @@ export const WareList: React.FC = () => {
       const id = getIdFromDoc(w) ?? w._id ?? w.code;
       const res: any = await deleteWare({ id }).unwrap();
 
-      // optimistic move: remove from displayed wares and add to deleted list
       setDisplayWares((prev) =>
         prev.filter(
           (p) =>
@@ -598,14 +890,12 @@ export const WareList: React.FC = () => {
         )
       );
 
-      // push a shallow deleted item (so deleted list UI updates instantly)
       const deletedAt = new Date().toISOString();
       setDisplayDeletedWares((prev) => [
         { ...(w as any), isDeleted: true, deletedAt },
         ...prev,
       ]);
 
-      // background refetch
       setTimeout(() => {
         try {
           refetchWares?.();
@@ -625,7 +915,6 @@ export const WareList: React.FC = () => {
       const id = getIdFromDoc(w) ?? w._id ?? w.code;
       const res: any = await restoreWare({ id }).unwrap();
 
-      // optimistic: remove from deleted list and add back to displayedWares
       setDisplayDeletedWares((prev) =>
         prev.filter(
           (p) =>
@@ -636,7 +925,6 @@ export const WareList: React.FC = () => {
 
       setDisplayWares((prev) => [w, ...prev]);
 
-      // background refetch
       setTimeout(() => {
         try {
           refetchWares?.();
@@ -651,7 +939,6 @@ export const WareList: React.FC = () => {
     }
   };
 
-  // derived maps
   const fluteMap = useMemo(() => {
     const m = new Map<string, any>();
     (fluteList || []).forEach((f: any) => m.set(getIdFromDoc(f) ?? f.code, f));
@@ -680,17 +967,19 @@ export const WareList: React.FC = () => {
     return m;
   }, [finishingList]);
 
-  // const mpMap = useMemo(() => {
-  //   const m = new Map<string, any>();
-  //   (mpList || []).forEach((p: any) => m.set(getIdFromDoc(p) ?? p.code, p));
-  //   return m;
-  // }, [mpList]);
-
-  // For rendering use displayWares / displayDeletedWares (optimistic)
   const displayed = displayWares;
   const displayedDeleted = displayDeletedWares;
 
-  // UI (table + modals) - mostly unchanged; render displayed arrays
+  // PAPER LAYER options (sample strings). Replace with backend list if you have one.
+  const PAPER_LAYER_OPTIONS = [
+    "K/VT/120/100",
+    "T/LE/100/100",
+    "K/VT/150/120",
+    "T/LE/120/120",
+  ];
+
+  const TYPE_OF_PRINTER_OPTIONS = ["3M - A", "2M - C", "4M"];
+
   return (
     <div>
       <div
@@ -727,15 +1016,12 @@ export const WareList: React.FC = () => {
             <tr>
               <th>Mã hàng</th>
               <th>Sóng</th>
-              <th>Đơn giá</th>
+              <th>Đơn giá (đồng)</th>
               <th>Rộng (mm)</th>
               <th>Dài (mm)</th>
               <th>Cao (mm)</th>
-              <th>Khổ giấy</th>
-              <th>Part SX</th>
               <th>Volume</th>
               <th>Kiểu SP gia công</th>
-              {/* <th>Công đoạn gia công</th> */}
               <th>Công đoạn hoàn thiện</th>
               <th>Màu in</th>
               <th>Actions</th>
@@ -759,11 +1045,6 @@ export const WareList: React.FC = () => {
                   ?.code ??
                 w.wareManufacturingProcessType?.name ??
                 "-";
-              // const manufProcesses = labelsFromIdArray(
-              //   w.manufacturingProcesses,
-              //   mpMap,
-              //   "code"
-              // );
               const finishingProcesses = labelsFromIdArray(
                 w.finishingProcesses,
                 finishingMap,
@@ -778,13 +1059,8 @@ export const WareList: React.FC = () => {
                   <td style={{ textAlign: "right" }}>{w.wareWidth ?? "-"}</td>
                   <td style={{ textAlign: "right" }}>{w.wareLength ?? "-"}</td>
                   <td style={{ textAlign: "right" }}>{w.wareHeight ?? "-"}</td>
-                  <td style={{ textAlign: "right" }}>{w.paperWidth ?? "-"}</td>
-                  <td style={{ textAlign: "right" }}>
-                    {w.crossCutCount ?? "-"}
-                  </td>
                   <td style={{ textAlign: "right" }}>{w.volume ?? "-"}</td>
                   <td>{manufTypeLabel}</td>
-                  {/* <td style={{ maxWidth: 220 }}>{manufProcesses}</td> */}
                   <td style={{ maxWidth: 220 }}>{finishingProcesses}</td>
                   <td>{pcolors}</td>
                   <td>
@@ -824,7 +1100,7 @@ export const WareList: React.FC = () => {
             <div className="modal-dialog modal-lg">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Create Ware</h5>
+                  <h5 className="modal-title">Tạo mã hàng</h5>
                   <button
                     type="button"
                     className="btn-close"
@@ -850,7 +1126,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Đơn giá
+                        Đơn giá (đồng)
                         <input
                           className="form-control"
                           type="number"
@@ -858,7 +1134,7 @@ export const WareList: React.FC = () => {
                           onChange={(e) =>
                             setCreateForm((p: any) => ({
                               ...p,
-                              unitPrice: Number(e.target.value),
+                              unitPrice: e.target.value,
                             }))
                           }
                         />
@@ -922,7 +1198,7 @@ export const WareList: React.FC = () => {
                           onChange={(e) =>
                             setCreateForm((p: any) => ({
                               ...p,
-                              wareWidth: Number(e.target.value),
+                              wareWidth: e.target.value,
                             }))
                           }
                         />
@@ -937,7 +1213,7 @@ export const WareList: React.FC = () => {
                           onChange={(e) =>
                             setCreateForm((p: any) => ({
                               ...p,
-                              wareLength: Number(e.target.value),
+                              wareLength: e.target.value,
                             }))
                           }
                         />
@@ -952,7 +1228,7 @@ export const WareList: React.FC = () => {
                           onChange={(e) =>
                             setCreateForm((p: any) => ({
                               ...p,
-                              wareHeight: Number(e.target.value),
+                              wareHeight: e.target.value,
                             }))
                           }
                         />
@@ -960,36 +1236,6 @@ export const WareList: React.FC = () => {
                     </div>
 
                     <div className="col-md-6">
-                      <label className="form-label">
-                        Khổ giấy 
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm.paperWidth}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              paperWidth: Number(e.target.value),
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Part SX
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm.crossCutCount}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              crossCutCount: Number(e.target.value),
-                            }))
-                          }
-                        />
-                      </label>
-
                       <label className="form-label">
                         Volume
                         <input
@@ -999,7 +1245,54 @@ export const WareList: React.FC = () => {
                           onChange={(e) =>
                             setCreateForm((p: any) => ({
                               ...p,
-                              volume: Number(e.target.value),
+                              volume: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
+                      <br></br>
+
+                      <label className="form-label">
+                        Số SP bộ
+                        <input
+                          className="form-control"
+                          type="number"
+                          value={createForm.warePerSet}
+                          onChange={(e) =>
+                            setCreateForm((p: any) => ({
+                              ...p,
+                              warePerSet: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
+                      <label className="form-label">
+                        Số SP ghép bộ
+                        <input
+                          className="form-control"
+                          type="number"
+                          value={createForm.warePerCombinedSet}
+                          onChange={(e) =>
+                            setCreateForm((p: any) => ({
+                              ...p,
+                              warePerCombinedSet: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
+                      <label className="form-label">
+                        Dọc chia SP
+                        <input
+                          className="form-control"
+                          type="number"
+                          value={createForm.horizontalWareSplit}
+                          onChange={(e) =>
+                            setCreateForm((p: any) => ({
+                              ...p,
+                              horizontalWareSplit: e.target.value,
                             }))
                           }
                         />
@@ -1041,25 +1334,6 @@ export const WareList: React.FC = () => {
                         placeholder="-- choose finishing processes --"
                       />
 
-                      {/* <label className="form-label" style={{ marginTop: 8 }}>
-                        Công đoạn gia công
-                      </label>
-                      <MultiSelectInline
-                        id="create-mp"
-                        options={mpList}
-                        selected={createForm.manufacturingProcesses || []}
-                        onAdd={(id) =>
-                          addToCreateList("manufacturingProcesses", id)
-                        }
-                        onRemove={(id) =>
-                          removeFromCreateList("manufacturingProcesses", id)
-                        }
-                        getLabel={(o) =>
-                          o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
-                        }
-                        placeholder="-- choose manufacturing processes --"
-                      /> */}
-
                       <label className="form-label" style={{ marginTop: 8 }}>
                         Note
                         <textarea
@@ -1074,6 +1348,198 @@ export const WareList: React.FC = () => {
                         />
                       </label>
                     </div>
+                  </div>
+
+                  <hr />
+
+                  <div style={{ marginBottom: 8 }}>
+                    <strong>Paper layers (at least one required)</strong>
+                  </div>
+
+                  <div className="row g-3">
+                    <div className="col-md-4">
+                      <label className="form-label">
+                        Face layer
+                        <select
+                          className="form-control"
+                          value={createForm.faceLayerPaperType}
+                          onChange={(e) =>
+                            setCreateForm((p: any) => ({
+                              ...p,
+                              faceLayerPaperType: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">-- none --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">
+                        E flute
+                        <select
+                          className="form-control"
+                          value={createForm.EFlutePaperType}
+                          onChange={(e) =>
+                            setCreateForm((p: any) => ({
+                              ...p,
+                              EFlutePaperType: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">-- none --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">
+                        E/B liner
+                        <select
+                          className="form-control"
+                          value={createForm.EBLinerLayerPaperType}
+                          onChange={(e) =>
+                            setCreateForm((p: any) => ({
+                              ...p,
+                              EBLinerLayerPaperType: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">-- none --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <div className="col-md-4">
+                      <label className="form-label">
+                        B flute
+                        <select
+                          className="form-control"
+                          value={createForm.BFlutePaperType}
+                          onChange={(e) =>
+                            setCreateForm((p: any) => ({
+                              ...p,
+                              BFlutePaperType: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">-- none --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <div className="col-md-4">
+                      <label className="form-label">
+                        B/A C liner
+                        <select
+                          className="form-control"
+                          value={createForm.BACLinerLayerPaperType}
+                          onChange={(e) =>
+                            setCreateForm((p: any) => ({
+                              ...p,
+                              BACLinerLayerPaperType: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">-- none --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <div className="col-md-4">
+                      <label className="form-label">
+                        AC flute
+                        <select
+                          className="form-control"
+                          value={createForm.ACFlutePaperType}
+                          onChange={(e) =>
+                            setCreateForm((p: any) => ({
+                              ...p,
+                              ACFlutePaperType: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">-- none --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <div className="col-md-4">
+                      <label className="form-label">
+                        Back layer
+                        <select
+                          className="form-control"
+                          value={createForm.backLayerPaperType}
+                          onChange={(e) =>
+                            setCreateForm((p: any) => ({
+                              ...p,
+                              backLayerPaperType: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">-- none --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  <hr />
+
+                  <div style={{ marginTop: 12 }}>
+                    <label className="form-label">
+                      Type of printer
+                      <select
+                        className="form-control"
+                        value={createForm.typeOfPrinter}
+                        onChange={(e) =>
+                          setCreateForm((p: any) => ({
+                            ...p,
+                            typeOfPrinter: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">-- none --</option>
+                        {TYPE_OF_PRINTER_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
                 </div>
 
@@ -1131,7 +1597,7 @@ export const WareList: React.FC = () => {
                       </label>
 
                       <label className="form-label">
-                        Đơn giá
+                        Đơn giá (đồng)
                         <input
                           className="form-control"
                           type="number"
@@ -1139,7 +1605,7 @@ export const WareList: React.FC = () => {
                           onChange={(e) =>
                             setEditForm((p: any) => ({
                               ...p,
-                              unitPrice: Number(e.target.value),
+                              unitPrice: e.target.value,
                             }))
                           }
                         />
@@ -1203,7 +1669,7 @@ export const WareList: React.FC = () => {
                           onChange={(e) =>
                             setEditForm((p: any) => ({
                               ...p,
-                              wareWidth: Number(e.target.value),
+                              wareWidth: e.target.value,
                             }))
                           }
                         />
@@ -1218,7 +1684,7 @@ export const WareList: React.FC = () => {
                           onChange={(e) =>
                             setEditForm((p: any) => ({
                               ...p,
-                              wareLength: Number(e.target.value),
+                              wareLength: e.target.value,
                             }))
                           }
                         />
@@ -1233,7 +1699,7 @@ export const WareList: React.FC = () => {
                           onChange={(e) =>
                             setEditForm((p: any) => ({
                               ...p,
-                              wareHeight: Number(e.target.value),
+                              wareHeight: e.target.value,
                             }))
                           }
                         />
@@ -1241,36 +1707,6 @@ export const WareList: React.FC = () => {
                     </div>
 
                     <div className="col-md-6">
-                      <label className="form-label">
-                        Khổ giấy
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={editForm.paperWidth}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              paperWidth: Number(e.target.value),
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Part SX
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={editForm.crossCutCount}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              crossCutCount: Number(e.target.value),
-                            }))
-                          }
-                        />
-                      </label>
-
                       <label className="form-label">
                         Volume
                         <input
@@ -1280,13 +1716,57 @@ export const WareList: React.FC = () => {
                           onChange={(e) =>
                             setEditForm((p: any) => ({
                               ...p,
-                              volume: Number(e.target.value),
+                              volume: e.target.value,
                             }))
                           }
                         />
                       </label>
 
-                      {/* Print colors - inline multi select */}
+                      <label className="form-label">
+                        Số SP bộ
+                        <input
+                          className="form-control"
+                          type="number"
+                          value={editForm.warePerSet}
+                          onChange={(e) =>
+                            setEditForm((p: any) => ({
+                              ...p,
+                              warePerSet: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
+                      <label className="form-label">
+                        Số SP ghép bộ
+                        <input
+                          className="form-control"
+                          type="number"
+                          value={editForm.warePerCombinedSet}
+                          onChange={(e) =>
+                            setEditForm((p: any) => ({
+                              ...p,
+                              warePerCombinedSet: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
+                      <label className="form-label">
+                        Dọc chia SP 
+                        <input
+                          className="form-control"
+                          type="number"
+                          value={editForm.horizontalWareSplit}
+                          onChange={(e) =>
+                            setEditForm((p: any) => ({
+                              ...p,
+                              horizontalWareSplit: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
                       <label className="form-label">Màu in</label>
                       <MultiSelectInline
                         id="edit-printcolor"
@@ -1300,7 +1780,6 @@ export const WareList: React.FC = () => {
                         placeholder="-- choose print colors --"
                       />
 
-                      {/* Finishing */}
                       <label className="form-label" style={{ marginTop: 8 }}>
                         Công đoạn hoàn thiện
                       </label>
@@ -1318,26 +1797,6 @@ export const WareList: React.FC = () => {
                         placeholder="-- choose finishing processes --"
                       />
 
-                      {/* Manufacturing processes */}
-                      {/* <label className="form-label" style={{ marginTop: 8 }}>
-                        Công đoạn gia công
-                      </label>
-                      <MultiSelectInline
-                        id="edit-mp"
-                        options={mpList}
-                        selected={editForm.manufacturingProcesses || []}
-                        onAdd={(id) =>
-                          addToEditList("manufacturingProcesses", id)
-                        }
-                        onRemove={(id) =>
-                          removeFromEditList("manufacturingProcesses", id)
-                        }
-                        getLabel={(o) =>
-                          o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
-                        }
-                        placeholder="-- choose manufacturing processes --"
-                      /> */}
-
                       <label className="form-label" style={{ marginTop: 8 }}>
                         Note
                         <textarea
@@ -1352,6 +1811,108 @@ export const WareList: React.FC = () => {
                         />
                       </label>
                     </div>
+                  </div>
+
+                  <hr />
+
+                  <div style={{ marginBottom: 8 }}>
+                    <strong>Paper layers (at least one required)</strong>
+                  </div>
+
+                  <div className="row g-3">
+                    <div className="col-md-4">
+                      <label className="form-label">
+                        Face layer
+                        <select
+                          className="form-control"
+                          value={editForm.faceLayerPaperType}
+                          onChange={(e) =>
+                            setEditForm((p: any) => ({
+                              ...p,
+                              faceLayerPaperType: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">-- none --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <div className="col-md-4">
+                      <label className="form-label">
+                        E flute
+                        <select
+                          className="form-control"
+                          value={editForm.EFlutePaperType}
+                          onChange={(e) =>
+                            setEditForm((p: any) => ({
+                              ...p,
+                              EFlutePaperType: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">-- none --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <div className="col-md-4">
+                      <label className="form-label">
+                        Back layer
+                        <select
+                          className="form-control"
+                          value={editForm.backLayerPaperType}
+                          onChange={(e) =>
+                            setEditForm((p: any) => ({
+                              ...p,
+                              backLayerPaperType: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">-- none --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  <hr />
+
+                  <div style={{ marginTop: 12 }}>
+                    <label className="form-label">
+                      Type of printer
+                      <select
+                        className="form-control"
+                        value={editForm.typeOfPrinter}
+                        onChange={(e) =>
+                          setEditForm((p: any) => ({
+                            ...p,
+                            typeOfPrinter: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">-- none --</option>
+                        {TYPE_OF_PRINTER_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
                 </div>
 

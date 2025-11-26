@@ -1,3 +1,4 @@
+import ManufacturingOrderFullDetailTableConfirmDialog from "@/components/manufacturing-order/full-detail-table/ConfirmDialog";
 import ManufacturingOrderPagination from "@/components/manufacturing-order/full-detail-table/Pagination";
 import ManufacturingOrderPaginationControl from "@/components/manufacturing-order/full-detail-table/PaginationControl";
 import ManufacturingOrderSearchBar from "@/components/manufacturing-order/full-detail-table/SearchBar";
@@ -58,6 +59,7 @@ export default function ManufacturingOrderHome() {
 
         <ManufacturingOrderDetailsDialog />
       </ManufacturingOrderDialogProvider>
+      <ManufacturingOrderFullDetailTableConfirmDialog />
     </ManufacturingOrderTableProvider>
   );
 }

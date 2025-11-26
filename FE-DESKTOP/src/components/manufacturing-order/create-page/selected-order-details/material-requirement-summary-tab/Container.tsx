@@ -8,31 +8,29 @@ export type MaterialRequirementContainerProps = {
 }
 
 export default function MaterialRequirementContainer(props: MaterialRequirementContainerProps) {
-  const { selectedManufacturingOrders } = useSelectedOrdersState();
-
-  if (check.undefined(selectedManufacturingOrders) || selectedManufacturingOrders.length < 1) {
-    return (
-      <Center>
-        <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
-          <Stack alignItems={"center"}>
-            <Text>Khối lượng của các nguyên phụ liệu được sử dụng sẽ được hiển thị ở đây</Text>
-          </Stack>
-        </Box>
-      </Center>
-    );
-  }
+  // const { selectedManufacturingOrders } = useSelectedOrdersState();
+  // 
+  // if (check.undefined(selectedManufacturingOrders) || selectedManufacturingOrders.length < 1) {
+  // return (
+  // <Center>
+  // <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
+  // <Stack alignItems={"center"}>
+  // <Text>Khối lượng của các nguyên phụ liệu được sử dụng sẽ được hiển thị ở đây</Text>
+  // </Stack>
+  // </Box>
+  // </Center>
+  // );
+  // }
 
   return (
     <Container m={0}>
       <Box colorPalette={"gray"} bg={"colorPalette.subtle"} p={5} rounded={"md"}>
         <SimpleGrid columns={2} gap="40px">
           <GridItem colSpan={{ base: 1 }}>
-            <MaterialRequirementTable />
+            <MaterialRequirementTable type="FACE" />
           </GridItem>
           <GridItem colSpan={{ base: 1 }}>
-            <Box height="20" bg={"bg"}>
-              <Center><Text>Không có thông tin giấy mộc của lệnh</Text></Center>
-            </Box>
+            <MaterialRequirementTable type="RAW" />
           </GridItem>
           <Box height="20" />
           <Box height="20" />

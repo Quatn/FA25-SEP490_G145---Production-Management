@@ -6,6 +6,7 @@ import { CreateSemiFinishedGoodTransactionDto } from './dto/create-semi-finished
 import { UpdateSemiFinishedGoodTransactionDto } from './dto/update-semi-finished-good-transaction.dto';
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
 import { SemiFinishedGood, SemiFinishedGoodDocument, SemiFinishedGoodSchema } from '../schemas/semi-finished-good.schema';
+import { TransactionType } from '../enums/transaction-type.enum';
 
 type SoftSFGTransaction = SemiFinishedGoodTransaction & SoftDeleteDocument;
 
@@ -154,8 +155,8 @@ export class SemiFinishedGoodTransactionService {
 
   async updateOne(id: string, dto: UpdateSemiFinishedGoodTransactionDto) {
     const raw: any = { ...dto };
-    if (raw.semiFinishedGoodId) raw.semiFinishedGoodId = new Types.ObjectId(raw.semiFinishedGoodId);
-    if (raw.employeeId) raw.employeeId = new Types.ObjectId(raw.employeeId);
+    if (raw.semiFinishedGoodId) raw.semiFinishedGoodId = new Types.ObjectId(String(raw.semiFinishedGoodId));
+    if (raw.employeeId) raw.employeeId = new Types.ObjectId(String(raw.employeeId));
 
     const updated = await this.sfgTransactionModel.findByIdAndUpdate(id, raw, { new: true });
     if (!updated) throw new NotFoundException('Transaction not found');
@@ -185,7 +186,62 @@ export class SemiFinishedGoodTransactionService {
     return docs[0];
   }
 
-  async getDailyReport(date: string) {
+  async getDailyEmployees(date: string) {
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const pipeline: any[] = [];
+    pipeline.push({
+      $match: {
+        createdAt: { $gte: dayStart, $lte: dayEnd },
+        isDeleted: false,
+      },
+    });
+
+    pipeline.push({
+      $group: {
+        _id: '$employeeId',
+        transactionCount: { $sum: 1 },
+      },
+    });
+
+    pipeline.push({
+      $lookup: {
+        from: 'employees',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'employee',
+      },
+    });
+
+    pipeline.push({ $unwind: '$employee' });
+
+    pipeline.push({
+      $project: {
+        _id: '$employee._id',
+        name: '$employee.name',
+        email: '$employee.email',
+        transactionCount: 1,
+      },
+    });
+
+    const data = await this.sfgTransactionModel.aggregate(pipeline).exec();
+
+    return { data };
+  }
+
+  async getDailyReport(
+    page = 1,
+    limit = 10,
+    date: string,
+    transactionType?: TransactionType,
+    employeeId?: string,
+    manufacturingOrderId?: string) {
+    const skip = (page - 1) * limit;
+
     const input = new Date(date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -242,48 +298,39 @@ export class SemiFinishedGoodTransactionService {
       },
     });
 
+    if (transactionType) {
+      pipeline.push({
+        $match: { transactionType: transactionType },
+      });
+    }
+
+    if (employeeId) {
+      pipeline.push({
+        $match: { employeeId: new Types.ObjectId(employeeId) },
+      });
+    }
+
+    if (manufacturingOrderId) {
+      pipeline.push({
+        $match: { "semiFinishedGood.manufacturingOrderId": new Types.ObjectId(manufacturingOrderId) },
+      });
+    }
+
     pipeline.push({ $sort: { createdAt: -1 } });
 
     pipeline.push({
       $facet: {
-        data: [],
-        totalCount: [{ $count: "count" }],
-        importStats: [
-          { $match: { transactionType: "IMPORT" } },
-          {
-            $project: {
-              quantity: { $subtract: ["$finalQuantity", "$initialQuantity"] },
-            },
-          },
-          { $group: { _id: null, total: { $sum: "$quantity" } } },
-        ],
-
-        exportStats: [
-          { $match: { transactionType: "EXPORT" } },
-          {
-            $project: {
-              quantity: { $subtract: ["$initialQuantity", "$finalQuantity"] },
-            },
-          },
-          { $group: { _id: null, total: { $sum: "$quantity" } } },
-        ],
+        data: [{ $skip: skip }, { $limit: limit }],
+        totalCount: [{ $count: 'count' }],
       },
     });
 
-    const result = (await this.sfgTransactionModel.aggregate(pipeline).exec())[0];
+    const result = await this.sfgTransactionModel.aggregate(pipeline).exec();
+    const data = result[0]?.data || [];
+    const totalItems = result[0]?.totalCount[0]?.count || 0;
+    const totalPages = Math.ceil(totalItems / limit);
 
-    const totalImport = result.importStats[0]?.total ?? 0;
-    const totalExport = result.exportStats[0]?.total ?? 0;
-
-    const data = result.data ?? [];
-
-    return {
-      date: start.toISOString().slice(0, 10),
-      totalImport,
-      totalExport,
-      net: totalImport - totalExport,
-      data,
-    };
+    return { data, page, limit, totalItems, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 };
   }
 
   async softDelete(id: string) {

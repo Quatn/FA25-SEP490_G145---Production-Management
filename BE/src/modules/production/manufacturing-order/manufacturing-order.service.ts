@@ -56,6 +56,7 @@ import check from "check-types";
 import { isRefPopulated } from "@/common/utils/populate-check";
 import { UpdateManyCorrugatorProcessesDto } from "./dto/update-many-corrugator-processes.dto";
 import { UpdateCorrugatorProcessDto } from "./dto/update-corrugator-process.dto";
+import { fullDetailsFilterAggregationPipeline } from "./aggregate-pipes/full-details-filter";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -744,6 +745,7 @@ export class ManufacturingOrderService {
   }): Promise<PaginatedList<FullDetailManufacturingOrderDto>> {
     const skip = (page - 1) * limit;
 
+    /*
     const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
     const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
     const warePath = PurchaseOrderItemSchema.path("ware");
@@ -755,30 +757,37 @@ export class ManufacturingOrderService {
     const wareManufacturingProcessTypePath = WareSchema.path(
       "wareManufacturingProcessType",
     );
+    const printColorsPath = WareSchema.path("printColors");
+    const corrugatorProcessPath =
+      ManufacturingOrderSchema.path("corrugatorProcess");
 
-    const populate = {
-      path: poiPath.path,
-      populate: [
-        {
-          path: warePath.path,
-          populate: [
-            fluteCombinationPath,
-            finishingProcessesPath,
-            wareManufacturingProcessTypePath,
-          ],
-        },
-        {
-          path: subpoPath.path,
-          populate: [
-            productPath,
-            {
-              path: poPath.path,
-              populate: { path: customerPath.path },
-            },
-          ],
-        },
-      ],
-    };
+    const populate = [
+      corrugatorProcessPath,
+      {
+        path: poiPath.path,
+        populate: [
+          {
+            path: warePath.path,
+            populate: [
+              fluteCombinationPath,
+              finishingProcessesPath,
+              wareManufacturingProcessTypePath,
+              printColorsPath,
+            ],
+          },
+          {
+            path: subpoPath.path,
+            populate: [
+              productPath,
+              {
+                path: poPath.path,
+                populate: { path: customerPath.path },
+              },
+            ],
+          },
+        ],
+      },
+    ];
 
     const [totalItems, data] = await Promise.all([
       this.manufacturingOrderModel.countDocuments(filter),
@@ -789,6 +798,23 @@ export class ManufacturingOrderService {
         .populate(populate)
         .lean(),
     ]);
+    */
+
+    const pipeline = fullDetailsFilterAggregationPipeline({
+      filter,
+      skip,
+      limit,
+    });
+
+    const [data, countArr] = await Promise.all([
+      this.manufacturingOrderModel.aggregate([...pipeline]),
+      this.manufacturingOrderModel.aggregate([
+        ...pipeline.filter((stage) => !("$skip" in stage || "$limit" in stage)),
+        { $count: "total" },
+      ]),
+    ]);
+    const totalItems =
+      (countArr[0] as { total: number } | undefined)?.total ?? 0;
 
     const totalPages = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
@@ -870,7 +896,7 @@ export class ManufacturingOrderService {
       .catch(() => undefined);
     const codeGenerator = new MOCodeGenerator(lastOrder?.code);
 
-    const mos = dtos.map((poi, index) => ({
+    const mos: ManufacturingOrder[] = dtos.map((poi, index) => ({
       code: codeGenerator.getCode(index),
       purchaseOrderItem: poi.purchaseOrderItemId,
       overallStatus: OrderStatus.NOTSTARTED,
@@ -898,15 +924,23 @@ export class ManufacturingOrderService {
       isDeleted: false,
     }));
 
-    const result = await this.manufacturingOrderModel.create(mos);
+    const moCreateRes = await this.manufacturingOrderModel.create(mos);
 
     // TODO: create finishing processes
+    // const finishingProcesses: WareFinishingProcessType[][] = moCreateRes.map((mo, index) => 
+    //   mo.processes.map((p) => ({
+    //     code: p,
+    //     process,
+    //     note: "",
+    //     isDeleted: false,
+    //   }))
+    // );
 
     return {
       requestedAmount: dtos.length,
-      createdAmount: result.length,
+      createdAmount: moCreateRes.length,
       echo: {
-        codes: result.map((item) => item.code),
+        codes: moCreateRes.map((item) => item.code),
       },
     };
   }
@@ -1095,7 +1129,7 @@ export class ManufacturingOrderService {
 
     // 3. Xử lý logic cập nhật (Logic giữ nguyên)
     let newCalculatedStatus = originalStatus;
-    let newAmount = manufacturedAmount ?? originalAmount;
+    const newAmount = manufacturedAmount ?? originalAmount;
 
     if (
       manufacturedAmount !== undefined &&
@@ -1380,7 +1414,7 @@ export class ManufacturingOrderService {
       } catch (error) {
         failedCount++;
         errors.push(
-          `MO ${parentMO._id}: ${error.message || "Lỗi không xác định"}`,
+          `MO ${parentMO._id.toString()}: ${(error as { message: string }).message || "Lỗi không xác định"}`,
         );
       }
     }

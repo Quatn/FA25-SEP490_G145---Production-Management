@@ -86,14 +86,17 @@ export const paperRollApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ["PaperRoll"],
     }),
 
-    getPaperRollByPaperRollId: builder.query<BaseResponse<any>, { paperRollId: string }>({
-      query: ({ paperRollId }) => ({
-        url: `${PAPER_ROLL_URL}/detail-by-paper-roll/${paperRollId}`,
-        method: "GET",
-        credentials: "include",
-      }),
-      providesTags: (result, error, arg) => [{ type: "PaperRoll", id: arg.paperRollId }],
-    }),
+    getPaperRollByPaperRollId: builder.query<BaseResponse<any>, { paperRollId: string }>(
+      {
+        query: ({ paperRollId }) => ({
+          url: `${PAPER_ROLL_URL}/detail-by-paper-roll`,
+          method: "GET",
+          params: { paperRollId },  
+          credentials: "include",
+        }),
+        providesTags: (result, error, arg) => [{ type: "PaperRoll", id: arg.paperRollId }],
+      }
+    ),
   }),
 
 });

@@ -36,12 +36,14 @@ import check from "check-types";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { manufacturingOrderColumnsByTabs, ManufacturingOrderTableDataType } from "./tableDefinition";
 import { useManufacturingDialogDispatch } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
-import { CSSProperties, useEffect, useReducer, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useReducer, useState } from "react";
 import { BiSolidDownArrow } from "react-icons/bi";
 import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { ManufacturingTableEditableCellInputTypes, ManufacturingTableEditableCellProps, ManufacturingTableMeta } from "./tableCellNodes";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
+import { recalculatePurchaseOrderItem, recalculateWare, refreshPurchaseOrderItems, refreshWares } from "@/service/mock-data/recalculation";
+import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
 
 export type ManufacturingOrderTableProps = {
   rootProps?: BoxProps;
@@ -143,8 +145,11 @@ const EditableCell = (props: ManufacturingTableEditableCellProps) => {
       return (
         <Input
           bg={"bg"}
-          value={props.value}
-          onChange={(ev) => props.setValue(ev.target.value)}
+          type="date"
+          value={[formatDateToYYYYMMDD(props.value as string)]}
+          onChange={(ev) => {
+            return props.setValue(new Date(ev.target.value))
+          }}
           placeholder={"Nhấn để nhập"} onBlur={(ev) => {
             if (props.onBlur)
               props.onBlur(ev.target.value)
@@ -173,19 +178,41 @@ export default function ManufacturingOrderTable(
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
-  } = useGetFullDetailManufacturingOrdersQuery({ page, limit });
+  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: search });
 
 
   const dialogDispatch = useManufacturingDialogDispatch();
   const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
   const [deleteOrder] = useDeleteManufacturingOrderMutation();
 
+  const moPaginatedList = useMemo(() => {
+    if (fullDetailMOPaginatedResponse?.data) {
+      const calculatedMoPaginatedList = fullDetailMOPaginatedResponse?.data?.data.map((mo) => {
+        const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
+        const calculatedPOI = recalculatePurchaseOrderItem({
+          ...mo.purchaseOrderItem!,
+          ware: calculatedWare
+        })
 
-  const moPaginatedList = fullDetailMOPaginatedResponse?.data;
-  const [tableData, setTableData] = useState<(ManufacturingOrderTableDataType)[]>(() => moPaginatedList?.data.map((mo) => ({
+        return {
+          ...mo,
+          purchaseOrderItem: calculatedPOI,
+        }
+      })
+      return {
+        ...fullDetailMOPaginatedResponse.data,
+        data: calculatedMoPaginatedList
+      }
+    }
+    else {
+      return undefined
+    }
+  }, [fullDetailMOPaginatedResponse?.data])
+
+  const [tableData, setTableData] = useState<(ManufacturingOrderTableDataType)[]>(() => (moPaginatedList?.data?.map((mo) => ({
     ...mo,
     isEdited: false,
-  })) ?? [])
+  })) ?? []))
 
   const [flag, forceDataReset] = useReducer((x) => x + 1, 0);
   useEffect(() => {
@@ -231,6 +258,7 @@ export default function ManufacturingOrderTable(
       editableCellNode: (props: ManufacturingTableEditableCellProps) => {
         return <EditableCell {...props} />
       },
+      query: search,
     },
   }
   );
@@ -387,7 +415,7 @@ export default function ManufacturingOrderTable(
                     key={cell.id}
                     style={{
                       ...getCommonPinningStyles(cell.column),
-                      background: row.original.isEdited ? (cell.column.getIsPinned() ? "#F5F5D5" : "#E7E7CB") : (cell.column.getIsPinned() ? "#fefefe" : "#f3f3f3")
+                      background: row.original.isEdited ? (cell.column.getIsPinned() ? "#F5F5D5" : "#E7E7CB") : (cell.column.getIsPinned() ? "#fefefe" : "white")
                     }}
                   >
                     {(cell.column.id === "actions-column" && row.id === hoveredRowId) ? (
@@ -447,7 +475,10 @@ export default function ManufacturingOrderTable(
                 Đã sửa {editedItemsNum} lệnh
               </ActionBar.SelectionTrigger>
               <ActionBar.Separator />
-              <Button colorPalette={"blue"} size="sm" onClick={handleUpdateOrders}>
+              <Button colorPalette={"blue"} size="sm" onClick={() => {
+                dispatch({ type: "SET_PREPARED_SUBMIT_ASK_TEXT", payload: `Lưu tất cả ${editedItemsNum} lệnh?` })
+                dispatch({ type: "SET_PREPARED_SUBMIT_FUNCTION", payload: handleUpdateOrders })
+              }}>
                 Lưu tất cả
               </Button>
               <Button colorPalette={"yellow"} size="sm" onClick={forceDataReset}>
@@ -456,6 +487,7 @@ export default function ManufacturingOrderTable(
             </ActionBar.Content>
           </ActionBar.Positioner>
         </Portal>
-      </ActionBar.Root>    </Box >
+      </ActionBar.Root>
+    </Box >
   );
 }

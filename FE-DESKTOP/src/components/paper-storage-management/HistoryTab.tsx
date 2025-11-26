@@ -32,7 +32,6 @@ function getIdFromDoc(doc: any): string | undefined {
   return undefined;
 }
 
-/** extract color id from a paperType which may be populated or just an id */
 const getColorIdFromPaperType = (pt: any) => {
   if (!pt) return undefined;
   if (pt.paperColorId && typeof pt.paperColorId === "object")
@@ -103,7 +102,7 @@ export const HistoryTab: React.FC = () => {
     const pt = r.paperType ?? r.paperTypeId ?? null;
     const colorId = getColorIdFromPaperType(pt);
     const colorObj = colorId ? colorMap.get(String(colorId)) : undefined;
-    const colorCode = colorObj?.code ?? colorObj?.title;
+    const colorCode = colorObj?.code;
 
     const supplierObj =
       r.paperSupplier ??
@@ -127,7 +126,27 @@ export const HistoryTab: React.FC = () => {
       grammage != null &&
       seq != null
     ) {
-      return `${colorCode}/${supplierCode}/${width}/${grammage}/${seq}XC${String(
+      if (seq > 0 && seq < 10) {
+        return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}0000${seq}XC${String(
+          yy
+        ).padStart(2, "0")}`;
+      }
+      if (seq >= 10 && seq < 100) {
+        return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}000${seq}XC${String(
+          yy
+        ).padStart(2, "0")}`;
+      }
+      if (seq >= 100 && seq < 1000) {
+        return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}00${seq}XC${String(
+          yy
+        ).padStart(2, "0")}`;
+      }
+      if (seq >= 1000 && seq < 10000) {
+        return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}0${seq}XC${String(
+          yy
+        ).padStart(2, "0")}`;
+      }
+      return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}${seq}XC${String(
         yy
       ).padStart(2, "0")}`;
     }
@@ -187,8 +206,6 @@ export const HistoryTab: React.FC = () => {
   // find computed roll name by db id or fall back to incoming id
   const findRollName = (id: string) =>
     rolls.find((r) => r.paperRollDbId === id)?.paperRollId ?? id;
-
-  console.log("findrollname: ", findRollName("6919da2f0e20b5ebc3fa22a8"));
 
   return (
     <div>
