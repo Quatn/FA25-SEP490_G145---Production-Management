@@ -14,10 +14,23 @@ export default function WelcomeBox() {
     state.auth.userState
   );
 
-  const isAdmin = adminPrivs.find(rp => check.contains(userState!.accessPrivileges, rp))
+  const isAdmin = check.array.of.string(userState?.accessPrivileges) ? adminPrivs.find(rp => check.contains(userState.accessPrivileges, rp)) : false
 
   return (
-    <AuthenticatedContent>
+    <AuthenticatedContent
+      unauthenticatedContent={
+        <Box>
+          <Text>You are not logged in</Text>
+          <Stack mt={5}>
+            <Link href={"/login"}>
+              <ChakraLink colorPalette={"cyan"} as="p">
+                login
+              </ChakraLink>
+            </Link>
+          </Stack>
+        </Box>
+      }
+    >
       <Box>
         <Text>You are logged in as user {userState?.name}</Text>
         {isAdmin && <Text colorPalette={"red"} color={"colorPalette.info"}>You have admin privileges</Text>}
