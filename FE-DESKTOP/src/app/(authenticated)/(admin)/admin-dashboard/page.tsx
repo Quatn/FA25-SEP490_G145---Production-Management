@@ -1,3 +1,4 @@
+"use client"
 import { Box, Text } from "@chakra-ui/react";
 
 export default function AdminDashboard() {
@@ -11,7 +12,7 @@ export default function AdminDashboard() {
       bg={"gray.200"}
     >
       <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-        Dashboard
+        Admin Dashboard
       </Text>
     </Box>
   );

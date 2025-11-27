@@ -266,7 +266,10 @@ export default function MainLayout({
         flexGrow={1}
       >
         <GridItem colSpan={{ base: 1, sm: 2, md: 1 }} overflowY={"auto"}>
-          <Sidebar.Root>
+          <Sidebar.Root
+            colorPalette="blue"
+            bg="colorPalette.subtle"
+          >
             <Sidebar.Header>
               <Input
                 size="sm"

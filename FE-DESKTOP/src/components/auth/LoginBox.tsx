@@ -6,6 +6,7 @@ import { toaster } from "@/components/ui/toaster";
 import { useLoginMutation } from "@/service/api/authApiSlice";
 import { setCredentials } from "@/service/features/authSlice";
 import { useAppDispatch } from "@/service/hooks";
+import { devlog } from "@/utils/devlog";
 import {
   Alert,
   Button,
@@ -48,7 +49,7 @@ export default function LoginBox() {
       });
       router.push("/");
     } catch (e) {
-      console.log(e);
+      devlog(e);
     }
   };
 
@@ -99,7 +100,7 @@ export default function LoginBox() {
         <Link href={"/"}>
           <Button variant="outline">Cancel</Button>
         </Link>
-        <Button variant="solid" onClick={handleSubmit}>Sign in</Button>
+        <Button colorPalette={"blue"} variant="solid" onClick={handleSubmit}>Sign in</Button>
       </CardFooter>
     </CardRoot>
   );

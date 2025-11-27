@@ -6,18 +6,33 @@ import { UserState } from "@/types/UserState";
 import check from "check-types";
 
 export default function PrivilegedContent(
-  { children, unauthenticatedContent, requiredPrivileges }: {
+  { children, loading, unauthenticatedContent, requiredPrivileges, throwErrorAction }: {
     children?: React.ReactNode;
+    loading?: React.ReactNode;
     unauthenticatedContent?: React.ReactNode;
     requiredPrivileges: AnyAccessPrivileges[]
+    throwErrorAction?: () => Error,
   },
 ) {
+  const hydrating: boolean = useAppSelector((state) =>
+    state.auth.hydrating
+  );
   const userState: UserState | null = useAppSelector((state) =>
     state.auth.userState
   );
 
-  if (check.null(userState) || !check.contains(requiredPrivileges, userState.accessPrivileges)) {
+  if (hydrating) {
+    if (loading) {
+      return loading
+    }
+    return <div />
+  }
+
+  if (check.null(userState) || !requiredPrivileges.find(rp => check.contains(userState!.accessPrivileges, rp))) {
     if (unauthenticatedContent) {
+      if (throwErrorAction) {
+        throw throwErrorAction()
+      }
       return (
         <div>
           {unauthenticatedContent}
@@ -29,9 +44,5 @@ export default function PrivilegedContent(
     )
   }
 
-  return (
-    <div>
-      {children}
-    </div>
-  );
+  return children;
 }

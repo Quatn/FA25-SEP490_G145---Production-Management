@@ -1,0 +1,135 @@
+"use client";
+
+import { Field } from "@/components/ui/field";
+import { PasswordInput } from "@/components/ui/password-input";
+import { toaster } from "@/components/ui/toaster";
+import { PASSWORD_REGEX } from "@/constants/password-regex";
+import { devlog } from "@/utils/devlog";
+import {
+  Alert,
+  Button,
+  CardBody,
+  CardFooter,
+  CardRoot,
+  Stack,
+} from "@chakra-ui/react";
+import check from "check-types";
+import { useMemo, useState } from "react";
+
+export default function ChangePasswordBox() {
+  const [interactFlag, setInteractFlag] = useState(false)
+  const setFormInteractedWith = () => setInteractFlag(true)
+  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const passwordErr: string | undefined = useMemo(() => {
+    if (!interactFlag) return undefined
+
+    if (password.length < 1) {
+      return "Current password is required";
+    }
+
+    return undefined
+  }, [interactFlag, password])
+
+  const newPasswordErr: string | undefined = useMemo(() => {
+    if (!interactFlag) return undefined
+
+    if (!check.inRange(newPassword.length, 8, 200)) {
+      return "New password must be between 8 and 200 characters";
+    }
+
+    if (!PASSWORD_REGEX.test(newPassword)) {
+      return "Password must contain least one lowercase, uppercase, digit, and special character"
+    }
+
+    return undefined
+  }, [interactFlag, newPassword])
+
+  const confirmPasswordErr: string | undefined = useMemo(() => {
+    if (!interactFlag) return undefined
+
+    if (confirmPassword !== newPassword) {
+      return "Confirm password must match new password";
+    }
+
+    return undefined
+  }, [interactFlag, newPassword, confirmPassword])
+
+  const handleSubmit = async () => {
+    try {
+      console.log("Not implmented yet")
+      toaster.create({
+        description: `Changed password successfully`,
+        type: "success",
+      });
+    } catch (e) {
+      devlog(e);
+    }
+  };
+
+  const handleReset = () => {
+    setPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setInteractFlag(false);
+  }
+
+  return (
+    <CardRoot w="lg">
+      <CardBody>
+        <form onSubmit={handleSubmit}>
+          <Stack gap="4" w="full">
+            <Field label="Current password" invalid={!!passwordErr} errorText={passwordErr}>
+              <PasswordInput
+                name="password"
+                value={password}
+                onChange={(e) => setPassword(e.currentTarget.value)}
+                onBlur={setFormInteractedWith}
+              />
+            </Field>
+            <Field label="New password" invalid={!!newPasswordErr} errorText={newPasswordErr}>
+              <PasswordInput
+                name="newPassword"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.currentTarget.value)}
+                onBlur={setFormInteractedWith}
+              />
+            </Field>
+            <Field label="Confirm password" invalid={!!confirmPasswordErr} errorText={confirmPasswordErr}>
+              <PasswordInput
+                name="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.currentTarget.value)}
+                onBlur={setFormInteractedWith}
+              />
+            </Field>
+            {/* logInError && (
+              <Alert.Root status={"error"}>
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>Failed to login</Alert.Title>
+                  <Alert.Description>
+                    {(logInError as { data: { message: string } }).data.message}
+                  </Alert.Description>
+                </Alert.Content>
+              </Alert.Root>
+            ) */}
+          </Stack>
+        </form>
+      </CardBody>
+      <CardFooter justifyContent="flex-end">
+        <Button variant="outline" onClick={handleReset}>Reset</Button>
+        <Button
+          colorPalette={"blue"}
+          variant="solid"
+          onClick={handleSubmit}
+          disabled={!!passwordErr || !!newPasswordErr || !!confirmPasswordErr}
+        >
+          Confirm
+        </Button>
+      </CardFooter>
+    </CardRoot>
+  );
+}

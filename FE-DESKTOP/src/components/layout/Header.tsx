@@ -31,8 +31,8 @@ export default function Header() {
         </PrivilegedContent>
         <AuthenticatedContent
           unauthenticatedContent={
-            <Link href={"/auth/login"}>
-              <Button>Log in</Button>
+            <Link href={"/login"}>
+              <Button colorPalette={"blue"}>Log in</Button>
             </Link>
           }
         />
