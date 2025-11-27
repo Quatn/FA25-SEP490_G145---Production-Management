@@ -2,6 +2,7 @@ import type {
   FlexProps as ChakraFlexProps,
   TreeCollection,
   TreeViewExpandedChangeDetails,
+  TreeViewRootProps,
 } from "@chakra-ui/react";
 import { Box, Flex, Highlight, HStack, Text, TreeView } from "@chakra-ui/react";
 import { ReactNode, RefObject } from "react";
@@ -41,6 +42,7 @@ export type SidebarTreeProps = {
   expandedValue?: string[];
   onExpandedChange?: (details: TreeViewExpandedChangeDetails<Node>) => void;
   query?: string;
+  rootProps?: Partial<TreeViewRootProps>;
 };
 
 export const SidebarTitle = (props: SidebarTitleProps) => {
@@ -105,6 +107,7 @@ export const SidebarTree = (props: SidebarTreeProps) => {
       colorPalette={"blue"}
       expandedValue={props.expandedValue}
       onExpandedChange={props.onExpandedChange}
+      {...props.rootProps}
     >
       <HStack justifyContent={"space-between"}>
         <TreeView.Label fontWeight={"bold"}>Menu</TreeView.Label>

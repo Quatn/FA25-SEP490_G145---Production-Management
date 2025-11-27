@@ -4,15 +4,15 @@ import {
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
 import { JwtPayload } from "../interfaces/jwt-payload.interface";
 import check from "check-types";
+import { JwtAuthGuard } from "./jwt-auth.guard";
 
 export function PrivilegedJwtAuthGuard(options?: {
   requiredPrivileges?: string[];
 }) {
   @Injectable()
-  class MixinJwtAuthGuard extends AuthGuard("jwt") {
+  class MixinJwtAuthGuard extends JwtAuthGuard {
     handleRequest<TUser = any>(
       err: any,
       user: TUser,

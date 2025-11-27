@@ -20,6 +20,7 @@ import { LoginRequestDto, LoginResponseDto } from "./dto/login.dto";
 import { isRefPopulated } from "@/common/utils/populate-check";
 import { Role } from "../employee/schemas/role.schema";
 import { LogoutResponseDto } from "./dto/logout.dto";
+import { OptionalJwtAuthGuard } from "@/common/guards/optional-jwt-auth.guard";
 
 @Controller("auth")
 @ApiBearerAuth("access-token") // IMPORTANT: Include this or else Swagger wont include the access token when testing
@@ -84,7 +85,7 @@ export class AuthController {
     return loginResponse;
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   @Post("logout")
   @ApiOperation({
     summary: "Logout",
@@ -93,6 +94,12 @@ export class AuthController {
     @Req() req: AuthenticatedRequest,
     @Res({ passthrough: true }) res: ExpressResponse,
   ): BaseResponse<LogoutResponseDto> {
+    console.log(req.user)
+
+    if (check.null(req.user)) {
+      throw Error("Hmm")
+    }
+
     res.clearCookie("access_token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // only over HTTPS in prod

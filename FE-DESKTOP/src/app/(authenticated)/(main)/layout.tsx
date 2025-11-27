@@ -272,7 +272,7 @@ export default function MainLayout({
                 size="sm"
                 placeholder="Search page"
                 onChange={(e) => search(e.target.value)}
-                backgroundColor={"white"}
+                backgroundColor={"bg"}
               />
             </Sidebar.Header>
 
