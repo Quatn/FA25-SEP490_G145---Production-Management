@@ -719,14 +719,14 @@ const PurchaseOrderList: React.FC = () => {
                             })
                           }
                         >
-                          + Tạo Sub-PO (từ Product list)
+                          + Tạo Sub-PO (Chọn sản phẩm)
                         </button>
-                        <button
+                        {/* <button
                           className="btn btn-outline-success btn-sm"
                           onClick={() => handleAddSubPO(po.id)}
                         >
                           + Tạo Sub-PO (trống)
-                        </button>
+                        </button> */}
                       </div>
                     </div>
 
@@ -755,7 +755,7 @@ const PurchaseOrderList: React.FC = () => {
                                         "-"}
                                     </strong>
                                     <div className="small text-muted">
-                                      Delivery:{" "}
+                                      Vận chuyển:{" "}
                                       {s.deliveryDate
                                         ? new Date(s.deliveryDate)
                                             .toISOString()
@@ -841,7 +841,7 @@ const PurchaseOrderList: React.FC = () => {
                                         <th style={{ textAlign: "right" }}>
                                           Thành tiền
                                         </th>
-                                        <th style={{ width: 120 }}>Actions</th>
+                                        <th style={{ width: 120 }}>Thao tác</th>
                                       </tr>
                                     </thead>
                                     <tbody>
@@ -965,7 +965,7 @@ const PurchaseOrderList: React.FC = () => {
                                                     handleDeleteServerItem(it)
                                                   }
                                                 >
-                                                  Delete
+                                                  Xóa
                                                 </button>
                                               </div>
                                             </td>
@@ -978,7 +978,7 @@ const PurchaseOrderList: React.FC = () => {
                                             colSpan={7}
                                             className="text-muted"
                                           >
-                                            No items for this sub-PO
+                                            Chưa có mã nào
                                           </td>
                                         </tr>
                                       )}

@@ -947,8 +947,29 @@ export const WareList: React.FC = () => {
       <div style={{ overflowX: "auto" }}>
         <table
           className="table table-bordered table-sm"
-          style={{ minWidth: 1800 }}
+          style={{ minWidth: 1800, tableLayout: "fixed" }}
         >
+          <colgroup>
+            <col style={{ width: 140 }} />
+            <col style={{ width: 60 }} />
+            <col style={{ width: 120 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 100 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 160 }} />
+            <col style={{ width: 220 }} />
+            <col style={{ width: 160 }} />
+            {PAPER_LAYER_KEYS.map((_, i) => (
+              <col key={i} style={{ width: 140 }} />
+            ))}
+            <col style={{ width: 120 }} />
+            <col style={{ width: 240 }} />
+            <col style={{ width: 120 }} />
+          </colgroup>
           <thead>
             {/* first header row */}
             <tr>

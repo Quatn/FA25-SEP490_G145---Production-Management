@@ -7,7 +7,6 @@ import PaperDetailModal from "./PaperDetailModal";
 import BulkActionModal from "./BulkActionModal";
 import {
   useGetPaperRollsQuery,
-  useGetDeletedPaperRollsQuery,
   useCreatePaperRollMutation,
   useCreateMultiplePaperRollsMutation,
   useUpdatePaperRollMutation,
@@ -21,6 +20,15 @@ import {
   useGetAllPaperTypesQuery,
   useAddPaperTypeMutation,
 } from "@/service/api/paperTypeApiSlice";
+
+// NEW: extracted modals
+import {
+  CreateModal,
+  CreateMultipleModal,
+  UpdateModal,
+  SingleReimportModal,
+  QrModal,
+} from "./PaperListModal";
 
 function uniqueIdTimeStamp() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -43,6 +51,10 @@ function getDbId(doc: any) {
 export const PaperList: React.FC = () => {
   const [query, setQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  // pagination state
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(5);
+
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const [detailOpen, setDetailOpen] = useState<{ open: boolean; roll?: any }>({
     open: false,
@@ -119,26 +131,42 @@ export const PaperList: React.FC = () => {
   const [qrDataUrl, setQrDataUrl] = useState<string | undefined>();
   const [qrLoading, setQrLoading] = useState(false);
 
+  // debounce search
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(query), 400);
     return () => clearTimeout(t);
   }, [query]);
 
+  // fetch paginated rolls using page/limit/search
   const { data: rollsResp } = useGetPaperRollsQuery({
-    page: 1,
-    limit: 200,
+    page,
+    limit,
     search: debouncedSearch,
     sortBy: "both",
     sortOrder: "desc",
   });
-  const paperRolls: any[] = rollsResp?.data?.data ?? [];
 
-  const { data: deletedResp } = useGetDeletedPaperRollsQuery
-    ? useGetDeletedPaperRollsQuery({ page: 1, limit: 200 })
-    : { data: undefined };
-  const deletedRolls: any[] = (deletedResp?.data?.data ??
-    deletedResp ??
-    []) as any[];
+  // derive array of rolls (defensive against different response shapes)
+  const paperRolls: any[] =
+    rollsResp?.data?.data ?? rollsResp?.data ?? rollsResp ?? [];
+
+  // extract total count defensively
+  const totalCount =
+    Number(
+      rollsResp?.data?.totalItems ??
+        rollsResp?.data?.total ??
+        rollsResp?.total ??
+        rollsResp?.data?.meta?.total ??
+        rollsResp?.data?.meta?.count ??
+        0
+    ) || 0;
+  const totalPages =
+    totalCount > 0 ? Math.max(1, Math.ceil(totalCount / limit)) : 1;
+  const goToPage = (p: number) => {
+    if (p < 1) p = 1;
+    if (totalCount > 0 && p > totalPages) p = totalPages;
+    setPage(p);
+  };
 
   const { data: colorsResp } = useGetAllPaperColorsQuery();
   const allColors: any[] = colorsResp?.data ?? colorsResp ?? [];
@@ -560,18 +588,6 @@ export const PaperList: React.FC = () => {
     }
   };
 
-  const handleRestore = async (r: any) => {
-    const id = getIdFromDoc(r) ?? r.paperRollId;
-    if (!id) return alert("No id");
-    try {
-      const res: any = await restorePaperRoll({ id }).unwrap();
-      alert(res?.message ?? "Restored");
-    } catch (err: any) {
-      console.error(err);
-      alert(err?.data?.message ?? err?.message ?? "Restore failed");
-    }
-  };
-
   const doSingleExport = async (roll: any) => {
     if (!roll) return;
     const w = Number(roll.weight || 0);
@@ -802,9 +818,12 @@ export const PaperList: React.FC = () => {
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
             className="form-control"
-            placeholder="Search supplier / width / grammage"
+            placeholder="Tìm kiếm NCC / khổ / định lượng"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1); // reset to first page on new search
+            }}
             style={{ minWidth: 320 }}
           />
           <button
@@ -846,7 +865,7 @@ export const PaperList: React.FC = () => {
           Toggle chọn tất cả trang này
         </button>
         <div style={{ flex: 1 }} />
-        <div className="small text-muted">{paperRolls.length} rows total</div>
+        <div className="small text-muted">{totalCount} rows total</div>
       </div>
 
       {/* Main table */}
@@ -995,7 +1014,6 @@ export const PaperList: React.FC = () => {
                         className="btn btn-secondary btn-sm"
                         onClick={() => {
                           setSingleModal({ open: true, roll: r });
-                          // ensure selection keyed by DB id (replace selection with this single row)
                           const id = getDbId(r);
                           if (id) setSelectedIds({ [id]: true });
                         }}
@@ -1030,764 +1048,144 @@ export const PaperList: React.FC = () => {
         </table>
       </div>
 
-      <h5 style={{ marginTop: 24 }}>Các cuộn đã xóa</h5>
-      <div style={{ overflowX: "auto", marginBottom: 24 }}>
-        <table className="table table-sm table-bordered">
-          <thead>
-            <tr>
-              <th>Mã cuộn</th>
-              <th>Màu</th>
-              <th>Nhà cung cấp</th>
-              <th style={{ textAlign: "right" }}>Rộng</th>
-              <th style={{ textAlign: "right" }}>Khổ</th>
-              <th style={{ textAlign: "right" }}>Trọng lượng</th>
-              <th>Ngày xóa</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(deletedRolls || []).map((r) => {
-              const pt = r.paperType ?? r.paperTypeId ?? null;
-              const colorId = getColorIdFromPaperType(pt);
-              const colorObj = colorId
-                ? colorMap.get(String(colorId))
-                : undefined;
-              const supplierObj =
-                r.paperSupplier ??
-                (r.paperSupplierId
-                  ? supplierMap.get(String(getIdFromDoc(r.paperSupplierId)))
-                  : undefined);
-              return (
-                <tr key={getIdFromDoc(r) ?? Math.random()}>
-                  <td>{computePaperRollId(r)}</td>
-                  <td>{colorObj?.title ?? "-"}</td>
-                  <td>{supplierObj?.name ?? "-"}</td>
-                  <td style={{ textAlign: "right" }}>
-                    {pt?.width ?? r.width ?? "-"}
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    {pt?.grammage ?? r.grammage ?? "-"}
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <div
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "flex-end",
-                        gap: 8,
-                        minWidth: 80,
-                      }}
-                    >
-                      <span style={{ minWidth: 32, textAlign: "right" }}>
-                        {r.weight ?? "-"}
-                      </span>
-                      {isLowWeight(r) && (
-                        <span
-                          title={`Weight below ${LOW_WEIGHT_THRESHOLD}`}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 6,
-                            padding: "2px 6px",
-                            borderRadius: 999,
-                            background: "rgba(220,53,69,0.12)",
-                            color: "#c82333",
-                            fontSize: 12,
-                            fontWeight: 600,
-                          }}
-                        >
-                          <svg
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                            aria-hidden
-                          >
-                            <path d="M12 2L22 20H2L12 2Z" fill="#ffc107" />
-                            <path
-                              d="M12 8V12"
-                              stroke="#212529"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <path
-                              d="M12 16H12.01"
-                              stroke="#212529"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                          <span style={{ lineHeight: 1 }}>{"Low"}</span>
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    {r.deletedAt
-                      ? new Date(r.deletedAt)
-                          .toISOString()
-                          .slice(0, 19)
-                          .replace("T", " ")
-                      : "-"}
-                  </td>
-                  <td>
-                    <button
-                      className="btn btn-outline-primary btn-sm"
-                      onClick={() => handleRestore(r)}
-                    >
-                      Restore
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-            {(!deletedRolls || deletedRolls.length === 0) && (
-              <tr>
-                <td colSpan={8} className="text-muted p-3">
-                  No deleted rolls
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      {/* Pagination controls (same UX as WareList) */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginTop: 8,
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => goToPage(page - 1)}
+            disabled={page <= 1}
+          >
+            Trước
+          </button>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => goToPage(page + 1)}
+            disabled={totalCount > 0 ? page >= totalPages : false}
+          >
+            Sau
+          </button>
+
+          <div style={{ marginLeft: 8 }}>
+            Trang {page} {totalCount > 0 && `trong ${totalPages}`}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <span className="text-muted">Đi đến</span>
+            <input
+              type="number"
+              value={page}
+              min={1}
+              max={totalPages}
+              onChange={(e) => {
+                const v = Number(e.target.value || 1);
+                if (!Number.isFinite(v)) return;
+                goToPage(Math.max(1, Math.floor(v)));
+              }}
+              style={{ width: 72 }}
+              className="form-control form-control-sm"
+            />
+          </div>
+
+          <div style={{ marginLeft: 12 }}>
+            <select
+              className="form-control form-control-sm"
+              value={limit}
+              onChange={(e) => {
+                const v = Number(e.target.value || 5);
+                if (!Number.isFinite(v) || v <= 0) return;
+                setLimit(v);
+                setPage(1);
+              }}
+            >
+              <option value={5}>5 / trang</option>
+              <option value={10}>10 / trang</option>
+              <option value={20}>20 / trang</option>
+              <option value={50}>50 / trang</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      {createOpen && (
-        <div className="modal-backdrop" style={{ display: "block" }}>
-          <div className="modal" role="dialog" style={{ display: "block" }}>
-            <div className="modal-dialog">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Tạo cuộn</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    aria-label="Close"
-                    onClick={() => setCreateOpen(false)}
-                  />
-                </div>
-                <div className="modal-body">
-                  <label style={fieldStyle}>
-                    <input
-                      type="checkbox"
-                      checked={createForm.useNewType}
-                      onChange={(e) =>
-                        setCreateForm((f) => ({
-                          ...f,
-                          useNewType: e.target.checked,
-                        }))
-                      }
-                    />{" "}
-                    Tạo loại giấy mới
-                  </label>
+      {/* extracted modal components usage */}
+      <CreateModal
+        show={createOpen}
+        onClose={() => setCreateOpen(false)}
+        createForm={createForm}
+        setCreateForm={setCreateForm}
+        fieldStyle={fieldStyle}
+        allTypes={allTypes}
+        allColors={allColors}
+        allSuppliers={allSuppliers}
+        colorMap={colorMap}
+        getIdFromDoc={getIdFromDoc}
+        findType={findType}
+        handleCreateSubmit={handleCreateSubmit}
+        creating={creating}
+      />
 
-                  {!createForm.useNewType ? (
-                    <label style={fieldStyle}>
-                      Loại giấy
-                      <select
-                        className="form-control"
-                        value={createForm.paperTypeId}
-                        onChange={(e) =>
-                          setCreateForm((f) => ({
-                            ...f,
-                            paperTypeId: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- chọn loại giấy --</option>
-                        {(allTypes || []).map((t) => (
-                          <option
-                            key={getIdFromDoc(t) ?? `${t.width}_${t.grammage}`}
-                            value={getIdFromDoc(t)}
-                          >
-                            {`${
-                              t.paperColor?.title ??
-                              colorMap.get(String(getIdFromDoc(t.paperColorId)))
-                                ?.title ??
-                              ""
-                            } — ${t.width} x ${t.grammage}`}
-                          </option>
-                        ))}
-                      </select>
-                      {createForm.paperTypeId && (
-                        <div style={{ marginTop: 8 }}>
-                          <small className="text-muted">
-                            Width:{" "}
-                            {findType(createForm.paperTypeId)?.width ?? "-"} |
-                            Grammage:{" "}
-                            {findType(createForm.paperTypeId)?.grammage ?? "-"}{" "}
-                            | Color:{" "}
-                            {findType(createForm.paperTypeId)?.paperColor
-                              ?.title ??
-                              colorMap.get(
-                                String(
-                                  getIdFromDoc(
-                                    findType(createForm.paperTypeId)
-                                      ?.paperColorId
-                                  )
-                                )
-                              )?.title ??
-                              "-"}
-                          </small>
-                        </div>
-                      )}
-                    </label>
-                  ) : (
-                    <>
-                      <label style={fieldStyle}>
-                        Màu
-                        <select
-                          className="form-control"
-                          value={createForm.paperColorId}
-                          onChange={(e) =>
-                            setCreateForm((f) => ({
-                              ...f,
-                              paperColorId: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- chọn màu --</option>
-                          {(allColors || []).map((c) => (
-                            <option
-                              key={getIdFromDoc(c) ?? c.code}
-                              value={getIdFromDoc(c)}
-                            >
-                              {c.title}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+      <CreateMultipleModal
+        show={createMultipleOpen}
+        onClose={() => setCreateMultipleOpen(false)}
+        createMultipleRows={createMultipleRows}
+        addCreateMultipleRow={addCreateMultipleRow}
+        removeCreateMultipleRow={removeCreateMultipleRow}
+        updateCreateMultipleRow={updateCreateMultipleRow}
+        allTypes={allTypes}
+        allColors={allColors}
+        allSuppliers={allSuppliers}
+        colorMap={colorMap}
+        getIdFromDoc={getIdFromDoc}
+        handleCreateMultipleSubmit={handleCreateMultipleSubmit}
+        creatingMultiple={creatingMultiple}
+      />
 
-                      <label style={fieldStyle}>
-                        Rộng
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm.width}
-                          onChange={(e) =>
-                            setCreateForm((f) => ({
-                              ...f,
-                              width: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
+      <UpdateModal
+        show={updateOpen}
+        onClose={() => setUpdateOpen(false)}
+        updateForm={updateForm}
+        setUpdateForm={setUpdateForm}
+        allColors={allColors}
+        allSuppliers={allSuppliers}
+        fieldStyle={fieldStyle}
+        getIdFromDoc={getIdFromDoc}
+        handleUpdateSubmit={handleUpdateSubmit}
+      />
 
-                      <label style={fieldStyle}>
-                        Khổ
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm.grammage}
-                          onChange={(e) =>
-                            setCreateForm((f) => ({
-                              ...f,
-                              grammage: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                    </>
-                  )}
+      <SingleReimportModal
+        show={singleModal.open}
+        onClose={() => setSingleModal({ open: false })}
+        roll={singleModal.roll}
+        singleWeight={singleWeight}
+        setSingleWeight={setSingleWeight}
+        fieldStyle={fieldStyle}
+        computePaperRollId={computePaperRollId}
+        handleConfirmSingleReImport={handleConfirmSingleReImport}
+      />
 
-                  <label style={fieldStyle}>
-                    Nhà cung cấp
-                    <select
-                      className="form-control"
-                      value={createForm.paperSupplierId}
-                      onChange={(e) =>
-                        setCreateForm((f) => ({
-                          ...f,
-                          paperSupplierId: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">-- chọn nhà cung cấp --</option>
-                      {(allSuppliers || []).map((s) => (
-                        <option
-                          key={getIdFromDoc(s) ?? s.code}
-                          value={getIdFromDoc(s)}
-                        >
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label style={fieldStyle}>
-                    Trọng lượng
-                    <input
-                      className="form-control"
-                      type="number"
-                      value={createForm.weight}
-                      onChange={(e) =>
-                        setCreateForm((f) => ({ ...f, weight: e.target.value }))
-                      }
-                    />
-                  </label>
-
-                  <label style={fieldStyle}>
-                    Ngày nhập
-                    <input
-                      className="form-control"
-                      type="date"
-                      value={createForm.receivingDate}
-                      onChange={(e) =>
-                        setCreateForm((f) => ({
-                          ...f,
-                          receivingDate: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-
-                  <label style={fieldStyle}>
-                    Note
-                    <textarea
-                      className="form-control"
-                      value={createForm.note}
-                      onChange={(e) =>
-                        setCreateForm((f) => ({ ...f, note: e.target.value }))
-                      }
-                    />
-                  </label>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setCreateOpen(false)}
-                  >
-                    Đóng
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleCreateSubmit}
-                    disabled={creating}
-                  >
-                    {creating ? "Đang tạo..." : "Tạo"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {createMultipleOpen && (
-        <div className="modal-backdrop" style={{ display: "block" }}>
-          <div className="modal" role="dialog" style={{ display: "block" }}>
-            {/* <-- changed modal-lg to modal-xl here --> */}
-            <div className="modal-dialog modal-xl">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Tạo nhiều cuộn</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    aria-label="Close"
-                    onClick={() => setCreateMultipleOpen(false)}
-                  />
-                </div>
-                <div className="modal-body">
-                  <div
-                    style={{
-                      marginBottom: 8,
-                      display: "flex",
-                      gap: 8,
-                      alignItems: "center",
-                    }}
-                  >
-                    <button
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={addCreateMultipleRow}
-                    >
-                      Thêm dòng
-                    </button>
-                    <small className="text-muted">
-                      Mỗi dòng tương ứng 1 cuộn — mỗi dòng có thể có
-                      loại/supplier/trọng lượng riêng
-                    </small>
-                  </div>
-
-                  <div style={{ overflowX: "auto" }}>
-                    <table className="table table-sm table-bordered">
-                      <thead>
-                        <tr>
-                          <th style={{ width: 36 }}>#</th>
-                          <th style={{ minWidth: 420 }}>Loại giấy</th>{" "}
-                          <th>Nhà cung cấp</th>
-                          <th style={{ width: 150 }}>Trọng lượng</th>
-                          <th style={{ width: 140 }}>Ngày nhập</th>
-                          <th>Ghi chú</th>
-                          <th style={{ width: 80 }}>Xóa</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {createMultipleRows.map((row, idx) => (
-                          <tr key={row.id}>
-                            <td>{idx + 1}</td>
-                            <td>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  gap: 8,
-                                  alignItems: "center",
-                                  flexDirection: "column",
-                                }}
-                              >
-                                {!row.useNewType ? (
-                                  (() => {
-                                    // compute a friendly title so user can hover and see full text
-                                    const st = findType(row.paperTypeId);
-                                    const titleText = st
-                                      ? `${
-                                          st.paperColor?.title ??
-                                          colorMap.get(
-                                            String(
-                                              getIdFromDoc(st.paperColorId)
-                                            )
-                                          )?.title ??
-                                          ""
-                                        } — ${st.width} x ${st.grammage}`
-                                      : "";
-
-                                    return (
-                                      <select
-                                        className="form-control"
-                                        value={row.paperTypeId}
-                                        onChange={(e) =>
-                                          updateCreateMultipleRow(row.id, {
-                                            paperTypeId: e.target.value,
-                                          })
-                                        }
-                                        style={{ minWidth: 420 }}
-                                        title={titleText}
-                                      >
-                                        <option value="">
-                                          -- chọn loại giấy --
-                                        </option>
-                                        {(allTypes || []).map((t) => (
-                                          <option
-                                            key={
-                                              getIdFromDoc(t) ??
-                                              `${t.width}_${t.grammage}`
-                                            }
-                                            value={getIdFromDoc(t)}
-                                          >
-                                            {`${
-                                              t.paperColor?.title ??
-                                              colorMap.get(
-                                                String(
-                                                  getIdFromDoc(t.paperColorId)
-                                                )
-                                              )?.title ??
-                                              ""
-                                            } — ${t.width} x ${t.grammage}`}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    );
-                                  })()
-                                ) : (
-                                  <>
-                                    <select
-                                      className="form-control"
-                                      value={row.paperColorId}
-                                      onChange={(e) =>
-                                        updateCreateMultipleRow(row.id, {
-                                          paperColorId: e.target.value,
-                                        })
-                                      }
-                                      style={{ minWidth: 200 }}
-                                    >
-                                      <option value="">-- chọn màu --</option>
-                                      {(allColors || []).map((c) => (
-                                        <option
-                                          key={getIdFromDoc(c) ?? c.code}
-                                          value={getIdFromDoc(c)}
-                                        >
-                                          {c.title}
-                                        </option>
-                                      ))}
-                                    </select>
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        gap: 8,
-                                        marginTop: 8,
-                                      }}
-                                    >
-                                      <input
-                                        className="form-control"
-                                        placeholder="Width"
-                                        type="number"
-                                        value={row.width}
-                                        onChange={(e) =>
-                                          updateCreateMultipleRow(row.id, {
-                                            width: e.target.value,
-                                          })
-                                        }
-                                      />
-                                      <input
-                                        className="form-control"
-                                        placeholder="Grammage"
-                                        type="number"
-                                        value={row.grammage}
-                                        onChange={(e) =>
-                                          updateCreateMultipleRow(row.id, {
-                                            grammage: e.target.value,
-                                          })
-                                        }
-                                      />
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </td>
-
-                            <td>
-                              <select
-                                className="form-control"
-                                value={row.paperSupplierId}
-                                onChange={(e) =>
-                                  updateCreateMultipleRow(row.id, {
-                                    paperSupplierId: e.target.value,
-                                  })
-                                }
-                              >
-                                <option value="">
-                                  -- chọn nhà cung cấp --
-                                </option>
-                                {(allSuppliers || []).map((s) => (
-                                  <option
-                                    key={getIdFromDoc(s) ?? s.code}
-                                    value={getIdFromDoc(s)}
-                                  >
-                                    {s.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-
-                            <td>
-                              <input
-                                className="form-control"
-                                type="number"
-                                min={0}
-                                value={row.weight}
-                                onChange={(e) =>
-                                  updateCreateMultipleRow(row.id, {
-                                    weight: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-
-                            <td>
-                              <input
-                                className="form-control"
-                                type="date"
-                                value={row.receivingDate}
-                                onChange={(e) =>
-                                  updateCreateMultipleRow(row.id, {
-                                    receivingDate: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-
-                            <td>
-                              <input
-                                className="form-control"
-                                value={row.note}
-                                onChange={(e) =>
-                                  updateCreateMultipleRow(row.id, {
-                                    note: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-
-                            <td>
-                              <button
-                                className="btn btn-sm btn-outline-danger"
-                                onClick={() => removeCreateMultipleRow(row.id)}
-                              >
-                                X
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className="modal-footer">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setCreateMultipleOpen(false)}
-                  >
-                    Đóng
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleCreateMultipleSubmit}
-                    disabled={creatingMultiple}
-                  >
-                    {creatingMultiple ? "Đang tạo..." : "Tạo nhiều"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {updateOpen && (
-        <div className="modal-backdrop" style={{ display: "block" }}>
-          <div className="modal" role="dialog" style={{ display: "block" }}>
-            <div className="modal-dialog">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Sửa thông tin</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    aria-label="Close"
-                    onClick={() => setUpdateOpen(false)}
-                  />
-                </div>
-                <div className="modal-body">
-                  <label style={fieldStyle}>
-                    Màu
-                    <select
-                      className="form-control"
-                      value={updateForm.paperColorId}
-                      onChange={(e) =>
-                        setUpdateForm((f) => ({
-                          ...f,
-                          paperColorId: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">-- select color --</option>
-                      {(allColors || []).map((c) => (
-                        <option
-                          key={getIdFromDoc(c) ?? c.code}
-                          value={getIdFromDoc(c)}
-                        >
-                          {c.title}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label style={fieldStyle}>
-                    Nhà cung cấp
-                    <select
-                      className="form-control"
-                      value={updateForm.paperSupplierId}
-                      onChange={(e) =>
-                        setUpdateForm((f) => ({
-                          ...f,
-                          paperSupplierId: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">-- select supplier --</option>
-                      {(allSuppliers || []).map((s) => (
-                        <option
-                          key={getIdFromDoc(s) ?? s.code}
-                          value={getIdFromDoc(s)}
-                        >
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label style={fieldStyle}>
-                    Rộng{" "}
-                    <input
-                      className="form-control"
-                      type="number"
-                      value={updateForm.width}
-                      onChange={(e) =>
-                        setUpdateForm((f) => ({ ...f, width: e.target.value }))
-                      }
-                    />
-                  </label>
-                  <label style={fieldStyle}>
-                    Khổ{" "}
-                    <input
-                      className="form-control"
-                      type="number"
-                      value={updateForm.grammage}
-                      onChange={(e) =>
-                        setUpdateForm((f) => ({
-                          ...f,
-                          grammage: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label style={fieldStyle}>
-                    Trọng lượng{" "}
-                    <input
-                      className="form-control"
-                      type="number"
-                      value={updateForm.weight}
-                      onChange={(e) =>
-                        setUpdateForm((f) => ({ ...f, weight: e.target.value }))
-                      }
-                    />
-                  </label>
-                  <label style={fieldStyle}>
-                    Ngày nhập{" "}
-                    <input
-                      className="form-control"
-                      type="date"
-                      value={updateForm.receivingDate}
-                      onChange={(e) =>
-                        setUpdateForm((f) => ({
-                          ...f,
-                          receivingDate: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label style={fieldStyle}>
-                    Note{" "}
-                    <textarea
-                      className="form-control"
-                      value={updateForm.note}
-                      onChange={(e) =>
-                        setUpdateForm((f) => ({ ...f, note: e.target.value }))
-                      }
-                    />
-                  </label>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setUpdateOpen(false)}
-                  >
-                    Đóng
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleUpdateSubmit}
-                  >
-                    Lưu
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <QrModal
+        show={qrModal.open}
+        onClose={() => setQrModal({ open: false })}
+        qrModal={qrModal}
+        qrLoading={qrLoading}
+        qrDataUrl={qrDataUrl}
+        handleOpenQrInNewTab={handleOpenQrInNewTab}
+        handleDownloadQr={handleDownloadQr}
+        handleCopyCode={handleCopyCode}
+        handlePrintQr={handlePrintQr}
+        computePaperRollId={computePaperRollId}
+        paperRolls={paperRolls}
+      />
 
       <PaperDetailModal
         show={detailOpen.open}
@@ -1811,140 +1209,6 @@ export const PaperList: React.FC = () => {
           setBulkModal({ open: false });
         }}
       />
-
-      {/* SINGLE re-import modal */}
-      {singleModal.open && singleModal.roll && (
-        <div className="modal-backdrop" style={{ display: "block" }}>
-          <div className="modal" role="dialog" style={{ display: "block" }}>
-            <div className="modal-dialog modal-sm">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Nhập lại (single)</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    aria-label="Close"
-                    onClick={() => setSingleModal({ open: false })}
-                  />
-                </div>
-
-                <div className="modal-body">
-                  <p>
-                    Nhập lại trọng lượng cho:{" "}
-                    <strong>{computePaperRollId(singleModal.roll)}</strong>
-                  </p>
-                  <label style={fieldStyle}>
-                    Trọng lượng (kg)
-                    <input
-                      className="form-control"
-                      type="number"
-                      min={0}
-                      value={singleWeight}
-                      onChange={(e) => setSingleWeight(e.target.value)}
-                    />
-                  </label>
-                </div>
-
-                <div className="modal-footer">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setSingleModal({ open: false })}
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => handleConfirmSingleReImport()}
-                  >
-                    Xác nhận Nhập lại
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {qrModal.open && (
-        <div className="modal-backdrop" style={{ display: "block" }}>
-          <div className="modal" role="dialog" style={{ display: "block" }}>
-            <div className="modal-dialog" style={{ width: 'min(70vw, 600px)', maxWidth: '400px' }}>
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">
-                    QR:{" "}
-                    {computePaperRollId(
-                      paperRolls.find((r) => r._id === qrModal.text)
-                    )}
-                  </h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    aria-label="Close"
-                    onClick={() => setQrModal({ open: false })}
-                  />
-                </div>
-                <div className="modal-body" style={{ textAlign: "center" }}>
-                  {qrLoading ? (
-                    <div>Đang tạo QR...</div>
-                  ) : qrDataUrl ? (
-                    <>
-                      <img
-                        src={qrDataUrl}
-                        alt="QR"
-                        style={{ maxWidth: "100%", height: "auto" }}
-                      />
-                      <div
-                        style={{
-                          marginTop: 12,
-                          display: "flex",
-                          gap: 8,
-                          justifyContent: "center",
-                        }}
-                      >
-                        <button
-                          className="btn btn-outline-primary btn-sm"
-                          onClick={handleOpenQrInNewTab}
-                        >
-                          Mở tab mới
-                        </button>
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={handleDownloadQr}
-                        >
-                          Download
-                        </button>
-                        <button
-                          className="btn btn-outline-secondary btn-sm"
-                          onClick={handleCopyCode}
-                        >
-                          Copy mã cuộn
-                        </button>
-                        <button
-                          className="btn btn-success btn-sm"
-                          onClick={handlePrintQr}
-                        >
-                          In
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-danger">Tạo QR thất bại</div>
-                  )}
-                </div>
-                <div className="modal-footer">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setQrModal({ open: false })}
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

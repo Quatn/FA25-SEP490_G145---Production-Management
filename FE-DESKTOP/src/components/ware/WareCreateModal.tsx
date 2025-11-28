@@ -50,12 +50,33 @@ const WareCreateModal: React.FC<Props> = ({
 }) => {
   if (!show) return null;
 
+  const Label: React.FC<{
+    label: string;
+    required?: boolean;
+    style?: React.CSSProperties;
+    children?: React.ReactNode;
+  }> = ({ label, required, children, style }) => (
+    <label
+      className="form-label"
+      style={{ display: "block", marginBottom: 8, ...style }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span>{label}</span>
+        {required && <span style={{ color: "red", lineHeight: 1 }}>*</span>}
+      </div>
+      {children}
+    </label>
+  );
+
   return (
     <div className="modal-backdrop" style={{ display: "block" }}>
       <div className="modal" role="dialog" style={{ display: "block" }}>
         <div className="modal-dialog modal-lg">
           <div className="modal-content">
-            <div className="modal-header">
+            <div
+              className="modal-header"
+              style={{ borderBottom: "1px solid #e9ecef" }}
+            >
               <h5 className="modal-title">Tạo mã hàng</h5>
               <button type="button" className="btn-close" onClick={onClose} />
             </div>
@@ -63,8 +84,7 @@ const WareCreateModal: React.FC<Props> = ({
             <div className="modal-body">
               <div className="row g-3">
                 <div className="col-md-6">
-                  <label className="form-label">
-                    Mã hàng
+                  <Label label="Mã hàng" required>
                     <input
                       className="form-control"
                       value={createForm.code}
@@ -75,10 +95,9 @@ const WareCreateModal: React.FC<Props> = ({
                         }))
                       }
                     />
-                  </label>
+                  </Label>
 
-                  <label className="form-label">
-                    Đơn giá (đồng)
+                  <Label label="Đơn giá (đồng)" required>
                     <input
                       className="form-control"
                       type="number"
@@ -90,10 +109,9 @@ const WareCreateModal: React.FC<Props> = ({
                         }))
                       }
                     />
-                  </label>
+                  </Label>
 
-                  <label className="form-label">
-                    Sóng
+                  <Label label="Sóng" required>
                     <select
                       className="form-control"
                       value={createForm.fluteCombination}
@@ -115,10 +133,9 @@ const WareCreateModal: React.FC<Props> = ({
                         </option>
                       ))}
                     </select>
-                  </label>
+                  </Label>
 
-                  <label className="form-label">
-                    Kiểu SP gia công
+                  <Label label="Kiểu SP gia công" required>
                     <select
                       className="form-control"
                       value={createForm.wareManufacturingProcessType}
@@ -139,10 +156,9 @@ const WareCreateModal: React.FC<Props> = ({
                         </option>
                       ))}
                     </select>
-                  </label>
+                  </Label>
 
-                  <label className="form-label">
-                    Rộng
+                  <Label label="Rộng" required>
                     <input
                       className="form-control"
                       type="number"
@@ -154,10 +170,9 @@ const WareCreateModal: React.FC<Props> = ({
                         }))
                       }
                     />
-                  </label>
+                  </Label>
 
-                  <label className="form-label">
-                    Dài
+                  <Label label="Dài" required>
                     <input
                       className="form-control"
                       type="number"
@@ -169,10 +184,9 @@ const WareCreateModal: React.FC<Props> = ({
                         }))
                       }
                     />
-                  </label>
+                  </Label>
 
-                  <label className="form-label">
-                    Cao
+                  <Label label="Cao">
                     <input
                       className="form-control"
                       type="number"
@@ -184,12 +198,11 @@ const WareCreateModal: React.FC<Props> = ({
                         }))
                       }
                     />
-                  </label>
+                  </Label>
                 </div>
 
                 <div className="col-md-6">
-                  <label className="form-label">
-                    Volume
+                  <Label label="Volume" required>
                     <input
                       className="form-control"
                       type="number"
@@ -201,42 +214,43 @@ const WareCreateModal: React.FC<Props> = ({
                         }))
                       }
                     />
-                  </label>
+                  </Label>
 
-                  <br />
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <Label label="Số SP bộ" required>
+                        <input
+                          className="form-control"
+                          type="number"
+                          value={createForm.warePerSet}
+                          onChange={(e) =>
+                            setCreateForm((p: any) => ({
+                              ...p,
+                              warePerSet: e.target.value,
+                            }))
+                          }
+                        />
+                      </Label>
+                    </div>
 
-                  <label className="form-label">
-                    Số SP bộ
-                    <input
-                      className="form-control"
-                      type="number"
-                      value={createForm.warePerSet}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...p,
-                          warePerSet: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
+                    <div style={{ flex: 1 }}>
+                      <Label label="Số SP ghép bộ" required>
+                        <input
+                          className="form-control"
+                          type="number"
+                          value={createForm.warePerCombinedSet}
+                          onChange={(e) =>
+                            setCreateForm((p: any) => ({
+                              ...p,
+                              warePerCombinedSet: e.target.value,
+                            }))
+                          }
+                        />
+                      </Label>
+                    </div>
+                  </div>
 
-                  <label className="form-label">
-                    Số SP ghép bộ
-                    <input
-                      className="form-control"
-                      type="number"
-                      value={createForm.warePerCombinedSet}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...p,
-                          warePerCombinedSet: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-
-                  <label className="form-label">
-                    Dọc chia SP
+                  <Label label="Dọc chia SP" required>
                     <input
                       className="form-control"
                       type="number"
@@ -248,42 +262,38 @@ const WareCreateModal: React.FC<Props> = ({
                         }))
                       }
                     />
-                  </label>
+                  </Label>
 
-                  <br />
+                  <Label label="Màu in" required>
+                    {React.createElement(MultiSelectInline, {
+                      id: "create-printcolor",
+                      options: printColorList,
+                      selected: createForm.printColors || [],
+                      onAdd: (id: string) => addToCreateList("printColors", id),
+                      onRemove: (id: string) =>
+                        removeFromCreateList("printColors", id),
+                      getLabel: (o: any) =>
+                        o?.code ?? o?.name ?? getIdFromDoc(o) ?? "",
+                      placeholder: "-- choose print colors --",
+                    })}
+                  </Label>
 
-                  <label className="form-label">Màu in</label>
-                  {/* render passed MultiSelectInline */}
-                  {React.createElement(MultiSelectInline, {
-                    id: "create-printcolor",
-                    options: printColorList,
-                    selected: createForm.printColors || [],
-                    onAdd: (id: string) => addToCreateList("printColors", id),
-                    onRemove: (id: string) =>
-                      removeFromCreateList("printColors", id),
-                    getLabel: (o: any) =>
-                      o?.code ?? o?.name ?? getIdFromDoc(o) ?? "",
-                    placeholder: "-- choose print colors --",
-                  })}
+                  <Label label="Công đoạn hoàn thiện">
+                    {React.createElement(MultiSelectInline, {
+                      id: "create-finishing",
+                      options: finishingList,
+                      selected: createForm.finishingProcesses || [],
+                      onAdd: (id: string) =>
+                        addToCreateList("finishingProcesses", id),
+                      onRemove: (id: string) =>
+                        removeFromCreateList("finishingProcesses", id),
+                      getLabel: (o: any) =>
+                        o?.code ?? o?.name ?? getIdFromDoc(o) ?? "",
+                      placeholder: "-- choose finishing processes --",
+                    })}
+                  </Label>
 
-                  <label className="form-label" style={{ marginTop: 8 }}>
-                    Công đoạn hoàn thiện
-                  </label>
-                  {React.createElement(MultiSelectInline, {
-                    id: "create-finishing",
-                    options: finishingList,
-                    selected: createForm.finishingProcesses || [],
-                    onAdd: (id: string) =>
-                      addToCreateList("finishingProcesses", id),
-                    onRemove: (id: string) =>
-                      removeFromCreateList("finishingProcesses", id),
-                    getLabel: (o: any) =>
-                      o?.code ?? o?.name ?? getIdFromDoc(o) ?? "",
-                    placeholder: "-- choose finishing processes --",
-                  })}
-
-                  <label className="form-label" style={{ marginTop: 8 }}>
-                    Note
+                  <Label label="Note">
                     <textarea
                       className="form-control"
                       value={createForm.note}
@@ -294,185 +304,191 @@ const WareCreateModal: React.FC<Props> = ({
                         }))
                       }
                     />
-                  </label>
+                  </Label>
                 </div>
               </div>
 
               <hr />
 
               <div style={{ marginBottom: 8 }}>
-                <strong>Paper layers (at least one required)</strong>
+                <strong>
+                  Paper layers{" "}
+                  <span style={{ color: "#6c757d", fontSize: 13 }}>
+                    (at least one required)
+                  </span>
+                </strong>
               </div>
 
-              <div className="row g-3">
-                {/** face / e flute / e/b liner / b flute / b/a c liner / ac flute / back layer */}
-                <div className="col-md-4">
-                  <label className="form-label">
-                    Face layer
-                    <select
-                      className="form-control"
-                      value={createForm.faceLayerPaperType}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...p,
-                          faceLayerPaperType: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">-- none --</option>
-                      {PAPER_LAYER_OPTIONS.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+              <div
+                style={{
+                  border: "1px solid #e9ecef",
+                  padding: 12,
+                  borderRadius: 6,
+                  background: "#fbfbfd",
+                  marginBottom: 12,
+                }}
+              >
+                <div className="row g-3">
+                  <div className="col-md-4">
+                    <Label label="Face layer">
+                      <select
+                        className="form-control"
+                        value={createForm.faceLayerPaperType}
+                        onChange={(e) =>
+                          setCreateForm((p: any) => ({
+                            ...p,
+                            faceLayerPaperType: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">-- none --</option>
+                        {PAPER_LAYER_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </Label>
+                  </div>
 
-                <div className="col-md-4">
-                  <label className="form-label">
-                    E flute
-                    <select
-                      className="form-control"
-                      value={createForm.EFlutePaperType}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...p,
-                          EFlutePaperType: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">-- none --</option>
-                      {PAPER_LAYER_OPTIONS.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                  <div className="col-md-4">
+                    <Label label="E flute">
+                      <select
+                        className="form-control"
+                        value={createForm.EFlutePaperType}
+                        onChange={(e) =>
+                          setCreateForm((p: any) => ({
+                            ...p,
+                            EFlutePaperType: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">-- none --</option>
+                        {PAPER_LAYER_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </Label>
+                  </div>
 
-                <div className="col-md-4">
-                  <label className="form-label">
-                    E/B liner
-                    <select
-                      className="form-control"
-                      value={createForm.EBLinerLayerPaperType}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...p,
-                          EBLinerLayerPaperType: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">-- none --</option>
-                      {PAPER_LAYER_OPTIONS.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                  <div className="col-md-4">
+                    <Label label="E/B liner">
+                      <select
+                        className="form-control"
+                        value={createForm.EBLinerLayerPaperType}
+                        onChange={(e) =>
+                          setCreateForm((p: any) => ({
+                            ...p,
+                            EBLinerLayerPaperType: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">-- none --</option>
+                        {PAPER_LAYER_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </Label>
+                  </div>
 
-                <div className="col-md-4">
-                  <label className="form-label">
-                    B flute
-                    <select
-                      className="form-control"
-                      value={createForm.BFlutePaperType}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...p,
-                          BFlutePaperType: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">-- none --</option>
-                      {PAPER_LAYER_OPTIONS.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                  <div className="col-md-4">
+                    <Label label="B flute">
+                      <select
+                        className="form-control"
+                        value={createForm.BFlutePaperType}
+                        onChange={(e) =>
+                          setCreateForm((p: any) => ({
+                            ...p,
+                            BFlutePaperType: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">-- none --</option>
+                        {PAPER_LAYER_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </Label>
+                  </div>
 
-                <div className="col-md-4">
-                  <label className="form-label">
-                    B/A C liner
-                    <select
-                      className="form-control"
-                      value={createForm.BACLinerLayerPaperType}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...p,
-                          BACLinerLayerPaperType: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">-- none --</option>
-                      {PAPER_LAYER_OPTIONS.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                  <div className="col-md-4">
+                    <Label label="B/A C liner">
+                      <select
+                        className="form-control"
+                        value={createForm.BACLinerLayerPaperType}
+                        onChange={(e) =>
+                          setCreateForm((p: any) => ({
+                            ...p,
+                            BACLinerLayerPaperType: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">-- none --</option>
+                        {PAPER_LAYER_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </Label>
+                  </div>
 
-                <div className="col-md-4">
-                  <label className="form-label">
-                    AC flute
-                    <select
-                      className="form-control"
-                      value={createForm.ACFlutePaperType}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...p,
-                          ACFlutePaperType: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">-- none --</option>
-                      {PAPER_LAYER_OPTIONS.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                  <div className="col-md-4">
+                    <Label label="AC flute">
+                      <select
+                        className="form-control"
+                        value={createForm.ACFlutePaperType}
+                        onChange={(e) =>
+                          setCreateForm((p: any) => ({
+                            ...p,
+                            ACFlutePaperType: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">-- none --</option>
+                        {PAPER_LAYER_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </Label>
+                  </div>
 
-                <div className="col-md-4">
-                  <label className="form-label">
-                    Back layer
-                    <select
-                      className="form-control"
-                      value={createForm.backLayerPaperType}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...p,
-                          backLayerPaperType: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">-- none --</option>
-                      {PAPER_LAYER_OPTIONS.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="col-md-4">
+                    <Label label="Back layer">
+                      <select
+                        className="form-control"
+                        value={createForm.backLayerPaperType}
+                        onChange={(e) =>
+                          setCreateForm((p: any) => ({
+                            ...p,
+                            backLayerPaperType: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">-- none --</option>
+                        {PAPER_LAYER_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </Label>
+                  </div>
                 </div>
               </div>
 
               <hr />
 
               <div style={{ marginTop: 12 }}>
-                <label className="form-label">
-                  Type of printer
+                <Label label="Type of printer">
                   <select
                     className="form-control"
                     value={createForm.typeOfPrinter}
@@ -490,11 +506,14 @@ const WareCreateModal: React.FC<Props> = ({
                       </option>
                     ))}
                   </select>
-                </label>
+                </Label>
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div
+              className="modal-footer"
+              style={{ borderTop: "1px solid #e9ecef" }}
+            >
               <button className="btn btn-secondary" onClick={onClose}>
                 Đóng
               </button>
