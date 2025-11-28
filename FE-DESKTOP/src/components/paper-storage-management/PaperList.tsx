@@ -865,7 +865,7 @@ export const PaperList: React.FC = () => {
           Toggle chọn tất cả trang này
         </button>
         <div style={{ flex: 1 }} />
-        <div className="small text-muted">{totalCount} rows total</div>
+        <div className="small text-muted">{totalCount} cuộn tất cả</div>
       </div>
 
       {/* Main table */}
@@ -999,12 +999,6 @@ export const PaperList: React.FC = () => {
                         Xem chi tiết
                       </button>
                       <button
-                        className="btn btn-success btn-sm"
-                        onClick={() => openEdit(r)}
-                      >
-                        Edit
-                      </button>
-                      <button
                         className="btn btn-danger btn-sm"
                         onClick={() => doSingleExport(r)}
                       >
@@ -1021,16 +1015,16 @@ export const PaperList: React.FC = () => {
                         Nhập lại
                       </button>
                       <button
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => handleSoftDelete(r)}
+                      >
+                        Xóa
+                      </button>
+                      <button
                         className="btn btn-warning btn-sm"
                         onClick={() => handleCreateQR(r._id)}
                       >
                         Tạo QR
-                      </button>
-                      <button
-                        className="btn btn-outline-danger btn-sm"
-                        onClick={() => handleSoftDelete(r)}
-                      >
-                        Delete
                       </button>
                     </div>
                   </td>

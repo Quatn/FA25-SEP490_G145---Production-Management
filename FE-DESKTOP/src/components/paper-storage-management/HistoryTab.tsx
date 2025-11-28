@@ -291,8 +291,8 @@ export const HistoryTab: React.FC = () => {
                 <th>Thời gian</th>
                 <th>Mã cuộn</th>
                 <th>Thao tác</th>
-                <th style={{ textAlign: "right" }}>Trọng lượng trước</th>
-                <th style={{ textAlign: "right" }}>Trọng lượng sau</th>
+                <th style={{ textAlign: "right" }}>Tồn đầu</th>
+                <th style={{ textAlign: "right" }}>Tồn cuối</th>
                 <th>Người thực hiện</th>
               </tr>
             </thead>
