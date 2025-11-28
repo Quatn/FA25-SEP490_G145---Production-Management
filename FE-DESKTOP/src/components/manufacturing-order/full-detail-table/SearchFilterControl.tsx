@@ -1,14 +1,11 @@
 "use client";
 
-import {
-  useManufacturingTableDispatch,
-  useManufacturingTableState,
-} from "@/context/manufacturing-order/manufacturingOrderTableContext";
+import { useTableDispatch, useTableSelector } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { Button, Group } from "@chakra-ui/react";
 
 export default function ManufacturingOrderSearchFilterControl() {
-  const { searchFilterType } = useManufacturingTableState();
-  const dispatch = useManufacturingTableDispatch();
+  const searchFilterType = useTableSelector(s => s.searchFilterType);
+  const dispatch = useTableDispatch();
 
   return (
     <Group attached>

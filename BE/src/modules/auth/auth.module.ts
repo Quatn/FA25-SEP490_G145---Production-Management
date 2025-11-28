@@ -28,5 +28,6 @@ import { CommonServicesModule } from "@/common/services/services.module";
   ],
   providers: [AuthService],
   controllers: [AuthController],
+  exports: [AuthService],
 })
 export class AuthModule { }

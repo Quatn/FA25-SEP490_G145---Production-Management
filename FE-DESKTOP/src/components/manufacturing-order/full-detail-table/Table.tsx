@@ -2,8 +2,8 @@
 
 import {
   ManufacturingTableTabType,
-  useManufacturingTableDispatch,
-  useManufacturingTableState,
+  useTableDispatch,
+  useTableSelector,
 } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import {
   useDeleteManufacturingOrderMutation,
@@ -16,7 +16,6 @@ import {
   BoxProps,
   Button,
   Center,
-  Editable,
   Group,
   Input,
   Kbd,
@@ -39,10 +38,9 @@ import { useManufacturingDialogDispatch } from "@/context/manufacturing-order/ma
 import { CSSProperties, useEffect, useMemo, useReducer, useState } from "react";
 import { BiSolidDownArrow } from "react-icons/bi";
 import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { ManufacturingOrder } from "@/types/ManufacturingOrder";
-import { ManufacturingTableEditableCellInputTypes, ManufacturingTableEditableCellProps, ManufacturingTableMeta } from "./tableCellNodes";
+import { ManufacturingTableEditableCellInputTypes, ManufacturingTableEditableCellProps } from "./tableCellNodes";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
-import { recalculatePurchaseOrderItem, recalculateWare, refreshPurchaseOrderItems, refreshWares } from "@/service/mock-data/recalculation";
+import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
 import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
 
 export type ManufacturingOrderTableProps = {
@@ -162,17 +160,16 @@ const EditableCell = (props: ManufacturingTableEditableCellProps) => {
 export default function ManufacturingOrderTable(
   props: ManufacturingOrderTableProps,
 ) {
-  const {
-    page,
-    limit,
-    tab,
-    search,
-    hoveredRowId,
-    selectedOrderId,
-    pinnedOrderIds,
-    allowEdit,
-  } = useManufacturingTableState();
-  const dispatch = useManufacturingTableDispatch();
+  const page = useTableSelector(s => s.page)
+  const limit = useTableSelector(s => s.limit)
+  const tab = useTableSelector(s => s.tab)
+  const search = useTableSelector(s => s.search)
+  const hoveredRowId = useTableSelector(s => s.hoveredRowId)
+  const selectedOrderId = useTableSelector(s => s.selectedOrderId)
+  const pinnedOrderIds = useTableSelector(s => s.pinnedOrderIds)
+  const allowEdit = useTableSelector(s => s.allowEdit)
+
+  const dispatch = useTableDispatch();
 
   const {
     data: fullDetailMOPaginatedResponse,

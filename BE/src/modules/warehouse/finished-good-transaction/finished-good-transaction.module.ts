@@ -4,7 +4,7 @@ import { FinishedGoodTransactionController } from './finished-good-transaction.c
 import { MongooseModule } from '@nestjs/mongoose';
 import { FinishedGoodTransaction, FinishedGoodTransactionSchema } from '../schemas/finished-good-transaction.schema';
 import { FinishedGood, FinishedGoodSchema } from '../schemas/finished-good.schema';
-import { Employee, EmployeeSchema } from '../schemas/employee.schema';
+import { Employee, EmployeeSchema } from '@/modules/employee/schemas/employee.schema';
 
 @Module({
   imports: [

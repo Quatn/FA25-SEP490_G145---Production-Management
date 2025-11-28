@@ -1,3 +1,5 @@
+import { UserState } from "./UserState";
+
 export type AuthState = {
-  userState: User | null;
+  userState: UserState | null;
 };

@@ -2,9 +2,9 @@ import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
 import { BaseSchema } from "@/common/schemas/base.schema";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import mongoose, { HydratedDocument, Types } from "mongoose";
-import { Employee } from "./employee.schema";
 import { SemiFinishedGood } from "./semi-finished-good.schema";
 import { TransactionType } from "../enums/transaction-type.enum";
+import { Employee } from "@/modules/employee/schemas/employee.schema";
 
 @Schema({ timestamps: true })
 export class SemiFinishedGoodTransaction extends BaseSchema {

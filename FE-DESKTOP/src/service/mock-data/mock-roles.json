@@ -1,0 +1,38 @@
+[
+  {
+    "code": "ADMIN",
+    "name": "Quản lý hệ thống",
+    "description": "",
+    "note": ""
+  },
+  {
+    "code": "CORRUGATOR-WORKER",
+    "name": "Nhân viên vận hành quy trình sóng",
+    "description": "",
+    "note": ""
+  },
+  {
+    "code": "STORAGE-WORKER",
+    "name": "Nhân viên điều hành kho",
+    "description": "",
+    "note": ""
+  },
+  {
+    "code": "CORRUGATOR-MANAGER",
+    "name": "Kĩ thuật viên quản lý quy trình sóng",
+    "description": "",
+    "note": ""
+  },
+  {
+    "code": "STORAGE-MANAGER",
+    "name": "Quản lý kho",
+    "description": "",
+    "note": ""
+  },
+  {
+    "code": "STORAGE-AUDITOR",
+    "name": "Kiểm kê kho",
+    "description": "",
+    "note": ""
+  }
+]

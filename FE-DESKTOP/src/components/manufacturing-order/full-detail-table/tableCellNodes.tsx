@@ -1,4 +1,3 @@
-import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { createListCollection, Highlight, ListCollection } from "@chakra-ui/react";
 import { CellContext } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
@@ -125,8 +124,6 @@ const ManufacturingDateCell = (props: NodeCellProps) => {
 
   if (meta?.allowEdit) {
     if (meta.editableCellNode) {
-      console.log(value)
-      console.log(new Date(value))
       return meta.editableCellNode({ value: new Date(value), updateTableData, setValue, onBlur, type: ManufacturingTableEditableCellInputTypes.date })
     }
   }
