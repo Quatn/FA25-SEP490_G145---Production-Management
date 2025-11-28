@@ -1,5 +1,6 @@
 import { ExecutionContext, Injectable } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
+import check from "check-types";
 import { Request } from "express";
 
 // Specialized guard for cases where an endpoint or controller needs to act differently based on whether or not the user is authenticated
@@ -9,8 +10,13 @@ export class OptionalJwtAuthGuard extends AuthGuard("jwt") {
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers["authorization"];
 
-    if (!authHeader) {
+    // Same setup as the base guard, just allows request handling reguardless of auth status
+    if (!authHeader && !check.string(request.cookies.access_token)) {
       return true;
+    }
+
+    if (!authHeader) {
+      request.headers.authorization = "Bearer " + request.cookies.access_token;
     }
 
     // Continure default JWT guard logic

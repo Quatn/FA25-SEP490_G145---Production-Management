@@ -1,7 +1,7 @@
 "use client";
 
+import Header from "@/components/layout/Header";
 import "./main.css";
-import Header from "@/components/Header";
 import { Node, Sidebar } from "@/components/layout/Sidebar";
 import {
   createTreeCollection,
@@ -302,13 +302,16 @@ export default function MainLayout({
         flexGrow={1}
       >
         <GridItem colSpan={{ base: 1, sm: 2, md: 1 }} overflowY={"auto"}>
-          <Sidebar.Root>
+          <Sidebar.Root
+            colorPalette="blue"
+            bg="colorPalette.subtle"
+          >
             <Sidebar.Header>
               <Input
                 size="sm"
                 placeholder="Search page"
                 onChange={(e) => search(e.target.value)}
-                backgroundColor={"white"}
+                backgroundColor={"bg"}
               />
             </Sidebar.Header>
 

@@ -1,10 +1,8 @@
 import { JwtPayload } from "@/common/interfaces/jwt-payload.interface";
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UserDocument } from "../user/schemas/user.schema";
 import { UserService } from "../user/user.service";
-import check from "check-types";
-import bcrypt from "bcrypt";
 
 @Injectable()
 export class AuthService {
@@ -13,24 +11,11 @@ export class AuthService {
     private userService: UserService,
   ) { }
 
-  async validateUser(
-    username: string,
-    password: string,
-  ): Promise<UserDocument> {
-    const user = await this.userService.findByUsername(username);
-    if (!check.null(user) && !check.undefined(user)) {
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (isMatch) return user;
-      throw new UnauthorizedException("Invalid credentials");
-    }
-    throw new UnauthorizedException("User not found");
-  }
-
   async login(user: UserDocument): Promise<{ access_token?: string }> {
     const payload: JwtPayload = {
-      id: (user._id as any).toString(),
-      username: user.username,
-      role: user.role,
+      id: user._id.toString(),
+      code: user.code,
+      accessPrivileges: user.accessPrivileges.join(","),
     };
 
     // Yes, this could have been a sync sign, I just wanted to keep this function async without ts-server screaming at me

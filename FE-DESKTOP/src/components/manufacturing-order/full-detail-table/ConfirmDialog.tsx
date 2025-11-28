@@ -1,12 +1,13 @@
 "use client"
 
-import { useManufacturingTableDispatch, useManufacturingTableState } from "@/context/manufacturing-order/manufacturingOrderTableContext";
+import { useTableDispatch, useTableSelector } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { Button, CloseButton, Dialog, HStack, Portal, Stack, Text } from "@chakra-ui/react";
 import check from "check-types";
 
 export default function ManufacturingOrderFullDetailTableConfirmDialog() {
-  const { preparedSubmitFunction, preparedSubmitAskText } = useManufacturingTableState();
-  const dispatch = useManufacturingTableDispatch();
+  const preparedSubmitFunction = useTableSelector(s => s.preparedSubmitFunction);
+  const preparedSubmitAskText = useTableSelector(s => s.preparedSubmitAskText);
+  const dispatch = useTableDispatch();
 
   return (
     <Dialog.Root

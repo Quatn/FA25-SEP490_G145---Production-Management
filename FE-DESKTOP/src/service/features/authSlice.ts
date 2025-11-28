@@ -9,17 +9,20 @@ const initialState: AuthState = {
 
 const authSlice = createSlice({
   name: "auth",
-  initialState,
+  initialState: { ...initialState, hydrating: true },
   reducers: {
     hydrate: (state) => {
-      const localUserState = localStorage.getItem("userState");
-      if (check.string(localUserState)) {
-        try {
+      try {
+        const localUserState = localStorage.getItem("userState");
+        if (check.string(localUserState)) {
           state.userState = JSON.parse(localUserState);
-        } catch (e) {
-          devlog(e);
-          localStorage.removeItem("userState");
         }
+      } catch (e) {
+        devlog(e);
+        localStorage.removeItem("userState");
+      }
+      finally {
+        state.hydrating = false
       }
     },
     setCredentials: (state, action) => {
