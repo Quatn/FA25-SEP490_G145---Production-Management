@@ -14,13 +14,13 @@ export enum UserRole {
 @Schema({ timestamps: true })
 export class User extends BaseSchema {
   @ApiProperty()
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   code: string;
 
   // Should be encrypted before saving, although there's currently no way to enforce that
   @ApiProperty()
   @Prop({ required: true })
-  password: string;
+  password?: string;
 
   @ApiProperty()
   @Prop({
@@ -45,3 +45,9 @@ export type UserDocument = HydratedDocument<User>;
 
 export const UserSchema =
   SchemaFactory.createForClass(User).plugin(softDeletePlugin);
+
+UserSchema.index(
+  { code: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } },
+);
+

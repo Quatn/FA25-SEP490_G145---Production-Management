@@ -4,6 +4,9 @@ import { Field } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/password-input";
 import { toaster } from "@/components/ui/toaster";
 import { PASSWORD_REGEX } from "@/constants/password-regex";
+import { useChangePasswordMutation } from "@/service/api/userApiSlice";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
 import { devlog } from "@/utils/devlog";
 import {
   Alert,
@@ -22,6 +25,11 @@ export default function ChangePasswordBox() {
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const userState: UserState | null = useAppSelector((state) =>
+    state.auth.userState
+  );
+
+  const [showAlert, setAlert] = useState<string | null>(null);
 
   const passwordErr: string | undefined = useMemo(() => {
     if (!interactFlag) return undefined
@@ -36,6 +44,10 @@ export default function ChangePasswordBox() {
   const newPasswordErr: string | undefined = useMemo(() => {
     if (!interactFlag) return undefined
 
+    if (newPassword === password) {
+      return "New password must not be the same as old password";
+    }
+
     if (!check.inRange(newPassword.length, 8, 200)) {
       return "New password must be between 8 and 200 characters";
     }
@@ -45,7 +57,7 @@ export default function ChangePasswordBox() {
     }
 
     return undefined
-  }, [interactFlag, newPassword])
+  }, [interactFlag, newPassword, password])
 
   const confirmPasswordErr: string | undefined = useMemo(() => {
     if (!interactFlag) return undefined
@@ -57,9 +69,25 @@ export default function ChangePasswordBox() {
     return undefined
   }, [interactFlag, newPassword, confirmPassword])
 
+  const [changePassword, { isLoading: updating, error: updateError }] =
+    useChangePasswordMutation();
+
   const handleSubmit = async () => {
+    if (check.null(userState) || !interactFlag || !!passwordErr || !!newPasswordErr || !!confirmPasswordErr) {
+      setAlert(interactFlag ? "Invalid operation" : "Please fill the form to change password")
+      setInteractFlag(true)
+      return false
+    }
+    if (updating) {
+      return false
+    }
     try {
-      console.log("Not implmented yet")
+      await changePassword({
+        id: userState.id,
+        currentPassword: password,
+        newPassword: newPassword,
+      }).unwrap()
+      setAlert(null)
       toaster.create({
         description: `Changed password successfully`,
         type: "success",
@@ -74,12 +102,13 @@ export default function ChangePasswordBox() {
     setNewPassword("");
     setConfirmPassword("");
     setInteractFlag(false);
+    setAlert(null)
   }
 
   return (
     <CardRoot w="lg">
       <CardBody>
-        <form onSubmit={handleSubmit}>
+        <form>
           <Stack gap="4" w="full">
             <Field label="Current password" invalid={!!passwordErr} errorText={passwordErr}>
               <PasswordInput
@@ -105,17 +134,17 @@ export default function ChangePasswordBox() {
                 onBlur={setFormInteractedWith}
               />
             </Field>
-            {/* logInError && (
+            {(check.string(showAlert) || !!updateError) && (
               <Alert.Root status={"error"}>
                 <Alert.Indicator />
                 <Alert.Content>
-                  <Alert.Title>Failed to login</Alert.Title>
+                  <Alert.Title>Change password failed</Alert.Title>
                   <Alert.Description>
-                    {(logInError as { data: { message: string } }).data.message}
+                    {showAlert ? showAlert : ((updateError as { data: { message: string } }).data.message)}
                   </Alert.Description>
                 </Alert.Content>
               </Alert.Root>
-            ) */}
+            )}
           </Stack>
         </form>
       </CardBody>
@@ -125,6 +154,7 @@ export default function ChangePasswordBox() {
           colorPalette={"blue"}
           variant="solid"
           onClick={handleSubmit}
+          loading={updating}
           disabled={!!passwordErr || !!newPasswordErr || !!confirmPasswordErr}
         >
           Confirm

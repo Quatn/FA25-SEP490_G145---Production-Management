@@ -21,11 +21,15 @@ import { isRefPopulated } from "@/common/utils/populate-check";
 import { Role } from "../employee/schemas/role.schema";
 import { LogoutResponseDto } from "./dto/logout.dto";
 import { OptionalJwtAuthGuard } from "@/common/guards/optional-jwt-auth.guard";
+import { UserService } from "../user/user.service";
 
 @Controller("auth")
 @ApiBearerAuth("access-token") // IMPORTANT: Include this or else Swagger wont include the access token when testing
 export class AuthController {
-  constructor(private authService: AuthService) { }
+  constructor(
+    private authService: AuthService,
+    private userService: UserService,
+  ) { }
 
   @Post("login")
   @ApiOperation({
@@ -36,7 +40,7 @@ export class AuthController {
     @Body() body: LoginRequestDto,
     @Res({ passthrough: true }) res: ExpressResponse,
   ): Promise<BaseResponse<LoginResponseDto>> {
-    const user = await this.authService.validateUser(body.code, body.password);
+    const user = await this.userService.validateUser(body.code, body.password);
 
     if (!isRefPopulated(user.employee)) {
       throw Error(
@@ -66,6 +70,7 @@ export class AuthController {
 
     loginResponse.data = {
       userState: {
+        id: user._id.toString(),
         code: user.code,
         name: user.employee.name,
         accessPrivileges: user.accessPrivileges,
@@ -94,12 +99,6 @@ export class AuthController {
     @Req() req: AuthenticatedRequest,
     @Res({ passthrough: true }) res: ExpressResponse,
   ): BaseResponse<LogoutResponseDto> {
-    console.log(req.user)
-
-    if (check.null(req.user)) {
-      throw Error("Hmm")
-    }
-
     res.clearCookie("access_token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // only over HTTPS in prod

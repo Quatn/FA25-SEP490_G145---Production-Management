@@ -3,6 +3,9 @@ import { ApiProperty } from "@nestjs/swagger";
 
 export class UserState {
   @ApiProperty()
+  id: string;
+
+  @ApiProperty()
   code: string;
 
   @ApiProperty()

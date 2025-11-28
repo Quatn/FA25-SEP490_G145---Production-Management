@@ -745,61 +745,6 @@ export class ManufacturingOrderService {
   }): Promise<PaginatedList<FullDetailManufacturingOrderDto>> {
     const skip = (page - 1) * limit;
 
-    /*
-    const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
-    const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
-    const warePath = PurchaseOrderItemSchema.path("ware");
-    const fluteCombinationPath = WareSchema.path("fluteCombination");
-    const finishingProcessesPath = WareSchema.path("finishingProcesses");
-    const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
-    const productPath = SubPurchaseOrderSchema.path("product");
-    const customerPath = PurchaseOrderSchema.path("customer");
-    const wareManufacturingProcessTypePath = WareSchema.path(
-      "wareManufacturingProcessType",
-    );
-    const printColorsPath = WareSchema.path("printColors");
-    const corrugatorProcessPath =
-      ManufacturingOrderSchema.path("corrugatorProcess");
-
-    const populate = [
-      corrugatorProcessPath,
-      {
-        path: poiPath.path,
-        populate: [
-          {
-            path: warePath.path,
-            populate: [
-              fluteCombinationPath,
-              finishingProcessesPath,
-              wareManufacturingProcessTypePath,
-              printColorsPath,
-            ],
-          },
-          {
-            path: subpoPath.path,
-            populate: [
-              productPath,
-              {
-                path: poPath.path,
-                populate: { path: customerPath.path },
-              },
-            ],
-          },
-        ],
-      },
-    ];
-
-    const [totalItems, data] = await Promise.all([
-      this.manufacturingOrderModel.countDocuments(filter),
-      this.manufacturingOrderModel
-        .find(filter)
-        .skip(skip)
-        .limit(limit)
-        .populate(populate)
-        .lean(),
-    ]);
-    */
-
     const pipeline = fullDetailsFilterAggregationPipeline({
       filter,
       skip,
@@ -821,7 +766,7 @@ export class ManufacturingOrderService {
     const hasPrevPage = page > 1;
 
     const mappedData: FullDetailManufacturingOrderDto[] = data.map(
-      (mo) => new FullDetailManufacturingOrderDto(mo),
+      (mo) => new FullDetailManufacturingOrderDto(mo as ManufacturingOrder),
     );
 
     return {
@@ -945,7 +890,7 @@ export class ManufacturingOrderService {
     };
   }
 
-  // TODO
+  // TODO, or just use updateMany for single updates, idk
   async updateOne(dto: UpdateManufacturingOrderRequestDto) {
     // const doc = new this.manufacturingOrderModel(dto);
     // return await doc.save();

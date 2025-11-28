@@ -18,8 +18,6 @@ export function URLMatch({
 }: URLMatchProps) {
   const pathname = usePathname();
 
-  console.log(pathname)
-
   const matched = exact
     ? pathname === path
     : pathname.startsWith(path);

@@ -1,6 +1,7 @@
 import { AnyAccessPrivileges } from "./AccessPrivileges";
 
 export interface UserState {
+  id: string;
   code: string;
   employeeCode: string;
   name: string;
