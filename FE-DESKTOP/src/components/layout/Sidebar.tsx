@@ -2,12 +2,14 @@ import type {
   FlexProps as ChakraFlexProps,
   TreeCollection,
   TreeViewExpandedChangeDetails,
+  TreeViewRootProps,
 } from "@chakra-ui/react";
 import { Box, Flex, Highlight, HStack, Text, TreeView } from "@chakra-ui/react";
 import { ReactNode, RefObject } from "react";
 import { LuChevronRight } from "react-icons/lu";
 import SidebarExpandCollapseButton from "./SidebarExpandCollapseButton";
 import Link from "next/link";
+import { SidebarTreeBranchNode, SidebarTreeLeafNode } from "./SidebarTreeNodes";
 
 export interface Node {
   id: string;
@@ -36,7 +38,7 @@ export type SidebarRootProps = ChakraFlexProps & {
   ref?: RefObject<HTMLDivElement>;
 };
 
-export type SidebarTreeProps = {
+export type SidebarTreeProps = TreeViewRootProps & {
   collection: TreeCollection<Node>;
   expandedValue?: string[];
   onExpandedChange?: (details: TreeViewExpandedChangeDetails<Node>) => void;
@@ -83,8 +85,6 @@ export const SidebarRoot = (props: SidebarRootProps) => {
       p="4"
       borderWidth="1px"
       borderColor="border.disabled"
-      bg="bg"
-      backgroundColor={"bg.info"}
       borderRadius={0}
       flexDir={"column"}
       w={"full"}
@@ -100,11 +100,8 @@ export const SidebarRoot = (props: SidebarRootProps) => {
 export const SidebarTree = (props: SidebarTreeProps) => {
   return (
     <TreeView.Root
-      collection={props.collection}
       maxW="md"
-      colorPalette={"blue"}
-      expandedValue={props.expandedValue}
-      onExpandedChange={props.onExpandedChange}
+      {...props}
     >
       <HStack justifyContent={"space-between"}>
         <TreeView.Label fontWeight={"bold"}>Menu</TreeView.Label>
@@ -116,43 +113,10 @@ export const SidebarTree = (props: SidebarTreeProps) => {
           render={({ node, nodeState }) =>
             nodeState.isBranch
               ? (
-                <TreeView.BranchControl>
-                  <TreeView.BranchTrigger>
-                    <TreeView.BranchIndicator asChild>
-                      <LuChevronRight />
-                    </TreeView.BranchIndicator>
-                  </TreeView.BranchTrigger>
-                  <TreeView.BranchText>
-                    {props.query
-                      ? (
-                        <Highlight
-                          query={[props.query]}
-                          styles={{ bg: "gray.emphasized" }}
-                        >
-                          {node.name}
-                        </Highlight>
-                      )
-                      : node.name}
-                  </TreeView.BranchText>
-                </TreeView.BranchControl>
+                <SidebarTreeBranchNode node={node} nodeState={nodeState} query={props.query} />
               )
               : (
-                <TreeView.Item asChild>
-                  <Link href={node.href}>
-                    <TreeView.ItemText>
-                      {props.query
-                        ? (
-                          <Highlight
-                            query={[props.query]}
-                            styles={{ bg: "gray.emphasized" }}
-                          >
-                            {node.name}
-                          </Highlight>
-                        )
-                        : node.name}
-                    </TreeView.ItemText>
-                  </Link>
-                </TreeView.Item>
+                <SidebarTreeLeafNode node={node} query={props.query} />
               )}
         />
       </TreeView.Tree>

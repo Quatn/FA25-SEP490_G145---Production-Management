@@ -16,8 +16,8 @@ import {
 import { ReactNode, useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { useColorMode } from "@/components/ui/color-mode";
-import LogoutButton from "./LogoutButton";
-import AuthenticatedContent from "./layout/AuthenticatedContent";
+import AuthenticatedContent from "./AuthenticatedContent";
+import LogoutButton from "../auth/LogoutButton";
 
 export const OptionsMenu = (props: {
   open?: boolean;

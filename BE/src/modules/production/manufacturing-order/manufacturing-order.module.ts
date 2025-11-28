@@ -19,6 +19,9 @@ import {
   OrderFinishingProcess,
   OrderFinishingProcessSchema,
 } from "../schemas/order-finishing-process.schema";
+import { PassportModule } from "@nestjs/passport";
+import { ConfigModule } from "@nestjs/config";
+import { ApiBearerAuth } from "@nestjs/swagger";
 
 @Module({
   imports: [

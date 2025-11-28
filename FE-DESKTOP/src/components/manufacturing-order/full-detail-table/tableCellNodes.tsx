@@ -124,8 +124,6 @@ const ManufacturingDateCell = (props: NodeCellProps) => {
 
   if (meta?.allowEdit) {
     if (meta.editableCellNode) {
-      console.log(value)
-      console.log(new Date(value))
       return meta.editableCellNode({ value: new Date(value), updateTableData, setValue, onBlur, type: ManufacturingTableEditableCellInputTypes.date })
     }
   }

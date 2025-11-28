@@ -1,4 +1,5 @@
-import Header from "@/components/Header";
+import WelcomeBox from "@/components/home/WelcomeBox";
+import Header from "@/components/layout/Header";
 import { Box, Flex, Link, Text } from "@chakra-ui/react";
 
 export default function Home() {
@@ -6,13 +7,14 @@ export default function Home() {
     <Flex minH={"100vh"} direction={"column"} grow={1}>
       <Header />
       <main style={{ flexGrow: 1 }}>
-        <Box m={5} p={2} rounded={"sm"} bg={"gray.200"}>
-          <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-            Managment system
+        <Box m={5} p={2} rounded={"sm"}>
+          <Text fontWeight={"semibold"} colorPalette={"black"} fontSize={"2rem"}>
+            XC Managment system
           </Text>
-          <Link href={"/dashboard"} color={"blue.500"}>
-            Go to dashboard
-          </Link>
+          <Text>
+            Welcome to XC managment system
+          </Text>
+          <WelcomeBox />
         </Box>
       </main>
       <footer></footer>

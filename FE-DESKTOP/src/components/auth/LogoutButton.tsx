@@ -1,27 +1,27 @@
-import { useLogOutMutation } from "@/service/api/authApiSlice";
+import { useLogoutMutation } from "@/service/api/authApiSlice";
 import { useRouter } from "next/navigation";
-import { toaster } from "./ui/toaster";
 import { devlog } from "@/utils/devlog";
 import { clearCredentials } from "@/service/features/authSlice";
 import { useAppDispatch } from "@/service/hooks";
 import { Button } from "@chakra-ui/react";
+import { toaster } from "../ui/toaster";
 
 export default function LogoutButton() {
   const router = useRouter();
-  const [logOut, { isLoading: isLoggingOut, error: logOutError }] =
-    useLogOutMutation();
+  const [logout, { isLoading: isLoggingOut, error: logOutError }] =
+    useLogoutMutation();
 
   const dispatch = useAppDispatch();
 
   const handleLogout = async () => {
     try {
-      await logOut().unwrap();
+      const response = await logout({}).unwrap();
       dispatch(clearCredentials());
       toaster.create({
-        title: "Logged out sucessfully",
+        title: `Logged out sucessfully as ${response.data?.code}`,
         type: "success",
       });
-      router.push("/auth/login");
+      router.push("/login");
     } catch (e) {
       devlog(e);
       toaster.create({

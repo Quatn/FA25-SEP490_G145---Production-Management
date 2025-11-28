@@ -1,28 +1,40 @@
 import { apiSlice } from "./apiSlice";
 import { AUTH_URL, USE_MOCK_DATA } from "../constants";
 import { mockLogin, mockLogout } from "../mock-data/functions/mock-auths";
+import { LoginResponseDto } from "@/types/DTO/auth/LoginResponseDto";
+import { LoginRequestDto } from "@/types/DTO/auth/LoginRequestDto";
+import { LogoutResponseDto } from "@/types/DTO/auth/LogoutResponseDto";
+import { LogoutRequestDto } from "@/types/DTO/auth/LogoutRequestDto";
 
 export const authApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    logIn: builder.mutation({
-      ...(USE_MOCK_DATA
-        ? {
-          queryFn: (
-            { username, password }: { username: string; password: string },
-          ) => mockLogin({ username, password }),
-        }
-        : {
-          query: (
-            { username, password }: { username: string; password: string },
-          ) => ({
-            url: `${AUTH_URL}/log-in`,
-            method: "POST",
-            body: { username, password },
-            credentials: "include",
-          }),
-        }),
+    login: builder.mutation<
+      LoginResponseDto,
+      LoginRequestDto
+    >({
+      query: (body) => ({
+        url: `${AUTH_URL}/login`,
+        method: "POST",
+        body,
+        credentials: "include",
+      }),
+      invalidatesTags: ["User", "Auth"],
     }),
 
+    logout: builder.mutation<
+      LogoutResponseDto,
+      LogoutRequestDto
+    >({
+      query: (body) => ({
+        url: `${AUTH_URL}/logout`,
+        method: "POST",
+        body,
+        credentials: "include",
+      }),
+      invalidatesTags: ["User", "Auth"],
+    }),
+
+    /*
     adminLogIn: builder.mutation({
       query: (data) => ({
         url: `${AUTH_URL}/admin/log-in`,
@@ -51,27 +63,11 @@ export const authApiSlice = apiSlice.injectEndpoints({
         credentials: "include",
       }),
     }),
-
-    logOut: builder.mutation<unknown, void>({
-      ...(USE_MOCK_DATA
-        ? {
-          queryFn: () => mockLogout(),
-        }
-        : {
-          query: () => ({
-            url: `${AUTH_URL}/log-out`,
-            method: "POST",
-            credentials: "include",
-          }),
-        }),
-    }),
+    */
   }),
 });
 
 export const {
-  useLogInMutation,
-  useSignUpMutation,
-  useVerifyEmailMutation,
-  useLogOutMutation,
-  useAdminLogInMutation,
+  useLoginMutation,
+  useLogoutMutation,
 } = authApiSlice;

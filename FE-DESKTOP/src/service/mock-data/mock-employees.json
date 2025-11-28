@@ -1,0 +1,47 @@
+[
+  {
+    "code": "ADM-001",
+    "name": "John \"Xuan Cau\" Packagings",
+    "address": "",
+    "email": "xcerp@gmail.com",
+    "contactNumber": "",
+    "role": "admin",
+    "note": ""
+  },
+  {
+    "code": "CNS-001",
+    "name": "Cong Nhan Song 1",
+    "address": "",
+    "email": "cns1@gmail.com",
+    "contactNumber": "",
+    "role": "worker",
+    "note": ""
+  },
+  {
+    "code": "CNK-001",
+    "name": "Cong Nhan Kho 1",
+    "address": "",
+    "email": "cnk1@gmail.com",
+    "contactNumber": "",
+    "role": "worker",
+    "note": ""
+  },
+  {
+    "code": "QLS-001",
+    "name": "Quan Ly Song 1",
+    "address": "",
+    "email": "qls1@gmail.com",
+    "contactNumber": "",
+    "role": "manager",
+    "note": ""
+  },
+  {
+    "code": "AU-001",
+    "name": "Kiem Ke 1",
+    "address": "",
+    "email": "au1@gmail.com",
+    "contactNumber": "",
+    "role": "auditor",
+    "note": ""
+  }
+]

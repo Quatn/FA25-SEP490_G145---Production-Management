@@ -4,6 +4,8 @@ import { OptionalJwtAuthGuard } from "./common/guards/optional-jwt-auth.guard";
 import type { AuthenticatedRequest } from "./common/interfaces/authenticated-request";
 import { ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 
+
+
 @Controller()
 @ApiBearerAuth("access-token")
 export class AppController {
