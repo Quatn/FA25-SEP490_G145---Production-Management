@@ -538,6 +538,7 @@ export const PaperDailyUsageReport: React.FC = () => {
           </button>
           <button
             className="btn btn-primary"
+            style={{maxWidth: 250, minWidth: 130}}
             onClick={handleExport}
             disabled={usageByRoll.length === 0}
           >

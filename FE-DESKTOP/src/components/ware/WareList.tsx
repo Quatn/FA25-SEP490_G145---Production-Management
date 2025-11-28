@@ -926,7 +926,7 @@ export const WareList: React.FC = () => {
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
             className="form-control"
-            placeholder="Search by code"
+            placeholder="Tìm theo mã"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
