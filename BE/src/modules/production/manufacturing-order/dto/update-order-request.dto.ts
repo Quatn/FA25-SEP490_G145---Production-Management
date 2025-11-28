@@ -3,7 +3,6 @@ import {
   CreateManufacturingOrderRequestDtoFormFields,
   CreateManufacturingOrderRequestDtoInfoFields,
 } from "./create-order-request.dto";
-import { FullDetailPurchaseOrderItemDto } from "../../purchase-order-item/dto/full-details-orders.dto";
 import { ApiProperty } from "@nestjs/swagger";
 import { IsMongoId } from "class-validator";
 import mongoose from "mongoose";

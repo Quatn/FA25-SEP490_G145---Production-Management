@@ -9,6 +9,10 @@ import {
 import mongoose from "mongoose";
 import { FullDetailPurchaseOrderItemDto } from "../../purchase-order-item/dto/full-details-orders.dto";
 import { IntersectionType } from "@nestjs/mapped-types";
+import {
+  CorrugatorLine,
+  ManufacturingOrderDirectives,
+} from "../../schemas/manufacturing-order.schema";
 
 export class CreateManufacturingOrderRequestDtoInfoFields {
   @ApiProperty({
@@ -32,13 +36,11 @@ export class CreateManufacturingOrderRequestDtoFormFields {
 
   @ApiProperty()
   @IsOptional()
-  @IsNumber()
-  corrugatorLineAdjustment: number | null;
+  corrugatorLineAdjustment?: CorrugatorLine | null;
 
-  @ApiProperty({ example: "", description: "Add desc later" })
+  @ApiProperty()
   @IsOptional()
-  @IsString()
-  manufacturingDirective: string | null;
+  manufacturingDirective?: ManufacturingOrderDirectives | null;
 
   @ApiProperty()
   @IsNumber()

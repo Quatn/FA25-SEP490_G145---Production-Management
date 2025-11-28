@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import { IsOptional, IsString, IsNumber, Min, IsDate } from "class-validator";
 
+/** @deprecated Will be removed when query-full-details inherits all of the use cases or operation for this is broken down to smaller ones */
 export class FindAllMoQueryDto {
   // 1. Search theo code
   @IsOptional()

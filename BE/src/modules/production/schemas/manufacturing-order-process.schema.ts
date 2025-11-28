@@ -5,6 +5,7 @@ import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
 import { WareFinishingProcessType } from "./ware-finishing-process-type.schema";
 
 // Định nghĩa các trạng thái cho một công đoạn
+  /** @deprecated Use OrderFinishingProcess if possible, that's what this is supposed to be */
 export enum ProcessStatus {
   NOTSTARTED = "NOTSTARTED", // Chờ
   RUNNING = "RUNNING", // Chạy
@@ -15,6 +16,7 @@ export enum ProcessStatus {
 }
 
 @Schema({ timestamps: true })
+  /** @deprecated Use OrderFinishingProcess if possible, that's what this is supposed to be */
 export class ManufacturingOrderProcess extends BaseSchema {
   @Prop({
     required: true,

@@ -6,6 +6,7 @@ import {
   IsString,
   IsArray,
   IsObject,
+  IsEnum,
 } from "class-validator";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import mongoose, { HydratedDocument, Types } from "mongoose";
@@ -25,11 +26,9 @@ export enum CorrugatorProcessStatus {
 }
 
 export class CorrugatorProcess {
-  // Số lượng đã sản xuất
   @Prop({ required: true, default: 0 })
   manufacturedAmount: number;
 
-  // Trạng thái (Tương tự MO)
   @Prop({
     required: true,
     enum: CorrugatorProcessStatus,
@@ -37,13 +36,25 @@ export class CorrugatorProcess {
   })
   status: CorrugatorProcessStatus;
 
-  // Ghi chú
   @Prop({ required: false, default: "" })
   note: string;
 }
-
 export type CorrugatorProcessDocument = HydratedDocument<CorrugatorProcess>;
 
+export enum CorrugatorLine {
+  L5 = "LINE5",
+  L7 = "LINE7",
+}
+
+export enum ManufacturingOrderDirectives {
+  Pause = "PAUSE",
+  Compensate = "COMPENSATE",
+  Cancel = "CANCEL",
+  Mandatory = "MANDATORY",
+}
+
+// LEGACY CODE: KEPT DUE TO TIME LIMITATION, AVOID USING IF POSSIBLE --[[
+/** @deprecated MO wont have status, it is supposed to derive its status from other objects is it associated with */
 export enum OrderStatus {
   NOTSTARTED = "NOTSTARTED",
   RUNNING = "RUNNING",
@@ -52,6 +63,7 @@ export enum OrderStatus {
   PAUSED = "PAUSED",
   CANCELLED = "CANCELLED",
 }
+// ]]---
 
 @Schema({ timestamps: true })
 export class ManufacturingOrder extends BaseDenormalizedSchema {
@@ -59,37 +71,6 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   @Prop({ required: true })
   @IsString()
   code: string;
-
-  @ApiProperty({ enum: OrderStatus })
-  @Prop({
-    required: true,
-    enum: OrderStatus,
-    default: OrderStatus.NOTSTARTED,
-  })
-  overallStatus: OrderStatus;
-
-  @ApiProperty({
-    type: [String],
-    description: "List of ManufacturingOrderProcess ObjectIds",
-  })
-  @Prop({
-    type: [{ type: Types.ObjectId, ref: ManufacturingOrderProcess.name }],
-    required: true,
-    default: [],
-  })
-  @IsArray()
-  @IsMongoId({ each: true })
-  processes: Types.ObjectId[] | ManufacturingOrderProcess[];
-
-  @ApiProperty({
-    description: "Corrugator Process Object",
-    type: String,
-  })
-  @Prop({
-    required: true,
-  })
-  @IsObject()
-  corrugatorProcess: CorrugatorProcess;
 
   @ApiProperty({
     type: String,
@@ -103,6 +84,16 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   })
   @IsMongoId()
   purchaseOrderItem: mongoose.Types.ObjectId | PurchaseOrderItem;
+
+  @ApiProperty({
+    description: "Corrugator Process Object",
+    type: String,
+  })
+  @Prop({
+    required: true,
+  })
+  @IsObject()
+  corrugatorProcess: CorrugatorProcess;
 
   @ApiProperty()
   @Prop({ required: true })
@@ -121,17 +112,24 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   @IsDate()
   requestedDatetime?: Date | null;
 
-  // This should have its own table or at least be an enum
   @ApiProperty()
-  @Prop({ required: true })
-  @IsNumber()
+  @Prop({
+    required: true,
+    enum: CorrugatorLine,
+    default: CorrugatorLine.L5,
+  })
+  @IsEnum(CorrugatorLine)
   corrugatorLine: string;
 
   @ApiProperty()
-  @Prop({ required: false, type: Number, default: null })
+  @Prop({
+    required: false,
+    enum: CorrugatorLine,
+    type: String,
+    default: null,
+  })
   @IsOptional()
-  @IsNumber()
-  corrugatorLineAdjustment?: number | null;
+  corrugatorLineAdjustment?: CorrugatorLine | null;
 
   @ApiProperty()
   @Prop({ required: true })
@@ -139,16 +137,44 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   amount: number;
 
   @ApiProperty()
-  @Prop({ type: String, default: null })
+  @Prop({
+    required: false,
+    enum: ManufacturingOrderDirectives,
+    type: String,
+    default: null,
+  })
   @IsOptional()
-  @IsString()
-  manufacturingDirective?: string | null;
+  manufacturingDirective?: ManufacturingOrderDirectives | null;
 
   @ApiProperty()
   @Prop({ default: "" })
   @IsOptional()
   @IsString()
   note?: string;
+
+  // LEGACY CODE: KEPT DUE TO TIME LIMITATION, AVOID USING IF POSSIBLE
+  /** @deprecated MO should not be referencing *order finishing processes*, which is what this array is trying to be */
+  @ApiProperty({
+    type: [String],
+    description: "List of ManufacturingOrderProcess ObjectIds",
+  })
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: ManufacturingOrderProcess.name }],
+    required: true,
+    default: [],
+  })
+  @IsArray()
+  @IsMongoId({ each: true })
+  processes: Types.ObjectId[] | ManufacturingOrderProcess[];
+
+  /** @deprecated MO wont have status, it is supposed to be derived from other objects is it associated with */
+  @ApiProperty({ enum: OrderStatus })
+  @Prop({
+    required: true,
+    enum: OrderStatus,
+    default: OrderStatus.NOTSTARTED,
+  })
+  overallStatus: OrderStatus;
 }
 
 export type ManufacturingOrderDocument = HydratedDocument<ManufacturingOrder>;

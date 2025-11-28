@@ -74,6 +74,7 @@ export class ManufacturingOrderController {
   @ApiOperation({
     summary: "List all manufacturing orders (populated, filtered, paginated)",
   })
+  /** @deprecated Will be removed when query-full-details inherits all of the use cases or operation for this is broken down to smaller ones */
   async findAll(
     // 1. Dùng @Query() để nhận DTO chứa các tham số filter/pagination
     @Query() queryDto: FindAllMoQueryDto,

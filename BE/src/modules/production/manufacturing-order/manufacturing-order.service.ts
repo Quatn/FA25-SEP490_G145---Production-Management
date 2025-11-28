@@ -57,6 +57,7 @@ import { isRefPopulated } from "@/common/utils/populate-check";
 import { UpdateManyCorrugatorProcessesDto } from "./dto/update-many-corrugator-processes.dto";
 import { UpdateCorrugatorProcessDto } from "./dto/update-corrugator-process.dto";
 import { fullDetailsFilterAggregationPipeline } from "./aggregate-pipes/full-details-filter";
+import { PipelineStage } from "mongoose";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -71,7 +72,7 @@ export class ManufacturingOrderService {
     private readonly manufacturingOrderProcessModel: Model<ManufacturingOrderProcessDocument>,
     // @InjectModel(CorrugatorProcess.name)
     // private readonly corrugatorProcessModel: Model<CorrugatorProcessDocument>,
-  ) {}
+  ) { }
 
   async findAll() {
     return await this.manufacturingOrderModel.find({}).exec();
@@ -80,6 +81,7 @@ export class ManufacturingOrderService {
   /**
    * Lấy danh sách MO đã populate đầy đủ dữ liệu (có phân trang và filter)
    */
+  /** @deprecated Will be removed when query-full-details inherits all of the use cases or operation for this is broken down to smaller ones */
   async findAllPopulated(queryDto: FindAllMoQueryDto) {
     // ... (Giữ nguyên logic filter) ...
     const {
@@ -130,9 +132,7 @@ export class ManufacturingOrderService {
 
     // Apply default or user custom filter
     if (mfg_date_from || mfg_date_to || defaultStartDate !== undefined) {
-      filter.manufacturingDate = {};
-
-      filter.manufacturingDate.$gte = mfg_date_from
+      const fromDate = mfg_date_from
         ? new Date(mfg_date_from)
         : (defaultStartDate as Date);
 
@@ -141,7 +141,10 @@ export class ManufacturingOrderService {
         : (defaultEndDate as Date);
 
       toDate.setHours(23, 59, 59, 999);
-      filter.manufacturingDate.$lte = toDate;
+      filter.manufacturingDate = {
+        $gte: fromDate,
+        $lte: toDate,
+      };
     }
 
     if (search_code) {
@@ -158,6 +161,8 @@ export class ManufacturingOrderService {
       filter["corrugatorProcess.status"] = corrugatorProcessStatus;
     }
 
+    /* This is duplicated I think? Keeping just in case*/
+    /*
     if (mfg_date_from || mfg_date_to) {
       filter.manufacturingDate = {};
       if (mfg_date_from) {
@@ -169,17 +174,20 @@ export class ManufacturingOrderService {
         filter.manufacturingDate.$lte = toDate;
       }
     }
+    */
+
     if (req_date_from || req_date_to) {
-      filter.requestedDatetime = {};
-      if (req_date_from) {
-        filter.requestedDatetime.$gte = new Date(req_date_from);
-      }
-      if (req_date_to) {
-        const toDate = new Date(req_date_to);
-        toDate.setHours(23, 59, 59, 999);
-        filter.requestedDatetime.$lte = toDate;
-      }
+      const fromDate = req_date_from ? new Date(req_date_from) : undefined;
+
+      const toDate = req_date_to ? new Date(req_date_to) : undefined;
+
+      if (check.date(toDate)) toDate.setHours(23, 59, 59, 999);
+      filter.requestedDatetime = {
+        $gte: fromDate,
+        $lte: toDate,
+      };
     }
+
     // 3. Xây dựng pipeline aggregate
     const pipeline: any[] = [
       { $match: filter },
@@ -535,7 +543,7 @@ export class ManufacturingOrderService {
       const countResult = await this.manufacturingOrderModel
         .aggregate(countPipeline)
         .exec();
-      total = countResult[0]?.total || 0;
+      total = (countResult[0] as { total: number } | undefined)?.total || 0;
     }
 
     const aggregatedData = await this.manufacturingOrderModel
@@ -790,22 +798,17 @@ export class ManufacturingOrderService {
       .catch(() => undefined);
     const codeGenerator = new MOCodeGenerator(lastOrder?.code);
 
-    const draftId = new Types.ObjectId();
-
     const mos: FullDetailManufacturingOrderDto[] = purchaseOrderItems.map(
-      (poi, index) => ({
+      (poi, index): FullDetailManufacturingOrderDto => ({
         code: codeGenerator.getCode(index),
         purchaseOrderItem: poi,
         overallStatus: OrderStatus.NOTSTARTED,
         processes: [],
         corrugatorProcess: {
-          _id: draftId,
-          manufacturingOrder: draftId,
           manufacturedAmount: 0,
           status: CorrugatorProcessStatus.NOTSTARTED,
-          isDeleted: false,
           note: "",
-        }, // Will be set when creating actual order
+        },
         manufacturingDate: getManufacturingDate(
           poi.subPurchaseOrder.deliveryDate,
           poi.subPurchaseOrder.purchaseOrder.customer.code,
@@ -818,7 +821,7 @@ export class ManufacturingOrderService {
         ),
         corrugatorLineAdjustment: null,
         amount: poi.amount,
-        manufacturingDirective: "",
+        manufacturingDirective: null,
         note: "",
         recalculateFlag: false,
         isDeleted: false,
@@ -872,7 +875,7 @@ export class ManufacturingOrderService {
     const moCreateRes = await this.manufacturingOrderModel.create(mos);
 
     // TODO: create finishing processes
-    // const finishingProcesses: WareFinishingProcessType[][] = moCreateRes.map((mo, index) => 
+    // const finishingProcesses: WareFinishingProcessType[][] = moCreateRes.map((mo, index) =>
     //   mo.processes.map((p) => ({
     //     code: p,
     //     process,
