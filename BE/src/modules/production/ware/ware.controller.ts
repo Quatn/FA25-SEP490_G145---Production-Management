@@ -27,6 +27,19 @@ export class WareController {
     });
   }
 
+  @Get('deleted')
+  async findDeleted(
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+    @Query('search') search?: string,
+  ) {
+    return this.wareService.findDeleted({
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
+      search: search || undefined,
+    });
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Get a ware by Mongo _id" })
   findOne(@Param("id") id: string) {
@@ -83,13 +96,6 @@ export class WareController {
     return { success: true, message: "Soft deleted successfully", data: null };
   }
 
-  @Patch("restore/:id")
-  @ApiOperation({ summary: "Restore soft-deleted ware" })
-  async restore(@Param("id") id: string): Promise<BaseResponse<null>> {
-    await this.wareService.restore(id);
-    return { success: true, message: "Restored successfully", data: null };
-  }
-
   @Delete("delete-hard/:id")
   @ApiOperation({ summary: "Permanently delete ware" })
   async hardDelete(@Param("id") id: string): Promise<BaseResponse<null>> {
@@ -97,11 +103,9 @@ export class WareController {
     return { success: true, message: "Permanently deleted successfully", data: null };
   }
 
-  @Get("list-deleted")
-  @ApiOperation({ summary: "List soft-deleted wares" })
-  async listDeleted(@Query("page") page = "1", @Query("limit") limit = "100"): Promise<BaseResponse<PaginatedList<any>>> {
-    const docs = await this.wareService.findDeleted(Number(page), Number(limit));
-    return { success: true, message: "Fetch deleted successful", data: docs };
+  @Patch(':id/restore')
+  async restore(@Param('id') id: string) {
+    return this.wareService.restore(id);
   }
 }
 

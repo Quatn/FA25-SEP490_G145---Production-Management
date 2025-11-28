@@ -126,14 +126,71 @@ export const wareApiSlice = apiSlice.injectEndpoints({
       query: ({ id }) => ({ url: `${WARE_URL}/delete-soft/${id}`, method: "DELETE", credentials: "include" }),
       invalidatesTags: ["Ware"],
     }),
-    restoreWare: builder.mutation<BaseResponse<any>, { id: string }>({
-      query: ({ id }) => ({ url: `${WARE_URL}/restore/${id}`, method: "PATCH", credentials: "include" }),
-      invalidatesTags: ["Ware"],
+    getDeletedWares: builder.query<PaginatedList<Ware>, GetWaresParams>({
+      query: ({ page = 1, limit = 20, search = "" } = {}) => ({
+        url: `${WARE_URL}/deleted`,
+        method: "GET",
+        params: {
+          page,
+          limit,
+          ...(search ? { search } : {}),
+        },
+        credentials: "include",
+      }),
+      transformResponse: (response: any): PaginatedList<Ware> => {
+        const resp = response ?? {};
+        const dataArr: any[] =
+          Array.isArray(resp.data) ? resp.data : Array.isArray(resp) ? resp : resp?.data?.data ?? [];
+        const pageNum = Number(resp.page ?? resp?.page ?? 1);
+        const lim = Number(resp.limit ?? resp?.limit ?? 20);
+        const totalItems =
+          Number(resp.totalItems ?? resp.total ?? resp?.data?.total ?? dataArr.length) || 0;
+        const totalPages = Math.max(1, Math.ceil((totalItems || 0) / (lim || 1)));
+
+        return {
+          data: dataArr,
+          page: pageNum,
+          limit: lim,
+          totalItems,
+          totalPages,
+          hasNextPage: resp.hasNextPage ?? pageNum < totalPages,
+          hasPrevPage: resp.hasPrevPage ?? pageNum > 1,
+        };
+      },
+      providesTags: (result) => {
+        const arr =
+          (result && Array.isArray((result as any).data) && (result as any).data) ||
+          (result && Array.isArray(result.data?.data) && result.data.data) ||
+          (result && Array.isArray((result as any).data?.data) && result.data.data) ||
+          (result && Array.isArray((result as any).data?.items) && result.data.items) ||
+          (result && Array.isArray((result as any).data) && result.data) ||
+          (result && Array.isArray((result as any).data?.data) && result.data.data) ||
+          (result && Array.isArray((result as any).data) && result.data) ||
+          (result && Array.isArray((result as any).data) && result.data) ||
+          [];
+
+        if (arr && arr.length > 0) {
+          return [
+            ...arr.map((r: any) => ({
+              type: "Ware" as const,
+              id: r._id ?? r.id ?? r.code,
+            })),
+            { type: "Ware" as const, id: "DELETED_LIST" },
+          ];
+        }
+        return [{ type: "Ware" as const, id: "DELETED_LIST" }];
+      },
     }),
-    getDeletedWares: builder.query<BaseResponse<PaginatedList<any>>, { page?: number; limit?: number }>({
-      query: ({ page = 1, limit = 100 }) => ({ url: `${WARE_URL}/list-deleted`, method: "GET", params: { page, limit }, credentials: "include" }),
-      providesTags: ["Ware"],
+
+    restoreWare: builder.mutation<BaseResponse<any>, string>({
+      query: (id: string) => ({
+        url: `${WARE_URL}/${id}/restore`,
+        method: "PATCH",
+        credentials: "include",
+      }),
+      invalidatesTags: [{ type: "Ware", id: "DELETED_LIST" }, { type: "Ware", id: "LIST" }],
     }),
+
   }),
 });
 
@@ -145,6 +202,6 @@ export const {
   useCreateWareMutation,
   useUpdateWareMutation,
   useDeleteWareMutation,
-  useRestoreWareMutation,
   useGetDeletedWaresQuery,
+  useRestoreWareMutation,
 } = wareApiSlice;
