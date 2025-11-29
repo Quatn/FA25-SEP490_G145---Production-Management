@@ -26,15 +26,21 @@ export enum CorrugatorProcessStatus {
 }
 
 export class CorrugatorProcess {
-  @Prop({ required: true, default: 0 })
-  manufacturedAmount: number;
-
   @Prop({
     required: true,
     enum: CorrugatorProcessStatus,
     default: CorrugatorProcessStatus.NOTSTARTED,
   })
   status: CorrugatorProcessStatus;
+
+  @Prop({ required: true, default: 0 })
+  manufacturedAmount: number;
+
+  @Prop({ required: true, default: 0 })
+  actualBlankWidth: number;
+
+  @Prop({ required: true, default: 0 })
+  actualRunningLength: number;
 
   @Prop({ required: false, default: "" })
   note: string;
@@ -53,8 +59,14 @@ export enum ManufacturingOrderDirectives {
   Mandatory = "MANDATORY",
 }
 
+export enum ManufacturingOrderApprovalStatus {
+  Draft = "DRAFT",
+  PendingApproval = "PENDINGAPPROVAL",
+  Approved = "APPROVED",
+}
+
 // LEGACY CODE: KEPT DUE TO TIME LIMITATION, AVOID USING IF POSSIBLE --[[
-/** @deprecated MO wont have status, it is supposed to derive its status from other objects is it associated with */
+/** @deprecated MO wont have *operative* status, it is supposed to derive that from other objects is it associated with */
 export enum OrderStatus {
   NOTSTARTED = "NOTSTARTED",
   RUNNING = "RUNNING",
@@ -84,6 +96,15 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   })
   @IsMongoId()
   purchaseOrderItem: mongoose.Types.ObjectId | PurchaseOrderItem;
+
+  @ApiProperty()
+  @Prop({
+    required: true,
+    enum: ManufacturingOrderApprovalStatus,
+    default: ManufacturingOrderApprovalStatus.Draft,
+  })
+  @IsEnum(ManufacturingOrderApprovalStatus)
+  approvalStatus: ManufacturingOrderApprovalStatus;
 
   @ApiProperty({
     description: "Corrugator Process Object",
@@ -119,7 +140,7 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
     default: CorrugatorLine.L5,
   })
   @IsEnum(CorrugatorLine)
-  corrugatorLine: string;
+  corrugatorLine: CorrugatorLine;
 
   @ApiProperty()
   @Prop({
@@ -135,6 +156,78 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   @Prop({ required: true })
   @IsNumber()
   amount: number;
+
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  numberOfBlanks: number = 0;
+
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  longitudinalCutCount: number = 0;
+
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  runningLength: number = 0;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  faceLayerPaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  EFlutePaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  EBLinerLayerPaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  BFlutePaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  BACLinerLayerPaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  ACFlutePaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: String, default: null })
+  @IsOptional()
+  @IsNumber()
+  backLayerPaperWeight: number | null;
+
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  totalVolume: number = 0;
+
+  @ApiProperty()
+  @Prop({ required: false, type: Number, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  totalWeight: number = 0;
 
   @ApiProperty()
   @Prop({
@@ -167,7 +260,7 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   @IsMongoId({ each: true })
   processes: Types.ObjectId[] | ManufacturingOrderProcess[];
 
-  /** @deprecated MO wont have status, it is supposed to be derived from other objects is it associated with */
+  /** @deprecated MO wont have *operative* status, it is supposed to derive that from other objects is it associated with */
   @ApiProperty({ enum: OrderStatus })
   @Prop({
     required: true,

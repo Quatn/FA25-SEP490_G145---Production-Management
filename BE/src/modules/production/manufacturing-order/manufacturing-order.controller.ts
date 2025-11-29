@@ -267,7 +267,7 @@ export class ManufacturingOrderController {
     const result = await this.moService.deleteOne(param.id);
     return {
       success: true,
-      message: "Fetch successul",
+      message: "Fetch successful",
       data: result,
     };
   }
@@ -281,23 +281,22 @@ export class ManufacturingOrderController {
     const result = await this.moService.restoreOne(param.id);
     return {
       success: true,
-      message: "Fetch successul",
+      message: "Restore successful",
       data: result,
     };
   }
 
-  //New endpoints
   @Patch("run-corrugator")
   @ApiOperation({ summary: "Chạy quy trình sóng cho các MO đã chọn" })
   async runProcesses(
     @Body() dto: CorrugatorProcessesDto,
-  ): Promise<BaseResponse<any>> {
+  ): Promise<BaseResponse<PatchResult<{ codes: string[] }>>> {
     const result = await this.moService.runSelectedCorrugatorProcesses(
       dto.moIds,
     );
     return {
       success: true,
-      message: `Đã cập nhật ${result.modifiedCount} quy trình sóng sang trạng thái RUNNING.`,
+      message: `Updated corrugator processes for MOs`,
       data: result,
     };
   }
@@ -308,11 +307,13 @@ export class ManufacturingOrderController {
   })
   async updateManyCorrugatorProcesses(
     @Body() dto: UpdateManyCorrugatorProcessesDto,
-  ): Promise<BaseResponse<any>> {
+  ): Promise<
+    BaseResponse<PatchResult<{ failedCount: number; errors: string[] }>>
+  > {
     const result = await this.moService.updateManyCorrugatorProcesses(dto);
     return {
       success: true,
-      message: `Đã cập nhật ${result.successCount} quy trình sóng. ${result.failedCount > 0 ? `${result.failedCount} quy trình thất bại.` : ""}`,
+      message: `Updated corrugator processes for MOs`,
       data: result,
     };
   }

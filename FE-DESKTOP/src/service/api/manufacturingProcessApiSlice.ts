@@ -1,4 +1,3 @@
-// src/service/api/manufacturingProcessApiSlice.ts
 import { apiSlice } from "./apiSlice";
 import { MANUFACTURING_PROCESS_URL } from "../constants";
 

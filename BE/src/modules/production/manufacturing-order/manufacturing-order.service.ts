@@ -9,6 +9,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import {
   CorrugatorProcessStatus,
   ManufacturingOrder,
+  ManufacturingOrderApprovalStatus,
   ManufacturingOrderDocument,
   ManufacturingOrderSchema,
   OrderStatus,
@@ -802,11 +803,14 @@ export class ManufacturingOrderService {
       (poi, index): FullDetailManufacturingOrderDto => ({
         code: codeGenerator.getCode(index),
         purchaseOrderItem: poi,
+        approvalStatus: ManufacturingOrderApprovalStatus.Draft,
         overallStatus: OrderStatus.NOTSTARTED,
         processes: [],
         corrugatorProcess: {
           manufacturedAmount: 0,
           status: CorrugatorProcessStatus.NOTSTARTED,
+          actualBlankWidth: 0,
+          actualRunningLength: 0,
           note: "",
         },
         manufacturingDate: getManufacturingDate(
@@ -821,9 +825,21 @@ export class ManufacturingOrderService {
         ),
         corrugatorLineAdjustment: null,
         amount: poi.amount,
+        numberOfBlanks: 0,
+        longitudinalCutCount: 0,
+        runningLength: 0,
+        faceLayerPaperWeight: null,
+        EFlutePaperWeight: null,
+        EBLinerLayerPaperWeight: null,
+        BFlutePaperWeight: null,
+        BACLinerLayerPaperWeight: null,
+        ACFlutePaperWeight: null,
+        backLayerPaperWeight: null,
+        totalVolume: 0,
+        totalWeight: 0,
         manufacturingDirective: null,
         note: "",
-        recalculateFlag: false,
+        recalculateFlag: true,
         isDeleted: false,
       }),
     );
@@ -846,12 +862,15 @@ export class ManufacturingOrderService {
 
     const mos: ManufacturingOrder[] = dtos.map((poi, index) => ({
       code: codeGenerator.getCode(index),
+      approvalStatus: ManufacturingOrderApprovalStatus.Draft,
       purchaseOrderItem: poi.purchaseOrderItemId,
       overallStatus: OrderStatus.NOTSTARTED,
       processes: [],
       corrugatorProcess: {
         manufacturedAmount: 0,
         status: CorrugatorProcessStatus.NOTSTARTED,
+        actualBlankWidth: 0,
+        actualRunningLength: 0,
         note: "",
       },
       manufacturingDate: getManufacturingDate(
@@ -866,9 +885,21 @@ export class ManufacturingOrderService {
       ),
       corrugatorLineAdjustment: poi.corrugatorLineAdjustment,
       amount: poi.purchaseOrderItem.amount,
+      numberOfBlanks: 0,
+      longitudinalCutCount: 0,
+      runningLength: 0,
+      faceLayerPaperWeight: null,
+      EFlutePaperWeight: null,
+      EBLinerLayerPaperWeight: null,
+      BFlutePaperWeight: null,
+      BACLinerLayerPaperWeight: null,
+      ACFlutePaperWeight: null,
+      backLayerPaperWeight: null,
+      totalVolume: 0,
+      totalWeight: 0,
       manufacturingDirective: poi.manufacturingDirective,
       note: poi.note,
-      recalculateFlag: false,
+      recalculateFlag: true,
       isDeleted: false,
     }));
 
@@ -1016,10 +1047,11 @@ export class ManufacturingOrderService {
 
   //Add corrugator process start heare
 
-  async runSelectedCorrugatorProcesses(moIds: string[]): Promise<any> {
+  async runSelectedCorrugatorProcesses(
+    moIds: string[],
+  ): Promise<PatchResult<{ codes: string[] }>> {
     const moObjectIds = moIds.map((id) => new Types.ObjectId(id));
 
-    // 1. Cập nhật trạng thái corrugatorProcess bên trong MO
     const cpUpdateResult = await this.manufacturingOrderModel.updateMany(
       {
         _id: { $in: moObjectIds },
@@ -1036,13 +1068,24 @@ export class ManufacturingOrderService {
       );
     }
 
-    // 2. Cập nhật trạng thái tổng thể của MO
     await this.manufacturingOrderModel.updateMany(
       { _id: { $in: moObjectIds }, overallStatus: OrderStatus.NOTSTARTED },
       { $set: { overallStatus: OrderStatus.RUNNING } },
     );
 
-    return cpUpdateResult;
+    const codesDoc = await this.manufacturingOrderModel.find(
+      { id: { $in: moIds } },
+      { code: 1 },
+    );
+    const codes = codesDoc.map((doc) => doc.code);
+
+    return {
+      patchedAmount: cpUpdateResult.modifiedCount,
+      requestedAmount: moIds.length,
+      echo: {
+        codes,
+      },
+    };
   }
 
   async updateCorrugatorProcess(
@@ -1243,16 +1286,18 @@ export class ManufacturingOrderService {
 
   async updateManyCorrugatorProcesses(
     dto: UpdateManyCorrugatorProcessesDto,
-  ): Promise<{ successCount: number; failedCount: number; errors: string[] }> {
-    const { moIds, status: newStatus } = dto; // <-- Lấy moIds
+  ): Promise<PatchResult<{ failedCount: number; errors: string[] }>> {
+    const { moIds, status: newStatus } = dto;
 
     const processObjectIds = moIds.map((id) => new Types.ObjectId(id));
-    // Tìm các MO (thay vì CP)
+
+    const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
+
     const processes = await this.manufacturingOrderModel
       .find({
         _id: { $in: processObjectIds },
       })
-      .populate("purchaseOrderItem");
+      .populate(poiPath);
 
     if (processes.length === 0) {
       throw new NotFoundException("Không tìm thấy Lệnh sản xuất nào.");
@@ -1262,14 +1307,11 @@ export class ManufacturingOrderService {
     let failedCount = 0;
     const errors: string[] = [];
 
-    // Xử lý từng MO
     for (const parentMO of processes) {
-      // <-- Loop qua MO
       try {
-        const process = parentMO.corrugatorProcess; // <-- Lấy object lồng
+        const process = parentMO.corrugatorProcess;
         const originalStatus = process.status;
 
-        // Validate chuyển đổi trạng thái (Logic giữ nguyên)
         if (newStatus === CorrugatorProcessStatus.COMPLETED) {
           if (originalStatus !== CorrugatorProcessStatus.RUNNING) {
             throw new ForbiddenException(
@@ -1281,8 +1323,8 @@ export class ManufacturingOrderService {
               "Không tìm thấy PO Item liên kết với Lệnh sản xuất này.",
             );
           }
-          const poItem =
-            parentMO.purchaseOrderItem as unknown as PurchaseOrderItemDocument;
+
+          const poItem = parentMO.purchaseOrderItem;
           const targetAmount = poItem.longitudinalCutCount;
           const maxAmountForCompletion = targetAmount * 1.1;
 
@@ -1324,11 +1366,9 @@ export class ManufacturingOrderService {
           }
         }
 
-        // Cập nhật trạng thái
-        parentMO.corrugatorProcess.status = newStatus; // <-- Cập nhật object lồng
+        parentMO.corrugatorProcess.status = newStatus;
         parentMO.markModified("corrugatorProcess");
 
-        // Đồng bộ với MO và MOPs
         if (
           newStatus === CorrugatorProcessStatus.PAUSED ||
           newStatus === CorrugatorProcessStatus.CANCELLED
@@ -1357,7 +1397,7 @@ export class ManufacturingOrderService {
           parentMO.overallStatus = OrderStatus.RUNNING;
         }
 
-        await parentMO.save(); // <-- Save MO 1 lần
+        await parentMO.save();
         successCount++;
       } catch (error) {
         failedCount++;
@@ -1367,8 +1407,13 @@ export class ManufacturingOrderService {
       }
     }
 
-    return { successCount, failedCount, errors };
+    return {
+      patchedAmount: successCount,
+      requestedAmount: moIds.length,
+      echo: {
+        failedCount,
+        errors,
+      },
+    };
   }
-
-  // --- END: CÁC HÀM MỚI ---
 }

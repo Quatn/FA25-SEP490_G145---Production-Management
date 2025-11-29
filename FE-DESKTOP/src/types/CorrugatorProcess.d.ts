@@ -1,7 +1,9 @@
 import { CorrugatorProcessStatus } from "./enums/CorrugatorProcessStatus";
 
 export interface CorrugatorProcess {
-  manufacturedAmount: number;
   status: CorrugatorProcessStatus;
+  manufacturedAmount: number;
+  actualBlankWidth: number;
+  actualRunningLength: number;
   note: string;
 }

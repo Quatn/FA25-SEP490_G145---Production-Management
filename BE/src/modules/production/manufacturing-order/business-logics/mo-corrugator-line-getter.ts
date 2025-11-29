@@ -1,4 +1,5 @@
 import check from "check-types";
+import { CorrugatorLine } from "../../schemas/manufacturing-order.schema";
 
 const specialFluteComminations = [
   "2E",
@@ -17,6 +18,7 @@ const specialCustomerArray = [
   { customer: "KANEPACKAGE", combination: "3B" },
 ];
 
+// Original recipe
 // IF(
 // OR(E5="2E",E5="3E",E5="2C",E5="3C",E5="4BE",E5="5BE",E5="4CB",E5="5CB",E5="7CBE",AND(C5="NỘI THẤT 190",E5="3B"),AND(C5="KANEPACKAGE",E5="3B"))
 // ,7
@@ -26,14 +28,16 @@ const specialCustomerArray = [
 export const getCorrugatorLine = (
   fluteCommination: string,
   customerCode: string,
-) => {
+): CorrugatorLine => {
   for (const o of specialCustomerArray) {
     if (
       check.like({ customer: customerCode, combination: fluteCommination }, o)
     ) {
-      return "7";
+      return CorrugatorLine.L7;
     }
   }
 
-  return check.in(fluteCommination, specialFluteComminations) ? "7" : "5";
+  return check.in(fluteCommination, specialFluteComminations)
+    ? CorrugatorLine.L7
+    : CorrugatorLine.L5;
 };
