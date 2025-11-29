@@ -48,8 +48,12 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
 
     const clone: any = JSON.parse(JSON.stringify(po));
 
-    // if server response exists, merge subPurchaseOrders/items into local state
-    const serverDoc = fullResp?.data ?? fullResp ?? null;
+    // ONLY use fullResp when we actually have a serverId (prevents stale merge)
+    const serverDoc =
+      serverId && (fullResp?.data ?? fullResp)
+        ? fullResp?.data ?? fullResp
+        : null;
+
     if (serverDoc) {
       clone.subPOs = (serverDoc.subPurchaseOrders || []).map((s: any) => {
         return {
@@ -80,11 +84,17 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
       clone.address =
         serverDoc.deliveryAddress ?? serverDoc.deliveryAdress ?? clone.address;
       clone.notes = serverDoc.note ?? clone.notes;
-      // handle customer populate
+      // handle customer populate (serverDoc.customer may be object or id string)
       if (serverDoc.customer && typeof serverDoc.customer !== "string") {
         clone.customerId = serverDoc.customer._id ?? serverDoc.customer;
         clone.customer =
           serverDoc.customer.name ?? serverDoc.customer.code ?? clone.customer;
+        // copy contact fields from customer object if available
+        clone.phone = serverDoc.customer.contactNumber ?? clone.phone ?? "";
+        clone.email = serverDoc.customer.email ?? clone.email ?? "";
+        // prefer customer.address if PO deliveryAddress is missing
+        clone.address =
+          clone.address || serverDoc.customer.address || clone.address || "";
       }
     } else {
       // incoming local PO might have customer populated - ensure customerId exists
@@ -97,8 +107,32 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
       }
     }
 
+    // If clone has only a customer id (string) or po.customerId exists,
+    // try to find the customer object from the customers list and copy contact fields.
+    const custIdCandidate =
+      (clone.customerId && String(clone.customerId)) ||
+      (serverDoc && serverDoc.customer && typeof serverDoc.customer === "string"
+        ? serverDoc.customer
+        : null);
+
+    if (custIdCandidate) {
+      const matched = customers.find((c) => {
+        const id = c._id?.$oid ?? c._id ?? c;
+        return String(id) === String(custIdCandidate);
+      });
+      if (matched) {
+        clone.customerId = matched._id?.$oid ?? matched._id ?? matched;
+        clone.customer = matched.name ?? matched.code ?? clone.customer;
+        // copy over phone/email/address if present on customer and not already present
+        clone.phone = matched.contactNumber ?? clone.phone ?? "";
+        clone.email = matched.email ?? clone.email ?? "";
+        // for PO deliveryAddress we prefer the PO's own deliveryAddress; otherwise use customer's address
+        clone.address = clone.address || matched.address || clone.address || "";
+      }
+    }
+
     setLocal(clone);
-  }, [po, fullResp]);
+  }, [po, serverId, fullResp, customers]);
 
   const totals = useMemo(() => {
     if (!local) return { items: 0, value: 0 };
@@ -134,6 +168,8 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
     });
   };
 
+  // When a customer is selected: populate contact info & delivery address from customer object (if present).
+  // Also make phone/email/address readonly while a customer is selected.
   const handleCustomerSelect = (customerId: string) => {
     setLocal((curr) => {
       if (!curr) return curr;
@@ -146,117 +182,15 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
       copy.customer = c
         ? c.name ?? c.code ?? String(customerId)
         : String(customerId);
+
+      // fill contact fields from the customer object if available (fields optional)
+      copy.phone = c?.contactNumber ?? copy.phone ?? "";
+      copy.email = c?.email ?? copy.email ?? "";
+      // set delivery address from customer if available
+      // (PO.deliveryAddress should prefer existing PO.address; but when selecting customer for a new PO,
+      // we put customer's address into the PO's deliveryAddress)
+      copy.address = c?.address ?? copy.address ?? "";
       return copy;
-    });
-  };
-
-  /* Sub-PO & item handlers (local edits) */
-  const handleAddSubPO = () => {
-    if (!local) return;
-    const newSub: SubPO = {
-      id: makeId("sub-"),
-      poId: local.id,
-      title: "New sub-PO",
-      status: "Open",
-      items: [],
-    };
-    updateLocal((curr) => {
-      curr.subPOs = curr.subPOs || [];
-      curr.subPOs.push(newSub);
-      return curr;
-    });
-  };
-
-  const handleRemoveSubPO = (subId: string) => {
-    if (!local) return;
-    if (!confirm("Remove this sub-PO?")) return;
-    updateLocal((curr) => {
-      curr.subPOs = (curr.subPOs || []).filter((s) => s.id !== subId);
-      return curr;
-    });
-  };
-
-  const handleChangeSubTitle = (subId: string, value: string) => {
-    if (!local) return;
-    updateLocal((curr) => {
-      (curr.subPOs || []).forEach((s) => {
-        if (s.id === subId) s.title = value;
-      });
-      return curr;
-    });
-  };
-
-  const handleChangeSubStatus = (subId: string, value: string) => {
-    if (!local) return;
-    updateLocal((curr) => {
-      (curr.subPOs || []).forEach((s) => {
-        if (s.id === subId) s.status = value;
-      });
-      return curr;
-    });
-  };
-
-  const handleAddItem = (subId: string) => {
-    if (!local) return;
-    const newItem: POItem = {
-      id: makeId("item-"),
-      subPOId: subId,
-      sku: "",
-      description: "",
-      uom: "PCS",
-      unitPrice: 0,
-      quantity: 0,
-      total: 0,
-      status: "Pending",
-    };
-    updateLocal((curr) => {
-      const s = (curr.subPOs || []).find((x) => x.id === subId);
-      if (!s) {
-        curr.subPOs = curr.subPOs || [];
-        curr.subPOs.push({
-          id: subId,
-          poId: curr.id,
-          title: "Auto",
-          status: "Open",
-          items: [newItem],
-        } as any);
-      } else {
-        s.items = s.items || [];
-        s.items.push(newItem);
-      }
-      return curr;
-    });
-  };
-
-  const handleRemoveItem = (subId: string, itemId: string) => {
-    if (!local) return;
-    if (!confirm("Remove this item?")) return;
-    updateLocal((curr) => {
-      const s = (curr.subPOs || []).find((x) => x.id === subId);
-      if (s) s.items = (s.items || []).filter((it) => it.id !== itemId);
-      return curr;
-    });
-  };
-
-  const handleChangeItemField = (
-    subId: string,
-    itemId: string,
-    field: keyof POItem,
-    value: any
-  ) => {
-    if (!local) return;
-    updateLocal((curr) => {
-      const s = (curr.subPOs || []).find((x) => x.id === subId);
-      if (s) {
-        const it = (s.items || []).find((i) => i.id === itemId);
-        if (it) {
-          (it as any)[field] = value;
-          const qty = Number(it.quantity ?? 0);
-          const price = Number(it.unitPrice ?? 0);
-          it.total = Number(qty * price);
-        }
-      }
-      return curr;
     });
   };
 
@@ -306,13 +240,16 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
     return c._id?.$oid ?? c._id ?? "";
   })();
 
+  // Make header contact fields readOnly when a customer is selected (customerId indicates selection)
+  const readOnlyWhenCustomer = Boolean((local as any).customerId);
+
   return (
     <div className="modal-backdrop" style={{ display: "block" }}>
       <div className="modal" role="dialog" style={{ display: "block" }}>
         <div className="modal-dialog modal-xl">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title">PO: {local.poNumber || "(new)"}</h5>
+              <h5 className="modal-title">Purchase Order: {local.poNumber || "mới"}</h5>
               <button className="btn-close" onClick={onClose} />
             </div>
 
@@ -322,7 +259,9 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                 <table className="table table-borderless">
                   <tbody>
                     <tr>
-                      <th style={{ width: 180 }}>Mã PO</th>
+                      <th style={{ width: 180 }}>
+                        Mã PO <span className="text-danger">*</span>
+                      </th>
                       <td>
                         <input
                           className="form-control"
@@ -330,10 +269,13 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                           onChange={(e) =>
                             onFieldChange("poNumber" as any, e.target.value)
                           }
+                          aria-required={true}
                         />
                       </td>
 
-                      <th style={{ width: 180 }}>Ngày nhập</th>
+                      <th style={{ width: 180 }}>
+                        Ngày nhập <span className="text-danger">*</span>
+                      </th>
                       <td>
                         <input
                           className="form-control"
@@ -350,12 +292,13 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                           onChange={(e) =>
                             onFieldChange("poDate" as any, e.target.value)
                           }
+                          aria-required={true}
                         />
                       </td>
                     </tr>
 
                     <tr>
-                      <th>Khách hàng</th>
+                      <th>Khách hàng <span className="text-danger">*</span></th>
                       <td>
                         <select
                           className="form-select"
@@ -382,31 +325,40 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                             className="form-control"
                             placeholder="Phone"
                             value={local.phone ?? ""}
+                            readOnly={readOnlyWhenCustomer}
                             onChange={(e) =>
+                              // only allow edits when no customer selected
                               onFieldChange("phone" as any, e.target.value)
                             }
+                            aria-required={false}
                           />
                           <input
                             className="form-control"
                             placeholder="Email"
                             value={local.email ?? ""}
+                            readOnly={readOnlyWhenCustomer}
                             onChange={(e) =>
                               onFieldChange("email" as any, e.target.value)
                             }
+                            aria-required={false}
                           />
                         </div>
                       </td>
                     </tr>
 
                     <tr>
-                      <th>Địa chỉ giao hàng</th>
+                      <th>
+                        Địa chỉ giao hàng <span className="text-danger">*</span>
+                      </th>
                       <td>
                         <input
                           className="form-control"
                           value={local.address ?? ""}
+                          readOnly={readOnlyWhenCustomer}
                           onChange={(e) =>
                             onFieldChange("address" as any, e.target.value)
                           }
+                          aria-required={true}
                         />
                       </td>
 

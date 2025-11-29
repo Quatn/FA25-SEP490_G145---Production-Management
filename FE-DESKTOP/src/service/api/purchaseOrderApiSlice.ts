@@ -61,6 +61,30 @@ export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: ["ManufacturingOrder", "PurchaseOrder"],
     }),
+    getDeletedPurchaseOrders: builder.query<any, { page?: number; limit?: number }>({
+      query: ({ page = 1, limit = 20 }) => ({
+        url: `${PURCHASE_ORDER_URL}/deleted`,
+        method: "GET",
+        params: { page, limit },
+        credentials: "include",
+      }),
+      providesTags: (result) =>
+        result
+          ? [
+            ...((result.data || result) as any[]).map((r: any) => ({ type: "PurchaseOrder" as const, id: r._id ?? r._id?.$oid ?? r.id })),
+            { type: "PurchaseOrder" as const, id: "DELETED_LIST" },
+          ]
+          : [{ type: "PurchaseOrder" as const, id: "DELETED_LIST" }],
+    }),
+
+    restorePurchaseOrder: builder.mutation<any, string>({
+      query: (id) => ({
+        url: `${PURCHASE_ORDER_URL}/restore/${id}`,
+        method: "PATCH",
+        credentials: "include",
+      }),
+      invalidatesTags: [{ type: "PurchaseOrder", id: "DELETED_LIST" }, { type: "PurchaseOrder", id: "LIST" }],
+    }),
   }),
 });
 
@@ -72,4 +96,6 @@ export const {
   useUpdatePurchaseOrderMutation,
   useDeletePurchaseOrderMutation,
   useQueryOrdersWithUnmanufacturedItemsQuery,
+  useGetDeletedPurchaseOrdersQuery,
+  useRestorePurchaseOrderMutation,
 } = purchaseOrderApiSlice;

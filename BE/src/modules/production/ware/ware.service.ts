@@ -159,45 +159,57 @@ export class WareService {
     return { success: true };
   }
 
-  async restore(id: string) {
-    // Update deleted flags directly using collection (bypass Mongoose query hooks)
-    const oid = new Types.ObjectId(id);
-    const res = await this.wareModel.collection.updateOne({ _id: oid }, { $set: { isDeleted: false, deletedAt: null } });
-    if (res.matchedCount === 0) throw new NotFoundException("Ware not found");
-    // now fetch populated doc via normal Mongoose findById (plugin won't filter it out because isDeleted is now false)
-    const populated = await this.wareModel.findById(id)
-      .populate("fluteCombination")
-      .populate("wareManufacturingProcessType")
-      .populate("printColors")
-      .populate("finishingProcesses")
-      // .populate("manufacturingProcesses")
-      .exec();
-    return { success: true, data: populated };
-  }
-
   async removeHard(id: string) {
     const res = await this.wareModel.findByIdAndDelete(id).exec();
     if (!res) throw new NotFoundException("Ware not found");
     return { success: true };
   }
 
-  async findDeleted(page = 1, limit = 100) {
+  async findDeleted(options: { page?: number; limit?: number; search?: string } = {}) {
+    const page = Math.max(1, options.page ?? 1);
+    const limit = Math.max(1, Math.min(500, options.limit ?? 20));
     const skip = (page - 1) * limit;
-    const cursor = this.wareModel.collection.find({ isDeleted: true }).sort({ deletedAt: -1 }).skip(skip).limit(limit);
-    const docs = await cursor.toArray();
-    const total = await this.wareModel.collection.countDocuments({ isDeleted: true });
 
-    // populate referenced fields on plain objects
-    const populated = await this.wareModel.populate(docs, [
+    const filter: any = { isDeleted: true };
+    if (options.search && String(options.search).trim() !== "") {
+      const regex = new RegExp(String(options.search).trim(), "i");
+      filter.$or = [{ code: regex }]; // extendable
+    }
+
+    // use raw collection cursor to bypass mongoose plugin filters
+    const [rawDocs, totalCount] = await Promise.all([
+      this.wareModel.collection.find(filter).skip(skip).limit(limit).toArray(),
+      this.wareModel.collection.countDocuments(filter),
+    ]);
+
+    // populate references on the raw documents
+    const populatedDocs = await this.wareModel.populate(rawDocs, [
       { path: "fluteCombination" },
       { path: "wareManufacturingProcessType" },
       { path: "printColors" },
       { path: "finishingProcesses" },
-      // { path: "manufacturingProcesses" },
+      // add manufacturingProcesses if needed
     ]);
 
-    const totalPages = Math.ceil((total || 0) / limit);
-    return { data: populated, page, limit, totalItems: total, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 };
+    const totalPages = Math.max(1, Math.ceil((totalCount || 0) / limit));
+    return {
+      data: populatedDocs,
+      page,
+      limit,
+      totalItems: totalCount,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
   }
+
+  async restore(id: string) {
+    const doc = await this.wareModel.findById(id).exec();
+    if (!doc) throw new NotFoundException("Ware not found");
+    // assuming soft-delete plugin exposes restore()
+    await (doc as any).restore();
+    return { success: true };
+  }
+
 }
 

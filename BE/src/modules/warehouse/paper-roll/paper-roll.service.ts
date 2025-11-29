@@ -38,6 +38,25 @@ export class PaperRollService {
     pipeline.push({ $unwind: { path: '$paperType', preserveNullAndEmptyArrays: true } });
 
     pipeline.push({
+      $addFields: {
+        'paperType.widthStr': {
+          $cond: [
+            { $ifNull: ['$paperType.width', false] },
+            { $toString: '$paperType.width' },
+            null,
+          ],
+        },
+        'paperType.grammageStr': {
+          $cond: [
+            { $ifNull: ['$paperType.grammage', false] },
+            { $toString: '$paperType.grammage' },
+            null,
+          ],
+        },
+      },
+    });
+
+    pipeline.push({
       $lookup: {
         from: 'papersuppliers',
         localField: 'paperSupplierId',
@@ -52,9 +71,10 @@ export class PaperRollService {
       pipeline.push({
         $match: {
           $or: [
-            { 'paperType.width': { $regex: regex } },
-            { 'paperType.grammage': { $regex: regex } },
+            { 'paperType.widthStr': { $regex: regex } },
+            { 'paperType.grammageStr': { $regex: regex } },
             { 'paperSupplier.name': regex },
+            { 'paperSupplier.code': regex },
             { note: regex },
           ],
         },

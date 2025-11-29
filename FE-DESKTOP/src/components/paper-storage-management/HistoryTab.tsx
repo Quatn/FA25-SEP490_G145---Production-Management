@@ -40,15 +40,47 @@ const getColorIdFromPaperType = (pt: any) => {
 };
 
 export const HistoryTab: React.FC = () => {
+  // pagination for transactions
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10);
+  const [search, setSearch] = useState<string>(""); // optional
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
   // fetch transactions (paginated)
   const {
     data: txResp,
     isLoading: txLoading,
     error: txError,
-  } = useGetTransactionsQuery({ page: 1, limit: 1000 });
-  const transactions: any[] = txResp?.data?.data ?? [];
+  } = useGetTransactionsQuery({ page, limit, search: debouncedSearch });
 
-  // fetch paper rolls (paginated)
+  // defensive extraction of transactions array and totalCount
+  const transactions: any[] =
+    txResp?.data?.data ?? txResp?.data ?? txResp ?? [];
+
+  const totalCount =
+    Number(
+      txResp?.data?.totalItems ??
+        txResp?.data?.total ??
+        txResp?.total ??
+        txResp?.data?.meta?.total ??
+        txResp?.data?.meta?.count ??
+        0
+    ) || 0;
+  const totalPages =
+    totalCount > 0 ? Math.max(1, Math.ceil(totalCount / limit)) : 1;
+
+  const goToPage = (p: number) => {
+    if (p < 1) p = 1;
+    if (totalCount > 0 && p > totalPages) p = totalPages;
+    setPage(p);
+  };
+
+  // fetch paper rolls (we keep this large-ish so we can compute roll display id; you can optimize later)
   const {
     data: rollsResp,
     isLoading: rollsLoading,
@@ -56,7 +88,7 @@ export const HistoryTab: React.FC = () => {
   } = useGetPaperRollsQuery({ page: 1, limit: 1000 });
   const rollsRaw: any[] = rollsResp?.data?.data ?? [];
 
-  // fetch reference lists so we can compute human-friendly paperRollId
+  // reference lists
   const { data: colorsResp } = useGetAllPaperColorsQuery();
   const allColors: any[] = colorsResp?.data ?? colorsResp ?? [];
 
@@ -159,7 +191,6 @@ export const HistoryTab: React.FC = () => {
       const dbId = docIdAsString(r) ?? getIdFromDoc(r) ?? r.paperRollId;
       return {
         paperRollDbId: dbId,
-        // computed display id:
         paperRollId: computePaperRollId(r),
         sequenceNumber: r.sequenceNumber,
         paperSupplier: r.paperSupplier,
@@ -175,7 +206,7 @@ export const HistoryTab: React.FC = () => {
 
   const [selectedDate, setSelectedDate] = useState<string>("");
 
-  // compute available dates from transactions
+  // compute available dates from *current page* transactions
   const dates = useMemo(() => {
     const s = Array.from(
       new Set(
@@ -213,13 +244,25 @@ export const HistoryTab: React.FC = () => {
         <div style={{ flex: 1 }}>
           <h5>Lịch sử giao dịch</h5>
         </div>
+
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {/* <input
+            className="form-control"
+            placeholder="Search (optional)"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            style={{ minWidth: 200 }}
+          /> */}
           <label className="small text-muted">Chọn ngày</label>
           <select
             className="form-select"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
           >
+            <option value="">-- chọn ngày --</option>
             {dates.map((d) => (
               <option key={d} value={d}>
                 {d}
@@ -231,6 +274,7 @@ export const HistoryTab: React.FC = () => {
             className="form-control"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
+            style={{ maxWidth: 180 }}
           />
         </div>
       </div>
@@ -240,45 +284,119 @@ export const HistoryTab: React.FC = () => {
       ) : txError ? (
         <div className="text-danger">Lỗi khi tải lịch sử</div>
       ) : (
-        <table className="table table-hover">
-          <thead>
-            <tr>
-              <th>Thời gian</th>
-              <th>Mã cuộn</th>
-              <th>Thao tác</th>
-              <th style={{ textAlign: "right" }}>Trọng lượng trước</th>
-              <th style={{ textAlign: "right" }}>Trọng lượng sau</th>
-              <th>Người thực hiện</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entriesForDate.length === 0 ? (
+        <>
+          <table className="table table-hover">
+            <thead>
               <tr>
-                <td colSpan={6} className="text-muted">
-                  Không có lịch sử
-                </td>
+                <th>Thời gian</th>
+                <th>Mã cuộn</th>
+                <th>Thao tác</th>
+                <th style={{ textAlign: "right" }}>Tồn đầu</th>
+                <th style={{ textAlign: "right" }}>Tồn cuối</th>
+                <th>Người thực hiện</th>
               </tr>
-            ) : (
-              entriesForDate.map((tx: any) => (
-                <tr
-                  key={tx.id ?? tx._id ?? `${tx.paperRollId}-${tx.timeStamp}`}
-                >
-                  <td>{String(tx.timeStamp ?? "").slice(11, 19)}</td>
-                  <td>
-                    {findRollName(tx.paperRollDbId)}{" "}
-                    {findRollName(tx.paperRollId)}
-                  </td>
-                  <td>{tx.transactionType}</td>
-                  <td style={{ textAlign: "right" }}>{tx.initialWeight}</td>
-                  <td style={{ textAlign: "right" }}>{tx.finalWeight}</td>
-                  <td>
-                    {tx.inCharge ?? tx.employeeName ?? tx.employee?.name ?? ""}
+            </thead>
+            <tbody>
+              {entriesForDate.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-muted">
+                    Không có lịch sử
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                entriesForDate.map((tx: any) => (
+                  <tr
+                    key={tx.id ?? tx._id ?? `${tx.paperRollId}-${tx.timeStamp}`}
+                  >
+                    <td>{String(tx.timeStamp ?? "").slice(11, 19)}</td>
+                    <td>
+                      {findRollName(tx.paperRollDbId)}{" "}
+                      {findRollName(tx.paperRollId)}
+                    </td>
+                    <td>{tx.transactionType}</td>
+                    <td style={{ textAlign: "right" }}>{tx.initialWeight}</td>
+                    <td style={{ textAlign: "right" }}>{tx.finalWeight}</td>
+                    <td>
+                      {tx.inCharge ??
+                        tx.employeeName ??
+                        tx.employee?.name ??
+                        ""}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+
+          {/* Pagination controls for transactions */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: 8,
+              gap: 12,
+            }}
+          >
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <button
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => goToPage(page - 1)}
+                disabled={page <= 1}
+              >
+                Trước
+              </button>
+              <button
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => goToPage(page + 1)}
+                disabled={totalCount > 0 ? page >= totalPages : false}
+              >
+                Sau
+              </button>
+
+              <div style={{ marginLeft: 8 }}>
+                Trang {page} {totalCount > 0 && `trong ${totalPages}`}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <span className="text-muted">Đi đến</span>
+                <input
+                  type="number"
+                  value={page}
+                  min={1}
+                  max={totalPages}
+                  onChange={(e) => {
+                    const v = Number(e.target.value || 1);
+                    if (!Number.isFinite(v)) return;
+                    goToPage(Math.max(1, Math.floor(v)));
+                  }}
+                  style={{ width: 72 }}
+                  className="form-control form-control-sm"
+                />
+              </div>
+
+              <div style={{ marginLeft: 12 }}>
+                <select
+                  className="form-control form-control-sm"
+                  value={limit}
+                  onChange={(e) => {
+                    const v = Number(e.target.value || 10);
+                    if (!Number.isFinite(v) || v <= 0) return;
+                    setLimit(v);
+                    setPage(1);
+                  }}
+                >
+                  <option value={5}>5 / trang</option>
+                  <option value={10}>10 / trang</option>
+                  <option value={20}>20 / trang</option>
+                  <option value={50}>50 / trang</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

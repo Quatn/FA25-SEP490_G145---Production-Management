@@ -5,7 +5,7 @@ import PurchaseOrderList from "@/components/purchase-order-management/PurchaseOr
 export default function Page() {
   return (
     <div style={{ padding: 20 }}>
-      <h2>Purchase Order Management</h2>
+      <h2>Quản lý Purchase Order</h2>
       <PurchaseOrderList />
     </div>
   );

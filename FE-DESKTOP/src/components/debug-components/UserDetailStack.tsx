@@ -1,21 +1,21 @@
 "use client";
 
 import { useAppSelector } from "@/service/hooks";
-import { UserProfile } from "@/types/UserProfile";
+import { UserState } from "@/types/UserState";
 import { Stack, Text } from "@chakra-ui/react";
 import check from "check-types";
 
 export default function UserDetailsStack() {
-  const userState: UserProfile = useAppSelector((state) =>
+  const userState: UserState | null = useAppSelector((state) =>
     state.auth.userState
   );
 
   return (
     <Stack w="100%" h="100%" alignItems="start">
-      {check.nonEmptyObject(userState)
+      {!check.null(userState)
         ? (
           <>
-            {(Object.keys(userState) as (keyof UserProfile)[]).map((key) => (
+            {(Object.keys(userState) as (keyof UserState)[]).map((key) => (
               <Text key={String(key)}>
                 {key}: {String(userState[key])}
               </Text>

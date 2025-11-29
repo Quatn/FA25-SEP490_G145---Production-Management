@@ -1,35 +1,46 @@
 "use client";
 
 import { useAppSelector } from "@/service/hooks";
-import { UserProfile } from "@/types/UserProfile";
+import { UserState } from "@/types/UserState";
 import check from "check-types";
 
 export default function AuthenticatedContent(
-  { children, unauthenticatedContent }: {
+  { children, loading, unauthenticatedContent, throwErrorAction }: {
     children?: React.ReactNode;
+    loading?: React.ReactNode;
     unauthenticatedContent?: React.ReactNode;
+    throwErrorAction?: () => Error,
   },
 ) {
-  const userState: UserProfile = useAppSelector((state) =>
+  const hydrating: boolean = useAppSelector((state) =>
+    state.auth.hydrating
+  );
+  const userState: UserState | null = useAppSelector((state) =>
     state.auth.userState
   );
 
-  if (check.nonEmptyObject(userState)) {
-    return (
-      <div>
-        {children}
-      </div>
-    );
-  } else if (unauthenticatedContent) {
-    return (
-      <div>
-        {unauthenticatedContent}
-      </div>
-    );
+  if (hydrating) {
+    if (loading) {
+      return loading
+    }
+    return <div />
   }
 
-  return (
-    <div>
-    </div>
-  );
+  if (check.null(userState)) {
+    if (unauthenticatedContent) {
+      if (throwErrorAction) {
+        throw throwErrorAction()
+      }
+      return (
+        <div>
+          {unauthenticatedContent}
+        </div>
+      );
+    }
+    return (
+      <div />
+    )
+  }
+
+  return children;
 }

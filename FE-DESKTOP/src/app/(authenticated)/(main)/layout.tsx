@@ -1,7 +1,7 @@
 "use client";
 
+import Header from "@/components/layout/Header";
 import "./main.css";
-import Header from "@/components/Header";
 import { Node, Sidebar } from "@/components/layout/Sidebar";
 import {
   createTreeCollection,
@@ -38,9 +38,21 @@ const initialCollection = createTreeCollection<Node>({
             children: [],
           },
           {
-            id: "purchase-order-create",
-            name: "Purchase Order Create",
-            href: "/purchase-order/create",
+            id: "purchase-order-restore",
+            name: "Restore Purchase Order",
+            href: "/purchase-order/restore-po",
+            children: [],
+          },
+          {
+            id: "sub-purchase-order-restore",
+            name: "Restore Sub PO (Product)",
+            href: "/purchase-order/restore-subpo",
+            children: [],
+          },
+          {
+            id: "purchase-order-item-restore",
+            name: "Restore PO Item",
+            href: "/purchase-order/restore-item",
             children: [],
           },
         ],
@@ -130,8 +142,26 @@ const initialCollection = createTreeCollection<Node>({
         children: [
           {
             id: "paper-roll",
-            name: "Paper Roll",
+            name: "Paper List",
             href: "/paper-list",
+            children: [],
+          },
+          {
+            id: "paper-audit",
+            name: "Paper Storage Audit",
+            href: "/paper-list/audit-paper",
+            children: [],
+          },
+          {
+            id: "paper-restore",
+            name: "Restore Paper Roll",
+            href: "/paper-list/restore-paper",
+            children: [],
+          },
+          {
+            id: "paper-daily-report",
+            name: "Paper Daily Usage Report",
+            href: "/paper-list/daily-report",
             children: [],
           },
         ],
@@ -230,6 +260,12 @@ const initialCollection = createTreeCollection<Node>({
             href: "/ware",
             children: [],
           },
+          {
+            id: "ware-restore",
+            name: "Restore Ware",
+            href: "/ware/restore-ware",
+            children: [],
+          },
         ],
       },
     ],
@@ -266,13 +302,16 @@ export default function MainLayout({
         flexGrow={1}
       >
         <GridItem colSpan={{ base: 1, sm: 2, md: 1 }} overflowY={"auto"}>
-          <Sidebar.Root>
+          <Sidebar.Root
+            colorPalette="blue"
+            bg="colorPalette.subtle"
+          >
             <Sidebar.Header>
               <Input
                 size="sm"
                 placeholder="Search page"
                 onChange={(e) => search(e.target.value)}
-                backgroundColor={"white"}
+                backgroundColor={"bg"}
               />
             </Sidebar.Header>
 
