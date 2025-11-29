@@ -29,9 +29,11 @@ export class FinishedGoodTransaction extends BaseSchema {
     finalQuantity: number;
 
     @Prop({ required: false })
-    note: string;
+    note?: string;
 
-    createdAt: string;
+    @Prop({ required: true })
+    transactionDate: Date;
+
 }
 
 export type FinishedGoodTransactionDocument = HydratedDocument<FinishedGoodTransaction>;

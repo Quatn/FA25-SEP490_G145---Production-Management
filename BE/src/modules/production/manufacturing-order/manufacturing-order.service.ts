@@ -67,7 +67,27 @@ export class ManufacturingOrderService {
   ) { }
 
   async findAll() {
-    return await this.manufacturingOrderModel.find();
+    const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
+    const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
+    const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
+    const customerPath = PurchaseOrderSchema.path("customer");
+
+    const populate = {
+      path: poiPath.path,
+      populate: [
+        {
+          path: subpoPath.path,
+          populate: [
+            {
+              path: poPath.path,
+              populate: { path: customerPath.path },
+            },
+          ],
+        },
+      ],
+    };
+
+    return await this.manufacturingOrderModel.find().populate(populate);
   }
 
   /**

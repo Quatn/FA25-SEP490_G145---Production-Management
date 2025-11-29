@@ -22,6 +22,85 @@ export class FinishedGoodService {
   async findPaginated(page = 1, limit = 10, search?: string) {
     const skip = (page - 1) * limit;
 
+    let matchFilter: any = {};
+
+    if (search?.trim()) {
+      const keywords = search.trim().split(/\s+/);
+
+      const regexConditions = keywords.map((word) => {
+        const regex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+        return {
+          $or: [
+            { 'mo.code': regex },
+            { 'ware.code': regex },
+            { 'po.code': regex },
+            { 'customer.name': regex },
+            { 'customer.code': regex },
+            { 'fluteCombination.code': regex },
+            { 'deliveryDateFormatted': regex },
+          ],
+        };
+      });
+
+      const matchingIds = await this.model.aggregate([
+        // --- A. Standard Joins (MO, POI, Ware) ---
+        {
+          $lookup: { from: 'manufacturingorders', localField: 'manufacturingOrder', foreignField: '_id', as: 'mo' },
+        },
+        { $unwind: { path: '$mo', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: { from: 'purchaseorderitems', localField: 'mo.purchaseOrderItem', foreignField: '_id', as: 'poi' },
+        },
+        { $unwind: { path: '$poi', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: { from: 'wares', localField: 'poi.ware', foreignField: '_id', as: 'ware' },
+        },
+        { $unwind: { path: '$ware', preserveNullAndEmptyArrays: true } },
+
+        // --- B. Flute Join ---
+        {
+          $lookup: { from: 'flutecombinations', localField: 'ware.fluteCombination', foreignField: '_id', as: 'fluteCombination' },
+        },
+        { $unwind: { path: '$fluteCombination', preserveNullAndEmptyArrays: true } },
+
+        // --- C. Deep Joins (SubPO -> PO -> Customer) ---
+        {
+          $lookup: { from: 'subpurchaseorders', localField: 'poi.subPurchaseOrder', foreignField: '_id', as: 'subpo' },
+        },
+        { $unwind: { path: '$subpo', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: { from: 'purchaseorders', localField: 'subpo.purchaseOrder', foreignField: '_id', as: 'po' },
+        },
+        { $unwind: { path: '$po', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: { from: 'customers', localField: 'po.customer', foreignField: '_id', as: 'customer' },
+        },
+        { $unwind: { path: '$customer', preserveNullAndEmptyArrays: true } },
+
+        {
+          $addFields: {
+            deliveryDateFormatted: {
+              $dateToString: { format: "%d/%m/%Y", date: "$subpo.deliveryDate", onNull: "" }
+            }
+          }
+        },
+
+        // Every keyword must find a home in at least one field
+        {
+          $match: {
+            $and: regexConditions
+          },
+        },
+
+        // --- F. Return IDs ---
+        { $project: { _id: 1 } },
+      ]);
+
+      const ids = matchingIds.map((doc) => doc._id);
+      matchFilter = ids.length > 0 ? { _id: { $in: ids } } : { _id: { $in: [] } };
+    }
+
     const moPath = FinishedGoodSchema.path("manufacturingOrder");
     const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
     const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
@@ -38,46 +117,26 @@ export class FinishedGoodService {
           populate: [
             {
               path: warePath.path,
-              populate:
-              {
-                path: fluteCombinationPath.path,
-                // select: 'code',
-              },
-              // select: 'code wareWidth wareLength wareHeight',
+              populate: { path: fluteCombinationPath.path },
             },
             {
               path: subpoPath.path,
               populate: [
                 {
                   path: poPath.path,
-                  populate: {
-                    path: customerPath.path,
-                    // select: 'code name address email contactNumber',
-                  },
-                  // select: 'code',
+                  populate: { path: customerPath.path },
                 },
               ],
-              // select: 'deliveryDate',
             },
           ],
-          // select: 'amount',
-        }
+        },
       ],
-      // select: 'code',
-    }
-
-    const regex = new RegExp(search?.trim() ?? "", 'i');
-    const filter = search?.trim() ? {
-      $or: [
-        { note: regex },
-        { 'manufacturingOrder.code': regex },
-      ],
-    } : {};
+    };
 
     const [totalItems, data] = await Promise.all([
-      this.model.countDocuments(filter),
+      this.model.countDocuments(matchFilter),
       this.model
-        .find(filter)
+        .find(matchFilter)
         .skip(skip)
         .limit(limit)
         .populate(populate)

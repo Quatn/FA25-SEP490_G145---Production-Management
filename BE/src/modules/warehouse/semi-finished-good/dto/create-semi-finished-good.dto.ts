@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty} from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsMongoId, IsNumber } from 'class-validator';
 
 export class CreateSemiFinishedGoodDto {
@@ -9,17 +9,25 @@ export class CreateSemiFinishedGoodDto {
     })
     @IsNotEmpty()
     @IsMongoId()
-    manufacturingOrderId: string;
+    manufacturingOrder: string;
 
     @ApiProperty({
-        description: 'Current quantity of the semi-finished good',
+        description: 'Imported quantity of the semi - finished good',
         type: Number,
         example: 0,
         default: 0,
     })
     @IsOptional()
     @IsNumber()
-    currentQuantity?: number = 0;
+    importedQuantity?: number = 0;
+
+    @ApiProperty({
+        description: 'Optional export to for the semi-finished good',
+        type: String,
+        example: 'GHIM DAN',
+    })
+    @IsOptional()
+    exportedTo?: string;
 
     @ApiProperty({
         description: 'Optional note for the semi-finished good',
@@ -28,4 +36,6 @@ export class CreateSemiFinishedGoodDto {
     })
     @IsOptional()
     note?: string;
+
+
 }

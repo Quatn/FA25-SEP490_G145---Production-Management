@@ -1,61 +1,72 @@
 import React, { useEffect, useState } from "react";
-import { Button, IconButton, Pagination, ButtonGroup, Spinner, Table, Text } from "@chakra-ui/react";
-import { FinishedGoodTransaction } from "@/types/FinishedGoodTransaction";
+import { Button, IconButton, Pagination, ButtonGroup, Spinner, Table, Text, useCollapsible, Flex, Icon, InputGroup, Input } from "@chakra-ui/react";
+import { FinishedGoodTransactionHistory, FinishedGoodTransaction } from "@/types/FinishedGoodTransaction";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import { useGetFinishedGoodTransactionsQuery } from "@/service/api/finishedGoodTransactionApiSlice";
+import { LuChevronDown, LuChevronRight } from "react-icons/lu";
+import { FinishedTransactionHistoryFilter } from "./FinishedTransactionHistoryFilter";
+import { FinishedTransactionHistoryTable } from "./FinishedTransactionHistoryTable";
 
 interface Props {
     id: string | undefined;
-    transactionType?: string;
+    poiAmount: number;
 }
 
-const FinishedTransactionHistory: React.FC<Props> = ({ id, transactionType }) => {
+const FinishedTransactionHistory: React.FC<Props> = ({ id, poiAmount }) => {
     const [page, setPage] = useState(1);
     const limit = 10;
-    const { data, error, isLoading } = useGetFinishedGoodTransactionsQuery({ page, limit, finishedGood: id ?? '', search: '', transactionType: transactionType ?? '' });
-    const items: FinishedGoodTransaction[] = (data as any)?.data?.data ?? [];
+    const [startDate, setStartDate] = useState('');
+    const [transactionType, setTransactionType] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [search, setSearch] = useState('');
+    const [sort, setSort] = useState('ASC');
+    const { data, error, isLoading } = useGetFinishedGoodTransactionsQuery(
+        {
+            page,
+            limit,
+            finishedGood: id ?? '',
+            search: search == '' ? undefined : search,
+            transactionType: transactionType == '' ? undefined : transactionType,
+            startDate: startDate == '' ? undefined : startDate,
+            endDate: endDate == '' ? undefined : endDate,
+            sort,
+        });
+    const items: FinishedGoodTransactionHistory[] = (data as any)?.data?.data ?? [];
     const totalPages = (data as any)?.data?.totalPages ?? 1;
-
+    const collapsible = useCollapsible({ defaultOpen: false });
     if (isLoading) return <Spinner />;
     if (error) return <Text>Không thể tải lịch sử.</Text>;
 
     return (
         <>
-            <Table.ScrollArea borderWidth="1px" rounded="md" mt={4}>
-                <Table.Root>
-                    <Table.Header>
-                        <Table.Row>
-                            <Table.ColumnHeader fontSize={"lg"}>Thời gian</Table.ColumnHeader>
-                            <Table.ColumnHeader fontSize={"lg"}>Loại</Table.ColumnHeader>
-                            <Table.ColumnHeader fontSize={"lg"}>Số lượng</Table.ColumnHeader>
-                            <Table.ColumnHeader fontSize={"lg"}>Tồn đầu</Table.ColumnHeader>
-                            <Table.ColumnHeader fontSize={"lg"}>Tồn cuối</Table.ColumnHeader>
-                            <Table.ColumnHeader fontSize={"lg"}>Người phụ trách</Table.ColumnHeader>
-                            <Table.ColumnHeader fontSize={"lg"}>Ghi chú</Table.ColumnHeader>
-                        </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
-                        {items.map((it) => (
-                            <Table.Row key={it._id}>
-                                <Table.Cell fontSize={"lg"}>{new Date(it.createdAt ?? '').toLocaleString("vi-VN", {
-                                    year: "numeric",
-                                    month: "2-digit",
-                                    day: "2-digit",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    second: "2-digit",
-                                })}</Table.Cell>
-                                <Table.Cell fontSize={"lg"}>{it.transactionType === 'IMPORT' ? 'Nhập' : 'Xuất'}</Table.Cell>
-                                <Table.Cell fontSize={"lg"}>{Math.abs(it.finalQuantity - it.initialQuantity)}</Table.Cell>
-                                <Table.Cell fontSize={"lg"}>{it.initialQuantity}</Table.Cell>
-                                <Table.Cell fontSize={"lg"}>{it.finalQuantity}</Table.Cell>
-                                <Table.Cell fontSize={"lg"}>{it.employee?.name}</Table.Cell>
-                                <Table.Cell fontSize={"lg"}>{it.note}</Table.Cell>
-                            </Table.Row>
-                        ))}
-                    </Table.Body>
-                </Table.Root>
-            </Table.ScrollArea>
+            <Flex direction="column" gap={4}>
+                <Flex direction="row" justifyContent={"space-between"}>
+                    <Button
+                        size="lg"
+                        variant="subtle"
+                        onClick={() => collapsible.setOpen(!collapsible.open)}
+                    >
+                        {collapsible.open ? "Ẩn" : "Hiện"} lọc lịch sử
+                        <Icon>{collapsible.open ? <LuChevronRight /> : <LuChevronDown />}</Icon>
+                    </Button>
+                    <InputGroup w={"full"} maxW={"sm"}>
+                        <Input
+                            size="lg"
+                            placeholder="Tìm kiếm mã người phụ trách"
+                            value={search}
+                            onChange={(e) => { setPage(1); setSearch(e.target.value); }} />
+                    </InputGroup>
+                </Flex>
+
+                <FinishedTransactionHistoryFilter
+                    collapsible={collapsible}
+                    setStartDate={setStartDate}
+                    setEndDate={setEndDate}
+                    setSort={setSort}
+                    setTransactionType={setTransactionType} />
+            </Flex>
+
+            <FinishedTransactionHistoryTable items={items} poiAmount={poiAmount} />
 
             <Pagination.Root count={totalPages * limit} pageSize={limit} page={page} onPageChange={(e) => setPage(e.page)}>
                 <ButtonGroup variant="ghost" size="sm" mt={4} justifyContent="center">

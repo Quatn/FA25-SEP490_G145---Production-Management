@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { Box, Flex, Input, Button, Spinner, Field } from "@chakra-ui/react";
-import { FaFileExcel } from "react-icons/fa";
+import { Box, Flex, Input, Spinner, Field, Tabs } from "@chakra-ui/react";
 import { useGetFGDailyReportQuery } from "@/service/api/finishedGoodTransactionApiSlice";
 import FinishedDailyReportTable from "./FinishedDailyReportTable";
-import exportDailyReportToExcel from "./FinishedExportExcelButton";
+
 
 const FinishedDailyReport: React.FC = () => {
     const today = new Date();
     const localDate = today.toISOString().slice(0, 10);
+
+    const [value, setValue] = useState<string>("IMPORT")
 
     const [startDate, setStartDate] = useState<string>(localDate);
     const [endDate, setEndDate] = useState<string>(localDate);
@@ -34,8 +35,7 @@ const FinishedDailyReport: React.FC = () => {
 
     return (
         <Box p={4}>
-            {/* Filters + Export */}
-            <Flex mb={4} gap={4} align="end">
+            <Flex mb={4} gap={4} direction={'row'}>
                 <Field.Root>
                     <Field.Label>Từ Ngày</Field.Label>
                     <Input
@@ -56,33 +56,43 @@ const FinishedDailyReport: React.FC = () => {
                         width="200px"
                     />
                 </Field.Root>
-                <Field.Root alignItems="end">
-                    <Field.Label>Báo Cáo Excel</Field.Label>
-                    <Button
-                        colorScheme="green"
-                        onClick={() =>
-                            exportDailyReportToExcel(importReport?.dailySummary ?? [], startDate)
-                        }
-                    >
-                        <FaFileExcel /> Xuất báo cáo
-                    </Button>
-                </Field.Root>
             </Flex>
 
-            {importReport && (
-                <FinishedDailyReportTable
-                    title="Báo cáo chi tiết nhập theo ngày"
-                    dailySummary={importReport.dailySummary}
-                />
-            )}
+            <Tabs.Root
+                defaultValue={value}
+                variant="plain"
+                lazyMount
+                unmountOnExit
+                onValueChange={(e) => setValue(e.value)}
+            >
+                <Tabs.List bg="bg.muted" rounded="l3" p="1" background={'orange'}>
+                    <Tabs.Trigger value="IMPORT" fontSize={'md'} fontWeight={"bold"}>
+                        Nhập
+                    </Tabs.Trigger>
+                    <Tabs.Trigger value="EXPORT" fontSize={'md'} fontWeight={"bold"}>
+                        Xuất
+                    </Tabs.Trigger>
+                    <Tabs.Indicator rounded="l2" />
+                </Tabs.List>
+                <Tabs.Content value="IMPORT">
+                    {importReport && (
+                        <FinishedDailyReportTable
+                            dailySummary={importReport.dailySummary}
+                            transactionType="IMPORT"
+                        />
+                    )}
+                </Tabs.Content>
+                <Tabs.Content value="EXPORT">
+                    {exportReport && (
+                        <FinishedDailyReportTable
+                            dailySummary={exportReport.dailySummary}
+                            transactionType="EXPORT"
+                        />
+                    )}
+                </Tabs.Content>
 
+            </Tabs.Root>
 
-            {exportReport && (
-                <FinishedDailyReportTable
-                    title="Báo cáo chi tiết xuất theo ngày"
-                    dailySummary={exportReport.dailySummary}
-                />
-            )}
         </Box>
     );
 };

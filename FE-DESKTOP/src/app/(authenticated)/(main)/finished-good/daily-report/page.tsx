@@ -11,7 +11,7 @@ export default function FGDailyReportHome() {
     >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"bold"} color={"black"} fontSize={"lg"}>
-          Báo cáo ngày nhập xuất kho thành phẩm
+          Báo cáo kho thành phẩm
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>

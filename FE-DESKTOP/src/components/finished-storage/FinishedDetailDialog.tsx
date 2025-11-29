@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Button, Dialog, Portal, DataList, CloseButton, Text, Flex } from "@chakra-ui/react";
+import { Button, Dialog, Portal, DataList, CloseButton, Text, Flex, Table } from "@chakra-ui/react";
 
 import FinishedTransactionHistory from "./FinishedTransactionHistory";
 import { FinishedGood } from "@/types/FinishedGood";
+import { dayGap, formatDate } from "@/utils/dateUtils";
 
 interface Props {
     isOpen: boolean;
@@ -14,13 +15,6 @@ const FinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
     const [current, setCurrent] = useState<FinishedGood | undefined>(item);
 
     useEffect(() => { if (isOpen) setCurrent(item); }, [isOpen, item]);
-
-    function formatDate(value?: string | Date | number | null, locale = "vi-VN"): string {
-        if (value === undefined || value === null || value === "") return "";
-        const date = value instanceof Date ? value : new Date(value);
-        if (Number.isNaN(date.getTime())) return "";
-        return date.toLocaleDateString(locale);
-    }
 
     const get = (obj: any, path: string, fallback: any = "-") => {
         return path.split(".").reduce((o, k) => (o?.[k]), obj) ?? fallback;
@@ -40,12 +34,15 @@ const FinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
         return <>{transactionType == 'import' ? 'Nhập' : 'Xuất'} thiếu {Math.abs(diff)}</>;
     };
 
+
     const mo = current?.manufacturingOrder;
     const poItem = mo?.purchaseOrderItem;
 
     const amount = poItem?.amount ?? 0;
-    const importDiff = current?.importedQuantity ?? 0 - amount;
-    const exportDiff = current?.exportedQuantity ?? 0 - amount;
+    const importDiff = (current?.importedQuantity ?? 0) - amount;
+    const exportDiff = (current?.exportedQuantity ?? 0) - amount;
+
+    const daysInStock = current?.currentQuantity == 0 ? 0 : dayGap(current?.createdAt);
 
     if (!item) return null;
 
@@ -60,138 +57,145 @@ const FinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
                         </Dialog.Header>
                         <Dialog.Body>
                             <Flex direction={"row"} gap={5} justifyContent={"space-between"}>
-                                <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
-                                    <Text fontSize={"lg"} fontWeight={"bold"}>Thông tin cơ bản</Text>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Lệnh
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue fontSize={"lg"}>
-                                            {mo?.code ?? "-"}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Số đơn hàng
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue fontSize={"lg"}>
-                                            {get(poItem, "subPurchaseOrder.purchaseOrder.code")}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Khách hàng
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue fontSize={"lg"}>
-                                            {get(poItem, "subPurchaseOrder.purchaseOrder.customer.code")}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Mã hàng
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue fontSize={"lg"}>
-                                            {get(poItem, "ware.code")}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                </DataList.Root>
+                                <Table.ScrollArea
+                                    borderWidth="1px"
+                                    rounded="md"
+                                    mt={5}
+                                >
+                                    <Table.Root
+                                        size="lg"
+                                        showColumnBorder
+                                        tableLayout="auto"
+                                        w="100%"
+                                    >
+                                        <Table.Header>
+                                            <Table.Row>
+                                                <Table.ColumnHeader colSpan={4} textAlign="center">
+                                                    THÔNG TIN CƠ BẢN
+                                                </Table.ColumnHeader>
+                                                <Table.ColumnHeader colSpan={6} textAlign="center">
+                                                    THÔNG SỐ KỸ THUẬT
+                                                </Table.ColumnHeader>
+                                                <Table.ColumnHeader colSpan={3} textAlign="center">
+                                                    SẢN LƯỢNG NHẬP
+                                                </Table.ColumnHeader>
+                                                <Table.ColumnHeader colSpan={2} textAlign="center">
+                                                    SẢN LƯỢNG XUẤT
+                                                </Table.ColumnHeader>
+                                                <Table.ColumnHeader colSpan={3} textAlign="center">
+                                                    SẢN LƯỢNG TỒN
+                                                </Table.ColumnHeader>
+                                            </Table.Row>
 
-                                <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
-                                    <Text fontSize={"lg"} fontWeight={"bold"}>Thông số kỹ thuật</Text>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Số lớp
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue fontSize={"lg"}>
-                                            {get(poItem, "ware.fluteCombination.code")}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Kích thước
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue fontSize={"lg"}>
-                                            {`${get(poItem, "ware.wareLength")}x${get(poItem, "ware.wareWidth")}x${get(poItem, "ware.wareHeight")}`}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Số lượng
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue fontSize={"lg"}>
-                                            {amount}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Ngày giao
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue fontSize={"lg"}>
-                                            {formatDate(get(poItem, "subPurchaseOrder.deliveryDate", null))}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                </DataList.Root>
+                                            <Table.Row>
+                                                <Table.ColumnHeader rowSpan={2}>
+                                                    Lệnh
+                                                </Table.ColumnHeader>
 
-                                <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
-                                    <Text fontSize={"lg"} fontWeight={"bold"}>Sản lượng nhập</Text>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Tổng số lượng cần nhập
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue fontSize={"lg"}>
-                                            {amount}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Tổng số lượng đã nhập
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue fontSize={"lg"}>
-                                            {current?.importedQuantity}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Tình trạng nhập hàng
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue
-                                            fontSize={"lg"}>
-                                            {renderDiffStatus('import', current?.importedQuantity ?? 0, amount)}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                </DataList.Root>
+                                                <Table.ColumnHeader rowSpan={2}>
+                                                    Số đơn hàng
+                                                </Table.ColumnHeader>
 
-                                <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
-                                    <Text fontSize={"lg"} fontWeight={"bold"}>Sản lượng xuất</Text>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Tổng số lượng đã nhập
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue fontSize={"lg"}>
-                                            {current?.exportedQuantity}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Tồn kho
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue fontSize={"lg"}>
-                                            {current?.currentQuantity}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                    <DataList.Item pt="4" fontSize={"lg"}>
-                                        <DataList.ItemLabel>
-                                            Tình trạng xuất hàng
-                                        </DataList.ItemLabel>
-                                        <DataList.ItemValue
-                                            fontSize={"lg"}>
-                                            {renderDiffStatus('export', current?.exportedQuantity ?? 0, amount)}
-                                        </DataList.ItemValue>
-                                    </DataList.Item>
-                                </DataList.Root>
+                                                <Table.ColumnHeader rowSpan={2}>
+                                                    Khách hàng
+                                                </Table.ColumnHeader>
+
+                                                <Table.ColumnHeader rowSpan={2}>
+                                                    Mã hàng
+                                                </Table.ColumnHeader>
+
+                                                <Table.ColumnHeader rowSpan={2}>Số lớp</Table.ColumnHeader>
+                                                <Table.ColumnHeader colSpan={3} textAlign="center">
+                                                    Kích thước (mm)
+                                                </Table.ColumnHeader>
+                                                <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Số lượng</Table.ColumnHeader>
+                                                <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Ngày giao</Table.ColumnHeader>
+                                                <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tổng số lượng cần nhập</Table.ColumnHeader>
+                                                <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tổng số lượng đã nhập</Table.ColumnHeader>
+                                                <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tình trạng nhập hàng</Table.ColumnHeader>
+                                                <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tổng số lượng đã xuất</Table.ColumnHeader>
+                                                <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tình trạng xuất hàng</Table.ColumnHeader>
+                                                <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Số ngày tồn kho</Table.ColumnHeader>
+                                                <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tồn kho</Table.ColumnHeader>
+                                                <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Điều kiện</Table.ColumnHeader>
+
+                                            </Table.Row>
+                                            <Table.Row >
+                                                <Table.ColumnHeader colSpan={1}>Dài</Table.ColumnHeader>
+                                                <Table.ColumnHeader colSpan={1}>Rộng</Table.ColumnHeader>
+                                                <Table.ColumnHeader colSpan={1}> Cao</Table.ColumnHeader>
+                                            </Table.Row>
+                                        </Table.Header>
+
+                                        <Table.Body>
+                                            <Table.Row>
+                                                <Table.Cell>{mo?.code ?? "-"}</Table.Cell>
+                                                <Table.Cell>{get(poItem, "subPurchaseOrder.purchaseOrder.code")}</Table.Cell>
+                                                <Table.Cell>{get(poItem, "subPurchaseOrder.purchaseOrder.customer.code")}</Table.Cell>
+                                                <Table.Cell>{get(poItem, "ware.code")}</Table.Cell>
+                                                <Table.Cell>{get(poItem, "ware.fluteCombination.code")}</Table.Cell>
+                                                <Table.Cell>{get(poItem, "ware.wareLength")}</Table.Cell>
+                                                <Table.Cell>{get(poItem, "ware.wareWidth")}</Table.Cell>
+                                                <Table.Cell>{get(poItem, "ware.wareHeight")}</Table.Cell>
+
+                                                <Table.Cell>{amount}</Table.Cell>
+
+                                                <Table.Cell>
+                                                    {formatDate(get(poItem, "subPurchaseOrder.deliveryDate", null))}
+                                                </Table.Cell>
+
+                                                {/** San luong nhap */}
+                                                <Table.Cell>{amount}</Table.Cell>
+                                                <Table.Cell>{item.importedQuantity}</Table.Cell>
+
+                                                <Table.Cell
+                                                    backgroundColor={
+                                                        importDiff == 0
+                                                            ? "green.200"
+                                                            : importDiff > 0
+                                                                ? "yellow.200"
+                                                                : "red.200"
+                                                    }
+                                                >
+                                                    {renderDiffStatus('import', item.importedQuantity, amount)}
+                                                </Table.Cell>
+
+                                                {/** San luong xuat */}
+                                                <Table.Cell>{item.exportedQuantity}</Table.Cell>
+                                                <Table.Cell
+                                                    backgroundColor={
+                                                        exportDiff === 0
+                                                            ? "green.200"
+                                                            : exportDiff > 0
+                                                                ? "yellow.200"
+                                                                : (item.exportedQuantity == 0) ? "" : "red.200"
+                                                    }
+                                                >
+                                                    {renderDiffStatus('export', item.exportedQuantity, amount)}
+                                                </Table.Cell>
+
+                                                {/** San luong ton */}
+                                                <Table.Cell backgroundColor={daysInStock > 2 ? "red" : "white"}
+                                                    color={daysInStock > 2 ? "white" : "black"}
+                                                    fontWeight={"bold"}
+                                                    textAlign={"center"}>{daysInStock}</Table.Cell>
+                                                <Table.Cell>{item.currentQuantity}</Table.Cell>
+                                                <Table.Cell
+                                                    backgroundColor={
+                                                        item.currentStatus == 'SAVE' ? "" : "yellow"
+                                                    }
+                                                    color={item.currentStatus == 'SAVE' ? "" : "red.600"}
+                                                    fontWeight={"bold"}
+                                                >
+                                                    {item.currentStatus == 'SAVE' ? "Lưu" : "Hủy"}
+                                                </Table.Cell>
+                                            </Table.Row>
+                                        </Table.Body>
+                                    </Table.Root>
+                                </Table.ScrollArea>
                             </Flex>
                             <Text mt={10} mb={2} fontSize={"xl"} fontWeight={"bold"}>Lịch Sử Nhập Xuất</Text>
-                            <FinishedTransactionHistory id={current?._id} />
+                            <FinishedTransactionHistory id={current?._id} poiAmount={amount} />
                         </Dialog.Body>
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>

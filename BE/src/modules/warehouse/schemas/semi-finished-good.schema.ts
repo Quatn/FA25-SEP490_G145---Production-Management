@@ -8,13 +8,22 @@ import { ManufacturingOrder } from "@/modules/production/schemas/manufacturing-o
 export class SemiFinishedGood extends BaseSchema {
 
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: ManufacturingOrder.name, required: true })
-    manufacturingOrderId: mongoose.Types.ObjectId | ManufacturingOrder;
+    manufacturingOrder: mongoose.Types.ObjectId | ManufacturingOrder;
+
+    @Prop({ required: true, default: 0 })
+    importedQuantity: number;
+
+    @Prop({ required: true, default: 0 })
+    exportedQuantity: number;
 
     @Prop({ required: true, default: 0 })
     currentQuantity: number;
 
+    @Prop({required: false})
+    exportedTo?: string;
+
     @Prop({ required: false })
-    note: string;
+    note?: string;
 
 }
 

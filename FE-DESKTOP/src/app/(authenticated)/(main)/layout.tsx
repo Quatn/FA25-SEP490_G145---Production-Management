@@ -182,12 +182,6 @@ const initialCollection = createTreeCollection<Node>({
             href: "/semi-finished-good",
             children: [],
           },
-          {
-            id: "semi-finished-good-daily-report",
-            name: "Semi Finished Good Daily Report",
-            href: "/semi-finished-good/daily-report",
-            children: [],
-          },
         ],
       },
       {
