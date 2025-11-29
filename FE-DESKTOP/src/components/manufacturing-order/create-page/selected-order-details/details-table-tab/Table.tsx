@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  useManufacturingOrderCreatePageDispatch,
-  useManufacturingOrderCreatePageState,
-} from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
+import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import {
   Box,
   BoxProps,
@@ -24,10 +21,10 @@ import { useCreateManyManufacturingOrdersMutation, useDeleteManufacturingOrderMu
 import { manufacturingOrderTableColumnsByTabs } from "@/components/manufacturing-order/full-detail-table/tableDefinition.old";
 import check from "check-types";
 import { CreateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
-import { useSelectedOrdersState } from "../TabbedContainer";
 import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
 import { manufacturingOrderColumnsByTabs, ManufacturingOrderTableDataType } from "@/components/manufacturing-order/full-detail-table/tableDefinition";
+import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 
 type TableProps = {
   rootProps?: BoxProps;
@@ -61,8 +58,9 @@ const getCommonPinningStyles = (column: Column<ManufacturingOrderTableDataType>)
 export default function CreatePageManufacturingOrderTable(
   props: TableProps,
 ) {
-  const { selectedPOIsIds } = useManufacturingOrderCreatePageState();
-  const dispatch = useManufacturingOrderCreatePageDispatch();
+  const { useSelector, useDispatch } = ManufacturingOrderCreatePageReducerStore;
+  const dispatch = useDispatch();
+  const selectedPOIsIds = useSelector(s => s.selectedPOIsIds);
 
   const [tab, setTab] = useState<ManufacturingTableTabType>("all");
   const columnsForTab = manufacturingOrderTableColumnsByTabs[tab] ?? [];
@@ -78,9 +76,13 @@ export default function CreatePageManufacturingOrderTable(
   const moPaginatedList = useMemo(() => {
     if (fullDetailMOsResponse?.data) {
       const calculatedMoPaginatedList = fullDetailMOsResponse.data.map((mo) => {
+        if (check.string(mo.purchaseOrderItem)) {
+          throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
+        }
+
         const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
         const calculatedPOI = recalculatePurchaseOrderItem({
-          ...mo.purchaseOrderItem!,
+          ...mo.purchaseOrderItem,
           ware: calculatedWare
         })
 

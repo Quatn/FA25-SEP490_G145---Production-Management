@@ -1,9 +1,8 @@
 "use client";
 
 import {
+  ManufacturingOrderCreatePageReducerStore,
   ManufacturingOrderCreatePageTreeNode,
-  useManufacturingOrderCreatePageDispatch,
-  useManufacturingOrderCreatePageState,
 } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { useQueryOrdersWithUnmanufacturedItemsQuery } from "@/service/api/purchaseOrderApiSlice";
 import {
@@ -24,9 +23,11 @@ import { RiFolderOpenLine } from "react-icons/ri";
 import { useMemo } from "react";
 
 export default function PurchaseOrderItemSelector() {
-  const { groupType, page, limit, search } =
-    useManufacturingOrderCreatePageState();
-  const dispatch = useManufacturingOrderCreatePageDispatch();
+  const { useSelector, useDispatch } = ManufacturingOrderCreatePageReducerStore;
+  // const dispatch = useDispatch();
+  const page = useSelector(s => s.page);
+  const limit = useSelector(s => s.limit);
+  const search = useSelector(s => s.search);
 
   const {
     data: queryResponse,

@@ -1,14 +1,12 @@
 "use client";
 
-import {
-  useManufacturingOrderCreatePageDispatch,
-  useManufacturingOrderCreatePageState,
-} from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
+import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { Button, Group, HStack } from "@chakra-ui/react";
 
 export default function PurchaseOrderItemListGroupTypeControl() {
-  const { groupType } = useManufacturingOrderCreatePageState();
-  const dispatch = useManufacturingOrderCreatePageDispatch();
+  const { useSelector, useDispatch } = ManufacturingOrderCreatePageReducerStore;
+  const dispatch = useDispatch();
+  const groupType = useSelector(s => s.groupType);
 
   return (
     <HStack>

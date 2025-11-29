@@ -1,9 +1,8 @@
 "use client";
 
 import {
+  ManufacturingOrderTableReducerStore,
   ManufacturingTableTabType,
-  useTableDispatch,
-  useTableSelector,
 } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import {
   useDeleteManufacturingOrderMutation,
@@ -42,6 +41,8 @@ import { ManufacturingTableEditableCellInputTypes, ManufacturingTableEditableCel
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
 import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
 import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
+import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 
 export type ManufacturingOrderTableProps = {
   rootProps?: BoxProps;
@@ -160,16 +161,16 @@ const EditableCell = (props: ManufacturingTableEditableCellProps) => {
 export default function ManufacturingOrderTable(
   props: ManufacturingOrderTableProps,
 ) {
-  const page = useTableSelector(s => s.page)
-  const limit = useTableSelector(s => s.limit)
-  const tab = useTableSelector(s => s.tab)
-  const search = useTableSelector(s => s.search)
-  const hoveredRowId = useTableSelector(s => s.hoveredRowId)
-  const selectedOrderId = useTableSelector(s => s.selectedOrderId)
-  const pinnedOrderIds = useTableSelector(s => s.pinnedOrderIds)
-  const allowEdit = useTableSelector(s => s.allowEdit)
-
-  const dispatch = useTableDispatch();
+  const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
+  const dispatch = useDispatch();
+  const page = useSelector(s => s.page)
+  const limit = useSelector(s => s.limit)
+  const tab = useSelector(s => s.tab)
+  const search = useSelector(s => s.search)
+  const hoveredRowId = useSelector(s => s.hoveredRowId)
+  // const selectedOrderId = useSelector(s => s.selectedOrderId)
+  // const pinnedOrderIds = useSelector(s => s.pinnedOrderIds)
+  const allowEdit = useSelector(s => s.allowEdit)
 
   const {
     data: fullDetailMOPaginatedResponse,
@@ -185,6 +186,10 @@ export default function ManufacturingOrderTable(
   const moPaginatedList = useMemo(() => {
     if (fullDetailMOPaginatedResponse?.data) {
       const calculatedMoPaginatedList = fullDetailMOPaginatedResponse?.data?.data.map((mo) => {
+        if (check.string(mo.purchaseOrderItem)) {
+          throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
+        }
+
         const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
         const calculatedPOI = recalculatePurchaseOrderItem({
           ...mo.purchaseOrderItem!,
@@ -314,9 +319,18 @@ export default function ManufacturingOrderTable(
 
   const handleUpdateOrder = (id: string) => {
     const order = tableData.find((row) => row._id === id)
+
+    if (check.undefined(order)) {
+      throw new Error("Order somehow not found")
+    }
+
+    if (check.string(order.purchaseOrderItem)) {
+      throw new UnpopulatedFieldError("order.purchaseOrderItem should have been populated before it is sent here")
+    }
+
     if (order && order.isEdited) {
       const dto: UpdateManyManufacturingOrdersRequestDto = {
-        orders: [{ ...order, id: order._id, purchaseOrderItemId: order.purchaseOrderItem!._id }]
+        orders: [{ ...order, id: order._id, purchaseOrderItemId: order.purchaseOrderItem._id }]
       }
       updateOrders(dto)
     }
@@ -324,10 +338,10 @@ export default function ManufacturingOrderTable(
 
   const handleUpdateOrders = () => {
     const dto: UpdateManyManufacturingOrdersRequestDto = {
-      orders: tableData.filter((row) => row.isEdited).map((order) => ({
+      orders: tableData.filter(order => check.nonEmptyObject(order.purchaseOrderItem)).filter((row) => row.isEdited).map((order) => ({
         ...order,
         id: order._id,
-        purchaseOrderItemId: order.purchaseOrderItem!._id,
+        purchaseOrderItemId: (order.purchaseOrderItem as Serialized<PurchaseOrderItem>)._id,
       }))
     }
 

@@ -1,11 +1,13 @@
 import { CloseButton } from "@/components/ui/close-button";
-import { useManufacturingOrderCreatePageDispatch, useManufacturingOrderCreatePageState } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
+import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { Button, Dialog, HStack, Portal, Stack, Text } from "@chakra-ui/react";
 import check from "check-types";
 
 export default function ManufacturingOrderCreatePageConfirmSaveDialog() {
-  const { preparedSubmitFunction, selectedPOIsIds } = useManufacturingOrderCreatePageState();
-  const dispatch = useManufacturingOrderCreatePageDispatch();
+  const { useSelector, useDispatch } = ManufacturingOrderCreatePageReducerStore;
+  const dispatch = useDispatch();
+  const preparedSubmitFunction = useSelector(s => s.preparedSubmitFunction);
+  const selectedPOIsIds = useSelector(s => s.selectedPOIsIds);
 
   return (
     <Dialog.Root

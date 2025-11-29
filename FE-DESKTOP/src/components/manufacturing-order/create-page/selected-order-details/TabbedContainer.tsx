@@ -1,9 +1,5 @@
 "use client";
 
-import {
-  useManufacturingOrderCreatePageDispatch,
-  useManufacturingOrderCreatePageState,
-} from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { Button, Group, HStack, Tabs } from "@chakra-ui/react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import CreatePageManufacturingOrderTable from "./details-table-tab/Table";

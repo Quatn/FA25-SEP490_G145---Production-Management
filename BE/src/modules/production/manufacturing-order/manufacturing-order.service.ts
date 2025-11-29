@@ -49,7 +49,10 @@ import {
 // } from "../schemas/corrugator-process.schema";
 import { FindAllMoQueryDto } from "./dto/find-all-mo-query.dto";
 import { UpdateOverallStatusDto } from "./dto/update-overall-status.dto";
-import { OrderFinishingProcess } from "../schemas/order-finishing-process.schema";
+import {
+  OrderFinishingProcess,
+  OrderFinishingProcessStatus,
+} from "../schemas/order-finishing-process.schema";
 import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
 import { DeleteResult } from "@/common/dto/delete-result.dto";
 import { PatchResult } from "@/common/dto/patch-result.dto";
@@ -59,6 +62,8 @@ import { UpdateManyCorrugatorProcessesDto } from "./dto/update-many-corrugator-p
 import { UpdateCorrugatorProcessDto } from "./dto/update-corrugator-process.dto";
 import { fullDetailsFilterAggregationPipeline } from "./aggregate-pipes/full-details-filter";
 import { PipelineStage } from "mongoose";
+import { async } from "rxjs";
+import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type.schema";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -847,6 +852,7 @@ export class ManufacturingOrderService {
     return mos;
   }
 
+  // This might not work, just use createMany for everything
   async createOne(dto: CreateManufacturingOrderRequestDto) {
     const doc = new this.manufacturingOrderModel(dto);
     return await doc.save();
@@ -854,72 +860,145 @@ export class ManufacturingOrderService {
 
   async createMany(
     dtos: AssembledCreateManufacturingOrderRequestDto[],
-  ): Promise<CreateResult<{ codes: string[] }>> {
+  ): Promise<
+    CreateResult<{
+      codes: string[];
+      processesCreateResult: CreateResult<{ codes: string[] }>;
+    }>
+  > {
     const lastOrder = await this.getLastOrder()
       .then((order) => order)
       .catch(() => undefined);
     const codeGenerator = new MOCodeGenerator(lastOrder?.code);
 
-    const mos: ManufacturingOrder[] = dtos.map((poi, index) => ({
-      code: codeGenerator.getCode(index),
-      approvalStatus: ManufacturingOrderApprovalStatus.Draft,
-      purchaseOrderItem: poi.purchaseOrderItemId,
-      overallStatus: OrderStatus.NOTSTARTED,
-      processes: [],
-      corrugatorProcess: {
-        manufacturedAmount: 0,
-        status: CorrugatorProcessStatus.NOTSTARTED,
-        actualBlankWidth: 0,
-        actualRunningLength: 0,
-        note: "",
-      },
-      manufacturingDate: getManufacturingDate(
-        poi.purchaseOrderItem.subPurchaseOrder.deliveryDate,
-        poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
-      ),
-      manufacturingDateAdjustment: poi.manufacturingDateAdjustment,
-      requestedDatetime: poi.requestedDatetime,
-      corrugatorLine: getCorrugatorLine(
-        poi.purchaseOrderItem.ware.fluteCombination.code,
-        poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
-      ),
-      corrugatorLineAdjustment: poi.corrugatorLineAdjustment,
-      amount: poi.purchaseOrderItem.amount,
-      numberOfBlanks: 0,
-      longitudinalCutCount: 0,
-      runningLength: 0,
-      faceLayerPaperWeight: null,
-      EFlutePaperWeight: null,
-      EBLinerLayerPaperWeight: null,
-      BFlutePaperWeight: null,
-      BACLinerLayerPaperWeight: null,
-      ACFlutePaperWeight: null,
-      backLayerPaperWeight: null,
-      totalVolume: 0,
-      totalWeight: 0,
-      manufacturingDirective: poi.manufacturingDirective,
-      note: poi.note,
-      recalculateFlag: true,
-      isDeleted: false,
-    }));
+    const mos: (ManufacturingOrder & { _id: Types.ObjectId })[] =
+      await Promise.all(
+        dtos.map(async (poi, index) => {
+          const moId = new Types.ObjectId();
+          const code = codeGenerator.getCode(index);
+
+          /** @deprecated create ManufacturingOrderProcess (deprecated) objects for the legacy screens that uses them */
+          const processes: ManufacturingOrderProcess[] =
+            poi.purchaseOrderItem.ware.finishingProcesses.map((type, index) => {
+              return {
+                manufacturingOrder: moId,
+                processDefinition: type,
+                processNumber: index + 1,
+                status: ProcessStatus.NOTSTARTED,
+                manufacturedAmount: 0,
+                note: "",
+                isDeleted: false,
+              };
+            });
+          /** @deprecated had to turn this map into async just for this btw */
+          const processesCreateRes =
+            await this.manufacturingOrderProcessModel.create(processes);
+
+          return {
+            _id: moId,
+            code,
+            approvalStatus: ManufacturingOrderApprovalStatus.Draft,
+            purchaseOrderItem: poi.purchaseOrderItemId,
+            overallStatus: OrderStatus.NOTSTARTED,
+            processes: processesCreateRes.map((res) => res._id),
+            corrugatorProcess: {
+              manufacturedAmount: 0,
+              status: CorrugatorProcessStatus.NOTSTARTED,
+              actualBlankWidth: 0,
+              actualRunningLength: 0,
+              note: "",
+            },
+            manufacturingDate: getManufacturingDate(
+              poi.purchaseOrderItem.subPurchaseOrder.deliveryDate,
+              poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer
+                .code,
+            ),
+            manufacturingDateAdjustment: poi.manufacturingDateAdjustment,
+            requestedDatetime: poi.requestedDatetime,
+            corrugatorLine: getCorrugatorLine(
+              poi.purchaseOrderItem.ware.fluteCombination.code,
+              poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer
+                .code,
+            ),
+            corrugatorLineAdjustment: poi.corrugatorLineAdjustment,
+            amount: poi.purchaseOrderItem.amount,
+            numberOfBlanks: 0,
+            longitudinalCutCount: 0,
+            runningLength: 0,
+            faceLayerPaperWeight: null,
+            EFlutePaperWeight: null,
+            EBLinerLayerPaperWeight: null,
+            BFlutePaperWeight: null,
+            BACLinerLayerPaperWeight: null,
+            ACFlutePaperWeight: null,
+            backLayerPaperWeight: null,
+            totalVolume: 0,
+            totalWeight: 0,
+            manufacturingDirective: poi.manufacturingDirective,
+            note: poi.note,
+            recalculateFlag: true,
+            isDeleted: false,
+          };
+        }),
+      );
 
     const moCreateRes = await this.manufacturingOrderModel.create(mos);
 
-    // TODO: create finishing processes
-    // const finishingProcesses: WareFinishingProcessType[][] = moCreateRes.map((mo, index) =>
-    //   mo.processes.map((p) => ({
-    //     code: p,
-    //     process,
-    //     note: "",
-    //     isDeleted: false,
-    //   }))
-    // );
+    const finishingProcessesCreateRes = await Promise.all(
+      moCreateRes.map(async (mo) => {
+        const ware = dtos.find(
+          (dto) =>
+            dto.purchaseOrderItemId.toString() ===
+            (mo.purchaseOrderItem as Types.ObjectId).toString(),
+        )?.purchaseOrderItem.ware;
+
+        if (check.undefined(ware)) {
+          throw Error(
+            "Inconsistency error while trying to create order finishing processs for an mo",
+          );
+        }
+
+        const processes: OrderFinishingProcess[] = ware.finishingProcesses.map(
+          (type, index) => {
+            return {
+              code: `${mo.code}-${index + 1}`,
+              manufacturingOrder: mo._id,
+              wareManufacturingProcessType: type,
+              sequenceNumber: index + 1,
+              completedAmount: 0,
+              status: OrderFinishingProcessStatus.PendingApproval,
+              note: "",
+              isDeleted: false,
+            };
+          },
+        );
+
+        return await this.orderFinishingProcessModel.create(processes);
+      }),
+    );
+
+    const finishingProcessesCreatedAmount = finishingProcessesCreateRes
+      .map((res) => res.length)
+      .reduce((acc, res) => acc + res, 0);
+
+    const finishingProcessesRequestedAmount = dtos
+      .map((dto) => dto.purchaseOrderItem.ware.finishingProcesses.length)
+      .reduce((acc, res) => acc + res, 0);
 
     return {
       requestedAmount: dtos.length,
       createdAmount: moCreateRes.length,
       echo: {
         codes: moCreateRes.map((item) => item.code),
+        processesCreateResult: {
+          createdAmount: finishingProcessesCreatedAmount,
+          requestedAmount: finishingProcessesRequestedAmount,
+          echo: {
+            codes: finishingProcessesCreateRes.flatMap((res) =>
+              res.map((res2) => res2.code),
+            ),
+          },
+        },
       },
     };
   }

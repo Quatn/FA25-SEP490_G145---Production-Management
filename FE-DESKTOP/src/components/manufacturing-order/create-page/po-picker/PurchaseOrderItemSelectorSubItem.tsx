@@ -1,9 +1,8 @@
 "use client";
 
 import {
+  ManufacturingOrderCreatePageReducerStore,
   ManufacturingOrderCreatePageTreeNode,
-  useManufacturingOrderCreatePageDispatch,
-  useManufacturingOrderCreatePageState,
 } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { QueryOrdersWithUnmanufacturedItemsDto_SubPurchaseOrder } from "@/types/DTO/purchase-order/query-orders-with-unmanufactured-items";
 import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
@@ -12,9 +11,7 @@ import {
   Button,
   CheckboxCard,
   Collapsible,
-  Group,
   HStack,
-  Stack,
   Text,
 } from "@chakra-ui/react";
 import { LuChevronDown } from "react-icons/lu";
@@ -28,9 +25,10 @@ export type PurchaseOrderItemSelectorSubItemProps = {
 export default function PurchaseOrderItemSelectorSubItem(
   props: PurchaseOrderItemSelectorSubItemProps,
 ) {
-  const { groupType, checkedOrderNodes, indeterminateOrderNodes } =
-    useManufacturingOrderCreatePageState();
-  const dispatch = useManufacturingOrderCreatePageDispatch();
+  const { useSelector, useDispatch } = ManufacturingOrderCreatePageReducerStore;
+  const dispatch = useDispatch();
+  const checkedOrderNodes = useSelector(s => s.checkedOrderNodes);
+  const indeterminateOrderNodes = useSelector(s => s.indeterminateOrderNodes);
 
   const orderId = props.subpo.subPurchaseOrder._id;
   const checked = checkedOrderNodes[orderId] || false;

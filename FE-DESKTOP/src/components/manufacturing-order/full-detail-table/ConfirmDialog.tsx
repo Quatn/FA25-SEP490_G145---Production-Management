@@ -1,13 +1,14 @@
 "use client"
 
-import { useTableDispatch, useTableSelector } from "@/context/manufacturing-order/manufacturingOrderTableContext";
+import { ManufacturingOrderTableReducerStore } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { Button, CloseButton, Dialog, HStack, Portal, Stack, Text } from "@chakra-ui/react";
 import check from "check-types";
 
 export default function ManufacturingOrderFullDetailTableConfirmDialog() {
-  const preparedSubmitFunction = useTableSelector(s => s.preparedSubmitFunction);
-  const preparedSubmitAskText = useTableSelector(s => s.preparedSubmitAskText);
-  const dispatch = useTableDispatch();
+  const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
+  const dispatch = useDispatch();
+  const preparedSubmitFunction = useSelector(s => s.preparedSubmitFunction);
+  const preparedSubmitAskText = useSelector(s => s.preparedSubmitAskText);
 
   return (
     <Dialog.Root

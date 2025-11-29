@@ -1,14 +1,12 @@
 "use client";
 
-import {
-  useTableDispatch,
-  useTableSelector,
-} from "@/context/manufacturing-order/manufacturingOrderTableContext";
+import { ManufacturingOrderTableReducerStore } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { Button, Group, HStack } from "@chakra-ui/react";
 
 export default function ManufacturingOrderPaginationControl() {
-  const paginationType = useTableSelector(s => s.paginationType);
-  const dispatch = useTableDispatch();
+  const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
+  const dispatch = useDispatch();
+  const paginationType = useSelector(s => s.paginationType);
 
   return (
     <HStack>

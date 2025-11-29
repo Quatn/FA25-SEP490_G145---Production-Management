@@ -12,8 +12,9 @@ import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { Ware } from "@/types/Ware";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
-import { useManufacturingOrderCreatePageState } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
+import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
+import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 
 export type MaterialRequirementTableProps = {
   rootProps?: BoxProps;
@@ -30,10 +31,13 @@ function accumulateMaterialRequirements(
 
   const requirementMap: Map<string, number> = new Map();
 
-  const poi = items.map(mo => mo.purchaseOrderItem)
-  const ware = items.map(mo => mo.purchaseOrderItem?.ware)
+  const pois = items
+    .filter(mo => check.nonEmptyObject(mo.purchaseOrderItem))
+    .filter(poi => check.nonEmptyObject((poi.purchaseOrderItem as Serialized<PurchaseOrderItem>).ware))
+    .map(mo => mo.purchaseOrderItem as Serialized<PurchaseOrderItem>)
+  const wares = pois.map(poi => poi.ware)
 
-  if (check.undefined(poi) || check.undefined(ware)) return []
+  if (check.undefined(pois) || check.undefined(wares)) return []
 
   // List of all paper type and weight field pairs
   const fields: { type: keyof Ware; weight: keyof PurchaseOrderItem }[] = [
@@ -46,10 +50,10 @@ function accumulateMaterialRequirements(
     { type: "backLayerPaperType", weight: "backLayerPaperWeight" },
   ];
 
-  for (const item of items) {
+  for (const poi of pois) {
     for (const pair of fields) {
-      const code = item.purchaseOrderItem!.ware![pair.type] as string;
-      const weight = item.purchaseOrderItem![pair.weight];
+      const code = (poi.ware as Serialized<Ware>)[pair.type] as string;
+      const weight = poi[pair.weight];
 
       if (code && check.equal(code.startsWith("M"), type === "RAW") && typeof weight === "number") {
         const current = requirementMap.get(code) || 0;
@@ -78,7 +82,8 @@ function accumulateMaterialRequirements(
 export default function MaterialRequirementTable(
   props: MaterialRequirementTableProps,
 ) {
-  const { selectedPOIsIds } = useManufacturingOrderCreatePageState();
+  const { useSelector } = ManufacturingOrderCreatePageReducerStore;
+  const selectedPOIsIds = useSelector(s => s.selectedPOIsIds);
 
   const {
     data: fullDetailMOsResponse,
@@ -91,6 +96,10 @@ export default function MaterialRequirementTable(
   const moPaginatedList = useMemo(() => {
     if (fullDetailMOsResponse?.data) {
       const calculatedMoPaginatedList = fullDetailMOsResponse.data.map((mo) => {
+        if (check.string(mo.purchaseOrderItem)) {
+          throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
+        }
+
         const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
         const calculatedPOI = recalculatePurchaseOrderItem({
           ...mo.purchaseOrderItem!,

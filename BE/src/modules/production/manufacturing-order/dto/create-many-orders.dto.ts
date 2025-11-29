@@ -9,5 +9,8 @@ export class CreateManyManufacturingOrdersRequestDto {
 }
 
 export class CreateManyManufacturingOrdersResponseDto extends BaseResponse<
-  CreateResult<{ codes: string[] }>
+  CreateResult<{
+    codes: string[];
+    processesCreateResult: CreateResult<{ codes: string[] }>;
+  }>
 > { }

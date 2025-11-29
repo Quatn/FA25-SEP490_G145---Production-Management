@@ -1,5 +1,6 @@
 "use client";
-import React, { createContext, Dispatch, useContext, useReducer } from "react";
+import { Store, useStore } from "@tanstack/react-store";
+import React, { createContext, Dispatch, useContext } from "react";
 
 type TabType =
   | "selectedOrderDetails"
@@ -19,14 +20,14 @@ type GroupType =
   | "PO"
   | "POI";
 
-export interface TreeNode {
+interface TreeNode {
   id: string;
   name: string;
   children?: TreeNode[];
   isPOI?: boolean;
 }
 
-interface PageState {
+interface StoreState {
   page: number;
   limit: number;
   totalItems: number;
@@ -90,8 +91,8 @@ const findParentId = (
 function updateAncestors(
   tree: TreeNode[],
   id: string,
-  state: PageState,
-): PageState {
+  state: StoreState,
+): StoreState {
   const parentId = findParentId(tree, id);
   if (!parentId) return state;
 
@@ -110,7 +111,7 @@ function updateAncestors(
   return updateAncestors(tree, parentId, state);
 }
 
-type PageAction =
+type StoreAction =
   | { type: "SET_PAGE"; payload: number }
   | { type: "SET_LIMIT"; payload: number }
   | { type: "SET_TOTAL_ITEMS"; payload: number }
@@ -126,7 +127,7 @@ type PageAction =
   | { type: "SET_PREPARED_SUBMIT_FUNCTION"; payload: (() => void) | undefined }
   | { type: "RESET" };
 
-const initialState: PageState = {
+const initialState: StoreState = {
   page: 1,
   limit: 20,
   totalItems: 0,
@@ -141,7 +142,7 @@ const initialState: PageState = {
   displayUnsavedChangeWarning: false,
 };
 
-function pageReducer(state: PageState, action: PageAction): PageState {
+function reducer(state: StoreState, action: StoreAction): StoreState {
   switch (action.type) {
     case "SET_PAGE":
       return { ...state, page: action.payload };
@@ -167,7 +168,7 @@ function pageReducer(state: PageState, action: PageAction): PageState {
       if (!node) return state;
 
       const isChecked = !state.checkedOrderNodes[id];
-      const newState: PageState = {
+      const newState: StoreState = {
         ...state,
         checkedOrderNodes: { ...state.checkedOrderNodes },
         indeterminateOrderNodes: { ...state.indeterminateOrderNodes },
@@ -224,44 +225,54 @@ function pageReducer(state: PageState, action: PageAction): PageState {
   }
 }
 
-const PageStateContext = createContext<PageState | undefined>(undefined);
-const PageDispatchContext = createContext<Dispatch<PageAction> | undefined>(
-  undefined,
-);
+const StoreContext = createContext<Store<StoreState> | null>(null);
 
 export function ManufacturingOrderCreatePageProvider(
   { children }: { children: React.ReactNode },
 ) {
-  const [state, dispatch] = useReducer(pageReducer, initialState);
+  const storeRef = React.useRef(new Store<StoreState>(initialState));
+
   return (
-    <PageStateContext.Provider value={state}>
-      <PageDispatchContext.Provider value={dispatch}>
-        {children}
-      </PageDispatchContext.Provider>
-    </PageStateContext.Provider>
-  );
+    <StoreContext.Provider value={storeRef.current}>
+      {children}
+    </StoreContext.Provider>
+  )
 }
 
-export function useManufacturingOrderCreatePageState() {
-  const context = useContext(PageStateContext);
-  if (context === undefined) {
-    throw new Error(
-      "usePageState must be used within ManufacturingOrderCreatePageProvider",
-    );
-  }
-  return context;
+// Internal hook to get the store
+function useStoreInstance() {
+  const store = useContext(StoreContext);
+  if (!store) throw new Error("Must be used inside ManufacturingOrderTableProvider");
+  return store;
 }
 
-export function useManufacturingOrderCreatePageDispatch() {
-  const context = useContext(PageDispatchContext);
-  if (context === undefined) {
-    throw new Error(
-      "usePageDispatch must be used within ManufacturingOrderCreatePageProvider",
-    );
-  }
-  return context;
+// Select slices of state
+function useSelector<T>(selector: (state: StoreState) => T): T {
+  const store = useStoreInstance();
+  return useStore(store, selector);
 }
 
+// Full state (avoid using)
+function useState() {
+  const store = useStoreInstance();
+  return useStore(store);
+}
+
+// Dispatch reducer actions
+function useDispatch() {
+  const store = useStoreInstance();
+  return (action: StoreAction) => {
+    store.setState((prev) => reducer(prev, action));
+  };
+}
+
+export const ManufacturingOrderCreatePageReducerStore = {
+  context: StoreContext,
+  useStoreInstance,
+  useSelector: useSelector,
+  useState: useState,
+  useDispatch: useDispatch,
+}
 export type ManufacturingCreatePageTabType = TabType;
 export type PurchaseOrderItemPickerTabType = TableTabType;
 export type ManufacturingCreatePagePOTreeActionPayload = POTreeActionPayload;

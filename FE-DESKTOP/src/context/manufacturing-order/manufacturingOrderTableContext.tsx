@@ -1,6 +1,6 @@
 "use client";
 import { Store, useStore } from "@tanstack/react-store";
-import React, { createContext, Dispatch, useContext, useReducer } from "react";
+import React, { createContext, useContext } from "react";
 
 type TabType =
   | "all"
@@ -20,7 +20,7 @@ type PaginationType =
   | "paged"
   | "pageless";
 
-interface TableState {
+interface StoreState {
   page: number;
   limit: number;
   totalItems: number;
@@ -36,7 +36,7 @@ interface TableState {
   preparedSubmitAskText: string;
 }
 
-type TableAction =
+type StoreAction =
   | { type: "SET_PAGE"; payload: number }
   | { type: "SET_LIMIT"; payload: number }
   | { type: "SET_TOTAL_ITEMS"; payload: number }
@@ -54,7 +54,7 @@ type TableAction =
   | { type: "SET_PREPARED_SUBMIT_ASK_TEXT"; payload: string }
   | { type: "RESET" };
 
-const initialState: TableState = {
+const initialState: StoreState = {
   page: 1,
   limit: 20,
   totalItems: 0,
@@ -69,7 +69,7 @@ const initialState: TableState = {
   preparedSubmitAskText: "",
 };
 
-function tableReducer(state: TableState, action: TableAction): TableState {
+function reducer(state: StoreState, action: StoreAction): StoreState {
   switch (action.type) {
     case "SET_PAGE":
       return { ...state, page: action.payload };
@@ -122,74 +122,52 @@ function tableReducer(state: TableState, action: TableAction): TableState {
   }
 }
 
-const TableStateContext = createContext<TableState | undefined>(undefined);
-const TableDispatchContext = createContext<Dispatch<TableAction> | undefined>(
-  undefined,
-);
-export const TableStoreContext = createContext<Store<TableState> | null>(null);
+const StoreContext = createContext<Store<StoreState> | null>(null);
 
 export function ManufacturingOrderTableProvider(
   { children }: { children: React.ReactNode },
 ) {
-  // const [state, dispatch] = useReducer(tableReducer, initialState);
-  const storeRef = React.useRef(new Store<TableState>(initialState));
+  const storeRef = React.useRef(new Store<StoreState>(initialState));
 
   return (
-    <TableStoreContext.Provider value={storeRef.current}>
-      {/*<TableStateContext.Provider value={state}>
-        <TableDispatchContext.Provider value={dispatch}>*/}
-          {children}
-        {/*</TableDispatchContext.Provider>
-      </TableStateContext.Provider>*/}
-    </TableStoreContext.Provider>
+    <StoreContext.Provider value={storeRef.current}>
+      {children}
+    </StoreContext.Provider>
   );
 }
 
-// export function useManufacturingTableState() {
-//   const context = useContext(TableStateContext);
-//   if (context === undefined) {
-//     throw new Error(
-//       "useTableState must be used within ManufacturingOrderTableProvider",
-//     );
-//   }
-//   return context;
-// }
-// 
-// export function useManufacturingTableDispatch() {
-//   const context = useContext(TableDispatchContext);
-//   if (context === undefined) {
-//     throw new Error(
-//       "useTableDispatch must be used within ManufacturingOrderTableProvider",
-//     );
-//   }
-//   return context;
-// }
-
-export type ManufacturingTableTabType = TabType;
-
 // Internal hook to get the store
 function useStoreInstance() {
-  const store = useContext(TableStoreContext);
+  const store = useContext(StoreContext);
   if (!store) throw new Error("Must be used inside ManufacturingOrderTableProvider");
   return store;
 }
 
 // Select slices of state
-export function useTableSelector<T>(selector: (state: TableState) => T): T {
+function useSelector<T>(selector: (state: StoreState) => T): T {
   const store = useStoreInstance();
   return useStore(store, selector);
 }
 
-// Full state (rarely used)
-export function useTableState() {
+// Full state (avoid using)
+function useState() {
   const store = useStoreInstance();
   return useStore(store);
 }
 
 // Dispatch reducer actions
-export function useTableDispatch() {
+function useDispatch() {
   const store = useStoreInstance();
-  return (action: TableAction) => {
-    store.setState((prev) => tableReducer(prev, action));
+  return (action: StoreAction) => {
+    store.setState((prev) => reducer(prev, action));
   };
 }
+
+export const ManufacturingOrderTableReducerStore = {
+  context: StoreContext,
+  useStoreInstance,
+  useSelector: useSelector,
+  useState: useState,
+  useDispatch: useDispatch,
+}
+export type ManufacturingTableTabType = TabType;

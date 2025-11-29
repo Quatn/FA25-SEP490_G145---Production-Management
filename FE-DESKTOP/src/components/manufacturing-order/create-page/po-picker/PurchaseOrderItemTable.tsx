@@ -1,27 +1,20 @@
 "use client";
 
 import {
+  ManufacturingOrderCreatePageReducerStore,
   ManufacturingOrderCreatePageTreeNode,
   PurchaseOrderItemPickerTabType,
-  useManufacturingOrderCreatePageDispatch,
-  useManufacturingOrderCreatePageState,
 } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import {
   Box,
   BoxProps,
-  Button,
   Checkbox,
-  Group,
-  HStack,
   Table,
   TableRootProps,
-  Tabs,
   TabsRootProps,
 } from "@chakra-ui/react";
-import { purchaseOrderItemTableColumns, purchaseOrderItemTableColumnsByTabs } from "./poiTableDefinition";
+import { purchaseOrderItemTableColumns } from "./poiTableDefinition";
 import { useMemo, useState } from "react";
-import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
-import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { QueryOrdersWithUnmanufacturedItemsDto_PurchaseOrderItem } from "@/types/DTO/purchase-order/query-orders-with-unmanufactured-items";
 
 type TableProps = {
@@ -35,9 +28,9 @@ type TableProps = {
 export default function PurchaseOrderItemPickerTable(
   props: TableProps,
 ) {
-  const { groupType, checkedOrderNodes } =
-    useManufacturingOrderCreatePageState();
-  const dispatch = useManufacturingOrderCreatePageDispatch();
+  const { useSelector, useDispatch } = ManufacturingOrderCreatePageReducerStore;
+  const dispatch = useDispatch();
+  const checkedOrderNodes = useSelector(s => s.checkedOrderNodes);
 
   const getChecked = (id: string) => {
     return checkedOrderNodes[id] || false;

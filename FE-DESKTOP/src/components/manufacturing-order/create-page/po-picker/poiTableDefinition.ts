@@ -15,7 +15,7 @@ export const purchaseOrderItemTableColumns:
     {
       key: "fluteCombo",
       header: "Sóng",
-      render: (poi) => poi.ware?.fluteCombination?.code,
+      render: (poi) => check.string(poi.ware?.fluteCombination) ? poi.ware?.fluteCombination : poi.ware?.fluteCombination?.code,
     },
     {
       key: "wareWidth",
@@ -180,19 +180,19 @@ export const purchaseOrderItemTableColumns:
     {
       key: "printColors",
       header: "Màu In",
-      render: (poi) => poi.ware?.printColors?.map((c) => c.code).join(", "),
+      render: (poi) => poi.ware?.printColors?.map((c) => check.string(c) ? c : c.code).join(", "),
     },
     {
       key: "finishingProcesses",
       header: "Công đoạn gia công",
       render: (poi) =>
-        poi.ware?.finishingProcesses?.map((c) => c.name)
+        poi.ware?.finishingProcesses?.map((c) => check.string(c) ? c : c.name)
           .join(", "),
     },
     {
       key: "manufactureProcess",
       header: "Kiểu gia công",
-      render: (poi) => poi.ware?.wareManufacturingProcessType?.name,
+      render: (poi) => check.string(poi.ware?.wareManufacturingProcessType) ? poi.ware?.wareManufacturingProcessType : poi.ware?.wareManufacturingProcessType?.name,
     },
   ];
 

@@ -23,7 +23,7 @@ export enum OrderFinishingProcessStatus {
 @Schema({ timestamps: true })
 export class OrderFinishingProcess extends BaseSchema {
   @ApiProperty()
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   @IsString()
   code: string;
 
@@ -32,18 +32,17 @@ export class OrderFinishingProcess extends BaseSchema {
     description: "ObjectId by default, ManufacturingOrder when populated",
   })
   @Prop({
-    unique: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: ManufacturingOrder.name,
   })
   manufacturingOrder: mongoose.Types.ObjectId | ManufacturingOrder;
 
+  /** @deprecated this is supposed to be named wareFinishingProcessType, this will probably be corrected in the future */
   @ApiProperty({
     type: mongoose.Types.ObjectId,
     description: "ObjectId by default, WareFinishingProcessType when populated",
   })
   @Prop({
-    unique: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: WareFinishingProcessType.name,
   })
@@ -80,10 +79,19 @@ export class OrderFinishingProcess extends BaseSchema {
   note: string = "";
 }
 
-export type OrderFinishingProcessDocument = HydratedDocument<
-  OrderFinishingProcess
->;
+export type OrderFinishingProcessDocument =
+  HydratedDocument<OrderFinishingProcess>;
 
 export const OrderFinishingProcessSchema = SchemaFactory.createForClass(
   OrderFinishingProcess,
 ).plugin(softDeletePlugin);
+
+OrderFinishingProcessSchema.index(
+  { code: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } },
+);
+
+OrderFinishingProcessSchema.index(
+  { manufacturingOrder: 1, sequenceNumber: 1 },
+  { unique: true },
+);

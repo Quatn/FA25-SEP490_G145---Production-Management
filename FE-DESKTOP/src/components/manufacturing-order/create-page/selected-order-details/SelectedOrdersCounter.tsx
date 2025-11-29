@@ -1,12 +1,11 @@
 "use client";
 
-import {
-  useManufacturingOrderCreatePageState,
-} from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
+import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { Box, Text } from "@chakra-ui/react";
 
 export default function ManufacturingOrderCreatePageSelectedOrdersCounter() {
-  const { selectedPOIsIds } = useManufacturingOrderCreatePageState();
+  const { useSelector } = ManufacturingOrderCreatePageReducerStore;
+  const selectedPOIsIds = useSelector(s => s.selectedPOIsIds);
 
   return (
     <Box>
