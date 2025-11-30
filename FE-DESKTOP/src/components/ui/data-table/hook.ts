@@ -1,5 +1,5 @@
 "use client"
-import { getCoreRowModel, Table, TableOptions, useReactTable } from "@tanstack/react-table";
+import { ColumnDef, getCoreRowModel, Table, TableOptions, useReactTable } from "@tanstack/react-table";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTableEditableCellProps } from "./types";
 import { DataTableEditableCell } from "./DefaultEditableCell";
@@ -7,15 +7,20 @@ import { DataTable } from "./Table";
 import { DataTableBodyPropsStack } from "./Body";
 import { devlog } from "@/utils/devlog";
 
-export type DataTableOptions<TData> = TableOptions<TData> & {
+export type DataTableOptions<TData> = Omit<TableOptions<TData>, "columns"> & {
   bodyPropsStack?: DataTableBodyPropsStack;
+  mergedHeadersIds?: string[][],
   getRowId: (row: TData) => string;
+  columns: ColumnDef<TData & { isEdited: boolean }>[]
 }
 
 export default function useDataTable<TData>(o: DataTableOptions<TData>): {
   table: Table<TData & { isEdited: boolean }>,
   tableData: (TData & { isEdited: boolean })[],
   tableComponent: React.ReactNode,
+  updateTableData: (rowIndex: number, columnId: string, value: unknown) => void,
+  resetRow: (id: string) => void,
+  resetTable: () => void,
 } {
   type TRowData = TData & { isEdited: boolean }
 
@@ -60,6 +65,10 @@ export default function useDataTable<TData>(o: DataTableOptions<TData>): {
     }
   }, [o, initTableData, tableData])
 
+  const handleResetTable = useCallback(() => {
+    setTableData(initTableData);
+  }, [initTableData])
+
   const meta = {
     updateData: handleUpdateData,
     resetRow: handleResetRow,
@@ -70,16 +79,21 @@ export default function useDataTable<TData>(o: DataTableOptions<TData>): {
   }
 
   const table = useReactTable({
-    ...o,
+    ...(o as Omit<TableOptions<TData>, "data">),
     data: tableData,
     getCoreRowModel: getCoreRowModel(),
     getRowId: o.getRowId,
     meta,
   });
 
+  console.log(table.getHeaderGroups());
+
   return {
     table: table as Table<TRowData>,
     tableData,
-    tableComponent: DataTable({ table, bodyPropsStack: o.bodyPropsStack }),
+    tableComponent: DataTable({ table, bodyPropsStack: o.bodyPropsStack, mergedHeadersIds: o.mergedHeadersIds }),
+    updateTableData: handleUpdateData,
+    resetRow: handleResetRow,
+    resetTable: handleResetTable,
   }
 }

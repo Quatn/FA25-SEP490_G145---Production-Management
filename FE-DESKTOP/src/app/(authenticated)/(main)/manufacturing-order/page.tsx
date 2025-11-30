@@ -35,7 +35,7 @@ export default function ManufacturingOrderHome() {
                   <ManufacturingOrderTableComponents.SearchFilterControl />
 
                   <Link href="/manufacturing-order/create">
-                    <Button colorPalette={"cyan"}>Tạo mới</Button>
+                    <Button size={"sm"} colorPalette={"cyan"}>Tạo mới</Button>
                   </Link>
                 </HStack>
 

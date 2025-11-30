@@ -1,7 +1,3 @@
-import TestDataOutsideControlledInput from "@/components/debug-components/TestDataOutsideControlledInput";
-import TestDataTable from "@/components/debug-components/TestDataTable";
-import { TestDataTableQueryInput } from "@/components/debug-components/TestDataTableQueryInput";
-import { DataTableProvider } from "@/components/ui/data-table/Provider";
 import { Box, Text } from "@chakra-ui/react";
 
 export default function Dashboard() {

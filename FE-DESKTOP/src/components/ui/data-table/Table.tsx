@@ -6,6 +6,7 @@ import { DataTableBody, DataTableBodyPropsStack } from "./Body";
 export type DataTableProps<T> = {
   table: TanstackTable<T>;
   bodyPropsStack?: DataTableBodyPropsStack;
+  mergedHeadersIds?: string[][],
 };
 
 export function DataTable<T>(props: DataTableProps<T>) {
@@ -13,7 +14,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
     <DataTableRoot tableRootProps={{
       minW: props.table.getTotalSize(),
     }}>
-      <DataTableHeader headerGroups={props.table.getHeaderGroups()} />
+      <DataTableHeader headerGroups={props.table.getHeaderGroups()} mergedHeadersIds={props.mergedHeadersIds} />
       <DataTableBody rows={props.table.getCoreRowModel().rows} propsStack={props.bodyPropsStack} />
     </DataTableRoot>
   )

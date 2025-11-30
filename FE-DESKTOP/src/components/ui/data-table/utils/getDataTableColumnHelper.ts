@@ -63,5 +63,6 @@ export function getDataTableColumnHelper<TData>() {
       }
     },
     defineDataTableDisplayColumn: columnHelper.display,
+    defineHeaderGroup: columnHelper.group,
   }
 }

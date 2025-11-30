@@ -1,6 +1,8 @@
-import { Table as ChakraTable, TableCellProps, TableHeaderProps, TableRowProps, TableScrollAreaProps } from "@chakra-ui/react"
+import { Table as ChakraTable, TableCellProps, TableHeaderProps, TableRowProps } from "@chakra-ui/react"
 import { Header as TanstackHeader, HeaderGroup, flexRender } from "@tanstack/react-table";
 import { getCommonPinningStyles } from "./common";
+import check from "check-types";
+import calculateTanstackTableHeaderRowSpan from "@/lib/functions/calculateTanstackTableHeaderRowSpan";
 
 export type DataTableHeaderCellProps<TData, TValue> = {
   tableHeaderCellProps?: TableCellProps;
@@ -12,9 +14,13 @@ export function DataTableHeaderCell<TData, TValue>(props: DataTableHeaderCellPro
     <ChakraTable.ColumnHeader key={props.header.id}
       colorPalette={"blue"} bgColor={"colorPalette.muted"}
       style={{ ...getCommonPinningStyles(props.header.column) }}
+      colSpan={props.header.colSpan}
+      rowSpan={props.header.rowSpan}
       {...props.tableHeaderCellProps}
     >
-      {flexRender(props.header.column.columnDef.header, props.header.getContext())}
+      {props.header.isPlaceholder
+        ? null
+        : flexRender(props.header.column.columnDef.header, props.header.getContext())}
     </ChakraTable.ColumnHeader>
   )
 }
@@ -35,14 +41,16 @@ export function DataTableHeaderRow<TData, TValue>(props: DataTableHeaderRowProps
 }
 
 export type DataTableHeaderProps<T> = {
+  mergedHeadersIds?: string[][],
   tableHeaderProps?: TableHeaderProps;
   headerGroups: HeaderGroup<T>[];
 };
 
 export function DataTableHeader<T>(props: DataTableHeaderProps<T>) {
+  const calculatedHeaderGroups = calculateTanstackTableHeaderRowSpan(props.headerGroups, props.mergedHeadersIds)
   return (
     <ChakraTable.Header colorPalette={"blue"} bgColor={"colorPalette.muted"} {...props.tableHeaderProps}>
-      {props.headerGroups.map((headerGroup) => (
+      {calculatedHeaderGroups.map((headerGroup) => (
         <DataTableHeaderRow key={headerGroup.id} headers={headerGroup.headers} />
       ))}
     </ChakraTable.Header>

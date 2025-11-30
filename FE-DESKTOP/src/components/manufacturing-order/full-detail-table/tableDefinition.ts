@@ -140,7 +140,9 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   }),
   columnHelper.defineDataTableAccessorColumn({
     id: "overallStatus",
-    accessorKey: "overallStatus",
+    accessorFn: (mo) => {
+      return orderStatusNameMap[mo.overallStatus]
+    },
     header: "Trạng thái chạy",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
@@ -156,7 +158,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Sóng",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
   columnHelper.defineDataTableAccessorColumn({
     id: "wareManufacturingProcessType",
@@ -168,45 +170,49 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Kiểu gia công",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
-  columnHelper.defineDataTableAccessorColumn({
-    id: "wareWidth",
-    accessorFn: (mo) => {
-      return getPopulatedWare(mo)?.wareWidth
-    },
-    header: "Dài / Khổ",
-    enablePinning: true,
-    cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+  columnHelper.defineHeaderGroup({
+    id: "wareSize",
+    header: () => "Kích thước sản phẩm",
+    columns: [
+      columnHelper.defineDataTableAccessorColumn({
+        id: "wareWidth",
+        accessorFn: (mo) => {
+          return getPopulatedWare(mo)?.wareWidth
+        },
+        header: "Dài / Khổ",
+        enablePinning: true,
+        cellType: DataTableCellType.Readonly,
+      }),
+      columnHelper.defineDataTableAccessorColumn({
+        id: "wareLength",
+        accessorFn: (mo) => {
+          return getPopulatedWare(mo)?.wareLength
+        },
+        header: "Rộng",
+        enablePinning: true,
+        cellType: DataTableCellType.Readonly,
+      }),
+      columnHelper.defineDataTableAccessorColumn({
+        id: "wareHeight",
+        accessorFn: (mo) => {
+          return getPopulatedWare(mo)?.wareHeight
+        },
+        header: "Cao",
+        enablePinning: true,
+        cellType: DataTableCellType.Readonly,
+      }),
+    ],
   }),
-  columnHelper.defineDataTableAccessorColumn({
-    id: "wareLength",
-    accessorFn: (mo) => {
-      return getPopulatedWare(mo)?.wareLength
-    },
-    header: "Rộng",
-    enablePinning: true,
-    cellType: DataTableCellType.Readonly,
-    ...colSize.md,
-  }),
-  columnHelper.defineDataTableAccessorColumn({
-    id: "wareHeight",
-    accessorFn: (mo) => {
-      return getPopulatedWare(mo)?.wareHeight
-    },
-    header: "Cao",
-    enablePinning: true,
-    cellType: DataTableCellType.Readonly,
-    ...colSize.md,
-  }),
+
   columnHelper.defineDataTableAccessorColumn({
     id: "amount",
     accessorKey: "amount",
     header: "Số lượng",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
   columnHelper.defineDataTableAccessorColumn({
     id: "orderDate",
@@ -247,7 +253,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Khổ",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
   columnHelper.defineDataTableAccessorColumn({
     id: "blankLength",
@@ -257,7 +263,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Cắt dài",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
   columnHelper.defineDataTableAccessorColumn({
     id: "flapLength",
@@ -267,7 +273,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Cánh",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
   columnHelper.defineDataTableAccessorColumn({
     id: "warePerBlank",
@@ -277,7 +283,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Số SP",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -288,7 +294,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Số tấm",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -299,7 +305,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Tấm chặt",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -310,7 +316,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Mét dài",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -321,7 +327,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Số SP",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -332,7 +338,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Khổ giấy",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -343,7 +349,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Lề biên",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -437,15 +443,17 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   columnHelper.defineDataTableAccessorColumn({
     id: "note",
     accessorKey: "note",
-    header: "Ghi chú cố định",
+    header: "Ghi chú tạm thời",
     enablePinning: true,
-    cellType: DataTableCellType.Readonly,
+    cellType: DataTableCellType.Text,
     ...colSize.md,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
     id: "manufacturingDateAdjustment",
-    accessorKey: "manufacturingDateAdjustment",
+    accessorFn: (mo) => {
+      return check.assigned(mo.manufacturingDateAdjustment) ? mo.manufacturingDateAdjustment : mo.manufacturingDate
+    },
     header: "Ngày SX",
     enablePinning: true,
     cellType: DataTableCellType.Date,
@@ -464,6 +472,9 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   columnHelper.defineDataTableAccessorColumn({
     id: "corrugatorLineAdjustment",
     accessorKey: "corrugatorLineAdjustment",
+    accessorFn: (mo) => {
+      return check.assigned(mo.corrugatorLineAdjustment) ? mo.corrugatorLineAdjustment : mo.corrugatorLine
+    },
     header: "Dàn sóng",
     enablePinning: true,
     cellType: DataTableCellType.Select,
@@ -477,7 +488,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Mặt SP",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -486,7 +497,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Sóng E",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -495,7 +506,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Lớp giữa",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -504,7 +515,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Sóng B",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -513,7 +524,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Lớp giữa",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -522,7 +533,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Sóng A/C",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -531,7 +542,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
     header: "Mặt trong",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.sm,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -605,6 +616,7 @@ export const manufacturingOrderColumnsByTabs: Record<
       "customerCode",
       "wareCode",
       "fluteCombo",
+      "wareSize",
       "wareWidth",
       "wareLength",
       "wareHeight",

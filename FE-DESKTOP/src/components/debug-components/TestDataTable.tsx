@@ -61,7 +61,7 @@ const statusesCol = createListCollection({
 
 const columnHelper = getDataTableColumnHelper<Person>()
 
-const columns: ColumnDef<Person>[] = [
+const columns: ColumnDef<Person & { isEdited: boolean }>[] = [
   {
     header: "No.",
     accessorKey: "no",
@@ -144,7 +144,7 @@ const TestDataTableEditCheckBox = () => {
 const HoveredRowDisplay = () => {
   const hoveredRowId = useDataTableSelector((s) => s.hoveredRowId)
 
-  const txt = !check.null(hoveredRowId)? `The hovered row's id is: ${hoveredRowId}, pass something like this component into the cell field for a column def to have cells that act different when its row is hovered` : ""
+  const txt = !check.null(hoveredRowId) ? `The hovered row's id is: ${hoveredRowId}, pass something like this component into the cell field for a column def to have cells that act different when its row is hovered` : ""
 
   return (
     <Text>{txt}</Text>
@@ -156,6 +156,7 @@ export default function TestDataTable() {
     data: defaultData,
     getCoreRowModel: getCoreRowModel(),
     columns: columns,
+    getRowId: (row) => row.no + "",
     meta: {
       /* Set this to tell the table to use a different set of editable cells
       editableCellNode: (props: DataTableEditableCellProps) => {

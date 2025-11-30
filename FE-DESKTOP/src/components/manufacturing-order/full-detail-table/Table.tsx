@@ -5,7 +5,6 @@ import {
   ManufacturingTableTabType,
 } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import {
-  useDeleteManufacturingOrderMutation,
   useGetFullDetailManufacturingOrdersQuery,
   useUpdateManyManufacturingOrdersMutation,
 } from "@/service/api/manufacturingOrderApiSlice";
@@ -15,13 +14,8 @@ import {
   BoxProps,
   Button,
   Center,
-  Group,
-  Input,
   Kbd,
-  NumberInput,
-  Popover,
   Portal,
-  Select,
   Spinner,
   Stack,
   Table,
@@ -32,19 +26,16 @@ import {
 } from "@chakra-ui/react";
 import check from "check-types";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
-import { manufacturingOrderColumnsByTabs, ManufacturingOrderTableDataType } from "./tableDefinition";
-import { CSSProperties, useEffect, useMemo, useReducer, useState } from "react";
-import { BiSolidDownArrow } from "react-icons/bi";
-import { CellContext, Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { ManufacturingTableEditableCellInputTypes, ManufacturingTableEditableCellProps } from "./tableCellNodes";
+import { manufacturingOrderColumnsByTabs } from "./tableDefinition";
+import { useEffect, useMemo } from "react";
+import { getCoreRowModel } from "@tanstack/react-table";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
 import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
-import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
-import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import useDataTable from "@/components/ui/data-table/hook";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import DataFetchError from "@/components/common/DataFetchError";
 
 export type ManufacturingOrderTableProps = {
   rootProps?: BoxProps;
@@ -52,137 +43,22 @@ export type ManufacturingOrderTableProps = {
   tableRootProps?: TableRootProps;
 };
 
-const getCommonPinningStyles = (column: Column<ManufacturingOrderTableDataType>): CSSProperties => {
-  const isPinned = column.getIsPinned()
-  const isLastLeftPinnedColumn =
-    isPinned === 'left' && column.getIsLastColumn('left')
-  const isFirstRightPinnedColumn =
-    isPinned === 'right' && column.getIsFirstColumn('right')
-
-  return {
-    boxShadow: isLastLeftPinnedColumn
-      ? '-4px 0 4px -4px gray inset'
-      : isFirstRightPinnedColumn
-        ? '4px 0 4px -4px gray inset'
-        : undefined,
-    left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
-    right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
-    opacity: isPinned ? 0.95 : 1,
-    position: isPinned ? 'sticky' : 'relative',
-    // width: column.getIsLastColumn() ? "100%" : column.getSize(),
-    width: column.getSize(),
-    zIndex: isPinned ? 1 : 0,
-  }
-}
-
-const EditableCell = (props: ManufacturingTableEditableCellProps) => {
-  switch (props.type) {
-    case ManufacturingTableEditableCellInputTypes.text:
-      return (
-        <Input
-          bg={"bg"}
-          value={props.value as string}
-          onChange={(ev) => props.setValue(ev.target.value)}
-          placeholder={"Nhấn để nhập"} onBlur={(ev) => {
-            if (props.onBlur)
-              props.onBlur(ev.target.value)
-          }}
-        />
-      )
-    case ManufacturingTableEditableCellInputTypes.select:
-      if (props.selectCollection) {
-        const col = props.selectCollection
-        return (
-          <Select.Root
-            collection={col}
-            size="sm"
-            maxW="100px"
-            value={[props.value as string]}
-            onValueChange={(e) => props.updateTableData(check.undefined(e.value.at(0)) ? "" : e.value.at(0)!)}
-            bg="bg"
-          >
-            <Select.HiddenSelect />
-            <Select.Control>
-              <Select.Trigger>
-                <Select.ValueText placeholder="Chọn" />
-              </Select.Trigger>
-              <Select.IndicatorGroup>
-                <Select.Indicator />
-              </Select.IndicatorGroup>
-            </Select.Control>
-            <Portal>
-              <Select.Positioner>
-                <Select.Content>
-                  {col.items.map((item) => (
-                    <Select.Item item={item} key={item.value}>
-                      {item.label}
-                      <Select.ItemIndicator />
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Positioner>
-            </Portal>
-          </Select.Root>
-        )
-      }
-      return <p>Chưa có lựa chọn</p>
-    case ManufacturingTableEditableCellInputTypes.number:
-      return (
-        <NumberInput.Root
-          bg={"bg"}
-          value={props.value as string}
-          onValueChange={(ev) => props.setValue(ev.value)}
-          defaultValue={"0"} onFocusChange={(ev) => {
-            if (!ev.focused && props.onBlur)
-              props.onBlur(ev.value)
-          }}
-        >
-
-          <NumberInput.Control />
-          <NumberInput.Input />
-        </NumberInput.Root>
-      )
-    case ManufacturingTableEditableCellInputTypes.date:
-      return (
-        <Input
-          bg={"bg"}
-          type="date"
-          value={[formatDateToYYYYMMDD(props.value as string)]}
-          onChange={(ev) => {
-            return props.setValue(new Date(ev.target.value))
-          }}
-          placeholder={"Nhấn để nhập"} onBlur={(ev) => {
-            if (props.onBlur)
-              props.onBlur(ev.target.value)
-          }}
-        />
-      )
-  }
-}
-
 export default function ManufacturingOrderTable(
   props: ManufacturingOrderTableProps,
 ) {
+  const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
   const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
   const dispatch = useDispatch();
   const page = useSelector(s => s.page)
   const limit = useSelector(s => s.limit)
   const tab = useSelector(s => s.tab)
   const search = useSelector(s => s.search)
-  const hoveredRowId = useSelector(s => s.hoveredRowId)
-  // const selectedOrderId = useSelector(s => s.selectedOrderId)
-  // const pinnedOrderIds = useSelector(s => s.pinnedOrderIds)
-  const allowEdit = useSelector(s => s.allowEdit)
 
   const {
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
   } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: search });
-
-  const dialogDispatch = ManufacturingOrderDetailsDialogReducerStore.useDispatch();
-  const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
-  const [deleteOrder] = useDeleteManufacturingOrderMutation();
 
   const moPaginatedList = useMemo(() => {
     if (fullDetailMOPaginatedResponse?.data) {
@@ -212,24 +88,10 @@ export default function ManufacturingOrderTable(
     }
   }, [fullDetailMOPaginatedResponse?.data])
 
-  const [tableData, setTableData] = useState<(ManufacturingOrderTableDataType)[]>(() => (moPaginatedList?.data?.map((mo) => ({
-    ...mo,
-    isEdited: false,
-  })) ?? []))
+  const rawTableData: Serialized<ManufacturingOrder>[] = moPaginatedList?.data ?? []
 
-  const [flag, forceDataReset] = useReducer((x) => x + 1, 0);
-  useEffect(() => {
-    setTableData(
-      moPaginatedList?.data.map((mo) => ({
-        ...mo,
-        isEdited: false,
-      }))
-      ??
-      [])
-  }, [moPaginatedList, flag])
-
-  const { table, tableComponent, tableData: actualTableData } = useDataTable({
-    data: tableData,
+  const { table, tableComponent, tableData, resetTable } = useDataTable({
+    data: rawTableData,
     columns: manufacturingOrderColumnsByTabs[tab],
     getCoreRowModel: getCoreRowModel(),
     getRowId: (mo) => mo._id,
@@ -249,6 +111,12 @@ export default function ManufacturingOrderTable(
         bg: { base: "colorPalette.muted" }
       },
     },
+    mergedHeadersIds: [
+      ["manufacturingDirective", "1_manufacturingDirective_manufacturingDirective"],
+      ["code", "1_code_code"],
+      ["customerCode", "1_customerCode_customerCode"],
+      ["wareCode", "1_wareCode_wareCode"],
+    ],
     initialState: {
       columnPinning: {
         left: ['manufacturingDirective', "code"],
@@ -258,6 +126,11 @@ export default function ManufacturingOrderTable(
   });
 
   useEffect(() => {
+    console.log("Table hook re-calculated")
+  }, [table, tableComponent, tableData]);
+
+  useEffect(() => {
+    console.log("SET_TOTAL_ITEMS effect Triggered")
     dispatch({
       type: "SET_TOTAL_ITEMS",
       payload: moPaginatedList ? moPaginatedList.totalItems : 0,
@@ -276,12 +149,14 @@ export default function ManufacturingOrderTable(
   }
 
   if (fetchError) {
-    return <Text>{JSON.stringify(fetchError)}</Text>;
+    return <DataFetchError h={"full"} flexGrow={1} />;
   }
 
   if (check.undefined(moPaginatedList)) {
-    return <Text>Unable to load table</Text>;
+    return <DataFetchError h={"full"} flexGrow={1} />;
   }
+
+  const editedItemsNum = tableData.filter(row => row.isEdited).length
 
   const getTabBarOffset = () => {
     try {
@@ -289,42 +164,6 @@ export default function ManufacturingOrderTable(
     }
     catch {
       return 0
-    }
-  }
-
-  const editedItemsNum = tableData.filter(row => row.isEdited).length
-
-  const handleResetRow = (id: string) => {
-    const curOrder = tableData.find((row) => row._id === id)
-    const orgOrder = moPaginatedList?.data?.find((row) => row._id === id)
-    if (curOrder && orgOrder && curOrder.isEdited) {
-      setTableData(old =>
-        old.map((row) => {
-          if (row._id === id) {
-            return { ...orgOrder, isEdited: false }
-          }
-          return row
-        })
-      )
-    }
-  }
-
-  const handleUpdateOrder = (id: string) => {
-    const order = tableData.find((row) => row._id === id)
-
-    if (check.undefined(order)) {
-      throw new Error("Order somehow not found")
-    }
-
-    if (check.string(order.purchaseOrderItem)) {
-      throw new UnpopulatedFieldError("order.purchaseOrderItem should have been populated before it is sent here")
-    }
-
-    if (order && order.isEdited) {
-      const dto: UpdateManyManufacturingOrdersRequestDto = {
-        orders: [{ ...order, id: order._id, purchaseOrderItemId: order.purchaseOrderItem._id }]
-      }
-      updateOrders(dto)
     }
   }
 
@@ -338,6 +177,11 @@ export default function ManufacturingOrderTable(
     }
 
     updateOrders(dto)
+  }
+
+  const handleResetTable = () => {
+    dispatch({ type: "SET_PREPARED_SUBMIT_ASK_TEXT", payload: `Hoàn tác tất cả thao tác?` })
+    dispatch({ type: "SET_PREPARED_SUBMIT_FUNCTION", payload: resetTable })
   }
 
   return (
@@ -384,96 +228,7 @@ export default function ManufacturingOrderTable(
       </Tabs.Root>
 
       <Table.ScrollArea borderWidth="1px">
-
         {tableComponent}
-
-        {/*
-        <Table.Root
-          minW={table.getTotalSize()}
-          size="sm"
-          variant={"outline"}
-          showColumnBorder
-          {...props.tableRootProps}
-        >
-          <Table.Header colorPalette={"blue"} bgColor={"colorPalette.muted"}>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <Table.Row key={headerGroup.id} h={"3rem"}>
-                {headerGroup.headers.map((header) => (
-                  <Table.ColumnHeader key={header.id}
-                    colorPalette={"blue"} bgColor={"colorPalette.muted"}
-                    style={{ ...getCommonPinningStyles(header.column) }}
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                  </Table.ColumnHeader>
-                ))}
-              </Table.Row>
-            ))}
-          </Table.Header>
-          <Table.Body>
-            {table.getRowModel().rows.map((row) => (
-              <Table.Row
-                key={row.id}
-                onMouseEnter={() => dispatch({ type: "SET_HOVERED_ROW_ID", payload: row.id })}
-                onMouseLeave={() => dispatch({ type: "SET_HOVERED_ROW_ID", payload: null })}
-                h={"3.2rem"}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <Table.Cell
-                    key={cell.id}
-                    style={{
-                      ...getCommonPinningStyles(cell.column),
-                      background: row.original.isEdited ? (cell.column.getIsPinned() ? "#F5F5D5" : "#E7E7CB") : (cell.column.getIsPinned() ? "#fefefe" : "white")
-                    }}
-                  >
-                    {(cell.column.id === "actions-column" && row.id === hoveredRowId) ? (
-                      <Popover.Root size="xs">
-                        <Box>
-                          <Group attached>
-                            <Button
-                              size="xs"
-                              colorPalette={"blue"}
-                              onClick={() =>
-                                dialogDispatch({
-                                  type: "OPEN_DIALOG_WITH_ORDER",
-                                  payload: row.original,
-                                })
-                              }
-                            >
-                              Chi tiết
-                            </Button>
-
-                            <Popover.Trigger asChild>
-                              <Button variant="solid" size="xs" colorPalette={"gray"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }}>
-                                <BiSolidDownArrow />
-                              </Button>
-                            </Popover.Trigger>
-                          </Group>
-
-                          <Portal>
-                            <Popover.Positioner>
-                              <Popover.Content>
-                                <Stack>
-                                  <Button size="xs" colorPalette={"green"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }} onClick={() => handleUpdateOrder(row.id)}>Lưu</Button>
-                                  <Button size="xs" colorPalette={"yellow"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }} onClick={() => handleResetRow(row.id)}>Hoàn tác</Button>
-                                  <Button size="xs" colorPalette={"blue"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }}>Ghim lệnh</Button>
-                                  <Button size="xs" colorPalette={"red"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }} onClick={() => deleteOrder({ id: row.id })}>Xóa</Button>
-                                </Stack>
-                              </Popover.Content>
-                            </Popover.Positioner>
-                          </Portal>
-                        </Box>
-                      </Popover.Root>
-                    ) : (
-                      flexRender(cell.column.columnDef.cell, cell.getContext())
-                    )}
-                  </Table.Cell>
-                ))}
-              </Table.Row>
-            ))}
-          </Table.Body>
-        </Table.Root>
-        */}
-
       </Table.ScrollArea>
 
       <ActionBar.Root open={editedItemsNum > 0}>
@@ -490,7 +245,7 @@ export default function ManufacturingOrderTable(
               }}>
                 Lưu tất cả
               </Button>
-              <Button colorPalette={"yellow"} size="sm" onClick={forceDataReset}>
+              <Button colorPalette={"yellow"} size="sm" onClick={handleResetTable}>
                 Hoàn tác <Kbd>⌫</Kbd>
               </Button>
             </ActionBar.Content>
