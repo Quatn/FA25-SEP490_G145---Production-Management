@@ -7,6 +7,7 @@ import { ApiOperation } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
 import { SemiFinishedGoodTransaction } from '../schemas/semi-finished-good-transaction.schema';
 import { TransactionType } from '../enums/transaction-type.enum';
+import { GetSemiFinishedGoodTransactionsDto } from './dto/get-semi-finished-good-transaction.dto';
 
 export type DailyReportDto = {
   date: string;
@@ -19,13 +20,8 @@ export class SemiFinishedGoodTransactionController {
 
   @Get('list')
   @ApiOperation({ summary: 'List paginated semi finished transactions' })
-  async findPaginated(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    @Query('search') search?: string,
-    @Query('semiFinishedGoodId') semiFinishedGoodId?: string,
-  ): Promise<BaseResponse<PaginatedList<SemiFinishedGoodTransaction>>> {
-    const docs = await this.semiFinishedGoodTransactionService.findPaginated(page, limit, search, semiFinishedGoodId);
+  async findPaginated(@Query() query: GetSemiFinishedGoodTransactionsDto) {
+    const docs = await this.semiFinishedGoodTransactionService.findPaginated(query);
     return { success: true, message: 'Fetch successful', data: docs };
   }
 

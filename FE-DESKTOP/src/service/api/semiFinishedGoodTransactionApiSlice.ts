@@ -1,18 +1,18 @@
 import { apiSlice } from "./apiSlice";
 import { BaseResponse, PaginatedList } from "@/types/DTO/Response";
-import { EmployeeDailyStats, SemiFinishedGoodTransaction } from "@/types/SemiFinishedTransaction";
+import { SemiFinishedGoodTransaction, SemiFinishedGoodTransactionHistory } from "@/types/SemiFinishedTransaction";
 import { SEMI_FINISHED_GOOD_TRANSACTION_URL } from "../constants";
 
 export const SemiFinishedGoodTransactionApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         getSemiFinishedGoodTransactions: builder.query<
-            BaseResponse<PaginatedList<SemiFinishedGoodTransaction>>,
-            { page?: number; limit?: number; search?: string, semiFinishedGoodId: string }
-        >({
-            query: ({ page = 1, limit = 10, search = "", semiFinishedGoodId }) => ({
+                    BaseResponse<PaginatedList<SemiFinishedGoodTransactionHistory>>,
+                    { page?: number; limit?: number; semiFinishedGood: string, search?: string, transactionType?: string, startDate?: string, endDate?: string, sort?: string }
+                >({
+            query: ({ page = 1, limit = 10, semiFinishedGood, search, transactionType, startDate, endDate, sort  }) => ({
                 url: `${SEMI_FINISHED_GOOD_TRANSACTION_URL}/list`,
                 method: "GET",
-                params: { page, limit, search, semiFinishedGoodId },
+                params: { page, limit, semiFinishedGood, search, transactionType, startDate, endDate, sort  },
                 credentials: "include",
             }),
             providesTags: ["SemiFinishedGoodTransaction"],
@@ -28,38 +28,10 @@ export const SemiFinishedGoodTransactionApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: ["SemiFinishedGoodTransaction", "SemiFinishedGood"],
         }),
 
-        getSFGDailyEmployees: builder.query<BaseResponse<EmployeeDailyStats[]>, { date: string }>({
-            query: ({ date }) => ({
-                url: `${SEMI_FINISHED_GOOD_TRANSACTION_URL}/employees/daily`,
-                method: "GET",
-                params: { date },
-                credentials: "include",
-            }),
-            providesTags: ["SemiFinishedGoodTransaction"],
-        }),
-
-        getSFGDailyReport: builder.query<BaseResponse<PaginatedList<SemiFinishedGoodTransaction>>, {
-            page: number;
-            limit: number;
-            date: string,
-            transactionType?: string,
-            employeeId?: string,
-            manufacturingOrderId?: string
-        }>({
-            query: ({ page = 1, limit = 10, date, transactionType, employeeId, manufacturingOrderId }) => ({
-                url: `${SEMI_FINISHED_GOOD_TRANSACTION_URL}/report/daily`,
-                method: "GET",
-                params: { page, limit, date, transactionType, employeeId, manufacturingOrderId },
-                credentials: "include",
-            }),
-            providesTags: ["SemiFinishedGoodTransaction"],
-        }),
     }),
 });
 
 export const {
     useGetSemiFinishedGoodTransactionsQuery,
     useCreateSemiFinishedGoodTransactionMutation,
-    useGetSFGDailyReportQuery,
-    useGetSFGDailyEmployeesQuery,
 } = SemiFinishedGoodTransactionApiSlice;

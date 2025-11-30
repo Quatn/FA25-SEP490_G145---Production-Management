@@ -1,4 +1,4 @@
-import { IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsPositive, Min } from 'class-validator';
+import { IsDateString, IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsPositive, Min } from 'class-validator';
 import { TransactionType } from '../../enums/transaction-type.enum';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class CreateSemiFinishedGoodTransactionDto {
@@ -9,7 +9,7 @@ export class CreateSemiFinishedGoodTransactionDto {
     })
     @IsNotEmpty()
     @IsMongoId()
-    manufacturingOrderId: string;
+    manufacturingOrder: string;
 
     @ApiProperty({
         description: 'Type of transaction (IMPORT or EXPORT)',
@@ -38,7 +38,24 @@ export class CreateSemiFinishedGoodTransactionDto {
     })
     @IsNotEmpty()
     @IsMongoId()
-    employeeId: string;
+    employee: string;
+
+    @ApiProperty({
+        description: 'Date of transaction',
+        type: 'string',
+        example: '',
+    })
+    @IsNotEmpty()
+    @IsDateString()
+    transactionDate: Date;
+
+    @ApiPropertyOptional({
+        description: 'Optional note for this transaction',
+        type: String,
+        example: 'CHE BIEN',
+    })
+    @IsOptional()
+    exportedTo?: string;
 
     @ApiPropertyOptional({
         description: 'Optional note for this transaction',
@@ -47,4 +64,6 @@ export class CreateSemiFinishedGoodTransactionDto {
     })
     @IsOptional()
     note?: string;
+
+
 }

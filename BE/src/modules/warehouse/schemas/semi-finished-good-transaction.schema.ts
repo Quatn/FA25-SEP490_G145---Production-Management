@@ -10,10 +10,10 @@ import { Employee } from "@/modules/employee/schemas/employee.schema";
 export class SemiFinishedGoodTransaction extends BaseSchema {
 
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: SemiFinishedGood.name, required: true })
-    semiFinishedGoodId: mongoose.Types.ObjectId | SemiFinishedGood;
+    semiFinishedGood: mongoose.Types.ObjectId | SemiFinishedGood;
 
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: Employee.name, required: true })
-    employeeId: mongoose.Types.ObjectId | Employee;
+    employee: mongoose.Types.ObjectId | Employee;
 
     @Prop({
         type: String,
@@ -28,8 +28,13 @@ export class SemiFinishedGoodTransaction extends BaseSchema {
     @Prop({ required: true })
     finalQuantity: number;
 
+    @Prop({ required: true })
+    transactionDate: Date;
+
     @Prop({ required: false })
-    note: string;
+    note?: string;
+
+
 }
 
 export type SemiFinishedGoodTransactionDocument = HydratedDocument<SemiFinishedGoodTransaction>;
