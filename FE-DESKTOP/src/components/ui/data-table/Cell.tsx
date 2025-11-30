@@ -23,8 +23,6 @@ type CellProps<RowData, TValue> = {
 }
 
 function ReadonlyCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueTypes>) {
-  console.log("RO re-rendered", props.context.row.index, props.context.column.getIndex())
-
   let value: DataTableEditableCellValueTypes = props.context.cell.getValue()
   if (check.date(value)) value = formatDateToYYYYMMDD(value)
 
@@ -32,8 +30,6 @@ function ReadonlyCell<RowData>(props: CellProps<RowData, DataTableEditableCellVa
 }
 
 function HighlightCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueTypes>) {
-  console.log("HL re-rendered", props.context.row.index, props.context.column.getIndex())
-
   let value: DataTableEditableCellValueTypes = props.context.cell.getValue()
   if (check.date(value)) value = formatDateToYYYYMMDD(value)
   const query = useDataTableSelector((state) => state.query)
@@ -46,8 +42,6 @@ function HighlightCell<RowData>(props: CellProps<RowData, DataTableEditableCellV
 }
 
 function TextCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueTypes>) {
-  console.log("TC re-rendered", props.context.row.index, props.context.column.getIndex())
-
   const { row, column, table, getValue } = props.context;
   const initialValue = getValue();
   const [value, setValue] = useState<DataTableEditableCellValueTypes>(initialValue);
@@ -87,8 +81,6 @@ function TextCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueT
 }
 
 function SelectCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueTypes>) {
-  console.log("SL re-rendered", props.context.row.index, props.context.column.getIndex())
-
   if (check.undefined(props.selectCollection)) {
     throw Error("Select Cells must also be provided a selectCollection in the column definition")
   }
@@ -145,9 +137,6 @@ function DateCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueT
   const initialValue = getValue();
 
   const [value, setValue] = useState<DataTableEditableCellValueTypes>(initialValue);
-  console.log("DT re-rendered", props.context.row.index, props.context.column.getIndex()
-    , "value: ", initialValue)
-
   const handleSetValue = (value: DataTableEditableCellValueTypes) => {
     setValue(value)
   }
@@ -180,8 +169,6 @@ function DateCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueT
 }
 
 function NumberCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueTypes>) {
-  console.log("NC re-rendered", props.context.row.index, props.context.column.getIndex())
-
   const { row, column, table, getValue } = props.context;
   const initialValue = getValue();
   const [value, setValue] = useState<DataTableEditableCellValueTypes>(initialValue);

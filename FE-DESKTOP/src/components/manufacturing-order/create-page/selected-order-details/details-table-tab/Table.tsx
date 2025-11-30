@@ -23,8 +23,8 @@ import check from "check-types";
 import { CreateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
 import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
-import { manufacturingOrderColumnsByTabs, ManufacturingOrderTableDataType } from "@/components/manufacturing-order/full-detail-table/tableDefinition";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
+import { manufacturingOrderColumnsByTabs, ManufacturingOrderTableDataType } from "@/components/manufacturing-order/full-detail-table/tableDefinition.old2";
 
 type TableProps = {
   rootProps?: BoxProps;

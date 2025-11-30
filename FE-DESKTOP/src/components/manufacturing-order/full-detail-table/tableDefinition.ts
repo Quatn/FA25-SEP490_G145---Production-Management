@@ -7,6 +7,12 @@ import { manufacturingOrderTableCells } from "./tableCellNodes";
 import { PrintColor } from "@/types/PrintColor";
 import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";
 import { getDataTableColumnHelper } from "@/components/ui/data-table/utils/getDataTableColumnHelper";
+import { DataTableCellType } from "@/components/ui/data-table/Cell";
+import { ManufacturingOrderDirectives } from "@/types/enums/ManufacturingOrderDirectives";
+import { createListCollection } from "@chakra-ui/react";
+import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
+import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
+import ManufacturingOrderTableActionColumn from "./ActionColumn";
 
 export type ManufacturingOrderTableDataType = Serialized<ManufacturingOrder> & { isEdited: boolean }
 
@@ -20,6 +26,26 @@ const orderStatusNameMap: Record<OrderStatus, string> = {
   PAUSED: "Tạm dừng",
   CANCELLED: "Đã hủy",
 }
+
+const manufacturingDirectives: { label: string, value: string }[] = [
+  { label: "Hủy", value: ManufacturingOrderDirectives.Cancel },
+  { label: "Tạm dừng", value: ManufacturingOrderDirectives.Pause },
+  { label: "Bắt buộc", value: ManufacturingOrderDirectives.Mandatory },
+  { label: "Bù lệnh", value: ManufacturingOrderDirectives.Compensate },
+]
+
+const manufacturingDirectivesCol = createListCollection({
+  items: manufacturingDirectives,
+})
+
+const corrugatorLines: { label: string, value: string }[] = [
+  { label: "Dàn 5", value: CorrugatorLine.L5 },
+  { label: "Dàn 7", value: CorrugatorLine.L7 },
+]
+
+const corrugatorLinesCol = createListCollection({
+  items: corrugatorLines,
+})
 
 const colSize = {
   sm: {
@@ -39,330 +65,536 @@ const colSize = {
   },
 }
 
-export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder>>)[] = [
-  columnHelper.defineDataTableDisplayColumn({
+const getPopulatedPoi = (mo: Serialized<ManufacturingOrder>) => {
+  if (check.string(mo.purchaseOrderItem)) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated")
+  return mo.purchaseOrderItem
+}
+
+const getPopulatedSubPo = (mo: Serialized<ManufacturingOrder>) => {
+  if (check.string(mo.purchaseOrderItem) || check.string(mo.purchaseOrderItem.subPurchaseOrder)
+  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder");
+  return mo.purchaseOrderItem.subPurchaseOrder
+}
+
+const getPopulatedPo = (mo: Serialized<ManufacturingOrder>) => {
+  if (check.string(mo.purchaseOrderItem)
+    || check.string(mo.purchaseOrderItem.subPurchaseOrder)
+    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder)
+  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder -> purchaseOrder");
+  return mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder
+}
+
+const getPopulatedCustomer = (mo: Serialized<ManufacturingOrder>) => {
+  if (check.string(mo.purchaseOrderItem)
+    || check.string(mo.purchaseOrderItem.subPurchaseOrder)
+    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder)
+    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder?.customer)
+  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder -> purchaseOrder -> customer");
+  return mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder?.customer
+}
+
+const getPopulatedWare = (mo: Serialized<ManufacturingOrder>) => {
+  if (check.string(mo.purchaseOrderItem)
+    || check.string(mo.purchaseOrderItem.ware)
+  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> ware");
+  return mo.purchaseOrderItem.ware
+}
+
+export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder> & { isEdited: boolean }>)[] = [
+  columnHelper.defineDataTableAccessorColumn({
     id: "manufacturingDirective",
+    accessorKey: "manufacturingDirective",
     header: "KH Giao",
     enablePinning: true,
+    cellType: DataTableCellType.Select,
+    selectCollection: manufacturingDirectivesCol,
     ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "code",
+    accessorKey: "code",
     header: "Mã lệnh",
     enablePinning: true,
-    ...colSize.sm,
-    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.highlight({
-      context,
-      value: context.row.original.code
-    }),
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "customerCode",
+    accessorFn: (mo) => {
+      return getPopulatedCustomer(mo)?.code
+    },
     header: "Khách hàng",
-    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.highlight({
-      context,
-      value: context.row.original.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.customer
-        ?.code,
-    }),
-
+    enablePinning: true,
+    cellType: DataTableCellType.Highlight,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "wareCode",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.code
+    },
     header: "Mã hàng",
-    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.highlight({
-      context,
-      value: context.row.original.purchaseOrderItem?.ware?.code
-    }),
-
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "overallStatus",
+    accessorKey: "overallStatus",
     header: "Trạng thái chạy",
-    cell: ({ row }) => orderStatusNameMap[row.original.overallStatus],
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "fluteCombo",
+  columnHelper.defineDataTableAccessorColumn({
+    id: "fluteCombination",
+    accessorFn: (mo) => {
+      const ware = getPopulatedWare(mo)
+      if (check.string(ware?.fluteCombination)) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> ware -> fluteCombination");
+      return ware?.fluteCombination.code
+    },
     header: "Sóng",
-    cell: ({ row }) => {
-      const fc = row.original.purchaseOrderItem?.ware?.fluteCombination
-      return check.string(fc) ? fc : fc?.code;
-    }
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "wareManufacturingProcessType",
+    accessorFn: (mo) => {
+      const ware = getPopulatedWare(mo)
+      if (check.string(ware?.wareManufacturingProcessType)) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> ware -> wareManufacturingProcessType");
+      return ware?.wareManufacturingProcessType.name
+    },
     header: "Kiểu gia công",
-    cell: ({ row }) => {
-      const fc = row.original.purchaseOrderItem?.ware?.wareManufacturingProcessType
-      return check.string(fc) ? fc : fc?.name;
-    }
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "wareWidth",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.wareWidth
+    },
     header: "Dài / Khổ",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.wareWidth,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "wareLength",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.wareLength
+    },
     header: "Rộng",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.wareLength,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "wareHeight",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.wareHeight
+    },
     header: "Cao",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.wareHeight,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "amount",
+    accessorKey: "amount",
     header: "Số lượng",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
     ...colSize.md,
-    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.amount({ context }),
-
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "orderDate",
+    accessorFn: (mo) => {
+      return getPopulatedPo(mo)?.orderDate
+    },
     header: "Ngày nhận",
+    enablePinning: true,
+    cellType: DataTableCellType.Date,
     ...colSize.md,
-    cell: ({ row }) =>
-      formatDateToDDMMYYYY(
-        row.original.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder
-          ?.orderDate,
-      ),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "deliveryDate",
+    accessorFn: (mo) => {
+      return getPopulatedSubPo(mo)?.deliveryDate
+    },
     header: "Ngày giao",
+    enablePinning: true,
+    cellType: DataTableCellType.Date,
     ...colSize.md,
-    cell: ({ row }) =>
-      formatDateToDDMMYYYY(
-        row.original.purchaseOrderItem?.subPurchaseOrder?.deliveryDate,
-      ),
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "purchaseOrderCode",
+    accessorFn: (mo) => {
+      return getPopulatedPo(mo)?.code
+    },
     header: "Đơn hàng",
-    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.highlight({
-      context,
-      value: context.row.original.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.code
-    }),
-
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "blankWidth",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.blankWidth
+    },
     header: "Khổ",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.blankWidth,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "blankLength",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.blankLength
+    },
     header: "Cắt dài",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.blankLength,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "flapLength",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.flapLength
+    },
     header: "Cánh",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.flapLength,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+  columnHelper.defineDataTableAccessorColumn({
     id: "warePerBlank",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.warePerBlank
+    },
     header: "Số SP",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.warePerBlank,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "numberOfBlanks",
+    accessorFn: (mo) => {
+      return getPopulatedPoi(mo)?.numberOfBlanks
+    },
     header: "Số tấm",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.numberOfBlanks,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "longitudinalCutCount",
+    accessorFn: (mo) => {
+      return getPopulatedPoi(mo)?.longitudinalCutCount
+    },
     header: "Tấm chặt",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.longitudinalCutCount,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "runningLength",
+    accessorFn: (mo) => {
+      return getPopulatedPoi(mo)?.runningLength
+    },
     header: "Mét dài",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.runningLength,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "crossCutCount",
-    header: "Part SX",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.crossCutCount,
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.crossCutCount
+    },
+    header: "Số SP",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "paperWidth",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.paperWidth
+    },
     header: "Khổ giấy",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.paperWidth,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "margin",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.margin
+    },
     header: "Lề biên",
-    ...colSize.sm,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.margin,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "faceLayerPaperType",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.faceLayerPaperType
+    },
     header: "Mặt SP",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
     ...colSize.md,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.faceLayerPaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "EFlutePaperType",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.EFlutePaperType
+    },
     header: "Sóng E",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
     ...colSize.md,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.EFlutePaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "EBLinerLayerPaperType",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.EBLinerLayerPaperType
+    },
     header: "Lớp giữa",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
     ...colSize.md,
-    cell: ({ row }) =>
-      row.original.purchaseOrderItem?.ware?.EBLinerLayerPaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "BFlutePaperType",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.BFlutePaperType
+    },
     header: "Sóng B",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
     ...colSize.md,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.BFlutePaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "BACLinerLayerPaperType",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.BACLinerLayerPaperType
+    },
     header: "Lớp giữa",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
     ...colSize.md,
-    cell: ({ row }) =>
-      row.original.purchaseOrderItem?.ware?.BACLinerLayerPaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "ACFlutePaperType",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.ACFlutePaperType
+    },
     header: "Sóng A/C",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
     ...colSize.md,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.ACFlutePaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "backLayerPaperType",
+    accessorFn: (mo) => {
+      return getPopulatedWare(mo)?.backLayerPaperType
+    },
     header: "Mặt trong",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
     ...colSize.md,
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.backLayerPaperType,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "purchaseOrderItemNote",
+    accessorFn: (mo) => {
+      return getPopulatedPoi(mo)?.note
+    },
     header: "Ghi chú cố định",
-    ...colSize.lg,
-    cell: ({ row }) => row.original.purchaseOrderItem?.note,
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "note",
-    header: "Ghi chú tạm thời",
-    ...colSize.lg,
-    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.note({ context }),
+    accessorKey: "note",
+    header: "Ghi chú cố định",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "manufacturingDateAdjustment",
+    accessorKey: "manufacturingDateAdjustment",
     header: "Ngày SX",
-    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.manufacturingDate({ context }),
-
+    enablePinning: true,
+    cellType: DataTableCellType.Date,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "requestedDatetime",
+    accessorKey: "requestedDatetime",
     header: "Ngày và giờ cần",
-    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.requestedDatetime({ context }),
-
+    enablePinning: true,
+    cellType: DataTableCellType.Date,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "corrugatorLineAdjustment",
-    header: "Dàn",
-    cell: (context: CellContext<ManufacturingOrderTableDataType, unknown>) => manufacturingOrderTableCells.corrugatorLine({ context }),
+    accessorKey: "corrugatorLineAdjustment",
+    header: "Dàn sóng",
+    enablePinning: true,
+    cellType: DataTableCellType.Select,
+    selectCollection: corrugatorLinesCol,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "faceLayerPaperWeight",
-    header: "Mặt SP",
-    cell: ({ row }) => row.original.purchaseOrderItem?.faceLayerPaperWeight?.toFixed(4),
-  }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "EFlutePaperWeight",
-    header: "Sóng E",
-    cell: ({ row }) => row.original.purchaseOrderItem?.EFlutePaperWeight?.toFixed(4),
-  }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "EBLinerLayerPaperWeight",
-    header: "Lớp giữa",
-    cell: ({ row }) =>
-      row.original.purchaseOrderItem?.EBLinerLayerPaperWeight?.toFixed(4),
-  }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "BFlutePaperWeight",
-    header: "Sóng B",
-    cell: ({ row }) => row.original.purchaseOrderItem?.BFlutePaperWeight?.toFixed(4),
-  }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "BACLinerLayerPaperWeight",
-    header: "Lớp giữa",
-    cell: ({ row }) =>
-      row.original.purchaseOrderItem?.BACLinerLayerPaperWeight?.toFixed(4),
-  }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "ACFlutePaperWeight",
-    header: "Sóng A/C",
-    cell: ({ row }) => row.original.purchaseOrderItem?.ACFlutePaperWeight?.toFixed(4),
-  }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "backLayerPaperWeight",
-    header: "Mặt trong",
-    cell: ({ row }) => row.original.purchaseOrderItem?.backLayerPaperWeight?.toFixed(4),
-  }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "totalVolume",
-    header: "Khối",
-    cell: ({ row }) => row.original.purchaseOrderItem?.totalVolume,
-  }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "totalWeight",
-    header: "Tổng trọng lượng",
-    cell: ({ row }) => row.original.purchaseOrderItem?.totalWeight.toFixed(4),
-  }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "typeOfPrinter",
-    header: "Máy In",
-    cell: ({ row }) => row.original.purchaseOrderItem?.ware?.typeOfPrinter,
-  }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "printColors",
-    header: "Màu In",
-    cell: ({ row }) => {
-      const pcs = row.original.purchaseOrderItem?.ware?.printColors
-      if (check.undefined(pcs)) return undefined
-      return (check.array.of.string(pcs)) ? pcs.join(", ") : pcs?.map((c) => (c as Serialized<PrintColor>).code).join(", ")
-    }
 
+  columnHelper.defineDataTableAccessorColumn({
+    id: "faceLayerPaperWeight",
+    accessorKey: "faceLayerPaperWeight",
+    header: "Mặt SP",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
-  columnHelper.defineDataTableDisplayColumn({
-    id: "processes",
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "EFlutePaperWeight",
+    accessorKey: "EFlutePaperWeight",
+    header: "Sóng E",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "EBLinerLayerPaperWeight",
+    accessorKey: "EBLinerLayerPaperWeight",
+    header: "Lớp giữa",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "BFlutePaperWeight",
+    accessorKey: "BFlutePaperWeight",
+    header: "Sóng B",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "BACLinerLayerPaperWeight",
+    accessorKey: "BACLinerLayerPaperWeight",
+    header: "Lớp giữa",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "ACFlutePaperWeight",
+    accessorKey: "ACFlutePaperWeight",
+    header: "Sóng A/C",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "backLayerPaperWeight",
+    accessorKey: "backLayerPaperWeight",
+    header: "Mặt trong",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "totalVolume",
+    accessorKey: "totalVolume",
+    header: "Khối",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "totalWeight",
+    accessorKey: "totalWeight",
+    header: "Tổng trọng lượng",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "typeOfPrinter",
+    accessorKey: "typeOfPrinter",
+    header: "Máy In",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "printColors",
+    accessorFn: (mo) => {
+      const printColors = getPopulatedWare(mo)?.printColors
+      return check.array.of.string(printColors) ? printColors.join(", ") : printColors?.map((c) => (c as Serialized<PrintColor>).code).join(", ")
+    },
+    header: "Màu in",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "finishingProcesses",
+    accessorFn: (mo) => {
+      const finishingProcesses = getPopulatedWare(mo)?.finishingProcesses
+      return check.array.of.string(finishingProcesses) ? finishingProcesses.join(", ") : finishingProcesses?.map((p) => (p as Serialized<WareFinishingProcessType>).name).join(", ")
+    },
     header: "Công đoạn gia công",
-    cell: ({ row }) => {
-      const fps = row.original.purchaseOrderItem?.ware?.finishingProcesses
-      if (check.undefined(fps)) return undefined
-      return (check.array.of.string(fps)) ? fps.join(", ") : fps?.map((p) => (p as Serialized<WareFinishingProcessType>).name).join(", ")
-    }
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
   }),
+
   columnHelper.defineDataTableDisplayColumn({
     id: "actions-column",
     header: undefined,
-    cell: () => undefined,
+    cell: ({ cell, table }) => ManufacturingOrderTableActionColumn({ rowId: cell.row.id, isEdited: cell.row.original.isEdited, mo: cell.row.original, meta: table.options.meta })
   }),
 ];
 
 export const manufacturingOrderColumnsByTabs: Record<
   ManufacturingTableTabType,
-  ReturnType<typeof columnHelper.display>[]
+  ColumnDef<Serialized<ManufacturingOrder> & { isEdited: boolean }>[]
 > = {
   all: manufacturingOrderColumns,
 

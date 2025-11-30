@@ -1,13 +1,14 @@
 "use client";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { UseDisclosureProps } from "@chakra-ui/react";
-import React, { createContext, Dispatch, useContext, useReducer } from "react";
+import { Store, useStore } from "@tanstack/react-store";
+import React, { createContext, useContext } from "react";
 
-interface DialogState extends UseDisclosureProps {
+interface StoreState extends UseDisclosureProps {
   order: Serialized<ManufacturingOrder> | null;
 }
 
-type DialogAction =
+type StoreAction =
   | { type: "SET_OPEN"; payload: boolean }
   | { type: "OPEN_DIALOG" }
   | { type: "CLOSE_DIALOG" }
@@ -18,17 +19,12 @@ type DialogAction =
   | { type: "SET_ORDER"; payload: Serialized<ManufacturingOrder> }
   | { type: "RESET" };
 
-const DialogStateContext = createContext<DialogState | undefined>(undefined);
-const DialogDispatchContext = createContext<Dispatch<DialogAction> | undefined>(
-  undefined,
-);
-
-const initialState: DialogState = {
+const initialState: StoreState = {
   open: false,
   order: null,
 };
 
-function dialogReducer(state: DialogState, action: DialogAction): DialogState {
+function reducer(state: StoreState, action: StoreAction): StoreState {
   switch (action.type) {
     case "SET_OPEN":
       return { ...state, open: action.payload };
@@ -47,43 +43,51 @@ function dialogReducer(state: DialogState, action: DialogAction): DialogState {
   }
 }
 
+const StoreContext = createContext<Store<StoreState> | null>(null);
+
 export function ManufacturingOrderDialogProvider(
   { children }: { children: React.ReactNode },
 ) {
-  const [state, dispatch] = useReducer(dialogReducer, initialState);
+  const storeRef = React.useRef(new Store<StoreState>(initialState));
+
   return (
-    <DialogStateContext.Provider value={state}>
-      <DialogDispatchContext.Provider value={dispatch}>
-        {children}
-      </DialogDispatchContext.Provider>
-    </DialogStateContext.Provider>
+    <StoreContext.Provider value={storeRef.current}>
+      {children}
+    </StoreContext.Provider>
   );
 }
 
-export function useManufacturingDialogState() {
-  const context = useContext(DialogStateContext);
-  if (context === undefined) {
-    throw new Error(
-      "useDialogState must be used within ManufacturingOrderDialogProvider",
-    );
-  }
-  return context;
+// Internal hook to get the store
+function useStoreInstance() {
+  const store = useContext(StoreContext);
+  if (!store) throw new Error("Must be used inside ManufacturingOrderTableProvider");
+  return store;
 }
 
-export function useManufacturingDialogDispatch() {
-  const context = useContext(DialogDispatchContext);
-  if (context === undefined) {
-    throw new Error(
-      "useDialogDispatch must be used within ManufacturingOrderDialogProvider",
-    );
-  }
-  return context;
+// Select slices of state
+function useSelector<T>(selector: (state: StoreState) => T): T {
+  const store = useStoreInstance();
+  return useStore(store, selector);
 }
 
-export function useOptionalManufacturingDialogState() {
-  return useContext(DialogStateContext);
+// Full state (avoid using)
+function useState() {
+  const store = useStoreInstance();
+  return useStore(store);
 }
 
-export function useOptionalManufacturingDialogDispatch() {
-  return useContext(DialogDispatchContext);
+// Dispatch reducer actions
+function useDispatch() {
+  const store = useStoreInstance();
+  return (action: StoreAction) => {
+    store.setState((prev) => reducer(prev, action));
+  };
+}
+
+export const ManufacturingOrderDetailsDialogReducerStore = {
+  context: StoreContext,
+  useStoreInstance,
+  useSelector: useSelector,
+  useState: useState,
+  useDispatch: useDispatch,
 }

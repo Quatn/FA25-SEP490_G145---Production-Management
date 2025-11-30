@@ -1,4 +1,5 @@
 import { ManufacturingOrderTableComponents } from "@/components/manufacturing-order/full-detail-table/components";
+import { DataTableProvider } from "@/components/ui/data-table/Provider";
 import { ManufacturingOrderDialogProvider } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { ManufacturingOrderTableProvider } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { Box, Button, HStack, Stack, Text } from "@chakra-ui/react";
@@ -7,52 +8,54 @@ import Link from "next/link";
 export default function ManufacturingOrderHome() {
   return (
     <ManufacturingOrderTableProvider>
-      <ManufacturingOrderDialogProvider>
-        <Box
-          m={5}
-          p={2}
-          flexGrow={1}
-        >
+      <DataTableProvider>
+        <ManufacturingOrderDialogProvider>
           <Box
-            px={3}
-            py={5}
-            rounded={"md"}
-            colorPalette={"gray"}
-            backgroundColor={"colorPalette.subtle"}
+            m={5}
+            p={2}
+            flexGrow={1}
           >
-            <Stack
-              gapY={2}
-              minHeight={"80vh"}
+            <Box
+              px={3}
+              py={5}
+              rounded={"md"}
+              colorPalette={"gray"}
+              backgroundColor={"colorPalette.subtle"}
             >
-              <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-                Danh sách lệnh
-              </Text>
-              <HStack justifyContent={"space-between"}>
-                <ManufacturingOrderTableComponents.SearchBar />
+              <Stack
+                gapY={2}
+                minHeight={"80vh"}
+              >
+                <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
+                  Danh sách lệnh
+                </Text>
+                <HStack justifyContent={"space-between"}>
+                  <ManufacturingOrderTableComponents.SearchBar />
 
-                <ManufacturingOrderTableComponents.SearchFilterControl />
+                  <ManufacturingOrderTableComponents.SearchFilterControl />
 
-                <Link href="/manufacturing-order/create">
-                  <Button colorPalette={"cyan"}>Tạo mới</Button>
-                </Link>
-              </HStack>
+                  <Link href="/manufacturing-order/create">
+                    <Button colorPalette={"cyan"}>Tạo mới</Button>
+                  </Link>
+                </HStack>
 
-              <ManufacturingOrderTableComponents.TableControl />
+                <ManufacturingOrderTableComponents.TableControl />
 
-              <Stack flexGrow={1}>
-                <ManufacturingOrderTableComponents.Table rootProps={{ flexGrow: 1 }} />
+                <Stack flexGrow={1}>
+                  <ManufacturingOrderTableComponents.Table rootProps={{ flexGrow: 1 }} />
+                </Stack>
+
+                <ManufacturingOrderTableComponents.PaginationControl />
+
+                <ManufacturingOrderTableComponents.Pagination />
               </Stack>
-
-              <ManufacturingOrderTableComponents.PaginationControl />
-
-              <ManufacturingOrderTableComponents.Pagination />
-            </Stack>
+            </Box>
           </Box>
-        </Box>
 
-        <ManufacturingOrderTableComponents.DetailsDialog />
-      </ManufacturingOrderDialogProvider>
-      <ManufacturingOrderTableComponents.ConfirmDialog />
+          <ManufacturingOrderTableComponents.DetailsDialog />
+        </ManufacturingOrderDialogProvider>
+        <ManufacturingOrderTableComponents.ConfirmDialog />
+      </DataTableProvider>
     </ManufacturingOrderTableProvider>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 import { Store, useStore } from "@tanstack/react-store";
-import React, { createContext, Dispatch, useContext } from "react";
+import React, { createContext, useContext } from "react";
 
 type TabType =
   | "selectedOrderDetails"

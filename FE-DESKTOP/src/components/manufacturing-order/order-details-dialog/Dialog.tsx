@@ -1,22 +1,29 @@
 "use client";
 
-import {
-  useManufacturingDialogDispatch,
-  useManufacturingDialogState,
-} from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
+import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import {
   CloseButton,
+  DataList,
   Dialog,
-  Field,
-  Input,
   Portal,
-  Stack,
 } from "@chakra-ui/react";
 import check from "check-types";
+import { useMemo } from "react";
 
 export default function ManufacturingOrderDetailsDialog() {
-  const { open, order } = useManufacturingDialogState();
-  const dispatch = useManufacturingDialogDispatch();
+  const { useDispatch, useSelector } = ManufacturingOrderDetailsDialogReducerStore;
+  const dispatch = useDispatch();
+  const open = useSelector(s => s.open)
+  const order = useSelector(s => s.order)
+
+  const stats: { label: string, value: string }[] = useMemo(() => {
+    if (check.null(order)) return []
+    return [
+      { label: "New Users", value: "234" },
+      { label: "Sales", value: "£12,340" },
+      { label: "Revenue", value: "3,450" },
+    ]
+  }, [order])
 
   return (
     <Dialog.Root
@@ -40,40 +47,14 @@ export default function ManufacturingOrderDetailsDialog() {
             </Dialog.Header>
             <Dialog.Body>
               {check.null(order) ? <></> : (
-                <Stack gap={4}>
-                  <Field.Root>
-                    <Field.Label>Khách hàng</Field.Label>
-                    <Input value={order.customerCode} />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>Mã hàng</Field.Label>
-                    <Input value={order.wareCode} />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>Sóng</Field.Label>
-                    <Input value={order.fluteCombinationCode} />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>Dài / Khổ</Field.Label>
-                    <Input value={order.wareLength} />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>Rộng</Field.Label>
-                    <Input value={order.wareWidth} />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>Cao</Field.Label>
-                    <Input
-                      value={check.null(order.wareHeight)
-                        ? ""
-                        : order.wareHeight}
-                    />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>Số lượng</Field.Label>
-                    <Input value={order.amount} />
-                  </Field.Root>
-                </Stack>
+                <DataList.Root orientation="horizontal">
+                  {stats.map((item) => (
+                    <DataList.Item key={item.label}>
+                      <DataList.ItemLabel>{item.label}</DataList.ItemLabel>
+                      <DataList.ItemValue>{item.value}</DataList.ItemValue>
+                    </DataList.Item>
+                  ))}
+                </DataList.Root>
               )}
             </Dialog.Body>
           </Dialog.Content>

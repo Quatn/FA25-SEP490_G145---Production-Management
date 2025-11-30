@@ -1,3 +1,4 @@
+import { BaseResponse } from "../BaseResponse";
 import { PatchResult } from "../PatchResult";
 import { UpdateManufacturingOrderRequestDto } from "./UpdateManufacturingOrdersRequest";
 

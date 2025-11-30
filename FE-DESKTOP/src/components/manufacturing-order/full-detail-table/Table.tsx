@@ -33,16 +33,18 @@ import {
 import check from "check-types";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { manufacturingOrderColumnsByTabs, ManufacturingOrderTableDataType } from "./tableDefinition";
-import { useManufacturingDialogDispatch } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { CSSProperties, useEffect, useMemo, useReducer, useState } from "react";
 import { BiSolidDownArrow } from "react-icons/bi";
-import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { CellContext, Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { ManufacturingTableEditableCellInputTypes, ManufacturingTableEditableCellProps } from "./tableCellNodes";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
 import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
 import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
+import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
+import useDataTable from "@/components/ui/data-table/hook";
+import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 
 export type ManufacturingOrderTableProps = {
   rootProps?: BoxProps;
@@ -178,8 +180,7 @@ export default function ManufacturingOrderTable(
     isLoading: isFetchingList,
   } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: search });
 
-
-  const dialogDispatch = useManufacturingDialogDispatch();
+  const dialogDispatch = ManufacturingOrderDetailsDialogReducerStore.useDispatch();
   const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
   const [deleteOrder] = useDeleteManufacturingOrderMutation();
 
@@ -227,43 +228,34 @@ export default function ManufacturingOrderTable(
       [])
   }, [moPaginatedList, flag])
 
-  const table = useReactTable({
+  const { table, tableComponent, tableData: actualTableData } = useDataTable({
     data: tableData,
     columns: manufacturingOrderColumnsByTabs[tab],
     getCoreRowModel: getCoreRowModel(),
+    getRowId: (mo) => mo._id,
+    bodyPropsStack: {
+      tableRowProps: {
+        bg: { base: "bg", _hover: "bg.muted" }
+      },
+      pinnedCellProps: {
+        bg: "bg.subtle",
+      },
+      editedRowProps: {
+        colorPalette: "yellow",
+        bg: { base: "colorPalette.subtle", _hover: "colorPalette.muted" }
+      },
+      editedRowPinnedCellProps: {
+        colorPalette: "yellow",
+        bg: { base: "colorPalette.muted" }
+      },
+    },
     initialState: {
       columnPinning: {
         left: ['manufacturingDirective', "code"],
         right: ['actions-column'],
       },
     },
-    getRowId: (row) => row._id,
-
-    meta: {
-      updateData: (rowIndex: number, columnId: number, value: string) => {
-        // Skip page index reset until after next rerender
-        // skipAutoResetPageIndex()
-        setTableData(old =>
-          old.map((row, index) => {
-            if (index === rowIndex) {
-              return {
-                ...old[rowIndex]!,
-                [columnId]: value,
-                isEdited: true,
-              }
-            }
-            return row
-          })
-        )
-      },
-      allowEdit,
-      editableCellNode: (props: ManufacturingTableEditableCellProps) => {
-        return <EditableCell {...props} />
-      },
-      query: search,
-    },
-  }
-  );
+  });
 
   useEffect(() => {
     dispatch({
@@ -392,6 +384,10 @@ export default function ManufacturingOrderTable(
       </Tabs.Root>
 
       <Table.ScrollArea borderWidth="1px">
+
+        {tableComponent}
+
+        {/*
         <Table.Root
           minW={table.getTotalSize()}
           size="sm"
@@ -476,6 +472,8 @@ export default function ManufacturingOrderTable(
             ))}
           </Table.Body>
         </Table.Root>
+        */}
+
       </Table.ScrollArea>
 
       <ActionBar.Root open={editedItemsNum > 0}>

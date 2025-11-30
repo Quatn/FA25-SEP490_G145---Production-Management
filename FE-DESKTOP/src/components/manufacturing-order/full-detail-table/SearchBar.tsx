@@ -10,8 +10,6 @@ export default function ManufacturingOrderSearchBar() {
   const dispatch = useDispatch();
   const search = useSelector(s => s.search);
 
-  console.log("search bar re-render")
-
   const [localSearch, setLocalSearch] = useState(search);
 
   useEffect(() => {

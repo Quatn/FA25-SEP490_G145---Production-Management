@@ -14,5 +14,6 @@ export type DataTableEditableCellProps = {
 
 export type DataTableMeta = {
   updateData?: (rowIndex: number, columnId: string, value: DataTableEditableCellValueTypes) => void;
+  resetRow?: (id: string) => void,
   editableCellNode?: (props: DataTableEditableCellProps) => React.ReactNode
 };

@@ -10,7 +10,8 @@ export type DataTableAccessorColumnOptions<T> = ColumnDef<T> & {
   selectCollection?: ListCollection<{ label: string, value: string }>
 }
 
-export function getDataTableColumnHelper<RowData>() {
+export function getDataTableColumnHelper<TData>() {
+  type RowData = TData & { isEdited: boolean }
   const columnHelper = createColumnHelper<RowData>();
 
   return {

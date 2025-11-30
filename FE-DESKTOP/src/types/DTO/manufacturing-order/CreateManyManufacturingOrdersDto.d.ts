@@ -1,3 +1,4 @@
+import { BaseResponse } from "../BaseResponse";
 import { CreateResult } from "../CreateResult";
 import { CreateManufacturingOrderRequestDto } from "./CreateManufacturingOrdersRequest";
 
