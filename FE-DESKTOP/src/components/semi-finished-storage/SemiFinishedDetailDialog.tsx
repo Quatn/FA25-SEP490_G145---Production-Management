@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Button, Dialog, Portal, DataList, CloseButton, Text } from "@chakra-ui/react";
+import { Button, Dialog, Portal, DataList, CloseButton, Text, Table, Highlight } from "@chakra-ui/react";
 import { SemiFinishedGood } from "@/types/SemiFinishedGood";
 import SemiFinishedTransactionHistory from "./SemiFinishedTransactionHistory";
+import { formatDate, hourGap } from "@/utils/dateUtils";
 
 interface Props {
     isOpen: boolean;
@@ -12,12 +13,36 @@ interface Props {
 const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
     const [current, setCurrent] = useState<SemiFinishedGood | undefined>(item);
 
+    const get = (obj: any, path: string, fallback: any = "-") => {
+        return path.split(".").reduce((o, k) => (o?.[k]), obj) ?? fallback;
+    };
+    const renderDiffStatus = (transactionType: string, value: number, amount: number) => {
+        const diff = value - amount;
+
+        if (diff === 0)
+            return <> {transactionType == 'import' ? 'Nhập' : 'Xuất'} đủ</>;
+
+        if (diff > 0)
+            return <>{transactionType == 'import' ? 'Nhập' : 'Xuất'} thừa {diff}</>;
+
+        if (transactionType == 'export' && value == 0) return <> Chưa xuất kho</>;
+
+        return <>{transactionType == 'import' ? 'Nhập' : 'Xuất'} thiếu {Math.abs(diff)}</>;
+    };
+
     useEffect(() => { if (isOpen) setCurrent(item); }, [isOpen, item]);
+
+    const mo = current?.manufacturingOrder;
+    const poItem = mo?.purchaseOrderItem;
+
+    const amount = poItem?.amount ?? 0;
+    const importDiff = (current?.importedQuantity ?? 0) - amount;
+    const hoursInStock = current?.currentQuantity == 0 ? 0 : hourGap(current?.createdAt);
 
     if (!item) return null;
 
     return (
-        <Dialog.Root open={isOpen} onOpenChange={onClose} size={"cover"}>
+        <Dialog.Root open={isOpen} onOpenChange={onClose} size={"cover"} scrollBehavior="inside">
             <Portal>
                 <Dialog.Backdrop />
                 <Dialog.Positioner>
@@ -26,13 +51,127 @@ const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) =>
                             <Dialog.Title fontSize={"xl"} fontWeight={"bold"}>Chi tiết bán thành phẩm</Dialog.Title>
                         </Dialog.Header>
                         <Dialog.Body>
-                            <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
-                                <DataList.Item pt="4" fontSize={"lg"}><DataList.ItemLabel>Mã lệnh</DataList.ItemLabel><DataList.ItemValue fontSize={"lg"}>{current?.manufacturingOrder?.code}</DataList.ItemValue></DataList.Item>
-                                <DataList.Item pt="4" fontSize={"lg"}><DataList.ItemLabel>Số lượng</DataList.ItemLabel><DataList.ItemValue fontSize={"lg"}>{current?.currentQuantity}</DataList.ItemValue></DataList.Item>
-                                <DataList.Item pt="4" fontSize={"lg"}><DataList.ItemLabel>Ghi chú</DataList.ItemLabel><DataList.ItemValue fontSize={"lg"}>{current?.note}</DataList.ItemValue></DataList.Item>
-                            </DataList.Root>
+                            <Table.ScrollArea
+                                borderWidth="1px"
+                                rounded="md"
+                                mt={5}
+                            >
+                                <Table.Root
+                                    size="lg"
+                                    stickyHeader
+                                    interactive
+                                    showColumnBorder
+                                    colorPalette="orange"
+                                    tableLayout="auto"
+                                    w="100%"
+                                    border={"1px solid black"}
+                                    css={{
+                                        "& td, & th": {
+                                            border: "1px solid black"
+                                        },
+                                    }}>
+                                    <Table.Header>
+                                        <Table.Row>
+                                            <Table.ColumnHeader rowSpan={2} w="1%" textAlign="center">
+                                                Ngày SX
+                                            </Table.ColumnHeader>
+
+                                            <Table.ColumnHeader rowSpan={2}>
+                                                Lệnh SX
+                                            </Table.ColumnHeader>
+
+                                            <Table.ColumnHeader textAlign={'center'} colSpan={2}>
+                                                Thông tin sản xuất
+                                            </Table.ColumnHeader>
+
+                                            <Table.ColumnHeader whiteSpace={"normal"} w={"1%"}  rowSpan={2}>Lớp sóng</Table.ColumnHeader>
+                                            <Table.ColumnHeader colSpan={3} textAlign="center">
+                                                Kích thước sản phẩm
+                                            </Table.ColumnHeader>
+                                            <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Số lượng</Table.ColumnHeader>
+                                            <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tổng số lượng đã nhập</Table.ColumnHeader>
+                                            <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Cảnh báo thừa thiếu</Table.ColumnHeader>
+                                            <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Xuất phôi</Table.ColumnHeader>
+                                            <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tổng xuất</Table.ColumnHeader>
+                                            <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tồn kho</Table.ColumnHeader>
+                                            <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Số giờ tồn kho</Table.ColumnHeader>
+                                            <Table.ColumnHeader rowSpan={2}>Ghi chú</Table.ColumnHeader>
+
+                                        </Table.Row>
+                                        <Table.Row >
+                                            <Table.ColumnHeader colSpan={1}>Khách hàng</Table.ColumnHeader>
+                                            <Table.ColumnHeader colSpan={1}>Mã hàng</Table.ColumnHeader>
+                                            <Table.ColumnHeader colSpan={1}>Dài</Table.ColumnHeader>
+                                            <Table.ColumnHeader colSpan={1}>Rộng</Table.ColumnHeader>
+                                            <Table.ColumnHeader colSpan={1}> Cao</Table.ColumnHeader>
+                                        </Table.Row>
+                                    </Table.Header>
+
+                                    <Table.Body>
+                                        <Table.Row>
+                                            <Table.Cell>{formatDate(mo?.manufacturingDate)}</Table.Cell>
+                                            <Table.Cell>
+                                                {mo?.code ?? "-"}
+                                            </Table.Cell>
+                                            <Table.Cell>
+                                                {get(poItem, "subPurchaseOrder.purchaseOrder.customer.code")}
+                                            </Table.Cell>
+                                            <Table.Cell>
+                                                {get(poItem, "ware.code")}
+                                            </Table.Cell>
+                                            <Table.Cell>
+                                                {get(poItem, "ware.fluteCombination.code")}
+                                            </Table.Cell>
+                                            <Table.Cell>
+                                                {get(poItem, "ware.wareLength")}
+                                            </Table.Cell>
+                                            <Table.Cell>
+
+                                                {get(poItem, "ware.wareWidth")}
+                                            </Table.Cell>
+                                            <Table.Cell>
+                                                {get(poItem, "ware.wareHeight")}
+                                            </Table.Cell>
+                                            <Table.Cell>
+                                                {amount}
+                                            </Table.Cell>
+                                            <Table.Cell>{item.importedQuantity}</Table.Cell>
+                                            <Table.Cell
+                                                backgroundColor={
+                                                    importDiff === 0
+                                                        ? "green.200"
+                                                        : importDiff > 0
+                                                            ? "yellow.200"
+                                                            : "red.200"
+                                                }
+                                            >
+                                                {renderDiffStatus('import', item.importedQuantity, amount)}
+                                            </Table.Cell>
+                                            <Table.Cell>
+                                                {item.exportedTo}
+                                            </Table.Cell>
+                                            <Table.Cell>
+                                                {item.exportedQuantity}
+                                            </Table.Cell>
+                                            <Table.Cell>
+                                                {item.currentQuantity}
+                                            </Table.Cell>
+                                            <Table.Cell backgroundColor={hoursInStock > 48 ? "red" : "white"}
+                                                color={hoursInStock > 2 ? "white" : "black"}
+                                                fontWeight={"bold"}
+                                                textAlign={"center"}>
+                                                {hoursInStock}
+                                            </Table.Cell>
+                                            <Table.Cell>
+                                                {item.note}
+                                            </Table.Cell>
+
+                                        </Table.Row>
+                                    </Table.Body>
+                                </Table.Root>
+                            </Table.ScrollArea>
                             <Text mt={10} mb={2} fontSize={"xl"} fontWeight={"bold"}>Lịch Sử Nhập Xuất</Text>
-                            <SemiFinishedTransactionHistory id={current?._id} />
+                            <SemiFinishedTransactionHistory id={current?._id} poiAmount={amount}/>
                         </Dialog.Body>
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>

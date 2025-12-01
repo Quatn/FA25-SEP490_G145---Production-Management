@@ -4,45 +4,33 @@ import { useCreateFinishedGoodTransactionMutation } from "@/service/api/finished
 import { toaster } from "@/components/ui/toaster";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { FinishedGood } from "@/types/FinishedGood";
+import { CreateFinishedGoodTransactionDTO } from "@/types/FinishedGoodTransaction";
 
 interface Props {
     isOpen: boolean;
-    manufacturingOrders: ManufacturingOrder[];
     onClose: () => void;
     initialData?: FinishedGood | undefined;
     transactionType?: "IMPORT" | "EXPORT";
 }
 
-type TransactionRequest = {
-    manufacturingOrder: string;
-    manufacturingOrderCode: string;
-    transactionType: "IMPORT" | "EXPORT";
-    quantity: number;
-    employee?: string;
-    note?: string;
-};
-
-const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData, transactionType, manufacturingOrders }) => {
+const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData, transactionType }) => {
     const [createFinishedGoodTransaction] = useCreateFinishedGoodTransactionMutation();
-    const [transaction, setTransaction] = useState<TransactionRequest>({
+    const today = new Date();
+    const localDate = today.toISOString().split("T")[0];
+    const [transaction, setTransaction] = useState<CreateFinishedGoodTransactionDTO>({
         manufacturingOrder: "",
         manufacturingOrderCode: "",
         transactionType: transactionType ?? "IMPORT",
         quantity: 0,
-        employee: "",
+        transactionDate: localDate,
+        employee: "691b660f3a472fc27fde0c31",
         note: "",
     });
 
-    const { contains } = useFilter({ sensitivity: "base" });
-    const initialMOs = manufacturingOrders.map((mo) => ({
-        label: `${mo.code}`,
-        value: mo._id,
-    }));
-    const { collection: moCollection, filter: moFilter } = useListCollection({
-        initialItems: initialMOs,
-        filter: contains,
-    });
-
+    const [mo, setMo] = useState('');
+    const [customer, setCustomer] = useState('');
+    const [po, setPo] = useState('');
+    
     useEffect(() => {
         if (isOpen) {
             setTransaction({
@@ -50,9 +38,14 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
                 manufacturingOrderCode: initialData?.manufacturingOrder?.code ?? "",
                 transactionType: transactionType ?? "IMPORT",
                 quantity: 0,
-                employee: "691b660f3a472fc27fde0c31", //TODO: hardcode employee
+                transactionDate: localDate,
+                employee: "69146dd889bf8e8ca320bcff", //TODO: hardcode employee
                 note: "",
             });
+            setMo(String(initialData?.manufacturingOrder?.code));
+            setCustomer(String(initialData?.manufacturingOrder?.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.customer?.code));
+            setPo(String(initialData?.manufacturingOrder?.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.code));
+
         }
     }, [isOpen]);
 
@@ -67,6 +60,7 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
                 manufacturingOrder: transaction.manufacturingOrder,
                 transactionType: transaction.transactionType,
                 quantity: transaction.quantity,
+                transactionDate: transaction.transactionDate,
                 employee: transaction.employee,
                 note: transaction.note
             } as any).unwrap();
@@ -97,35 +91,12 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
                             <Flex direction="column" gap={3}>
                                 <Field.Root orientation="vertical">
                                     <Field.Label fontSize="lg">Mã lệnh</Field.Label>
-                                    <Combobox.Root
-                                        collection={moCollection}
-                                        defaultInputValue={initialData?.manufacturingOrder?.code || ""}
-                                        readOnly={initialData?.manufacturingOrder ? true : false}
-                                        onInputValueChange={(e) => moFilter(e.inputValue)}
-                                        onValueChange={(details) => {
-                                            setTransaction({ ...transaction, manufacturingOrder: details.value[0] });
-                                        }}>
-                                        <Combobox.Control>
-                                            <Combobox.Input placeholder="Chọn hoặc tìm mã lệnh" />
-                                            <Combobox.IndicatorGroup>
-                                                <Combobox.ClearTrigger />
-                                                <Combobox.Trigger />
-                                            </Combobox.IndicatorGroup>
-                                        </Combobox.Control>
-                                        <Combobox.Positioner>
-                                            <Combobox.Content>
-                                                <Combobox.Empty>
-                                                    Không có mã lệnh phù hợp
-                                                </Combobox.Empty>
-                                                {moCollection.items.map((item, index) => (
-                                                    <Combobox.Item key={index} item={item}>
-                                                        {item.label}
-                                                        <Combobox.ItemIndicator />
-                                                    </Combobox.Item>
-                                                ))}
-                                            </Combobox.Content>
-                                        </Combobox.Positioner>
-                                    </Combobox.Root>
+                                    <Input
+                                        size="lg"
+                                        type="text"
+                                        value={`${mo} - ${customer} - ${po}`}
+                                        readOnly
+                                    />
                                 </Field.Root>
 
                                 <Field.Root orientation="vertical">
@@ -184,6 +155,17 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
 
                                         <NumberInput.Control />
                                     </NumberInput.Root>
+                                </Field.Root>
+
+                                <Field.Root orientation="vertical">
+                                    <Field.Label fontSize="lg">Ngày {transaction.transactionType === "IMPORT" ? "nhập" : "xuất"} </Field.Label>
+                                    <Input
+                                        type="date"
+                                        value={transaction.transactionDate}
+                                        onChange={(e) => setTransaction({ ...transaction, transactionDate: e.target.value })}
+                                        max={localDate}
+                                        width="200px"
+                                    />
                                 </Field.Root>
 
                                 <Field.Root orientation="vertical">

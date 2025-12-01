@@ -1,12 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { SemiFinishedGoodTransaction, SemiFinishedGoodTransactionDocument } from '../schemas/semi-finished-good-transaction.schema';
-import { Model, Types } from 'mongoose';
+import { SemiFinishedGoodTransaction, SemiFinishedGoodTransactionDocument, SemiFinishedGoodTransactionSchema } from '../schemas/semi-finished-good-transaction.schema';
+import { Model, PipelineStage, Types } from 'mongoose';
 import { CreateSemiFinishedGoodTransactionDto } from './dto/create-semi-finished-good-transaction.dto';
 import { UpdateSemiFinishedGoodTransactionDto } from './dto/update-semi-finished-good-transaction.dto';
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
 import { SemiFinishedGood, SemiFinishedGoodDocument, SemiFinishedGoodSchema } from '../schemas/semi-finished-good.schema';
 import { TransactionType } from '../enums/transaction-type.enum';
+import { GetSemiFinishedGoodTransactionsDto } from './dto/get-semi-finished-good-transaction.dto';
 
 type SoftSFGTransaction = SemiFinishedGoodTransaction & SoftDeleteDocument;
 
@@ -17,57 +18,164 @@ export class SemiFinishedGoodTransactionService {
     @InjectModel(SemiFinishedGood.name) private readonly semiModel: Model<SemiFinishedGoodDocument>,
   ) { }
 
-  async findPaginated(page = 1, limit = 10, search?: string, semiFinishedGoodId?: string) {
+  async findPaginated(dto: GetSemiFinishedGoodTransactionsDto) {
+    const {
+      page = 1,
+      limit = 10,
+      semiFinishedGood,
+      search,
+      transactionType,
+      startDate,
+      endDate,
+      sort,
+    } = dto;
+
     const skip = (page - 1) * limit;
-    const pipeline: any[] = [];
+    const semiFinishedGoodId = new Types.ObjectId(semiFinishedGood);
 
-    pipeline.push({
-      $lookup: {
-        from: 'semifinishedgoods',
-        localField: 'semiFinishedGoodId',
-        foreignField: '_id',
-        as: 'semiFinishedGood',
+    // 1. Initial Match: Filter by the semi finished Good first
+    const initialMatch: PipelineStage.Match = {
+      $match: { semiFinishedGood: semiFinishedGoodId }
+    };
+
+    // 2. Calculate Running Totals ($setWindowFields)
+    const calculateRunningTotals: PipelineStage = {
+      $setWindowFields: {
+        partitionBy: 'semiFinishedGood',
+        sortBy: { createdAt: 1 },
+        output: {
+          runningTotalImport: {
+            $sum: {
+              $cond: [
+                { $eq: ['$transactionType', 'IMPORT'] },
+                { $subtract: ['$finalQuantity', '$initialQuantity'] }, // Amount added
+                0
+              ]
+            },
+            window: { documents: ['unbounded', 'current'] } // Sum from start to this row
+          },
+          runningTotalExport: {
+            $sum: {
+              $cond: [
+                { $eq: ['$transactionType', 'EXPORT'] },
+                { $abs: { $subtract: ['$finalQuantity', '$initialQuantity'] } },
+                0
+              ]
+            },
+            window: { documents: ['unbounded', 'current'] }
+          }
+        }
+      }
+    };
+
+    // 3. Lookups (Populate)
+    const lookups: PipelineStage[] = [
+      {
+        $lookup: {
+          from: 'employees',
+          localField: 'employee',
+          foreignField: '_id',
+          as: 'employeeData'
+        }
       },
-    });
-    pipeline.push({ $unwind: { path: '$semiFinishedGood', preserveNullAndEmptyArrays: true } });
+      {
+        $unwind: { path: '$employeeData', preserveNullAndEmptyArrays: true }
+      }
+    ];
 
-    pipeline.push({
-      $lookup: {
-        from: 'employees',
-        localField: 'employeeId',
-        foreignField: '_id',
-        as: 'employee',
-      },
-    });
-    pipeline.push({ $unwind: { path: '$employee', preserveNullAndEmptyArrays: true } });
+    // 4. Secondary Filter (Search, Date, Type)
+    const filterQuery: any = {};
 
-    const match: any = {};
-    if (semiFinishedGoodId) match.semiFinishedGoodId = new Types.ObjectId(semiFinishedGoodId);
-    if (search && search.trim() !== '') {
-      const regex = new RegExp(search.trim(), 'i');
-      match.$or = [
-        { transactionType: regex },
-        { note: regex },
-        { 'semiFinishedGood.note': regex },
+    if (transactionType) {
+      filterQuery.transactionType = transactionType;
+    }
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+
+      if (start > end) {
+        throw new BadRequestException("startDate must be earlier than or equal to endDate");
+      }
+
+      filterQuery.transactionDate = {
+        $gte: start,
+        $lte: end,
+      };
+    } else if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+
+      filterQuery.transactionDate = { $gte: start };
+    } else if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+
+      filterQuery.transactionDate = { $lte: end };
+    }
+
+    if (search?.trim()) {
+      const regex = new RegExp(search.trim(), "i");
+      filterQuery.$or = [
+        { 'employeeData.code': regex }
       ];
     }
-    if (Object.keys(match).length) pipeline.push({ $match: match });
 
-    pipeline.push({ $sort: { createdAt: -1 } });
+    const secondaryMatch: PipelineStage.Match = { $match: filterQuery };
 
-    pipeline.push({
-      $facet: {
-        data: [{ $skip: skip }, { $limit: limit }],
-        totalCount: [{ $count: 'count' }],
-      },
+    // 5. Build the Final Pipeline with Facets for Pagination
+    const pipeline: PipelineStage[] = [
+      initialMatch,
+      calculateRunningTotals,
+      ...lookups,
+      secondaryMatch,
+      { $sort: { createdAt: sort == 'ASC' ? 1 : -1 } },
+      {
+        $facet: {
+          metadata: [{ $count: 'total' }],
+          data: [
+            { $skip: skip },
+            { $limit: limit }
+          ]
+        }
+      }
+    ];
+
+    const [result] = await this.sfgTransactionModel.aggregate(pipeline);
+
+    const data = result.data || [];
+    const totalItems = result.metadata[0]?.total || 0;
+
+    // 6. Map to Table Format
+    const tableData = data.map((doc: any, index: number) => {
+      return {
+        index: skip + index + 1,
+        createdDate: doc.createdAt,
+        transactionType: doc.transactionType,
+
+        totalImport: doc.runningTotalImport || 0,
+        totalExport: doc.runningTotalExport || 0,
+
+        totalCurrent: doc.finalQuantity,
+
+        transactionDate: doc.transactionDate,
+        employee: doc.employeeData?.code || 'Unknown',
+        note: doc.note || ''
+      };
     });
 
-    const result = await this.sfgTransactionModel.aggregate(pipeline).exec();
-    const data = result[0]?.data || [];
-    const totalItems = result[0]?.totalCount[0]?.count || 0;
-    const totalPages = Math.ceil(totalItems / limit);
-
-    return { data, page, limit, totalItems, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 };
+    return {
+      data: tableData,
+      page,
+      limit,
+      totalItems,
+      totalPages: Math.ceil(totalItems / limit),
+      hasNextPage: page * limit < totalItems,
+      hasPrevPage: page > 1,
+    };
   }
 
   async findAll() {
@@ -75,55 +183,62 @@ export class SemiFinishedGoodTransactionService {
   }
 
   async findOne(id: string) {
-    const pipeline = [
-      { $match: { _id: new Types.ObjectId(id) } },
-      {
-        $lookup: {
-          from: 'semifinishedgoods',
-          localField: 'semiFinishedGoodId',
-          foreignField: '_id',
-          as: 'semiFinishedGood',
-        },
-      },
-      { $unwind: { path: '$semiFinishedGood', preserveNullAndEmptyArrays: true } },
-      {
-        $lookup: {
-          from: 'employees',
-          localField: 'employeeId',
-          foreignField: '_id',
-          as: 'employee',
-        },
-      },
-      { $unwind: { path: '$employee', preserveNullAndEmptyArrays: true } },
-    ];
+    const empPath = SemiFinishedGoodTransactionSchema.path('employee');
+    const finishedGoodPath = SemiFinishedGoodTransactionSchema.path("finishedGood");
 
-    const docs = await this.sfgTransactionModel.aggregate(pipeline).exec();
-    if (!docs || docs.length === 0) throw new NotFoundException('Transaction not found');
-    return docs[0];
+    const [data] = await Promise.all([
+      this.sfgTransactionModel
+        .find({ _id: id })
+        .populate([
+          {
+            path: empPath.path,
+          },
+          {
+            path: finishedGoodPath.path,
+          },
+        ])
+        .lean(),
+    ]);
+
+    if (!data || data.length === 0) throw new NotFoundException('Transaction not found');
+
+    return data[0];
   }
 
   async createOne(dto: CreateSemiFinishedGoodTransactionDto) {
-    const moId = new Types.ObjectId(dto.manufacturingOrderId);
-    let semi = await this.semiModel.findOne({ manufacturingOrderId: moId }).exec();
-    if (!semi) {
-      semi = await this.semiModel.create({ manufacturingOrderId: moId, currentQuantity: 0 });
+    const moId = new Types.ObjectId(dto.manufacturingOrder);
+    let semi = await this.semiModel.findOne({ manufacturingOrder: moId }).exec();
+    if (semi) {
+      if (dto.transactionType == 'EXPORT' && semi.exportedTo == undefined) {
+        semi.exportedTo = dto.exportedTo;
+        await semi.save();
+      }
+    } else {
+      semi = await this.semiModel.create({ manufacturingOrder: moId, currentQuantity: 0 });
     }
 
     const initialQuantity = semi.currentQuantity ?? 0;
     let finalQuantity = initialQuantity;
-    if (dto.transactionType === 'IMPORT') finalQuantity = initialQuantity + dto.quantity;
-    else if (dto.transactionType === 'EXPORT') finalQuantity = initialQuantity - dto.quantity;
+    if (dto.transactionType === 'IMPORT') {
+      finalQuantity = initialQuantity + dto.quantity;
+      semi.importedQuantity += dto.quantity;
+    }
+    else if (dto.transactionType === 'EXPORT') {
+      finalQuantity = initialQuantity - dto.quantity;
+      semi.exportedQuantity += dto.quantity;
+    }
     else if (dto.transactionType === 'ADJUSTMENT') finalQuantity = dto.quantity;
 
     semi.currentQuantity = finalQuantity;
     await semi.save();
 
     const doc = new this.sfgTransactionModel({
-      semiFinishedGoodId: semi._id,
-      employeeId: dto.employeeId ? new Types.ObjectId(dto.employeeId) : undefined,
+      semiFinishedGood: semi._id,
+      employee: dto.employee ? new Types.ObjectId(dto.employee) : undefined,
       transactionType: dto.transactionType,
       initialQuantity,
       finalQuantity,
+      transactionDate: dto.transactionDate,
       note: dto.note,
     });
     const inserted = await doc.save();
@@ -133,7 +248,7 @@ export class SemiFinishedGoodTransactionService {
       {
         $lookup: {
           from: 'semifinishedgoods',
-          localField: 'semiFinishedGoodId',
+          localField: 'semiFinishedGood',
           foreignField: '_id',
           as: 'semiFinishedGood',
         },
@@ -142,7 +257,7 @@ export class SemiFinishedGoodTransactionService {
       {
         $lookup: {
           from: 'employees',
-          localField: 'employeeId',
+          localField: 'employee',
           foreignField: '_id',
           as: 'employee',
         },
@@ -155,8 +270,8 @@ export class SemiFinishedGoodTransactionService {
 
   async updateOne(id: string, dto: UpdateSemiFinishedGoodTransactionDto) {
     const raw: any = { ...dto };
-    if (raw.semiFinishedGoodId) raw.semiFinishedGoodId = new Types.ObjectId(String(raw.semiFinishedGoodId));
-    if (raw.employeeId) raw.employeeId = new Types.ObjectId(String(raw.employeeId));
+    if (raw.semiFinishedGood) raw.semiFinishedGood = new Types.ObjectId(String(raw.semiFinishedGood));
+    if (raw.employee) raw.employee = new Types.ObjectId(String(raw.employee));
 
     const updated = await this.sfgTransactionModel.findByIdAndUpdate(id, raw, { new: true });
     if (!updated) throw new NotFoundException('Transaction not found');
@@ -166,7 +281,7 @@ export class SemiFinishedGoodTransactionService {
       {
         $lookup: {
           from: 'semifinishedgoods',
-          localField: 'semiFinishedGoodId',
+          localField: 'semiFinishedGood',
           foreignField: '_id',
           as: 'semiFinishedGood',
         },
@@ -175,7 +290,7 @@ export class SemiFinishedGoodTransactionService {
       {
         $lookup: {
           from: 'employees',
-          localField: 'employeeId',
+          localField: 'employee',
           foreignField: '_id',
           as: 'employee',
         },
@@ -203,7 +318,7 @@ export class SemiFinishedGoodTransactionService {
 
     pipeline.push({
       $group: {
-        _id: '$employeeId',
+        _id: '$employee',
         transactionCount: { $sum: 1 },
       },
     });
@@ -238,7 +353,7 @@ export class SemiFinishedGoodTransactionService {
     limit = 10,
     date: string,
     transactionType?: TransactionType,
-    employeeId?: string,
+    employee?: string,
     manufacturingOrderId?: string) {
     const skip = (page - 1) * limit;
 
@@ -259,7 +374,7 @@ export class SemiFinishedGoodTransactionService {
     pipeline.push({
       $lookup: {
         from: "semifinishedgoods",
-        localField: "semiFinishedGoodId",
+        localField: "semiFinishedGood",
         foreignField: "_id",
         as: "semiFinishedGood",
       },
@@ -271,7 +386,7 @@ export class SemiFinishedGoodTransactionService {
     pipeline.push({
       $lookup: {
         from: "manufacturingorders",
-        localField: "semiFinishedGood.manufacturingOrderId",
+        localField: "semiFinishedGood.manufacturingOrder",
         foreignField: "_id",
         as: "semiFinishedGood.manufacturingOrder",
       },
@@ -283,7 +398,7 @@ export class SemiFinishedGoodTransactionService {
     pipeline.push({
       $lookup: {
         from: "employees",
-        localField: "employeeId",
+        localField: "employee",
         foreignField: "_id",
         as: "employee",
       },
@@ -304,15 +419,15 @@ export class SemiFinishedGoodTransactionService {
       });
     }
 
-    if (employeeId) {
+    if (employee) {
       pipeline.push({
-        $match: { employeeId: new Types.ObjectId(employeeId) },
+        $match: { employee: new Types.ObjectId(employee) },
       });
     }
 
     if (manufacturingOrderId) {
       pipeline.push({
-        $match: { "semiFinishedGood.manufacturingOrderId": new Types.ObjectId(manufacturingOrderId) },
+        $match: { "semiFinishedGood.manufacturingOrder": new Types.ObjectId(manufacturingOrderId) },
       });
     }
 

@@ -4,6 +4,7 @@ import { SemiFinishedGood } from "@/types/SemiFinishedGood";
 import { useCreateSemiFinishedGoodTransactionMutation } from "@/service/api/semiFinishedGoodTransactionApiSlice";
 import { toaster } from "@/components/ui/toaster";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { CreateSemiFinishedGoodTransactionDTO } from "@/types/SemiFinishedTransaction";
 
 interface Props {
     isOpen: boolean;
@@ -13,29 +14,34 @@ interface Props {
     transactionType?: "IMPORT" | "EXPORT";
 }
 
-type TransactionRequest = {
-    manufacturingOrderId: string;
-    manufacturingOrderCode: string;
-    transactionType: "IMPORT" | "EXPORT";
-    quantity: number;
-    employeeId?: string;
-    note?: string;
-};
 
 const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData, transactionType, manufacturingOrders }) => {
     const [createSemiTransaction] = useCreateSemiFinishedGoodTransactionMutation();
-    const [transaction, setTransaction] = useState<TransactionRequest>({
-        manufacturingOrderId: "",
+
+    const today = new Date();
+    const localDate = today.toISOString().split("T")[0];
+    const departments = createListCollection({
+        items: [
+            { label: "Bộ Phận In", value: "BP IN" },
+            { label: "Chế Biến", value: "CHE BIEN" },
+            { label: "Kho Thành Phẩm", value: "KHO TP" },
+        ],
+    })
+
+    const [transaction, setTransaction] = useState<CreateSemiFinishedGoodTransactionDTO>({
+        manufacturingOrder: "",
         manufacturingOrderCode: "",
         transactionType: transactionType ?? "IMPORT",
         quantity: 0,
-        employeeId: "",
+        transactionDate: localDate,
+        exportedTo: undefined,
+        employee: "691b660f3a472fc27fde0c31",
         note: "",
     });
 
     const { contains } = useFilter({ sensitivity: "base" });
     const initialMOs = manufacturingOrders.map((mo) => ({
-        label: `${mo.code}`,
+        label: `${mo.code} - ${mo.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.customer?.code} - ${mo.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.code} `,
         value: mo._id,
     }));
     const { collection: moCollection, filter: moFilter } = useListCollection({
@@ -46,28 +52,37 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
     useEffect(() => {
         if (isOpen) {
             setTransaction({
-                manufacturingOrderId: initialData?.manufacturingOrderId ?? "",
+                manufacturingOrder: initialData?.manufacturingOrder?._id ?? "",
                 manufacturingOrderCode: initialData?.manufacturingOrder?.code ?? "",
                 transactionType: transactionType ?? "IMPORT",
                 quantity: 0,
-                employeeId: "691ae7bd1fd408511051a7f4", //TODO: hardcode employee
+                transactionDate: localDate,
+                exportedTo: initialData?.exportedTo,
+                employee: "69146dd889bf8e8ca320bcff", //TODO: hardcode employee
                 note: "",
             });
         }
     }, [isOpen]);
 
     const handleSubmit = async () => {
-        if (!transaction.manufacturingOrderId) {
+        if (!transaction.manufacturingOrder) {
             toaster.create({ title: "Lỗi", description: "Chưa chọn bán thành phẩm", type: "error", closable: true });
+            return;
+        }
+
+        if (transaction.transactionType == 'EXPORT' && transaction.exportedTo == undefined) {
+            toaster.create({ title: "Lỗi", description: "Chưa chọn bộ phận xuất phôi", type: "error", closable: true });
             return;
         }
 
         try {
             await createSemiTransaction({
-                manufacturingOrderId: transaction.manufacturingOrderId,
+                manufacturingOrder: transaction.manufacturingOrder,
                 transactionType: transaction.transactionType,
                 quantity: transaction.quantity,
-                employeeId: transaction.employeeId,
+                transactionDate: transaction.transactionDate,
+                exportedTo: transaction.exportedTo,
+                employee: transaction.employee,
                 note: transaction.note
             } as any).unwrap();
             toaster.create({
@@ -101,10 +116,10 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                                     <Combobox.Root
                                         collection={moCollection}
                                         defaultInputValue={initialData?.manufacturingOrder?.code || ""}
-                                        readOnly={initialData?.manufacturingOrderId ? true : false}
+                                        readOnly={initialData?.manufacturingOrder ? true : false}
                                         onInputValueChange={(e) => moFilter(e.inputValue)}
                                         onValueChange={(details) => {
-                                            setTransaction({ ...transaction, manufacturingOrderId: details.value[0] });
+                                            setTransaction({ ...transaction, manufacturingOrder: details.value[0] });
                                         }}>
                                         <Combobox.Control>
                                             <Combobox.Input placeholder="Chọn hoặc tìm mã lệnh" />
@@ -184,7 +199,6 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                                                     target.dispatchEvent(new Event("input", { bubbles: true }));
                                                 }
 
-                                                // Chặn symbols
                                                 if (e.key === "-" || e.key === "e" || e.key === " ") {
                                                     e.preventDefault();
                                                 }
@@ -193,6 +207,50 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
 
                                         <NumberInput.Control />
                                     </NumberInput.Root>
+                                </Field.Root>
+
+                                {transaction.transactionType == 'EXPORT' &&
+                                    <Field.Root orientation="vertical">
+                                        <Select.Root
+                                            collection={departments}
+                                            width="320px"
+                                            value={[transaction.exportedTo ?? '']}
+                                            readOnly={transaction.exportedTo != undefined}
+                                            onValueChange={(e) => setTransaction({ ...transaction, exportedTo: e.value[0] })}
+                                        >
+                                            <Select.HiddenSelect />
+                                            <Select.Label>Xuất phôi</Select.Label>
+                                            <Select.Control>
+                                                <Select.Trigger>
+                                                    <Select.ValueText placeholder="Chọn bộ phận xuất phôi" />
+                                                </Select.Trigger>
+                                                <Select.IndicatorGroup>
+                                                    <Select.Indicator />
+                                                </Select.IndicatorGroup>
+                                            </Select.Control>
+                                                <Select.Positioner>
+                                                    <Select.Content>
+                                                        {departments.items.map((department) => (
+                                                            <Select.Item item={department} key={department.value}>
+                                                                {department.label}
+                                                                <Select.ItemIndicator />
+                                                            </Select.Item>
+                                                        ))}
+                                                    </Select.Content>
+                                                </Select.Positioner>
+                                        </Select.Root>
+                                    </Field.Root>
+                                }
+
+                                <Field.Root orientation="vertical">
+                                    <Field.Label fontSize="lg">Ngày {transaction.transactionType === "IMPORT" ? "nhập" : "xuất"} </Field.Label>
+                                    <Input
+                                        type="date"
+                                        value={transaction.transactionDate}
+                                        onChange={(e) => setTransaction({ ...transaction, transactionDate: e.target.value })}
+                                        max={localDate}
+                                        width="200px"
+                                    />
                                 </Field.Root>
 
                                 <Field.Root orientation="vertical">

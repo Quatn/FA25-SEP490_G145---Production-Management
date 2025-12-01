@@ -2,21 +2,37 @@ import { Employee } from "./Employee";
 
 export type SemiFinishedGoodTransaction = {
   _id?: string;
-  semiFinishedGoodId: string;
   semiFinishedGood?: SemiFinishedGood;
-  employeeId: string;
-  employee?: Employee;
+  employee?: string | Employee;
   transactionType: string;
   initialQuantity: number;
   finalQuantity: number;
   note?: string;
+  exportedTo?: string;
+  transactionDate: string;
   createdAt?: string;
   updatedAt?: string;
 };
 
-export type EmployeeDailyStats = {
-  _id: string;
-  name: string;
-  email?: string;
-  transactionCount: number;
-};
+export interface SemiFinishedGoodTransactionHistory {
+  index: number;
+  createdDate: string;
+  transactionType: 'IMPORT' | 'EXPORT';
+  totalImport: number;
+  totalExport: number;
+  totalCurrent: number;
+  employee: string;
+  transactionDate: string;
+  note: string;
+}
+
+export interface CreateSemiFinishedGoodTransactionDTO {
+  manufacturingOrder: string;
+  manufacturingOrderCode?: string;
+  transactionType: "IMPORT" | "EXPORT";
+  quantity: number;
+  transactionDate: string;
+  exportedTo?: string;
+  note?: string;
+  employee: string;
+}

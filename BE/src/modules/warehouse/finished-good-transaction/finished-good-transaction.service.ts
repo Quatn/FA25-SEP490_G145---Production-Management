@@ -4,7 +4,7 @@ import { UpdateFinishedGoodTransactionDto } from './dto/update-finished-good-tra
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
 import { FinishedGoodTransaction, FinishedGoodTransactionDocument, FinishedGoodTransactionSchema } from '../schemas/finished-good-transaction.schema';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import mongoose, { Model, PipelineStage, Types } from 'mongoose';
 import { FinishedGood, FinishedGoodDocument, FinishedGoodSchema } from '../schemas/finished-good.schema';
 import { TransactionType } from '../enums/transaction-type.enum';
 import { ManufacturingOrderSchema } from '@/modules/production/schemas/manufacturing-order.schema';
@@ -12,6 +12,7 @@ import { PurchaseOrderItemSchema } from '@/modules/production/schemas/purchase-o
 import { WareSchema } from '@/modules/production/schemas/ware.schema';
 import { SubPurchaseOrderSchema } from '@/modules/production/schemas/sub-purchase-order.schema';
 import { PurchaseOrderSchema } from '@/modules/production/schemas/purchase-order.schema';
+import { GetFinishedGoodTransactionsDto } from './dto/get-finished-good-transaction.dto';
 
 type SoftFGTransaction = FinishedGoodTransaction & SoftDeleteDocument;
 @Injectable()
@@ -21,50 +22,157 @@ export class FinishedGoodTransactionService {
     @InjectModel(FinishedGood.name) private readonly finishedModel: Model<FinishedGoodDocument>,
   ) { }
 
-  async findPaginated(page = 1, limit = 10, finishedGood: string, search?: string, transactionType?: TransactionType) {
+  async findPaginated(dto: GetFinishedGoodTransactionsDto) {
+    const {
+      page = 1,
+      limit = 10,
+      finishedGood,
+      search,
+      transactionType,
+      startDate,
+      endDate,
+      sort,
+    } = dto;
+
     const skip = (page - 1) * limit;
+    const finishedGoodId = new Types.ObjectId(finishedGood);
 
-    const empPath = FinishedGoodTransactionSchema.path('employee');
-    const finishedGoodPath = FinishedGoodTransactionSchema.path('finishedGood');
+    // 1. Initial Match: Filter by the Finished Good first
+    const initialMatch: PipelineStage.Match = {
+      $match: { finishedGood: finishedGoodId }
+    };
 
-    const populate = [
+    // 2. Calculate Running Totals ($setWindowFields)
+    const calculateRunningTotals: PipelineStage = {
+      $setWindowFields: {
+        partitionBy: '$finishedGood',
+        sortBy: { createdAt: 1 },
+        output: {
+          runningTotalImport: {
+            $sum: {
+              $cond: [
+                { $eq: ['$transactionType', 'IMPORT'] },
+                { $subtract: ['$finalQuantity', '$initialQuantity'] }, // Amount added
+                0
+              ]
+            },
+            window: { documents: ['unbounded', 'current'] } // Sum from start to this row
+          },
+          runningTotalExport: {
+            $sum: {
+              $cond: [
+                { $eq: ['$transactionType', 'EXPORT'] },
+                { $abs: { $subtract: ['$finalQuantity', '$initialQuantity'] } },
+                0
+              ]
+            },
+            window: { documents: ['unbounded', 'current'] }
+          }
+        }
+      }
+    };
+
+    // 3. Lookups (Populate)
+    const lookups: PipelineStage[] = [
       {
-        path: empPath.path,
+        $lookup: {
+          from: 'employees',
+          localField: 'employee',
+          foreignField: '_id',
+          as: 'employeeData'
+        }
       },
       {
-        path: finishedGoodPath.path,
+        $unwind: { path: '$employeeData', preserveNullAndEmptyArrays: true }
       }
-    ]
+    ];
 
-    const match: any = { finishedGood: finishedGood };
+    // 4. Secondary Filter (Search, Date, Type)
+    const filterQuery: any = {};
 
     if (transactionType) {
-      match.transactionType = transactionType;
+      filterQuery.transactionType = transactionType;
+    }
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+
+      if (start > end) {
+        throw new BadRequestException("startDate must be earlier than or equal to endDate");
+      }
+
+      filterQuery.transactionDate = {
+        $gte: start,
+        $lte: end,
+      };
+    } else if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+
+      filterQuery.transactionDate = { $gte: start };
+    } else if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+
+      filterQuery.transactionDate = { $lte: end };
     }
 
     if (search?.trim()) {
       const regex = new RegExp(search.trim(), "i");
-
-      match.$or = [
-        { transactionType: regex },
-        { note: regex },
-        { "finishedGood.note": regex }
+      filterQuery.$or = [
+        { 'employeeData.code': regex }
       ];
     }
 
-    const [totalItems, data] = await Promise.all([
-      this.fgTransactionModel.countDocuments(match),
-      this.fgTransactionModel
-        .find(match)
-        .skip(skip)
-        .limit(limit)
-        .populate(populate)
-        .sort({ updatedAt: -1 })
-        .lean(),
-    ]);
+    const secondaryMatch: PipelineStage.Match = { $match: filterQuery };
+
+    // 5. Build the Final Pipeline with Facets for Pagination
+    const pipeline: PipelineStage[] = [
+      initialMatch,
+      calculateRunningTotals,
+      ...lookups,
+      secondaryMatch,
+      { $sort: { createdAt: sort == 'ASC' ? 1 : -1 } },
+      {
+        $facet: {
+          metadata: [{ $count: 'total' }],
+          data: [
+            { $skip: skip },
+            { $limit: limit }
+          ]
+        }
+      }
+    ];
+
+    const [result] = await this.fgTransactionModel.aggregate(pipeline);
+
+    const data = result.data || [];
+    const totalItems = result.metadata[0]?.total || 0;
+
+    // 6. Map to Table Format
+    const tableData = data.map((doc: any, index: number) => {
+      return {
+        index: skip + index + 1,
+        createdDate: doc.createdAt,
+        transactionType: doc.transactionType,
+
+        totalImport: doc.runningTotalImport || 0,
+        totalExport: doc.runningTotalExport || 0,
+
+        totalCurrent: doc.finalQuantity,
+
+        transactionDate: doc.transactionDate,
+        employee: doc.employeeData?.code || 'Unknown',
+        note: doc.note || ''
+      };
+    });
 
     return {
-      data,
+      data: tableData,
       page,
       limit,
       totalItems,
@@ -103,59 +211,94 @@ export class FinishedGoodTransactionService {
   }
 
   async createOne(dto: CreateFinishedGoodTransactionDto) {
-    const moId = new Types.ObjectId(dto.manufacturingOrder);
-    let finishedGood = await this.finishedModel.findOne({ manufacturingOrder: moId }).exec();
-    if (!finishedGood) {
-      finishedGood = await this.finishedModel.create({ manufacturingOrder: moId, importedQuantity: 0 });
-    }
-
-    const initialQuantity = finishedGood.currentQuantity ?? 0;
-    let finalQuantity = initialQuantity;
-    if (dto.transactionType === 'IMPORT') {
-      finalQuantity = initialQuantity + dto.quantity;
-      finishedGood.importedQuantity += dto.quantity;
-    }
-    else if (dto.transactionType === 'EXPORT') {
-      finalQuantity = initialQuantity - dto.quantity;
-      finishedGood.exportedQuantity += dto.quantity;
-    }
-
-    finishedGood.currentQuantity = finalQuantity;
-    await finishedGood.save();
-
-    const doc = new this.fgTransactionModel({
-      finishedGood: finishedGood._id,
-      employee: dto.employee ? new Types.ObjectId(dto.employee) : undefined,
-      transactionType: dto.transactionType,
-      initialQuantity,
-      finalQuantity,
-      note: dto.note,
-      currentStatus: 'CANCEL'
-    });
-    const inserted = await doc.save();
-
-    const empPath = FinishedGoodTransactionSchema.path('employee');
-    const finishedGoodPath = FinishedGoodTransactionSchema.path("finishedGood");
-
-    const [data] = await Promise.all([
-      this.fgTransactionModel
-        .find({ _id: inserted._id })
-        .populate([
-          {
-            path: empPath.path,
-          },
-          {
-            path: finishedGoodPath.path,
-          },
-        ])
-        .lean(),
-    ]);
-
-    if (!data || data.length === 0) throw new NotFoundException('Transaction not found');
-
-    return data[0];
+    return (await this.createMany([dto]))[0];
   }
 
+  async createMany(dtos: CreateFinishedGoodTransactionDto[]) {
+    if (!Array.isArray(dtos) || dtos.length === 0) {
+      throw new BadRequestException('Input must be a non-empty array.');
+    }
+
+    const session = await this.finishedModel.db.startSession();
+    session.startTransaction();
+
+    try {
+      const results: FinishedGoodTransaction[] = [];
+
+      for (const dto of dtos) {
+        const result = await this._createOneInternal(dto, session);
+        results.push(result);
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return results;
+
+    } catch (err) {
+      await session.abortTransaction();
+      session.endSession();
+      throw err;
+    }
+  }
+
+  private async _createOneInternal(
+    dto: CreateFinishedGoodTransactionDto,
+    session: mongoose.ClientSession
+  ) {
+    const moId = new Types.ObjectId(dto.manufacturingOrder);
+
+    let finishedGood = await this.finishedModel
+      .findOne({ manufacturingOrder: moId })
+      .session(session)
+      .exec();
+
+    if (!finishedGood) {
+      finishedGood = await this.finishedModel.create(
+        [{ manufacturingOrder: moId, importedQuantity: 0, exportedQuantity: 0, currentQuantity: 0 }],
+        { session }
+      ).then(r => r[0]);
+    }
+
+    const initialQuantity = finishedGood!.currentQuantity ?? 0;
+    let finalQuantity = initialQuantity;
+
+    if (dto.transactionType === 'IMPORT') {
+      finalQuantity += dto.quantity;
+      finishedGood!.importedQuantity += dto.quantity;
+    } else if (dto.transactionType === 'EXPORT') {
+      finalQuantity -= dto.quantity;
+      finishedGood!.exportedQuantity += dto.quantity;
+    }
+
+    finishedGood!.currentQuantity = finalQuantity;
+    await finishedGood!.save({ session });
+
+    const transaction = await this.fgTransactionModel.create(
+      [{
+        finishedGood: finishedGood!._id,
+        employee: dto.employee ? new Types.ObjectId(dto.employee) : undefined,
+        transactionType: dto.transactionType,
+        initialQuantity,
+        finalQuantity,
+        transactionDate: dto.transactionDate,
+        note: dto.note,
+      }],
+      { session }
+    ).then(r => r[0]);
+
+    const populated = await this.fgTransactionModel
+      .find({ _id: transaction._id })
+      .populate(['employee', 'finishedGood'])
+      .lean()
+      .session(session);
+
+    if (!populated || populated.length === 0) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    return populated[0];
+  }
 
   async updateOne(id: string, dto: UpdateFinishedGoodTransactionDto) {
     const raw: any = { ...dto };
@@ -188,20 +331,47 @@ export class FinishedGoodTransactionService {
   }
 
   async getDailyReport(startDate: string, endDate: string, transactionType: TransactionType) {
-    const inputSD = new Date(startDate);
-    const inputED = new Date(endDate);
-
-    const start = new Date(inputSD);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(inputED);
-    end.setHours(23, 59, 59, 999);
 
     const today = new Date();
     today.setHours(23, 59, 59, 999);
 
-    if (start > end) throw new BadRequestException("Invalid date range");
-    if (start > today) throw new BadRequestException("Invalid date range");
+    const transactionDateQuery: any = {};
+    const safeQuery: any = { transactionType };
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+
+      if (start > end) {
+        throw new BadRequestException("startDate must be earlier than or equal to endDate");
+      }
+
+      if (start > today) {
+        throw new BadRequestException("startDate must be earlier than or equal to today");
+      }
+
+      transactionDateQuery.transactionDate = {
+        $gte: start,
+        $lte: end,
+      };
+    } else if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+
+      transactionDateQuery.transactionDate = { $gte: start };
+    } else if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+
+      transactionDateQuery.transactionDate = { $lte: end };
+    }
+
+    if (Object.keys(transactionDateQuery).length > 0) {
+      Object.assign(safeQuery, transactionDateQuery);
+    }
 
     const fgPath = FinishedGoodTransactionSchema.path("finishedGood");
     const emPath = FinishedGoodTransactionSchema.path("employee");
@@ -258,10 +428,7 @@ export class FinishedGoodTransactionService {
     ]
 
     const docs = await this.fgTransactionModel
-      .find({
-        createdAt: { $gte: start, $lte: end },
-        transactionType,
-      })
+      .find(safeQuery)
       .populate(populate)
       .sort({ createdAt: 1 })
       .lean()
@@ -281,7 +448,7 @@ export class FinishedGoodTransactionService {
       if (!fg?._id) continue;
 
       const fgId = fg._id.toString();
-      const date = new Date(doc.createdAt ?? new Date());
+      const date = new Date(doc.transactionDate ?? new Date());
       const dateKey = date.toLocaleDateString("vi-VN", {
         year: "numeric",
         month: "2-digit",

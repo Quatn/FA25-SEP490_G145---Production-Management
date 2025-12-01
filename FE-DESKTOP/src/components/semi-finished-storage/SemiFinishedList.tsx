@@ -98,6 +98,7 @@ const SemiFinishedList: React.FC = () => {
                 items={sfGoods}
                 onView={handleOpenDetail}
                 onTransaction={handleOpenTx}
+                search={search}
             />
 
             <Pagination.Root

@@ -12,6 +12,7 @@ import { useGetAllManufacturingOrdersQuery } from "@/service/api/manufacturingOr
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { useGetFinishedGoodsQuery } from "@/service/api/finishedGoodApiSlice";
 import { FinishedGood } from "@/types/FinishedGood";
+import FinishedTransactionBulkForm from "./FinishedTransactionBulkForm";
 
 const FinishedList: React.FC = () => {
     const [page, setPage] = useState(1);
@@ -31,9 +32,12 @@ const FinishedList: React.FC = () => {
     const totalPages = (fgData as any)?.data?.totalPages ?? 1;
 
     const [detailOpen, setDetailOpen] = useState(false);
-    const [txOpen, setTxOpen] = useState(false);
+    const [formOpen, setFormOpen] = useState(false);
     const [selected, setSelected] = useState<FinishedGood | undefined>(undefined);
-    const [txType, setTxType] = useState<"IMPORT" | "EXPORT" | undefined>(undefined);
+    const [formType, setFormType] = useState<"IMPORT" | "EXPORT" | undefined>(undefined);
+
+    const [bulkFormOpen, setBulkFormOpen] = useState(false);
+    const [bulkFormType, setBulkFormType] = useState<'IMPORT' | 'EXPORT' | undefined>(undefined);
 
     const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -42,16 +46,16 @@ const FinishedList: React.FC = () => {
         setDetailOpen(true);
     };
 
-    const handleOpenTx = (type: "IMPORT" | "EXPORT", item?: FinishedGood) => {
+    const handleOpenForm = (type: "IMPORT" | "EXPORT", item?: FinishedGood) => {
         setSelected(item);
-        setTxType(type);
-        setTxOpen(true);
+        setFormType(type);
+        setFormOpen(true);
     };
 
-    const handleCloseTx = () => {
-        setTxOpen(false);
+    const handleCloseForm = () => {
+        setFormOpen(false);
         setSelected(undefined);
-        setTxType(undefined);
+        setFormType(undefined);
     };
 
     const handleCloseDetail = () => {
@@ -68,11 +72,21 @@ const FinishedList: React.FC = () => {
     return (
         <>
             <FinishedTransactionForm
-                isOpen={txOpen}
-                onClose={handleCloseTx}
+                isOpen={formOpen}
+                onClose={handleCloseForm}
                 initialData={selected}
-                transactionType={txType}
+                transactionType={formType}
+            />
+
+            <FinishedTransactionBulkForm
+                isOpen={bulkFormOpen}
+                onClose={() => {
+                    setBulkFormOpen(false);
+                    setBulkFormType(undefined);
+                }}
+                transactionType={bulkFormType ?? 'IMPORT'}
                 manufacturingOrders={mos}
+
             />
             <FinishedDetailDialog isOpen={detailOpen} onClose={handleCloseDetail} item={selected} />
 
@@ -84,7 +98,10 @@ const FinishedList: React.FC = () => {
                 <Stack direction="row" spaceX={10}>
                     <Button
                         colorPalette="green"
-                        onClick={() => handleOpenTx("IMPORT", undefined)}
+                        onClick={() => {
+                            setBulkFormOpen(true);
+                            setBulkFormType('IMPORT');
+                        }}
                     >
                         <FaPlus /> Tạo phiếu nhập
                     </Button>
@@ -97,7 +114,8 @@ const FinishedList: React.FC = () => {
                 limit={limit}
                 items={fgGoods}
                 onView={handleOpenDetail}
-                onTransaction={handleOpenTx}
+                onTransaction={handleOpenForm}
+                search={search}
             />
 
             <Pagination.Root

@@ -9,4 +9,5 @@ export type FinishedGood = {
     note?: string;
     currentStatus?: string;
     createdAt?: string;
+    updatedAt?: string;
 };
