@@ -4,6 +4,7 @@ import { EmployeeService } from "./employee.service";
 import { MongooseModule } from "@nestjs/mongoose";
 import { Employee, EmployeeSchema } from "./schemas/employee.schema";
 import { Role, RoleSchema } from "./schemas/role.schema";
+import { RoleModule } from './role/role.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { Role, RoleSchema } from "./schemas/role.schema";
       { name: Employee.name, schema: EmployeeSchema },
       { name: Role.name, schema: RoleSchema },
     ]),
+    RoleModule,
   ],
   controllers: [EmployeeController],
   providers: [EmployeeService],

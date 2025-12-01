@@ -50,6 +50,24 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
+      {
+        id: "employee",
+        name: "Employee Management",
+        children: [
+          {
+            id: "employee-list",
+            name: "Employee List",
+            href: "/employee",
+            children: [],
+          },
+          {
+            id: "employee-restore",
+            name: "Restore Employee",
+            href: "/employee/restore-employee",
+            children: [],
+          },
+        ],
+      },
     ],
   },
 });
