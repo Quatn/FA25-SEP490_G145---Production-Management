@@ -38,6 +38,12 @@ const initialCollection = createTreeCollection<Node>({
             children: [],
           },
           {
+            id: "create-delivery-note",
+            name: "Create Delivery Note",
+            href: "/purchase-order/delivery-note-create",
+            children: [],
+          },
+          {
             id: "purchase-order-restore",
             name: "Restore Purchase Order",
             href: "/purchase-order/restore-po",
