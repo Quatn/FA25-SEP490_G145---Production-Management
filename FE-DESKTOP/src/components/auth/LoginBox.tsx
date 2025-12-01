@@ -88,7 +88,7 @@ export default function LoginBox() {
                 <Alert.Content>
                   <Alert.Title>Failed to login</Alert.Title>
                   <Alert.Description>
-                    {(logInError as { data: { message: string } }).data.message}
+                    {(logInError as { data?: { message?: string } }).data?.message}
                   </Alert.Description>
                 </Alert.Content>
               </Alert.Root>

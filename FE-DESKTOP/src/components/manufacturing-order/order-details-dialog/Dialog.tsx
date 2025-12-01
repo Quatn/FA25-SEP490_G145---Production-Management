@@ -2,13 +2,19 @@
 
 import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import {
+  Box,
   CloseButton,
   DataList,
   Dialog,
+  GridItem,
   Portal,
+  SimpleGrid,
 } from "@chakra-ui/react";
 import check from "check-types";
 import { useMemo } from "react";
+import ManufacturingOrderDetailsDialogOrderDetailsCard from "./OrderDetailsCard";
+import ManufacturingOrderDetailsDialogWareDetailsCard from "./WareDetailsCard";
+import ManufacturingOrderDetailsDialogManufacturingDetailsCard from "./ManufacturingDetailsCard";
 
 export default function ManufacturingOrderDetailsDialog() {
   const { useDispatch, useSelector } = ManufacturingOrderDetailsDialogReducerStore;
@@ -45,16 +51,19 @@ export default function ManufacturingOrderDetailsDialog() {
                 />
               </Dialog.CloseTrigger>
             </Dialog.Header>
-            <Dialog.Body>
+            <Dialog.Body overflowY={"auto"}>
               {check.null(order) ? <></> : (
-                <DataList.Root orientation="horizontal">
-                  {stats.map((item) => (
-                    <DataList.Item key={item.label}>
-                      <DataList.ItemLabel>{item.label}</DataList.ItemLabel>
-                      <DataList.ItemValue>{item.value}</DataList.ItemValue>
-                    </DataList.Item>
-                  ))}
-                </DataList.Root>
+                <SimpleGrid columns={{ base: 1, md: 2 }} gap="40px" justifyItems={"stretch"}>
+                  <GridItem colSpan={{ base: 1 }}>
+                    <ManufacturingOrderDetailsDialogOrderDetailsCard order={order} />
+                  </GridItem>
+                  <GridItem colSpan={{ base: 1 }}>
+                    <ManufacturingOrderDetailsDialogWareDetailsCard order={order} />
+                  </GridItem>
+                  <GridItem colSpan={{ base: 1, md: 2 }}>
+                    <ManufacturingOrderDetailsDialogManufacturingDetailsCard order={order} />
+                  </GridItem>
+                </SimpleGrid>
               )}
             </Dialog.Body>
           </Dialog.Content>

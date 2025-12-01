@@ -12,10 +12,15 @@ export type DataTableHeaderCellProps<TData, TValue> = {
 export function DataTableHeaderCell<TData, TValue>(props: DataTableHeaderCellProps<TData, TValue>) {
   return (
     <ChakraTable.ColumnHeader key={props.header.id}
-      colorPalette={"blue"} bgColor={"colorPalette.muted"}
+      colorPalette={"blue"}
+      bgColor={"colorPalette.muted"}
+      border={{ base: "1px solid black", _dark: "1px solid white" }}
+      wordWrap={"break-word"}
+      whiteSpace={"normal"}
       style={{ ...getCommonPinningStyles(props.header.column) }}
       colSpan={props.header.colSpan}
       rowSpan={props.header.rowSpan}
+      {...((props.header.colSpan > 1) ? { textAlign: "center" } : {})}
       {...props.tableHeaderCellProps}
     >
       {props.header.isPlaceholder

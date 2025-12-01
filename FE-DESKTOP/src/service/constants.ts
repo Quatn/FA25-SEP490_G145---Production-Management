@@ -1,4 +1,4 @@
-export const BASE_URL = "http://localhost:4000";
+export const BASE_URL = process.env.API_URL;
 
 // IMPORTANT: SETTING THIS TO TRUE WILL MAKE API CALLS RETURN MOCK DATA INSTEAD OF CALLING APIS
 export const USE_MOCK_DATA = false;

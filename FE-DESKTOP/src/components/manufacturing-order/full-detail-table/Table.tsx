@@ -26,7 +26,7 @@ import {
 } from "@chakra-ui/react";
 import check from "check-types";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
-import { manufacturingOrderColumnsByTabs } from "./tableDefinition";
+import { manufacturingOrderColumnsByTabs, manufacturingOrderMergedHeaders } from "./tableDefinition";
 import { useEffect, useMemo } from "react";
 import { getCoreRowModel } from "@tanstack/react-table";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
@@ -36,6 +36,7 @@ import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import useDataTable from "@/components/ui/data-table/hook";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import DataFetchError from "@/components/common/DataFetchError";
+import { useDataTableSelector } from "@/components/ui/data-table/Provider";
 
 export type ManufacturingOrderTableProps = {
   rootProps?: BoxProps;
@@ -52,13 +53,13 @@ export default function ManufacturingOrderTable(
   const page = useSelector(s => s.page)
   const limit = useSelector(s => s.limit)
   const tab = useSelector(s => s.tab)
-  const search = useSelector(s => s.search)
+  const query = useDataTableSelector(s => s.query)
 
   const {
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
-  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: search });
+  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query });
 
   const moPaginatedList = useMemo(() => {
     if (fullDetailMOPaginatedResponse?.data) {
@@ -111,12 +112,7 @@ export default function ManufacturingOrderTable(
         bg: { base: "colorPalette.muted" }
       },
     },
-    mergedHeadersIds: [
-      ["manufacturingDirective", "1_manufacturingDirective_manufacturingDirective"],
-      ["code", "1_code_code"],
-      ["customerCode", "1_customerCode_customerCode"],
-      ["wareCode", "1_wareCode_wareCode"],
-    ],
+    mergedHeadersIds: manufacturingOrderMergedHeaders,
     initialState: {
       columnPinning: {
         left: ['manufacturingDirective', "code"],

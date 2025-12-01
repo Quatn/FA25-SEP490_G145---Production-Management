@@ -86,8 +86,6 @@ export default function useDataTable<TData>(o: DataTableOptions<TData>): {
     meta,
   });
 
-  console.log(table.getHeaderGroups());
-
   return {
     table: table as Table<TRowData>,
     tableData,

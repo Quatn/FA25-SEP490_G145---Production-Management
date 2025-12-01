@@ -21,6 +21,8 @@ import PurchaseOrderItemSelectorItem from "./PurchaseOrderItemSelectorItem";
 import Link from "next/link";
 import { RiFolderOpenLine } from "react-icons/ri";
 import { useMemo } from "react";
+import DataFetchError from "@/components/common/DataFetchError";
+import { LuArchiveX } from "react-icons/lu";
 
 export default function PurchaseOrderItemSelector() {
   const { useSelector, useDispatch } = ManufacturingOrderCreatePageReducerStore;
@@ -69,12 +71,7 @@ export default function PurchaseOrderItemSelector() {
     !check.array(orderPaginatedList?.data) || check.undefined(treeStructure)
   ) {
     return (
-      <Center py={4} flexGrow={1}>
-        <Stack>
-          <CiWarning color={"red"} size={"10rem"} />
-          {fetchError && <Text>{JSON.stringify(fetchError)}</Text>}
-        </Stack>
-      </Center>
+      <DataFetchError h={"full"} flexGrow={1} />
     );
   }
 
@@ -84,7 +81,7 @@ export default function PurchaseOrderItemSelector() {
     return (
       <Center py={4} flexGrow={1}>
         <Stack alignItems={"center"}>
-          <RiFolderOpenLine color={"gray"} size={"10rem"} />
+          <LuArchiveX color="gray" strokeWidth={1} size={"10rem"} />
           <Text textAlign={"center"}>
             {check.nonEmptyString(search)
               ? "Tất cả PO bị ẩn đi bởi bộ lọc"

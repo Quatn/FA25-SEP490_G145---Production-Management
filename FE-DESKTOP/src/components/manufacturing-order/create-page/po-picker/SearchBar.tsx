@@ -27,7 +27,7 @@ export default function PurchaseOrderItemSearchBar() {
   return (
     <InputGroup flex={1} endElement={<LuSearch />}>
       <Input
-        placeholder="Smart search"
+        placeholder="Search"
         value={localSearch}
         onChange={changeQuery}
         bg={"bg"}

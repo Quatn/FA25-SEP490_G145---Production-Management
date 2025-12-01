@@ -30,6 +30,7 @@ export function DataTableCell<TData, TValue>(props: DataTableCellProps<TData, TV
       style={{
         ...getCommonPinningStyles(props.cell.column),
       }}
+      border={{ base: "1px solid black", _dark: "1px solid white" }}
       {...props.propsStack?.tableCellProps}
       {...(isPinned ? props.propsStack?.pinnedCellProps : {})}
       {...((isPinned && props.isEdited) ? props.propsStack?.editedRowPinnedCellProps : {})}

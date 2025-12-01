@@ -32,7 +32,7 @@ export default function ManufacturingOrderHome() {
                 <HStack justifyContent={"space-between"}>
                   <ManufacturingOrderTableComponents.SearchBar />
 
-                  <ManufacturingOrderTableComponents.SearchFilterControl />
+                  {/*<ManufacturingOrderTableComponents.SearchFilterControl />*/}
 
                   <Link href="/manufacturing-order/create">
                     <Button size={"sm"} colorPalette={"cyan"}>Tạo mới</Button>
@@ -45,7 +45,7 @@ export default function ManufacturingOrderHome() {
                   <ManufacturingOrderTableComponents.Table rootProps={{ flexGrow: 1 }} />
                 </Stack>
 
-                <ManufacturingOrderTableComponents.PaginationControl />
+                {/*<ManufacturingOrderTableComponents.PaginationControl />*/}
 
                 <ManufacturingOrderTableComponents.Pagination />
               </Stack>

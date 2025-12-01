@@ -160,6 +160,12 @@ export class ManufacturingOrderController {
                 $options: "i",
               },
             },
+            {
+              "purchaseOrderItem.ware.fluteCombination.code": {
+                $regex: query.query,
+                $options: "i",
+              },
+            },
             // { "purchaseOrderItem.subPurchaseOrder.product.code": { $regex: query.query, $options: "i" } },
             // { "purchaseOrderItem.subPurchaseOrder.purchaseOrder.code": { $regex: query.query, $options: "i" } },
             {

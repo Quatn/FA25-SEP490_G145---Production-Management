@@ -25,6 +25,7 @@ import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/re
 import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { manufacturingOrderColumnsByTabs, ManufacturingOrderTableDataType } from "@/components/manufacturing-order/full-detail-table/tableDefinition.old2";
+import { toaster } from "@/components/ui/toaster";
 
 type TableProps = {
   rootProps?: BoxProps;
@@ -178,7 +179,23 @@ export default function CreatePageManufacturingOrderTable(
   }
 
   const handleCreateOrder = () => {
-    createOrders(formValue)
+    createOrders(formValue).unwrap().then((res) => {
+      if (check.assigned(res.data) && check.equal(res.data?.createdAmount, res.data?.requestedAmount)) {
+        toaster.success({
+          title: "Success",
+          description: `Created ${res.data?.createdAmount} orders successfully`,
+        })
+      }
+      toaster.warning({
+        title: "Orders not updated",
+      })
+    }).catch(error => {
+      toaster.warning({
+        title: "Error creating order",
+        description: (error as Error).message,
+      })
+    })
+
     dispatch({ type: "RESET_TREE_STATE" })
   }
 

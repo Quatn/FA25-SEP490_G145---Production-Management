@@ -12,13 +12,6 @@ async function bootstrap() {
   // Not now
   // app.set("query parser", "extended");
 
-  app.enableCors({
-    origin: [
-      "http://localhost:3000",
-    ],
-    credentials: true,
-  });
-
   app.use(cookieParser());
 
   const configService = app.get(ConfigService);

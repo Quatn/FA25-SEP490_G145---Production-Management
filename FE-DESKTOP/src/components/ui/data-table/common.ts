@@ -16,7 +16,7 @@ export function getCommonPinningStyles<T>(column: Column<T>): CSSProperties {
         : undefined,
     left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
     right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
-    opacity: isPinned ? 0.95 : 1,
+    // opacity: isPinned ? 0.95 : 1,
     position: isPinned ? 'sticky' : 'relative',
     // width: column.getIsLastColumn() ? "100%" : column.getSize(),
     width: column.getSize(),

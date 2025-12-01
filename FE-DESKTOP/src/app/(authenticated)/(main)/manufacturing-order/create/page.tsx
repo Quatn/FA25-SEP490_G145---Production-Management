@@ -41,7 +41,7 @@ export default function PurchaseOrderCreatePage() {
               <Box mb={2}>
                 <CreatePage.SearchBar />
               </Box>
-              <CreatePage.GroupTypeControl />
+              {/*<CreatePage.GroupTypeControl />*/}
               <Box flexGrow={1} overflowY={"auto"}>
                 <CreatePage.ItemSelector />
               </Box>

@@ -19,7 +19,7 @@ export default function calculateTanstackTableHeaderRowSpan<T>(headerGroups: Hea
   }
 
   // beyond this is the logic for vertical header cell merging via rowSpan and conditional rendering
-  devlog("merging headers for a table:", mergeIds)
+  // devlog("merging headers for a table:", mergeIds)
 
   const allHeadersFromGroups = headerGroups.flatMap(headerGroup => headerGroup.headers)
 
@@ -79,6 +79,6 @@ export default function calculateTanstackTableHeaderRowSpan<T>(headerGroups: Hea
     accHeaderGroups.push(mappedHeaderGroup)
   }
 
-  devlog("post merge result:", accHeaderGroups)
+  // devlog("post merge result:", accHeaderGroups)
   return accHeaderGroups
 }

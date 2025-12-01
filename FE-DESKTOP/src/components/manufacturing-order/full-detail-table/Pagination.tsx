@@ -17,7 +17,7 @@ import {
   SelectValueChangeDetails,
 } from "@chakra-ui/react";
 import check from "check-types";
-import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import { LuArrowRight, LuChevronLeft, LuChevronRight } from "react-icons/lu";
 
 const pageOptions = createListCollection({
   items: [
@@ -76,9 +76,9 @@ export default function ManufacturingOrderPagination() {
       </Pagination.Root>
 
       <Group attached>
-        <Input flex="1" placeholder="Nhập trang" w={"100px"} />
-        <Button bg="bg.subtle" variant="outline">
-          Submit
+        <Input flex="1" bg="bg" placeholder="Nhập trang" w={"100px"} size="sm" />
+        <Button colorPalette={"teal"} variant="solid" size="sm">
+          <LuArrowRight />
         </Button>
       </Group>
 
@@ -93,7 +93,7 @@ export default function ManufacturingOrderPagination() {
         <Select.HiddenSelect />
         <Select.Control>
           <Select.Trigger>
-            <Select.ValueText placeholder="Select framework" />
+            <Select.ValueText placeholder="Chọn số lệnh hiển thị mỗi trang" />
           </Select.Trigger>
           <Select.IndicatorGroup>
             <Select.Indicator />
@@ -103,7 +103,7 @@ export default function ManufacturingOrderPagination() {
           <Select.Positioner>
             <Select.Content>
               {pageOptions.items.map((framework) => (
-                <Select.Item item={framework} key={framework.value}>
+                <Select.Item bg="bg" item={framework} key={framework.value}>
                   {framework.label}
                   <Select.ItemIndicator />
                 </Select.Item>

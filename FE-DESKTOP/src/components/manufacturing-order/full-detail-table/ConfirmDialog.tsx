@@ -37,7 +37,7 @@ export default function ManufacturingOrderFullDetailTableConfirmDialog() {
                   <Button onClick={() => {
                     if (preparedSubmitFunction) preparedSubmitFunction()
                     dispatch({ type: "SET_PREPARED_SUBMIT_FUNCTION", payload: undefined })
-                  }} colorPalette={"blue"} bg={"colorPalette.solid"}>Tạo</Button>
+                  }} colorPalette={"blue"} bg={"colorPalette.solid"}>Xác nhận</Button>
                   <Button
                     onClick={() => dispatch({ type: "SET_PREPARED_SUBMIT_FUNCTION", payload: undefined })}
                     colorPalette={"red"}
