@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Box, Button, Combobox, Dialog, Field, Input, NumberInput, Portal, Table, Text, useFilter, useListCollection } from "@chakra-ui/react";
+import { Button, Combobox, Dialog, Input, NumberInput, Portal, Table, Text, useFilter, useListCollection } from "@chakra-ui/react";
 import { useCreateBulkFinishedGoodTransactionsMutation } from "@/service/api/finishedGoodTransactionApiSlice";
 import { toaster } from "@/components/ui/toaster";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";

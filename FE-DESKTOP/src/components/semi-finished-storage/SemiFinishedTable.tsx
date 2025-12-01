@@ -3,6 +3,7 @@ import { Table, Group, Button, Icon, Highlight } from "@chakra-ui/react";
 import { FaEye, FaMinus, FaPlus } from "react-icons/fa";
 import { SemiFinishedGood } from "@/types/SemiFinishedGood";
 import { formatDate, hourGap } from "@/utils/dateUtils";
+import { safeGet } from "@/utils/storagesUtils";
 
 interface Props {
     page: number;
@@ -14,9 +15,7 @@ interface Props {
 }
 
 const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransaction, search }) => {
-    const get = (obj: any, path: string, fallback: any = "-") => {
-        return path.split(".").reduce((o, k) => (o?.[k]), obj) ?? fallback;
-    };
+
     const renderDiffStatus = (transactionType: string, value: number, amount: number) => {
         const diff = value - amount;
 
@@ -64,19 +63,39 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                             Thông tin sản xuất
                         </Table.ColumnHeader>
 
-                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Lớp sóng</Table.ColumnHeader>
+                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>
+                            Lớp sóng
+                        </Table.ColumnHeader>
                         <Table.ColumnHeader colSpan={3} textAlign="center">
                             Kích thước sản phẩm
                         </Table.ColumnHeader>
-                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Số lượng</Table.ColumnHeader>
-                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tổng số lượng đã nhập</Table.ColumnHeader>
-                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Cảnh báo thừa thiếu</Table.ColumnHeader>
-                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Xuất phôi</Table.ColumnHeader>
-                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tổng xuất</Table.ColumnHeader>
-                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tồn kho</Table.ColumnHeader>
-                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Số giờ tồn kho</Table.ColumnHeader>
-                        <Table.ColumnHeader rowSpan={2}>Ghi chú</Table.ColumnHeader>
-                        <Table.ColumnHeader rowSpan={2} textAlign={"center"}>Thao tác</Table.ColumnHeader>
+                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>
+                            Số lượng
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>
+                            Tổng số lượng đã nhập
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>
+                            Cảnh báo thừa thiếu
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>
+                            Xuất phôi
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>
+                            Tổng xuất
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>
+                            Tồn kho
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>
+                            Số giờ tồn kho
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader rowSpan={2}>
+                            Ghi chú
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader rowSpan={2} textAlign={"center"}>
+                            Thao tác
+                        </Table.ColumnHeader>
 
                     </Table.Row>
                     <Table.Row >
@@ -98,8 +117,12 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                         const hoursInStock = item.currentQuantity == 0 ? 0 : hourGap(item.createdAt);
                         return (
                             <Table.Row key={item._id ?? index}>
-                                <Table.Cell textAlign="center">{(page - 1) * limit + index + 1}</Table.Cell>
-                                <Table.Cell>{formatDate(mo?.manufacturingDate)}</Table.Cell>
+                                <Table.Cell textAlign="center">
+                                    {(page - 1) * limit + index + 1}
+                                </Table.Cell>
+                                <Table.Cell>
+                                    {formatDate(mo?.manufacturingDate)}
+                                </Table.Cell>
                                 <Table.Cell>
                                     <Highlight
                                         ignoreCase
@@ -118,7 +141,7 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                                         styles={{ bg: "teal.muted" }}
 
                                     >
-                                        {get(poItem, "subPurchaseOrder.purchaseOrder.customer.code")}
+                                        {safeGet(poItem, "subPurchaseOrder.purchaseOrder.customer.code")}
                                     </Highlight>
                                 </Table.Cell>
                                 <Table.Cell>
@@ -128,7 +151,7 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                                         styles={{ bg: "teal.muted" }}
 
                                     >
-                                        {get(poItem, "ware.code")}
+                                        {safeGet(poItem, "ware.code")}
                                     </Highlight>
                                 </Table.Cell>
                                 <Table.Cell>
@@ -138,17 +161,17 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                                         styles={{ bg: "teal.muted" }}
 
                                     >
-                                        {get(poItem, "ware.fluteCombination.code")}
+                                        {safeGet(poItem, "ware.fluteCombination.code")}
                                     </Highlight></Table.Cell>
                                 <Table.Cell>
-                                    {get(poItem, "ware.wareLength")}
+                                    {safeGet(poItem, "ware.wareLength")}
                                 </Table.Cell>
                                 <Table.Cell>
 
-                                    {get(poItem, "ware.wareWidth")}
+                                    {safeGet(poItem, "ware.wareWidth")}
                                 </Table.Cell>
                                 <Table.Cell>
-                                    {get(poItem, "ware.wareHeight")}
+                                    {safeGet(poItem, "ware.wareHeight")}
                                 </Table.Cell>
                                 <Table.Cell>
                                     {amount}
@@ -186,9 +209,34 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
 
                                 <Table.Cell>
                                     <Group gap={3}>
-                                        <Button variant="surface" colorPalette="blue" onClick={() => onView(item)}><Icon><FaEye /></Icon>Chi tiết</Button>
-                                        <Button variant="surface" colorPalette="green" onClick={() => onTransaction("IMPORT", item)}><Icon><FaPlus /></Icon> Nhập Kho</Button>
-                                        <Button variant="surface" colorPalette={item.currentQuantity <= 0 ? "gray" : "red"} disabled={item.currentQuantity <= 0} onClick={() => onTransaction("EXPORT", item)}><Icon><FaMinus /></Icon> Xuất Kho</Button>
+                                        <Button
+                                            variant="surface"
+                                            colorPalette="blue"
+                                            onClick={() => onView(item)}>
+                                            <Icon>
+                                                <FaEye />
+                                            </Icon>
+                                            Chi tiết
+                                        </Button>
+                                        <Button
+                                            variant="surface"
+                                            colorPalette="green"
+                                            onClick={() => onTransaction("IMPORT", item)}>
+                                            <Icon>
+                                                <FaPlus />
+                                            </Icon>
+                                            Nhập Kho
+                                        </Button>
+                                        <Button
+                                            variant="surface"
+                                            colorPalette={item.currentQuantity <= 0 ? "gray" : "red"}
+                                            disabled={item.currentQuantity <= 0}
+                                            onClick={() => onTransaction("EXPORT", item)}>
+                                            <Icon>
+                                                <FaMinus />
+                                            </Icon>
+                                            Xuất Kho
+                                        </Button>
                                     </Group>
                                 </Table.Cell>
                             </Table.Row>

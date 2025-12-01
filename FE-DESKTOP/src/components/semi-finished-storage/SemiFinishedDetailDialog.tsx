@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Button, Dialog, Portal, DataList, CloseButton, Text, Table, Highlight } from "@chakra-ui/react";
+import { Button, Dialog, Portal, CloseButton, Text, Table } from "@chakra-ui/react";
 import { SemiFinishedGood } from "@/types/SemiFinishedGood";
 import SemiFinishedTransactionHistory from "./SemiFinishedTransactionHistory";
 import { formatDate, hourGap } from "@/utils/dateUtils";
+import { safeGet } from "@/utils/storagesUtils";
 
 interface Props {
     isOpen: boolean;
@@ -13,9 +14,6 @@ interface Props {
 const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
     const [current, setCurrent] = useState<SemiFinishedGood | undefined>(item);
 
-    const get = (obj: any, path: string, fallback: any = "-") => {
-        return path.split(".").reduce((o, k) => (o?.[k]), obj) ?? fallback;
-    };
     const renderDiffStatus = (transactionType: string, value: number, amount: number) => {
         const diff = value - amount;
 
@@ -48,7 +46,7 @@ const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) =>
                 <Dialog.Positioner>
                     <Dialog.Content>
                         <Dialog.Header>
-                            <Dialog.Title fontSize={"xl"} fontWeight={"bold"}>Chi tiết bán thành phẩm</Dialog.Title>
+                            <Dialog.Title fontSize={"xl"} fontWeight={"bold"}>Chi tiết phôi</Dialog.Title>
                         </Dialog.Header>
                         <Dialog.Body>
                             <Table.ScrollArea
@@ -84,7 +82,7 @@ const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) =>
                                                 Thông tin sản xuất
                                             </Table.ColumnHeader>
 
-                                            <Table.ColumnHeader whiteSpace={"normal"} w={"1%"}  rowSpan={2}>Lớp sóng</Table.ColumnHeader>
+                                            <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Lớp sóng</Table.ColumnHeader>
                                             <Table.ColumnHeader colSpan={3} textAlign="center">
                                                 Kích thước sản phẩm
                                             </Table.ColumnHeader>
@@ -114,23 +112,23 @@ const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) =>
                                                 {mo?.code ?? "-"}
                                             </Table.Cell>
                                             <Table.Cell>
-                                                {get(poItem, "subPurchaseOrder.purchaseOrder.customer.code")}
+                                                {safeGet(poItem, "subPurchaseOrder.purchaseOrder.customer.code")}
                                             </Table.Cell>
                                             <Table.Cell>
-                                                {get(poItem, "ware.code")}
+                                                {safeGet(poItem, "ware.code")}
                                             </Table.Cell>
                                             <Table.Cell>
-                                                {get(poItem, "ware.fluteCombination.code")}
+                                                {safeGet(poItem, "ware.fluteCombination.code")}
                                             </Table.Cell>
                                             <Table.Cell>
-                                                {get(poItem, "ware.wareLength")}
+                                                {safeGet(poItem, "ware.wareLength")}
                                             </Table.Cell>
                                             <Table.Cell>
 
-                                                {get(poItem, "ware.wareWidth")}
+                                                {safeGet(poItem, "ware.wareWidth")}
                                             </Table.Cell>
                                             <Table.Cell>
-                                                {get(poItem, "ware.wareHeight")}
+                                                {safeGet(poItem, "ware.wareHeight")}
                                             </Table.Cell>
                                             <Table.Cell>
                                                 {amount}
@@ -171,7 +169,9 @@ const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) =>
                                 </Table.Root>
                             </Table.ScrollArea>
                             <Text mt={10} mb={2} fontSize={"xl"} fontWeight={"bold"}>Lịch Sử Nhập Xuất</Text>
-                            <SemiFinishedTransactionHistory id={current?._id} poiAmount={amount}/>
+                            <SemiFinishedTransactionHistory
+                                id={current?._id}
+                                poiAmount={current?.manufacturingOrder?.purchaseOrderItem?.amount ?? 0} />
                         </Dialog.Body>
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>

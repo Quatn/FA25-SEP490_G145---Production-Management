@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Button, Combobox, Dialog, Field, Flex, Input, NumberInput, Portal, Select, createListCollection, useFilter, useListCollection } from "@chakra-ui/react";
+import { Button, Dialog, Field, Flex, Input, NumberInput, Portal } from "@chakra-ui/react";
 import { useCreateFinishedGoodTransactionMutation } from "@/service/api/finishedGoodTransactionApiSlice";
 import { toaster } from "@/components/ui/toaster";
-import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { FinishedGood } from "@/types/FinishedGood";
 import { CreateFinishedGoodTransactionDTO } from "@/types/FinishedGoodTransaction";
 
@@ -85,7 +84,9 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
                 <Dialog.Positioner>
                     <Dialog.Content>
                         <Dialog.Header>
-                            <Dialog.Title>{transaction.transactionType === "IMPORT" ? "Phiếu Nhập" : "Phiếu Xuất"} Kho Thành Phẩm</Dialog.Title>
+                            <Dialog.Title>
+                                {transaction.transactionType === "IMPORT" ? "Phiếu Nhập" : "Phiếu Xuất"} Kho Thành Phẩm
+                                </Dialog.Title>
                         </Dialog.Header>
                         <Dialog.Body>
                             <Flex direction="column" gap={3}>
@@ -158,7 +159,9 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
                                 </Field.Root>
 
                                 <Field.Root orientation="vertical">
-                                    <Field.Label fontSize="lg">Ngày {transaction.transactionType === "IMPORT" ? "nhập" : "xuất"} </Field.Label>
+                                    <Field.Label fontSize="lg">
+                                        Ngày {transaction.transactionType === "IMPORT" ? "nhập" : "xuất"} 
+                                        </Field.Label>
                                     <Input
                                         type="date"
                                         value={transaction.transactionDate}
@@ -170,7 +173,9 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
 
                                 <Field.Root orientation="vertical">
                                     <Field.Label>Ghi chú</Field.Label>
-                                    <Input value={transaction.note} onChange={(e) => setTransaction({ ...transaction, note: e.target.value })} />
+                                    <Input 
+                                    value={transaction.note} 
+                                    onChange={(e) => setTransaction({ ...transaction, note: e.target.value })} />
                                 </Field.Root>
                             </Flex>
                         </Dialog.Body>

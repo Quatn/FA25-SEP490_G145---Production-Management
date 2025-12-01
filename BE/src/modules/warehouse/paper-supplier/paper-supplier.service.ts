@@ -13,7 +13,6 @@ export class PaperSupplierService {
     constructor(
         @InjectModel(PaperSupplier.name)
         private readonly paperSupplierModel: Model<PaperSupplier>,
-        @InjectConnection() private readonly connection: Connection,
     ) { }
 
     async checkDuplicates(dto: CreatePaperSupplierRequestDto | UpdatePaperSupplierRequestDto) {

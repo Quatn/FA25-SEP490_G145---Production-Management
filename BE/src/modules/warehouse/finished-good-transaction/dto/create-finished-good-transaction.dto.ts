@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsDateString, IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsOptional, Min } from "class-validator";
 import { TransactionType } from "../../enums/transaction-type.enum";
-import { CurrentStatusType } from "../../enums/finished-good-type.enum";
 
 export class CreateFinishedGoodTransactionDto {
     @ApiProperty({

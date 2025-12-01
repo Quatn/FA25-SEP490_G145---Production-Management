@@ -34,6 +34,7 @@ const FinishedTransactionHistory: React.FC<Props> = ({ id, poiAmount }) => {
     const items: FinishedGoodTransactionHistory[] = (data as any)?.data?.data ?? [];
     const totalPages = (data as any)?.data?.totalPages ?? 1;
     const collapsible = useCollapsible({ defaultOpen: false });
+    
     if (isLoading) return <Spinner />;
     if (error) return <Text>Không thể tải lịch sử.</Text>;
 

@@ -1,4 +1,4 @@
-import { Box, Collapsible, createListCollection, Field, Flex, HStack, Input, RadioGroup, Select } from "@chakra-ui/react";
+import { Box, Collapsible, Combobox, createListCollection, Field, Flex, HStack, Input, Portal, RadioGroup, Select } from "@chakra-ui/react";
 
 interface FilterProps {
     collapsible: any;
@@ -8,7 +8,7 @@ interface FilterProps {
     setTransactionType: (type: string) => void;
 }
 
-export const FinishedTransactionHistoryFilter: React.FC<FilterProps> = (
+export const SemiFinishedTransactionHistoryFilter: React.FC<FilterProps> = (
     {
         collapsible,
         setStartDate,

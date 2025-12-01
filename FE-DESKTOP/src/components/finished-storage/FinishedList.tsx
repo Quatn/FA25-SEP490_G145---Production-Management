@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { Button, ButtonGroup, CloseButton, Flex, IconButton, Input, InputGroup, Pagination, Spacer, Spinner, Icon, Stack } from "@chakra-ui/react";
-import { FaSearch, FaPlus, FaMinus } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import { Button, ButtonGroup, Flex, IconButton, Input, InputGroup, Pagination, Spacer, Spinner, Stack } from "@chakra-ui/react";
+import { FaPlus } from "react-icons/fa";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import FinishedTable from "./FinishedTable";
 import FinishedDetailDialog from "./FinishedDetailDialog";
@@ -38,8 +38,6 @@ const FinishedList: React.FC = () => {
 
     const [bulkFormOpen, setBulkFormOpen] = useState(false);
     const [bulkFormType, setBulkFormType] = useState<'IMPORT' | 'EXPORT' | undefined>(undefined);
-
-    const inputRef = useRef<HTMLInputElement | null>(null);
 
     const handleOpenDetail = (item?: FinishedGood) => {
         setSelected(item);
@@ -92,7 +90,11 @@ const FinishedList: React.FC = () => {
 
             <Flex direction="row-reverse" mb={4}>
                 <InputGroup w={"full"} maxW={"sm"}>
-                    <Input ref={inputRef} size="lg" placeholder="Tìm kiếm" value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} />
+                    <Input
+                        size="lg"
+                        placeholder="Tìm kiếm"
+                        value={search}
+                        onChange={(e) => { setPage(1); setSearch(e.target.value); }} />
                 </InputGroup>
                 <Spacer />
                 <Stack direction="row" spaceX={10}>
@@ -131,7 +133,12 @@ const FinishedList: React.FC = () => {
                     </Pagination.PrevTrigger>
 
                     <Pagination.Items render={(pageItem) => (
-                        <IconButton key={pageItem.value} variant={{ base: 'ghost', _selected: 'outline' }} onClick={() => setPage(pageItem.value)}>{pageItem.value}</IconButton>
+                        <IconButton
+                            key={pageItem.value}
+                            variant={{ base: 'ghost', _selected: 'outline' }}
+                            onClick={() => setPage(pageItem.value)}>
+                            {pageItem.value}
+                        </IconButton>
                     )} />
 
                     <Pagination.NextTrigger asChild>
