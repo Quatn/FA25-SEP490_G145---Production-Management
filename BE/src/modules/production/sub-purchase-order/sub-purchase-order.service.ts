@@ -116,4 +116,37 @@ export class SubPurchaseOrderService {
         if (!res) throw new NotFoundException("SubPurchaseOrder not found");
         // optionally we could also soft-delete related PO items; decide as needed
     }
+
+    async findDeleted(page = 1, limit = 20) {
+        const skip = (page - 1) * limit;
+        const filter = { isDeleted: true };
+
+        const [rawDocs, totalCount] = await Promise.all([
+            this.subPoModel.collection.find(filter).skip(skip).limit(limit).toArray(),
+            this.subPoModel.collection.countDocuments(filter),
+        ]);
+
+        const populated = await this.subPoModel.populate(rawDocs, [
+            { path: "product" },
+            { path: "purchaseOrder" },
+        ]);
+
+        const totalPages = Math.ceil((totalCount || 0) / limit);
+        return {
+            data: populated,
+            page,
+            limit,
+            totalItems: totalCount,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+        };
+    }
+
+    async restore(id: string) {
+        const doc = await this.subPoModel.findById(id) as any;
+        if (!doc) throw new NotFoundException("Sub purchase order not found");
+        await doc.restore();
+        return { success: true };
+    }
 }

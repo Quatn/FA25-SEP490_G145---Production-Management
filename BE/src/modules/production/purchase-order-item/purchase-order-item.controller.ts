@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { ApiExtraModels, ApiOperation } from "@nestjs/swagger";
 import { PurchaseOrderItem } from "../schemas/purchase-order-item.schema";
 import { BaseResponse } from "@/common/dto/response.dto";
@@ -14,6 +14,7 @@ import {
   QueryListFullDetailsPurchaseOrderItemByIdsResponseDto,
 } from "./dto/query-list-full-details-by-ids.dto";
 import { UpdatePurchaseOrderItemDto } from "./dto/update-purchase-order-item.dto";
+import { PaginationQueryDto } from "../purchase-order/dto/pagination-query.dto";
 
 @Controller("purchase-order-item")
 // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -77,5 +78,17 @@ export class PurchaseOrderItemController {
   @ApiOperation({ summary: "Soft delete a purchase order item" })
   remove(@Param("id") id: string) {
     return this.poiService.softRemove(id);
+  }
+
+  @Get("deleted")
+  async findDeleted(@Query() q: PaginationQueryDto) {
+    const page = q.page ?? 1;
+    const limit = q.limit ?? 20;
+    return this.poiService.findDeleted(page, limit);
+  }
+
+  @Patch("restore/:id")
+  async restore(@Param("id") id: string) {
+    return this.poiService.restore(id);
   }
 }

@@ -37,7 +37,7 @@ export class PurchaseOrderService {
     @InjectModel(
       Ware.name,
     ) private readonly wareModel: Model<Ware>,
-  ) {}
+  ) { }
 
   async findAll() {
     return await this.purchaseOrderModel.find();
@@ -158,6 +158,33 @@ export class PurchaseOrderService {
     if (!doc) throw new NotFoundException("Purchase order not found");
     await doc.softDelete();
     return { success: true };
+  }
+
+  async findDeleted(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const filter = { isDeleted: true };
+
+    const [rawDocs, totalCount] = await Promise.all([
+      this.purchaseOrderModel.collection.find(filter).skip(skip).limit(limit).toArray(),
+      this.purchaseOrderModel.collection.countDocuments(filter),
+    ]);
+
+    // populate customer and (optionally) other fields
+    const populatedDocs = await this.purchaseOrderModel.populate(rawDocs, [
+      { path: "customer" },
+      // you can add more populate instructions if needed
+    ]);
+
+    const totalPages = Math.ceil((totalCount || 0) / limit);
+    return {
+      data: populatedDocs,
+      page,
+      limit,
+      totalItems: totalCount,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
   }
 
   async restore(id: string) {

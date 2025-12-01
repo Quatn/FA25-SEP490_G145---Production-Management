@@ -1,22 +1,20 @@
-// src/components/ware-management/WareList.tsx
+// src/components/ware/WareList.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
   useGetWaresQuery,
-  useGetDeletedWaresQuery,
   useCreateWareMutation,
   useUpdateWareMutation,
   useDeleteWareMutation,
-  useRestoreWareMutation,
 } from "@/service/api/wareApiSlice";
 import { useGetAllFluteCombinationQuery } from "@/service/api/fluteCombinationApiSlice";
 import { useGetAllPrintColorsQuery } from "@/service/api/printColorApiSlice";
 import { useGetAllWareManufacturingTypesQuery } from "@/service/api/wareManufacturingProcessTypeApiSlice";
 import { useGetAllWareFinishingTypesQuery } from "@/service/api/wareFinishingProcessTypeApiSlice";
-// import { useGetAllManufacturingProcessesQuery } from "@/service/api/manufacturingProcessApiSlice";
+import WareCreateModal from "@/components/ware/WareCreateModal";
+import WareEditModal from "@/components/ware/WareEditModal";
 
-/** Helpers to normalize IDs and labels across shapes */
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
   if (typeof doc === "string") return doc;
@@ -81,7 +79,6 @@ function arraysEqualById(a: any[] = [], b: any[] = []) {
   return true;
 }
 
-/** UI: small rounded chip */
 const Chip: React.FC<{ label: string; onRemove?: () => void }> = ({
   label,
   onRemove,
@@ -113,9 +110,6 @@ const Chip: React.FC<{ label: string; onRemove?: () => void }> = ({
   </span>
 );
 
-/**
- * Inline multi-select control
- */
 const MultiSelectInline: React.FC<{
   options: any[];
   selected: string[];
@@ -260,23 +254,15 @@ const MultiSelectInline: React.FC<{
 
 export const WareList: React.FC = () => {
   const [search, setSearch] = useState("");
-  const [page] = useState(1);
-  const [limit] = useState(200);
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(5);
 
-  // main paginated fetch (take refetch)
   const {
     data: waresResp,
     refetch: refetchWares,
     isLoading: waresLoading,
   } = useGetWaresQuery({ page, limit, search });
 
-  const deletedQuery = useGetDeletedWaresQuery
-    ? useGetDeletedWaresQuery({ page: 1, limit: 200 })
-    : null;
-  const deletedResp = deletedQuery?.data;
-  const refetchDeleted = deletedQuery?.refetch;
-
-  // reference lists
   const { data: fluteResp } = useGetAllFluteCombinationQuery();
   const fluteList: any[] = fluteResp?.data ?? fluteResp ?? [];
 
@@ -289,13 +275,10 @@ export const WareList: React.FC = () => {
   const { data: finishingResp } = useGetAllWareFinishingTypesQuery();
   const finishingList: any[] = finishingResp?.data ?? finishingResp ?? [];
 
-  // mutations
   const [createWare, { isLoading: creating }] = useCreateWareMutation();
   const [updateWare] = useUpdateWareMutation();
   const [deleteWare] = useDeleteWareMutation();
-  const [restoreWare] = useRestoreWareMutation();
 
-  // normalize wares array
   let wares: any[] = [];
   if (waresResp?.data?.data && Array.isArray(waresResp.data.data))
     wares = waresResp.data.data;
@@ -306,12 +289,7 @@ export const WareList: React.FC = () => {
     wares = waresResp.data;
   else wares = [];
 
-  const deletedWaresFromQuery: any[] =
-    deletedResp?.data?.data ?? deletedResp?.data ?? [];
-
-  // local display state
   const [displayWares, setDisplayWares] = useState<any[]>([]);
-  const [displayDeletedWares, setDisplayDeletedWares] = useState<any[]>([]);
 
   const displayWaresRef = React.useRef<any[]>(displayWares);
   useEffect(() => {
@@ -324,21 +302,8 @@ export const WareList: React.FC = () => {
     }
   }, [wares]);
 
-  const displayDeletedRef = React.useRef<any[]>(displayDeletedWares);
-  useEffect(() => {
-    displayDeletedRef.current = displayDeletedWares;
-  }, [displayDeletedWares]);
-
-  useEffect(() => {
-    if (!arraysEqualById(displayDeletedRef.current, deletedWaresFromQuery)) {
-      setDisplayDeletedWares(deletedWaresFromQuery);
-    }
-  }, [deletedWaresFromQuery]);
-
-  // modal/form state
   const [createOpen, setCreateOpen] = useState(false);
 
-  // default/create form — numeric fields kept as strings/null so empty => null
   const [createForm, setCreateForm] = useState<any>({
     code: "",
     unitPrice: "",
@@ -454,7 +419,6 @@ export const WareList: React.FC = () => {
     setEditOpen(true);
   };
 
-  // helpers to add/remove items from multi lists (create)
   const addToCreateList = (
     field: "printColors" | "finishingProcesses" | "manufacturingProcesses",
     id: string
@@ -476,7 +440,6 @@ export const WareList: React.FC = () => {
     }));
   };
 
-  // helpers for edit form
   const addToEditList = (
     field: "printColors" | "finishingProcesses" | "manufacturingProcesses",
     id: string
@@ -498,7 +461,6 @@ export const WareList: React.FC = () => {
     }));
   };
 
-  // payload helpers
   const normalizePayloadRefs = (payload: any) => {
     payload.printColors = (payload.printColors || []).map(
       (x: any) => getIdFromDoc(x) ?? x
@@ -525,7 +487,6 @@ export const WareList: React.FC = () => {
     return n;
   };
 
-  // create handler
   const handleCreateSubmit = async () => {
     try {
       if (!createForm.code || String(createForm.code).trim() === "")
@@ -549,15 +510,6 @@ export const WareList: React.FC = () => {
       );
       if (!wareManufacturingProcessType)
         return alert("Please select Kiểu SP gia công");
-
-      // keep paperWidth & crossCutCount required (per earlier behavior)
-      // const paperWidth = parsePositiveNumberOrNull(createForm.paperWidth);
-      // const crossCutCount = parsePositiveNumberOrNull(createForm.crossCutCount);
-      // if (!paperWidth || paperWidth <= 0)
-      //   return alert("Please provide paperWidth > 0");
-      // if (!crossCutCount || crossCutCount <= 0)
-      //   return alert("Please provide crossCutCount > 0");
-
       const volume = parsePositiveNumberOrNull(createForm.volume);
       const warePerSet = parsePositiveNumberOrNull(createForm.warePerSet);
       const warePerCombinedSet = parsePositiveNumberOrNull(
@@ -595,7 +547,6 @@ export const WareList: React.FC = () => {
           "Please select at least one paper layer (face/inner/back)"
         );
 
-      // build payload: removed-from-input fields set to null
       const payload: any = {
         code: String(createForm.code).trim(),
         unitPrice: unitPrice,
@@ -604,7 +555,6 @@ export const WareList: React.FC = () => {
         wareLength: wareLength,
         wareHeight: parsePositiveNumberOrNull(createForm.wareHeight),
         wareManufacturingProcessType: wareManufacturingProcessType,
-        // these fields removed from input -> send null so backend can decide
         warePerBlank: 0,
         blankWidth: 0,
         blankLength: 0,
@@ -713,7 +663,6 @@ export const WareList: React.FC = () => {
     }
   };
 
-  // edit handler
   const handleEditSubmit = async () => {
     try {
       if (!editForm?.id) return alert("No id");
@@ -739,14 +688,6 @@ export const WareList: React.FC = () => {
       );
       if (!wareManufacturingProcessType)
         return alert("Please select Kiểu SP gia công");
-
-      // const paperWidth = parsePositiveNumberOrNull(editForm.paperWidth);
-      // const crossCutCount = parsePositiveNumberOrNull(editForm.crossCutCount);
-      // if (!paperWidth || paperWidth <= 0)
-      //   return alert("Please provide paperWidth > 0");
-      // if (!crossCutCount || crossCutCount <= 0)
-      //   return alert("Please provide crossCutCount > 0");
-
       const volume = parsePositiveNumberOrNull(editForm.volume);
       const warePerSet = parsePositiveNumberOrNull(editForm.warePerSet);
       const warePerCombinedSet = parsePositiveNumberOrNull(
@@ -792,7 +733,6 @@ export const WareList: React.FC = () => {
         wareLength: wareLength,
         wareHeight: parsePositiveNumberOrNull(editForm.wareHeight),
         wareManufacturingProcessType: wareManufacturingProcessType,
-        // removed-from-input fields -> send null
         warePerBlank: 0,
         blankWidth: 0,
         blankLength: 0,
@@ -890,16 +830,9 @@ export const WareList: React.FC = () => {
         )
       );
 
-      const deletedAt = new Date().toISOString();
-      setDisplayDeletedWares((prev) => [
-        { ...(w as any), isDeleted: true, deletedAt },
-        ...prev,
-      ]);
-
       setTimeout(() => {
         try {
           refetchWares?.();
-          refetchDeleted?.();
         } catch {}
       }, 800);
 
@@ -907,35 +840,6 @@ export const WareList: React.FC = () => {
     } catch (err: any) {
       console.error("delete failed", err);
       alert(err?.data?.message ?? err?.message ?? "Delete failed");
-    }
-  };
-
-  const handleRestore = async (w: any) => {
-    try {
-      const id = getIdFromDoc(w) ?? w._id ?? w.code;
-      const res: any = await restoreWare({ id }).unwrap();
-
-      setDisplayDeletedWares((prev) =>
-        prev.filter(
-          (p) =>
-            (getIdFromDoc(p) ?? p._id ?? p.code) !==
-            (getIdFromDoc(w) ?? w._id ?? w.code)
-        )
-      );
-
-      setDisplayWares((prev) => [w, ...prev]);
-
-      setTimeout(() => {
-        try {
-          refetchWares?.();
-          refetchDeleted?.();
-        } catch {}
-      }, 800);
-
-      alert(res?.message ?? "Restored");
-    } catch (err: any) {
-      console.error("restore failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Restore failed");
     }
   };
 
@@ -968,9 +872,7 @@ export const WareList: React.FC = () => {
   }, [finishingList]);
 
   const displayed = displayWares;
-  const displayedDeleted = displayDeletedWares;
 
-  // PAPER LAYER options (sample strings). Replace with backend list if you have one.
   const PAPER_LAYER_OPTIONS = [
     "K/VT/120/100",
     "T/LE/100/100",
@@ -979,6 +881,34 @@ export const WareList: React.FC = () => {
   ];
 
   const TYPE_OF_PRINTER_OPTIONS = ["3M - A", "2M - C", "4M"];
+
+  const PAPER_LAYER_KEYS: { key: string; label: string }[] = [
+    { key: "faceLayerPaperType", label: "Mặt" },
+    { key: "EFlutePaperType", label: "Sóng E" },
+    { key: "EBLinerLayerPaperType", label: "Lớp Giữa E/B" },
+    { key: "BFlutePaperType", label: "Sóng B" },
+    { key: "BACLinerLayerPaperType", label: "Lớp Giữa B A/C" },
+    { key: "ACFlutePaperType", label: "Sóng A/C" },
+    { key: "backLayerPaperType", label: "Đáy" },
+  ];
+
+  // pagination helpers (extract totalCount from likely response shapes)
+  const totalCount =
+    Number(
+      waresResp?.data?.total ??
+        waresResp?.total ??
+        waresResp?.data?.meta?.total ??
+        waresResp?.data?.meta?.count ??
+        waresResp?.meta?.total ??
+        0
+    ) || 0;
+  const totalPages =
+    totalCount > 0 ? Math.max(1, Math.ceil(totalCount / limit)) : 1;
+  const goToPage = (p: number) => {
+    if (p < 1) p = 1;
+    if (totalCount > 0 && p > totalPages) p = totalPages;
+    setPage(p);
+  };
 
   return (
     <div>
@@ -991,42 +921,88 @@ export const WareList: React.FC = () => {
         }}
       >
         <div>
-          <strong>Wares</strong>
+          <strong>Mã hàng </strong>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
             className="form-control"
-            placeholder="Search by code"
+            placeholder="Tìm theo mã"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             style={{ minWidth: 300 }}
           />
           <button
             className="btn btn-primary"
             onClick={() => setCreateOpen(true)}
           >
-            + Create
+            + Tạo
           </button>
         </div>
       </div>
 
+      {/* horizontal scroll container */}
       <div style={{ overflowX: "auto" }}>
-        <table className="table table-bordered table-sm">
+        <table
+          className="table table-bordered table-sm"
+          style={{ minWidth: 1800, tableLayout: "fixed" }}
+        >
+          <colgroup>
+            <col style={{ width: 140 }} />
+            <col style={{ width: 60 }} />
+            <col style={{ width: 120 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 100 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 160 }} />
+            <col style={{ width: 220 }} />
+            <col style={{ width: 160 }} />
+            {PAPER_LAYER_KEYS.map((_, i) => (
+              <col key={i} style={{ width: 140 }} />
+            ))}
+            <col style={{ width: 120 }} />
+            <col style={{ width: 240 }} />
+            <col style={{ width: 120 }} />
+          </colgroup>
           <thead>
+            {/* first header row */}
             <tr>
-              <th>Mã hàng</th>
-              <th>Sóng</th>
-              <th>Đơn giá (đồng)</th>
-              <th>Rộng (mm)</th>
-              <th>Dài (mm)</th>
-              <th>Cao (mm)</th>
-              <th>Volume</th>
-              <th>Kiểu SP gia công</th>
-              <th>Công đoạn hoàn thiện</th>
-              <th>Màu in</th>
-              <th>Actions</th>
+              <th rowSpan={2}>Mã hàng</th>
+              <th rowSpan={2}>Sóng</th>
+              <th rowSpan={2}>Đơn giá (đồng)</th>
+              <th rowSpan={2}>Rộng (mm)</th>
+              <th rowSpan={2}>Dài (mm)</th>
+              <th rowSpan={2}>Cao (mm)</th>
+              <th rowSpan={2}>Thể tích (m2)</th>
+              <th rowSpan={2}>Số SP bộ</th>
+              <th rowSpan={2}>Số SP ghép bộ</th>
+              <th rowSpan={2}>Dọc chia SP</th>
+              <th rowSpan={2}>Kiểu SP gia công</th>
+              <th rowSpan={2}>Công đoạn hoàn thiện</th>
+              <th rowSpan={2}>Màu in</th>
+
+              {/* Mặt giấy main header spanning small subcolumns */}
+              <th colSpan={PAPER_LAYER_KEYS.length}>Mặt giấy</th>
+
+              <th rowSpan={2}>Máy in</th>
+              <th rowSpan={2}>Ghi chú</th>
+              <th rowSpan={2}>Thao tác</th>
+            </tr>
+
+            {/* second header row: small paper-layer headers */}
+            <tr>
+              {PAPER_LAYER_KEYS.map((k) => (
+                <th key={k.key}>{k.label}</th>
+              ))}
             </tr>
           </thead>
+
           <tbody>
             {displayed.map((w) => {
               const fluteLabel = getCodeLabelForFlute(
@@ -1055,14 +1031,50 @@ export const WareList: React.FC = () => {
                 <tr key={getIdFromDoc(w) ?? w.code}>
                   <td>{w.code}</td>
                   <td>{fluteLabel}</td>
-                  <td style={{ textAlign: "right" }}>{w.unitPrice}</td>
+                  <td style={{ textAlign: "right" }}>{w.unitPrice ?? "-"}</td>
                   <td style={{ textAlign: "right" }}>{w.wareWidth ?? "-"}</td>
                   <td style={{ textAlign: "right" }}>{w.wareLength ?? "-"}</td>
                   <td style={{ textAlign: "right" }}>{w.wareHeight ?? "-"}</td>
                   <td style={{ textAlign: "right" }}>{w.volume ?? "-"}</td>
+                  <td style={{ textAlign: "right" }}>{w.warePerSet ?? "-"}</td>
+                  <td style={{ textAlign: "right" }}>
+                    {w.warePerCombinedSet ?? "-"}
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    {w.horizontalWareSplit ?? "-"}
+                  </td>
                   <td>{manufTypeLabel}</td>
                   <td style={{ maxWidth: 220 }}>{finishingProcesses}</td>
-                  <td>{pcolors}</td>
+                  <td>{pcolors || "-"}</td>
+                  {PAPER_LAYER_KEYS.map((lk) => (
+                    <td
+                      key={lk.key}
+                      style={{
+                        minWidth: 140,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        verticalAlign: "middle",
+                        textAlign: "center",
+                      }}
+                      title={w?.[lk.key] ?? ""}
+                    >
+                      {w?.[lk.key] ? String(w[lk.key]) : "-"}
+                    </td>
+                  ))}
+
+                  <td>{w.typeOfPrinter ?? "-"}</td>
+                  <td
+                    style={{
+                      maxWidth: 240,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                    title={w.note ?? ""}
+                  >
+                    {w.note ?? "-"}
+                  </td>
                   <td>
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
@@ -1082,10 +1094,12 @@ export const WareList: React.FC = () => {
                 </tr>
               );
             })}
+
             {!displayed.length && (
               <tr>
-                <td colSpan={14} className="text-muted p-4">
-                  No wares
+                {/* new total columns count = previous columns - 1 + 7 = 23 */}
+                <td colSpan={23} className="text-muted p-4">
+                  Không có mã hàng nào
                 </td>
               </tr>
             )}
@@ -1093,848 +1107,92 @@ export const WareList: React.FC = () => {
         </table>
       </div>
 
-      {/* Create Modal */}
-      {createOpen && (
-        <div className="modal-backdrop" style={{ display: "block" }}>
-          <div className="modal" role="dialog" style={{ display: "block" }}>
-            <div className="modal-dialog modal-lg">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Tạo mã hàng</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setCreateOpen(false)}
-                  />
-                </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginTop: 8,
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => goToPage(page - 1)}
+            disabled={page <= 1}
+          >
+            Trước
+          </button>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => goToPage(page + 1)}
+            disabled={totalCount > 0 ? page >= totalPages : false}
+          >
+            Sau
+          </button>
 
-                <div className="modal-body">
-                  <div className="row g-3">
-                    <div className="col-md-6">
-                      <label className="form-label">
-                        Mã hàng
-                        <input
-                          className="form-control"
-                          value={createForm.code}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              code: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Đơn giá (đồng)
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm.unitPrice}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              unitPrice: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Sóng
-                        <select
-                          className="form-control"
-                          value={createForm.fluteCombination}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              fluteCombination: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- select --</option>
-                          {(fluteList || []).map((f) => (
-                            <option
-                              key={getIdFromDoc(f) ?? f.code}
-                              value={getIdFromDoc(f)}
-                            >
-                              {f.code}
-                              {f.description ? ` - ${f.description}` : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="form-label">
-                        Kiểu SP gia công
-                        <select
-                          className="form-control"
-                          value={createForm.wareManufacturingProcessType}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              wareManufacturingProcessType: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- select --</option>
-                          {(manufList || []).map((m) => (
-                            <option
-                              key={getIdFromDoc(m) ?? m.code}
-                              value={getIdFromDoc(m)}
-                            >
-                              {m.code} {m.name ? `- ${m.name}` : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="form-label">
-                        Rộng
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm.wareWidth}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              wareWidth: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Dài
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm.wareLength}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              wareLength: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Cao
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm.wareHeight}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              wareHeight: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    <div className="col-md-6">
-                      <label className="form-label">
-                        Volume
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm.volume}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              volume: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <br></br>
-
-                      <label className="form-label">
-                        Số SP bộ
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm.warePerSet}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              warePerSet: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Số SP ghép bộ
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm.warePerCombinedSet}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              warePerCombinedSet: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Dọc chia SP
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm.horizontalWareSplit}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              horizontalWareSplit: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <br></br>
-
-                      <label className="form-label">Màu in</label>
-                      <MultiSelectInline
-                        id="create-printcolor"
-                        options={printColorList}
-                        selected={createForm.printColors || []}
-                        onAdd={(id) => addToCreateList("printColors", id)}
-                        onRemove={(id) =>
-                          removeFromCreateList("printColors", id)
-                        }
-                        getLabel={(o) =>
-                          o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
-                        }
-                        placeholder="-- choose print colors --"
-                      />
-
-                      <label className="form-label" style={{ marginTop: 8 }}>
-                        Công đoạn hoàn thiện
-                      </label>
-                      <MultiSelectInline
-                        id="create-finishing"
-                        options={finishingList}
-                        selected={createForm.finishingProcesses || []}
-                        onAdd={(id) =>
-                          addToCreateList("finishingProcesses", id)
-                        }
-                        onRemove={(id) =>
-                          removeFromCreateList("finishingProcesses", id)
-                        }
-                        getLabel={(o) =>
-                          o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
-                        }
-                        placeholder="-- choose finishing processes --"
-                      />
-
-                      <label className="form-label" style={{ marginTop: 8 }}>
-                        Note
-                        <textarea
-                          className="form-control"
-                          value={createForm.note}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              note: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                    </div>
-                  </div>
-
-                  <hr />
-
-                  <div style={{ marginBottom: 8 }}>
-                    <strong>Paper layers (at least one required)</strong>
-                  </div>
-
-                  <div className="row g-3">
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Face layer
-                        <select
-                          className="form-control"
-                          value={createForm.faceLayerPaperType}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              faceLayerPaperType: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- none --</option>
-                          {PAPER_LAYER_OPTIONS.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        E flute
-                        <select
-                          className="form-control"
-                          value={createForm.EFlutePaperType}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              EFlutePaperType: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- none --</option>
-                          {PAPER_LAYER_OPTIONS.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        E/B liner
-                        <select
-                          className="form-control"
-                          value={createForm.EBLinerLayerPaperType}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              EBLinerLayerPaperType: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- none --</option>
-                          {PAPER_LAYER_OPTIONS.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        B flute
-                        <select
-                          className="form-control"
-                          value={createForm.BFlutePaperType}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              BFlutePaperType: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- none --</option>
-                          {PAPER_LAYER_OPTIONS.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        B/A C liner
-                        <select
-                          className="form-control"
-                          value={createForm.BACLinerLayerPaperType}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              BACLinerLayerPaperType: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- none --</option>
-                          {PAPER_LAYER_OPTIONS.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        AC flute
-                        <select
-                          className="form-control"
-                          value={createForm.ACFlutePaperType}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              ACFlutePaperType: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- none --</option>
-                          {PAPER_LAYER_OPTIONS.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Back layer
-                        <select
-                          className="form-control"
-                          value={createForm.backLayerPaperType}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...p,
-                              backLayerPaperType: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- none --</option>
-                          {PAPER_LAYER_OPTIONS.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  </div>
-
-                  <hr />
-
-                  <div style={{ marginTop: 12 }}>
-                    <label className="form-label">
-                      Type of printer
-                      <select
-                        className="form-control"
-                        value={createForm.typeOfPrinter}
-                        onChange={(e) =>
-                          setCreateForm((p: any) => ({
-                            ...p,
-                            typeOfPrinter: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- none --</option>
-                        {TYPE_OF_PRINTER_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="modal-footer">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setCreateOpen(false)}
-                  >
-                    Đóng
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleCreateSubmit}
-                    disabled={creating}
-                  >
-                    {creating ? "Đang tạo..." : "Tạo"}
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div style={{ marginLeft: 8 }}>
+            Trang {page} {totalCount > 0 && `of ${totalPages}`}
           </div>
         </div>
-      )}
 
-      {/* Edit Modal */}
-      {editOpen && editForm && (
-        <div className="modal-backdrop" style={{ display: "block" }}>
-          <div className="modal" role="dialog" style={{ display: "block" }}>
-            <div className="modal-dialog modal-lg">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Sửa {editForm.code}</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setEditOpen(false)}
-                  />
-                </div>
-
-                <div className="modal-body">
-                  <div className="row g-3">
-                    <div className="col-md-6">
-                      <label className="form-label">
-                        Mã hàng
-                        <input
-                          className="form-control"
-                          value={editForm.code}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              code: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Đơn giá (đồng)
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={editForm.unitPrice}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              unitPrice: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Sóng
-                        <select
-                          className="form-control"
-                          value={editForm.fluteCombination}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              fluteCombination: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- select --</option>
-                          {(fluteList || []).map((f) => (
-                            <option
-                              key={getIdFromDoc(f) ?? f.code}
-                              value={getIdFromDoc(f)}
-                            >
-                              {f.code}
-                              {f.description ? ` - ${f.description}` : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="form-label">
-                        Kiểu SP gia công
-                        <select
-                          className="form-control"
-                          value={editForm.wareManufacturingProcessType}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              wareManufacturingProcessType: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- select --</option>
-                          {(manufList || []).map((m) => (
-                            <option
-                              key={getIdFromDoc(m) ?? m.code}
-                              value={getIdFromDoc(m)}
-                            >
-                              {m.code} {m.name ? `- ${m.name}` : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="form-label">
-                        Rộng
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={editForm.wareWidth}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              wareWidth: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Dài
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={editForm.wareLength}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              wareLength: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Cao
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={editForm.wareHeight}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              wareHeight: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    <div className="col-md-6">
-                      <label className="form-label">
-                        Volume
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={editForm.volume}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              volume: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Số SP bộ
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={editForm.warePerSet}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              warePerSet: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Số SP ghép bộ
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={editForm.warePerCombinedSet}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              warePerCombinedSet: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">
-                        Dọc chia SP 
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={editForm.horizontalWareSplit}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              horizontalWareSplit: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="form-label">Màu in</label>
-                      <MultiSelectInline
-                        id="edit-printcolor"
-                        options={printColorList}
-                        selected={editForm.printColors || []}
-                        onAdd={(id) => addToEditList("printColors", id)}
-                        onRemove={(id) => removeFromEditList("printColors", id)}
-                        getLabel={(o) =>
-                          o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
-                        }
-                        placeholder="-- choose print colors --"
-                      />
-
-                      <label className="form-label" style={{ marginTop: 8 }}>
-                        Công đoạn hoàn thiện
-                      </label>
-                      <MultiSelectInline
-                        id="edit-finishing"
-                        options={finishingList}
-                        selected={editForm.finishingProcesses || []}
-                        onAdd={(id) => addToEditList("finishingProcesses", id)}
-                        onRemove={(id) =>
-                          removeFromEditList("finishingProcesses", id)
-                        }
-                        getLabel={(o) =>
-                          o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
-                        }
-                        placeholder="-- choose finishing processes --"
-                      />
-
-                      <label className="form-label" style={{ marginTop: 8 }}>
-                        Note
-                        <textarea
-                          className="form-control"
-                          value={editForm.note}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              note: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                    </div>
-                  </div>
-
-                  <hr />
-
-                  <div style={{ marginBottom: 8 }}>
-                    <strong>Paper layers (at least one required)</strong>
-                  </div>
-
-                  <div className="row g-3">
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Face layer
-                        <select
-                          className="form-control"
-                          value={editForm.faceLayerPaperType}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              faceLayerPaperType: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- none --</option>
-                          {PAPER_LAYER_OPTIONS.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        E flute
-                        <select
-                          className="form-control"
-                          value={editForm.EFlutePaperType}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              EFlutePaperType: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- none --</option>
-                          {PAPER_LAYER_OPTIONS.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Back layer
-                        <select
-                          className="form-control"
-                          value={editForm.backLayerPaperType}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...p,
-                              backLayerPaperType: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">-- none --</option>
-                          {PAPER_LAYER_OPTIONS.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  </div>
-
-                  <hr />
-
-                  <div style={{ marginTop: 12 }}>
-                    <label className="form-label">
-                      Type of printer
-                      <select
-                        className="form-control"
-                        value={editForm.typeOfPrinter}
-                        onChange={(e) =>
-                          setEditForm((p: any) => ({
-                            ...p,
-                            typeOfPrinter: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- none --</option>
-                        {TYPE_OF_PRINTER_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="modal-footer">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setEditOpen(false)}
-                  >
-                    Đóng
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleEditSubmit}
-                  >
-                    Lưu
-                  </button>
-                </div>
-              </div>
-            </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <span className="text-muted">Đi đến</span>
+            <input
+              type="number"
+              value={page}
+              min={1}
+              max={totalPages}
+              onChange={(e) => {
+                const v = Number(e.target.value || 1);
+                if (!Number.isFinite(v)) return;
+                goToPage(Math.max(1, Math.floor(v)));
+              }}
+              style={{ width: 72 }}
+              className="form-control form-control-sm"
+            />
           </div>
         </div>
-      )}
+      </div>
+
+      <WareCreateModal
+        show={createOpen}
+        onClose={() => setCreateOpen(false)}
+        createForm={createForm}
+        setCreateForm={setCreateForm}
+        fluteList={fluteList}
+        manufList={manufList}
+        printColorList={printColorList}
+        finishingList={finishingList}
+        PAPER_LAYER_OPTIONS={PAPER_LAYER_OPTIONS}
+        TYPE_OF_PRINTER_OPTIONS={TYPE_OF_PRINTER_OPTIONS}
+        addToCreateList={addToCreateList}
+        removeFromCreateList={removeFromCreateList}
+        handleCreateSubmit={handleCreateSubmit}
+        creating={creating}
+        getIdFromDoc={getIdFromDoc}
+        MultiSelectInline={MultiSelectInline}
+      />
+
+      <WareEditModal
+        show={editOpen}
+        onClose={() => setEditOpen(false)}
+        editForm={editForm}
+        setEditForm={setEditForm}
+        fluteList={fluteList}
+        manufList={manufList}
+        printColorList={printColorList}
+        finishingList={finishingList}
+        PAPER_LAYER_OPTIONS={PAPER_LAYER_OPTIONS}
+        TYPE_OF_PRINTER_OPTIONS={TYPE_OF_PRINTER_OPTIONS}
+        addToEditList={addToEditList}
+        removeFromEditList={removeFromEditList}
+        handleEditSubmit={handleEditSubmit}
+        getIdFromDoc={getIdFromDoc}
+        MultiSelectInline={MultiSelectInline}
+      />
     </div>
   );
 };

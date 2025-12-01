@@ -16,8 +16,11 @@ import {
   useUpdatePurchaseOrderItemMutation,
   useDeletePurchaseOrderItemMutation,
 } from "@/service/api/purchaseOrderItemApiSlice";
-import { useCreateFromProductsMutation } from "@/service/api/subPurchaseOrderApiSlice";
-import { useUpdateSubPurchaseOrderMutation } from "@/service/api/subPurchaseOrderApiSlice";
+import {
+  useCreateFromProductsMutation,
+  useUpdateSubPurchaseOrderMutation,
+  useDeleteSubPurchaseOrderMutation,
+} from "@/service/api/subPurchaseOrderApiSlice";
 
 function makeId(prefix = "") {
   return `${prefix}${Date.now()}${Math.floor(Math.random() * 9000 + 1000)}`;
@@ -79,7 +82,6 @@ const SearchInput: React.FC<{
   />
 );
 
-// --- Status enums as arrays for selects (values match backend enums)
 const PO_STATUS_OPTIONS = [
   "DRAFT",
   "PENDINGAPPROVAL",
@@ -121,6 +123,9 @@ const POITEM_STATUS_OPTIONS = [
   "COMPLETED",
 ];
 
+// Considered "done" for an item
+const DONE_ITEM_STATUSES = ["COMPLETED", "FINISHEDPRODUCTION"];
+
 const PurchaseOrderList: React.FC = () => {
   const [query, setQuery] = useState<string>("");
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
@@ -143,23 +148,18 @@ const PurchaseOrderList: React.FC = () => {
     search: "",
   });
 
-  // create/update/delete hooks
   const [createPo] = useCreatePurchaseOrderMutation();
   const [updatePo] = useUpdatePurchaseOrderMutation();
   const [deletePo] = useDeletePurchaseOrderMutation();
   const [createSubFromProducts] = useCreateFromProductsMutation();
 
-  // subPO update mutation
   const [updateSub] = useUpdateSubPurchaseOrderMutation();
+  const [deleteSub] = useDeleteSubPurchaseOrderMutation();
 
-  // PO item update/delete hooks
   const [updatePoItem] = useUpdatePurchaseOrderItemMutation();
   const [deletePoItem] = useDeletePurchaseOrderItemMutation();
 
-  // list local state
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
-
-  // better ui
   const [expandedLocalDoc, setExpandedLocalDoc] = useState<any | null>(null);
 
   // expanded PO id to show server-side sub-POs; fetch details only when expanded
@@ -190,13 +190,24 @@ const PurchaseOrderList: React.FC = () => {
     setExpandedLocalDoc(doc ? JSON.parse(JSON.stringify(doc)) : null);
   }, [expandedPoResp]);
 
-  const resolveId = (x: any) => x?._id?.$oid ?? x?._id ?? x?.id ?? x;
+  // stable id resolver (returns string if possible, else empty string)
+  const resolveId = (x: any) => {
+    if (x == null) return "";
+    const candidate = x?._id?.$oid ?? x?._id ?? x?.id ?? null;
+    if (candidate !== null && candidate !== undefined) return String(candidate);
+    if (
+      typeof x === "string" ||
+      typeof x === "number" ||
+      typeof x === "boolean"
+    )
+      return String(x);
+    return "";
+  };
 
   // helper: compute totals from expandedLocalDoc and push them into orders list
   const syncTotalsToOrders = (localDoc: any | null) => {
     if (!localDoc) return;
-    const poId =
-      String(localDoc._id ?? localDoc.id ?? localDoc._id?.$oid ?? "") || "";
+    const poId = String(localDoc._id ?? localDoc._id?.$oid ?? "") || "";
     const totals = { items: 0, value: 0 };
     (localDoc.subPurchaseOrders || []).forEach((s: any) => {
       (s.items || []).forEach((it: any) => {
@@ -270,7 +281,6 @@ const PurchaseOrderList: React.FC = () => {
         paymentTerms: updated.taxTemplate,
         note: updated.notes,
       };
-      // attach customer ObjectId if present
       if ((updated as any).customerId) {
         payload.customer = (updated as any).customerId;
       }
@@ -293,7 +303,6 @@ const PurchaseOrderList: React.FC = () => {
     if (!po?.id) return;
     if (!confirm("Delete this Purchase Order?")) return;
     try {
-      // deletePo expects a string id
       await deletePo(po.id).unwrap();
       await refetch();
     } catch (err: any) {
@@ -322,136 +331,6 @@ const PurchaseOrderList: React.FC = () => {
     updatePOLocal(poId, (po) => {
       po.subPOs = po.subPOs || [];
       po.subPOs.push(newSub);
-      return po;
-    });
-  };
-
-  const handleRemoveSubPO = (poId: string, subId: string) => {
-    if (!confirm("Remove this sub-PO?")) return;
-    updatePOLocal(poId, (po) => {
-      po.subPOs = (po.subPOs || []).filter((s) => s.id !== subId);
-      return po;
-    });
-  };
-
-  const handleChangeSubTitle = (poId: string, subId: string, value: string) => {
-    updatePOLocal(poId, (po) => {
-      (po.subPOs || []).forEach((s) => {
-        if (s.id === subId) s.title = value;
-      });
-      return po;
-    });
-  };
-
-  const handleChangeSubStatus = (
-    poId: string,
-    subId: string,
-    value: string
-  ) => {
-    updatePOLocal(poId, (po) => {
-      (po.subPOs || []).forEach((s) => {
-        if (s.id === subId) s.status = value;
-      });
-      return po;
-    });
-  };
-
-  const handleChangeSubProductType = (
-    poId: string,
-    subId: string,
-    value: string
-  ) => {
-    updatePOLocal(poId, (po) => {
-      (po.subPOs || []).forEach((s) => {
-        if (s.id === subId) (s as any).productType = value;
-      });
-      return po;
-    });
-  };
-
-  const handleChangeSubCustomerCode = (
-    poId: string,
-    subId: string,
-    value: string
-  ) => {
-    updatePOLocal(poId, (po) => {
-      (po.subPOs || []).forEach((s) => {
-        if (s.id === subId) (s as any).customerCode = value;
-      });
-      return po;
-    });
-  };
-
-  const handleChangeSubSize = (poId: string, subId: string, value: string) => {
-    updatePOLocal(poId, (po) => {
-      (po.subPOs || []).forEach((s) => {
-        if (s.id === subId) (s as any).size = value;
-      });
-      return po;
-    });
-  };
-
-  const handleAddItem = (poId: string, subId: string) => {
-    const newItem: POItem = {
-      id: makeId("item-"),
-      subPOId: subId,
-      sku: "",
-      description: "",
-      uom: "PCS",
-      unitPrice: 0,
-      quantity: 0,
-      total: 0,
-      status: "Pending",
-    };
-    updatePOLocal(poId, (po) => {
-      const s = (po.subPOs || []).find((x) => x.id === subId);
-      if (!s) {
-        po.subPOs = po.subPOs || [];
-        po.subPOs.push({
-          id: subId,
-          poId: po.id,
-          title: "Auto",
-          status: "Open",
-          items: [newItem],
-          productType: "Bộ",
-          customerCode: "",
-          size: "",
-        } as any);
-      } else {
-        s.items = s.items || [];
-        s.items.push(newItem);
-      }
-      return po;
-    });
-  };
-
-  const handleRemoveItem = (poId: string, subId: string, itemId: string) => {
-    if (!confirm("Remove this item?")) return;
-    updatePOLocal(poId, (po) => {
-      const s = (po.subPOs || []).find((x) => x.id === subId);
-      if (s) s.items = (s.items || []).filter((it) => it.id !== itemId);
-      return po;
-    });
-  };
-
-  const handleChangeItemField = (
-    poId: string,
-    subId: string,
-    itemId: string,
-    field: keyof POItem,
-    value: any
-  ) => {
-    updatePOLocal(poId, (po) => {
-      const s = (po.subPOs || []).find((x) => x.id === subId);
-      if (s) {
-        const it = (s.items || []).find((i) => i.id === itemId);
-        if (it) {
-          (it as any)[field] = value;
-          const qty = Number(it.quantity ?? 0);
-          const price = Number(it.unitPrice ?? 0);
-          it.total = Number(qty * price);
-        }
-      }
       return po;
     });
   };
@@ -511,12 +390,48 @@ const PurchaseOrderList: React.FC = () => {
         id: idStr,
         body: { amount: Number(newAmount ?? 0) },
       }).unwrap();
-      // successful: nothing else required; local state already reflects the change
     } catch (err: any) {
-      // revert: fetch expanded PO from server to restore authoritative state
       console.error("Update failed, refetching sub-POs", err);
       if (refetchSubs) await refetchSubs();
     }
+  };
+
+  // compute done count / total / anyInProduction for a sub-PO
+  const computeSubWaresState = (sub: any) => {
+    const items = sub.items || [];
+    const total = items.length;
+    let done = 0;
+    let anyInProduction = false;
+    for (const it of items) {
+      const st = (it.status ?? "").toString();
+      if (DONE_ITEM_STATUSES.includes(st)) done += 1;
+      if (st === "INPRODUCTION") anyInProduction = true;
+    }
+    return { done, total, anyInProduction };
+  };
+
+  // compute PO-level product counts.
+  // - productsWithProgress is used for status decisions (some progress or in production)
+  // - productsCompleted is used to DISPLAY PO progress (completedProducts / totalProducts)
+  const computePoProductsProgress = (subs: any[]) => {
+    const totalProducts = (subs || []).length;
+    let productsWithProgress = 0;
+    let productsCompleted = 0;
+    let anyProductInProduction = false;
+    for (const s of subs || []) {
+      const { done, total, anyInProduction } = computeSubWaresState(s);
+      const hasProgress = total > 0 && (done > 0 || anyInProduction);
+      if (hasProgress) productsWithProgress += 1;
+      if (anyInProduction) anyProductInProduction = true;
+      if (total > 0 && done === total) productsCompleted += 1;
+    }
+
+    return {
+      totalProducts,
+      productsWithProgress,
+      productsCompleted,
+      anyProductInProduction,
+    };
   };
 
   // Handler: update server item status
@@ -525,7 +440,12 @@ const PurchaseOrderList: React.FC = () => {
     newStatus: string
   ) => {
     const idStr = String(resolveId(itemRaw));
-    // Optimistic
+
+    let affectedSubId: string | null = null;
+    let computedSubStatus: string | null = null;
+    let computedPoStatus: string | null = null;
+
+    // Optimistic: update expandedLocalDoc
     setExpandedLocalDoc((prev: any) => {
       if (!prev) return prev;
       const copy = JSON.parse(JSON.stringify(prev));
@@ -537,13 +457,99 @@ const PurchaseOrderList: React.FC = () => {
             touched = true;
           }
         });
+        if (touched && !affectedSubId) {
+          affectedSubId = resolveId(s);
+        }
       });
-      if (touched) return copy;
+      if (touched) {
+        if (affectedSubId) {
+          const sub = (copy.subPurchaseOrders || []).find(
+            (x: any) => resolveId(x) === affectedSubId
+          );
+          if (sub) {
+            const { done, total, anyInProduction } = computeSubWaresState(sub);
+            if (anyInProduction) {
+              computedSubStatus = "INPRODUCTION";
+              sub.status = computedSubStatus;
+            } else if (total > 0 && done === total) {
+              computedSubStatus = "COMPLETED";
+              sub.status = computedSubStatus;
+            } else if (done > 0) {
+              computedSubStatus = "PARTIALLYCOMPLETED";
+              sub.status = computedSubStatus;
+            }
+          }
+        }
+
+        syncTotalsToOrders(copy);
+
+        const poSubs = copy.subPurchaseOrders || [];
+        const {
+          totalProducts,
+          productsWithProgress,
+          productsCompleted,
+          anyProductInProduction,
+        } = computePoProductsProgress(poSubs);
+
+        if (anyProductInProduction) {
+          computedPoStatus = "INPRODUCTION";
+        } else if (totalProducts > 0 && productsCompleted === totalProducts) {
+          computedPoStatus = "COMPLETED";
+        } else if (productsWithProgress > 0) {
+          computedPoStatus = "PARTIALLYCOMPLETED";
+        } else {
+          computedPoStatus = null;
+        }
+
+        if (computedPoStatus) {
+          copy.status = computedPoStatus;
+        }
+
+        return copy;
+      }
       return prev;
     });
 
+    // Persist item status to server
     try {
       await updatePoItem({ id: idStr, body: { status: newStatus } }).unwrap();
+
+      if (computedSubStatus && affectedSubId) {
+        try {
+          await updateSub({
+            id: affectedSubId,
+            body: { status: computedSubStatus },
+          }).unwrap();
+        } catch (err: any) {
+          console.error("Persisting sub-PO status failed, refetching", err);
+          if (refetchSubs) await refetchSubs();
+        }
+      }
+
+      if (computedPoStatus && expandedLocalDoc) {
+        try {
+          const poId = String(
+            expandedLocalDoc._id ?? expandedLocalDoc.id ?? expandedPoId ?? ""
+          );
+          if (poId) {
+            // only update the PO status in the left-hand list (no full refetch)
+            setOrders((prev) =>
+              prev.map((p) =>
+                String(p.id) === String(poId)
+                  ? { ...p, status: computedPoStatus! }
+                  : p
+              )
+            );
+            await updatePo({
+              id: poId,
+              body: { status: computedPoStatus },
+            }).unwrap();
+          }
+        } catch (err: any) {
+          console.error("Persisting PO status failed, refetching", err);
+          await refetch();
+        }
+      }
     } catch (err: any) {
       console.error("Update item status failed", err);
       if (refetchSubs) await refetchSubs();
@@ -558,12 +564,10 @@ const PurchaseOrderList: React.FC = () => {
     const idStr = String(resolveId(itemRaw));
     if (!confirm("Delete this item?")) return;
 
-    // make a copy to allow rollback
     const prevCopy = expandedLocalDoc
       ? JSON.parse(JSON.stringify(expandedLocalDoc))
       : null;
 
-    // optimistic remove
     setExpandedLocalDoc((prev: any) => {
       if (!prev) return prev;
       const copy = JSON.parse(JSON.stringify(prev));
@@ -572,16 +576,13 @@ const PurchaseOrderList: React.FC = () => {
           (it: any) => String(resolveId(it)) !== idStr
         );
       });
-      // sync totals to orders
       syncTotalsToOrders(copy);
       return copy;
     });
 
     try {
       await deletePoItem(idStr).unwrap();
-      // success: done
     } catch (err: any) {
-      // rollback to previous local doc
       console.error("Delete failed, rolling back & refetching", err);
       if (prevCopy) setExpandedLocalDoc(prevCopy);
       if (refetchSubs) await refetchSubs();
@@ -591,9 +592,39 @@ const PurchaseOrderList: React.FC = () => {
     }
   };
 
-  // Handler: update PO status (top-level PO)
+  // Delete sub
+  const handleDeleteServerSub = async (subRaw: any) => {
+    const subId = String(resolveId(subRaw));
+    if (!confirm("Xác nhận xóa sản phẩm này?")) return;
+
+    const prevCopy = expandedLocalDoc
+      ? JSON.parse(JSON.stringify(expandedLocalDoc))
+      : null;
+
+    setExpandedLocalDoc((prev: any) => {
+      if (!prev) return prev;
+      const copy = JSON.parse(JSON.stringify(prev));
+      copy.subPurchaseOrders = (copy.subPurchaseOrders || []).filter(
+        (s: any) => resolveId(s) !== subId
+      );
+      syncTotalsToOrders(copy);
+      return copy;
+    });
+
+    try {
+      await deleteSub(subId).unwrap();
+    } catch (err: any) {
+      console.error("Delete sub-PO failed, rolling back & refetching", err);
+      if (prevCopy) setExpandedLocalDoc(prevCopy);
+      if (refetchSubs) await refetchSubs();
+      alert(
+        "Xóa sản phẩm thất bại: " +
+          (err?.data?.message || err?.message || "unknown")
+      );
+    }
+  };
+
   const handleUpdatePoStatus = async (poId: string, newStatus: string) => {
-    // optimistic update in list
     setOrders((prev) =>
       prev.map((p) =>
         String(p.id) === String(poId) ? { ...p, status: newStatus } : p
@@ -603,7 +634,6 @@ const PurchaseOrderList: React.FC = () => {
       await updatePo({ id: poId, body: { status: newStatus } }).unwrap();
     } catch (err: any) {
       console.error("Update PO status failed", err);
-      // revert by refetch entire list (cheapest reliable fallback)
       await refetch();
       alert(
         "Update PO status failed: " +
@@ -612,15 +642,13 @@ const PurchaseOrderList: React.FC = () => {
     }
   };
 
-  // Handler: update sub-PO status (server expanded sub)
   const handleUpdateSubStatus = async (subIdRaw: any, newStatus: string) => {
     const subId = String(resolveId(subIdRaw));
-    // optimistic in expandedLocalDoc
     setExpandedLocalDoc((prev: any) => {
       if (!prev) return prev;
       const copy = JSON.parse(JSON.stringify(prev));
       (copy.subPurchaseOrders || []).forEach((s: any) => {
-        if (String(s._id ?? s.id) === subId) s.status = newStatus;
+        if (resolveId(s) === subId) s.status = newStatus;
       });
       return copy;
     });
@@ -636,25 +664,21 @@ const PurchaseOrderList: React.FC = () => {
     }
   };
 
-  // Handler: update sub-PO delivery date
   const handleUpdateSubDeliveryDate = async (
     subIdRaw: any,
     newDateStr: string
   ) => {
     const subId = String(resolveId(subIdRaw));
-    // optimistic
     setExpandedLocalDoc((prev: any) => {
       if (!prev) return prev;
       const copy = JSON.parse(JSON.stringify(prev));
       (copy.subPurchaseOrders || []).forEach((s: any) => {
-        if (String(s._id ?? s.id) === subId)
-          s.deliveryDate = newDateStr || null;
+        if (resolveId(s) === subId) s.deliveryDate = newDateStr || null;
       });
       return copy;
     });
 
     try {
-      // backend expects a Date, but a string ISO date is fine
       await updateSub({
         id: subId,
         body: { deliveryDate: newDateStr },
@@ -668,11 +692,9 @@ const PurchaseOrderList: React.FC = () => {
     }
   };
 
-  // Handler: update sub-PO status + delivery date when creating from products (we already call createSubFromProducts elsewhere)
-  // (No extra code needed here)
-
   return (
     <div style={{ padding: 16 }}>
+      {/* Inline styles for smooth progress animation are applied directly to progress-bar elements */}
       <div
         style={{
           display: "flex",
@@ -705,20 +727,38 @@ const PurchaseOrderList: React.FC = () => {
           <div className="text-muted">No purchase orders found</div>
         ) : (
           filtered.map((po) => {
-            const totals = computeTotals(po);
             const isExpanded = expandedPoId === po.id;
-            const localExpandedMatches =
-              isExpanded &&
+
+            // If we have expandedLocalDoc for this PO, prefer it as the authoritative sub list
+            const expandedDocMatchesPo =
               expandedLocalDoc &&
-              (String(expandedLocalDoc._id) === String(po.id) ||
-                expandedLocalDoc._id === po.id);
+              String(resolveId(expandedLocalDoc)) === String(po.id);
+
             const serverSubs =
-              (localExpandedMatches
-                ? expandedLocalDoc.subPurchaseOrders
-                : []) ?? [];
+              (expandedDocMatchesPo || isExpanded) && expandedLocalDoc
+                ? expandedLocalDoc.subPurchaseOrders ?? []
+                : [];
+
+            // If no expandedLocalDoc for this Po, fall back to the static snapshot on `po`
+            const usedSubs = expandedDocMatchesPo
+              ? expandedLocalDoc.subPurchaseOrders || []
+              : isExpanded
+              ? serverSubs
+              : po.subPOs || [];
+
+            // Compute PO progress: display uses completedProducts/totalProducts (so partial product doesn't count)
+            const { totalProducts, productsWithProgress, productsCompleted } =
+              computePoProductsProgress(usedSubs);
+
+            const poPercent =
+              totalProducts === 0
+                ? 0
+                : Math.round((productsCompleted / totalProducts) * 100);
+
+            const totals = computeTotals(po);
 
             return (
-              <div key={po.id} className="card mb-3">
+              <div key={String(po.id)} className="card mb-3">
                 <div className="card-body">
                   <div
                     style={{ display: "flex", justifyContent: "space-between" }}
@@ -730,18 +770,54 @@ const PurchaseOrderList: React.FC = () => {
                           gap: 8,
                           alignItems: "center",
                           flexWrap: "wrap",
+                          justifyContent: "space-between",
                         }}
                       >
-                        <strong>{po.poNumber}</strong>
-                        <span className="text-muted">({po.status})</span>
-                        <small className="text-muted">• {po.poDate}</small>
+                        <div style={{ minWidth: 0 }}>
+                          <strong>{po.poNumber}</strong>
+                          <span className="text-muted"> ({po.status})</span>
+                          <small className="text-muted"> • {po.poDate}</small>
+                          <div className="small text-muted">{po.customer}</div>
+                          <div className="small text-muted">{po.address}</div>
+                        </div>
+
+                        {/* PO-level progress bar */}
+                        <div
+                          style={{
+                            marginLeft: 12,
+                            minWidth: 200,
+                            maxWidth: 280,
+                          }}
+                        >
+                          <div
+                            className="d-flex align-items-center"
+                            title={`${productsCompleted}/${totalProducts}`}
+                          >
+                            <div style={{ flex: 1, marginRight: 8 }}>
+                              <div className="progress" style={{ height: 18 }}>
+                                <div
+                                  className="progress-bar"
+                                  role="progressbar"
+                                  style={{
+                                    width: `${poPercent}%`,
+                                    transition: "width 320ms ease",
+                                  }}
+                                  aria-valuenow={poPercent}
+                                  aria-valuemin={0}
+                                  aria-valuemax={100}
+                                >
+                                  <small
+                                    style={{ color: "white" }}
+                                  >{`${productsCompleted}/${totalProducts}`}</small>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="small text-muted">{po.customer}</div>
-                      <div className="small text-muted">{po.address}</div>
                     </div>
 
                     <div style={{ textAlign: "right" }}>
-                      {/* PO status dropdown on the right */}
                       <div style={{ marginBottom: 8 }}>
                         <select
                           className="form-select form-select-sm"
@@ -789,7 +865,6 @@ const PurchaseOrderList: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* ALWAYS VISIBLE: Inline SubPO editor area (local-only) */}
                   <div style={{ marginTop: 12 }}>
                     <div
                       style={{
@@ -810,18 +885,11 @@ const PurchaseOrderList: React.FC = () => {
                             })
                           }
                         >
-                          + Tạo Sub-PO (từ Product list)
-                        </button>
-                        <button
-                          className="btn btn-outline-success btn-sm"
-                          onClick={() => handleAddSubPO(po.id)}
-                        >
-                          + Tạo Sub-PO (trống)
+                          + Tạo Sub-PO (Chọn sản phẩm)
                         </button>
                       </div>
                     </div>
 
-                    {/* Server sub-POs when expanded */}
                     {isExpanded && (
                       <div style={{ marginBottom: 12 }}>
                         {isFetchingSubs ? (
@@ -829,241 +897,338 @@ const PurchaseOrderList: React.FC = () => {
                         ) : serverSubs.length === 0 ? (
                           <div className="text-muted">Không có sản phẩm</div>
                         ) : (
-                          serverSubs.map((s: any) => (
-                            <div key={s._id ?? s.id} className="card mb-2">
-                              <div className="card-body">
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    gap: 8,
-                                  }}
-                                >
-                                  <div>
-                                    <strong>
-                                      {s.product?.name ??
-                                        s.product?.code ??
-                                        "-"}
-                                    </strong>
-                                    <div className="small text-muted">
-                                      Delivery:{" "}
-                                      {s.deliveryDate
-                                        ? new Date(s.deliveryDate)
-                                            .toISOString()
-                                            .slice(0, 10)
-                                        : "-"}
-                                    </div>
-                                  </div>
-
-                                  <div style={{ textAlign: "right" }}>
-                                    <div style={{ marginBottom: 6 }}>
-                                      {/* Sub-PO status dropdown */}
-                                      <select
-                                        className="form-select form-select-sm"
-                                        value={s.status ?? ""}
-                                        onChange={(e) =>
-                                          handleUpdateSubStatus(
-                                            s._id ?? s.id,
-                                            e.target.value
-                                          )
-                                        }
-                                      >
-                                        <option value="">-- Status --</option>
-                                        {SUBPO_STATUS_OPTIONS.map((st) => (
-                                          <option key={st} value={st}>
-                                            {st}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </div>
-
+                          serverSubs.map((s: any, sIdx: number) => {
+                            const subKey =
+                              resolveId(s) ||
+                              `sub-noid-${String(po.id)}-${sIdx}`;
+                            const { done, total } = computeSubWaresState(s);
+                            const percent =
+                              total === 0
+                                ? 0
+                                : Math.round((done / total) * 100);
+                            return (
+                              <div key={subKey} className="card mb-2">
+                                <div className="card-body">
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      gap: 8,
+                                    }}
+                                  >
                                     <div>
-                                      {/* delivery date input */}
-                                      <input
-                                        type="date"
-                                        className="form-control form-control-sm"
-                                        style={{ width: 160 }}
-                                        value={
-                                          s.deliveryDate
-                                            ? typeof s.deliveryDate === "string"
-                                              ? s.deliveryDate.slice(0, 10)
-                                              : new Date(s.deliveryDate)
-                                                  .toISOString()
-                                                  .slice(0, 10)
-                                            : ""
-                                        }
-                                        onChange={(e) =>
-                                          // optimistic update locally, send on change (immediate)
-                                          handleUpdateSubDeliveryDate(
-                                            s._id ?? s.id,
-                                            e.target.value
-                                          )
-                                        }
-                                      />
+                                      <strong>
+                                        {s.product?.name ??
+                                          s.product?.code ??
+                                          "-"}
+                                      </strong>
+                                      <div className="small text-muted">
+                                        Vận chuyển:{" "}
+                                        {s.deliveryDate
+                                          ? new Date(s.deliveryDate)
+                                              .toISOString()
+                                              .slice(0, 10)
+                                          : "-"}
+                                      </div>
+                                    </div>
+
+                                    {/* product-level progress */}
+                                    <div
+                                      style={{ width: 220, marginRight: 12 }}
+                                    >
+                                      <div
+                                        className="d-flex align-items-center"
+                                        title={`${done}/${total}`}
+                                      >
+                                        <div
+                                          style={{ flex: 1, marginRight: 8 }}
+                                        >
+                                          <div
+                                            className="progress"
+                                            style={{ height: 14 }}
+                                          >
+                                            <div
+                                              className="progress-bar"
+                                              role="progressbar"
+                                              style={{
+                                                width: `${percent}%`,
+                                                transition: "width 320ms ease",
+                                              }}
+                                              aria-valuenow={percent}
+                                              aria-valuemin={0}
+                                              aria-valuemax={100}
+                                            >
+                                              <small
+                                                style={{
+                                                  color: "white",
+                                                  fontSize: 12,
+                                                }}
+                                              >{`${done}/${total}`}</small>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div style={{ textAlign: "right" }}>
+                                      <div style={{ marginBottom: 6 }}>
+                                        <select
+                                          className="form-select form-select-sm"
+                                          value={s.status ?? ""}
+                                          onChange={(e) =>
+                                            handleUpdateSubStatus(
+                                              s._id ?? s.id,
+                                              e.target.value
+                                            )
+                                          }
+                                        >
+                                          <option value="">-- Status --</option>
+                                          {SUBPO_STATUS_OPTIONS.map((st) => (
+                                            <option key={st} value={st}>
+                                              {st}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          gap: 8,
+                                          justifyContent: "flex-end",
+                                          alignItems: "center",
+                                        }}
+                                      >
+                                        <input
+                                          type="date"
+                                          className="form-control form-control-sm"
+                                          style={{ width: 160 }}
+                                          value={
+                                            s.deliveryDate
+                                              ? typeof s.deliveryDate ===
+                                                "string"
+                                                ? s.deliveryDate.slice(0, 10)
+                                                : new Date(s.deliveryDate)
+                                                    .toISOString()
+                                                    .slice(0, 10)
+                                              : ""
+                                          }
+                                          onChange={(e) =>
+                                            handleUpdateSubDeliveryDate(
+                                              s._id ?? s.id,
+                                              e.target.value
+                                            )
+                                          }
+                                        />
+
+                                        <button
+                                          className="btn btn-danger btn-sm"
+                                          onClick={() =>
+                                            handleDeleteServerSub(s)
+                                          }
+                                        >
+                                          Xóa sản phẩm
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
 
-                                {/* items for sub-PO */}
-                                <div style={{ marginTop: 8 }}>
-                                  <table className="table table-sm table-bordered">
-                                    <thead>
-                                      <tr>
-                                        <th>Mã sản phẩm</th>
-                                        <th>Mã hàng</th>
-                                        <th>Trạng thái</th>
-                                        <th>Số lượng</th>
-                                        <th>Đơn giá</th>
-                                        <th style={{ textAlign: "right" }}>
-                                          Thành tiền
-                                        </th>
-                                        <th style={{ width: 120 }}>Actions</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {(s.items || []).map((it: any) => {
-                                        const itemId = resolveId(it);
-                                        const amountVal = it.amount ?? 0;
-                                        const unitPrice =
-                                          it.ware?.unitPrice ?? 0;
-                                        return (
-                                          <tr key={itemId}>
-                                            <td>
-                                              {s.product?.code ?? it.id ?? ""}
-                                            </td>
+                                  {/* items for sub-PO */}
+                                  <div style={{ marginTop: 8 }}>
+                                    <table className="table table-sm table-bordered">
+                                      <thead>
+                                        <tr>
+                                          <th>Mã sản phẩm</th>
+                                          <th>Mã hàng</th>
+                                          <th>Trạng thái</th>
+                                          <th>Số lượng</th>
+                                          <th>Đơn giá</th>
+                                          <th style={{ textAlign: "right" }}>
+                                            Thành tiền
+                                          </th>
+                                          <th style={{ width: 120 }}>
+                                            Thao tác
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {(s.items || []).map(
+                                          (it: any, idx: number) => {
+                                            const itemId = resolveId(it);
+                                            const stableKey = itemId
+                                              ? String(itemId)
+                                              : `noid-${
+                                                  resolveId(s) || String(po.id)
+                                                }-${idx}`;
+                                            const amountVal = it.amount ?? 0;
+                                            const unitPrice =
+                                              it.ware?.unitPrice ?? 0;
+                                            return (
+                                              <tr key={stableKey}>
+                                                <td>
+                                                  {s.product?.code ??
+                                                    it.id ??
+                                                    ""}
+                                                </td>
 
-                                            <td>
-                                              {it.ware
-                                                ? it.ware.code ?? it.ware._id
-                                                : "-"}
-                                            </td>
+                                                <td>
+                                                  {it.ware
+                                                    ? it.ware.code ??
+                                                      it.ware._id
+                                                    : "-"}
+                                                </td>
 
-                                            <td>
-                                              <select
-                                                className="form-select form-select-sm"
-                                                value={it.status ?? ""}
-                                                onChange={(e) =>
-                                                  handleUpdateServerItemStatus(
-                                                    it,
-                                                    e.target.value
-                                                  )
-                                                }
-                                              >
-                                                <option value="">--</option>
-                                                {POITEM_STATUS_OPTIONS.map(
-                                                  (opt) => (
-                                                    <option
-                                                      key={opt}
-                                                      value={opt}
-                                                    >
-                                                      {opt}
-                                                    </option>
-                                                  )
-                                                )}
-                                              </select>
-                                            </td>
-
-                                            <td>
-                                              {/* amount input: local update on change, save on blur */}
-                                              <input
-                                                className="form-control form-control-sm"
-                                                type="number"
-                                                value={Number(it.amount ?? 0)}
-                                                onChange={(e) => {
-                                                  const v =
-                                                    e.target.value === ""
-                                                      ? 0
-                                                      : Number(e.target.value);
-                                                  // just update local copy
-                                                  setExpandedLocalDoc(
-                                                    (prev: any) => {
-                                                      if (!prev) return prev;
-                                                      const copy = JSON.parse(
-                                                        JSON.stringify(prev)
-                                                      );
-                                                      (
-                                                        copy.subPurchaseOrders ||
-                                                        []
-                                                      ).forEach((s2: any) => {
-                                                        (
-                                                          s2.items || []
-                                                        ).forEach((ii: any) => {
-                                                          if (
-                                                            String(
-                                                              resolveId(ii)
-                                                            ) ===
-                                                            String(
-                                                              resolveId(it)
-                                                            )
-                                                          ) {
-                                                            ii.amount = v;
-                                                          }
-                                                        });
-                                                      });
-                                                      syncTotalsToOrders(copy);
-                                                      return copy;
+                                                <td>
+                                                  <select
+                                                    className="form-select form-select-sm"
+                                                    value={it.status ?? ""}
+                                                    onChange={(e) =>
+                                                      handleUpdateServerItemStatus(
+                                                        it,
+                                                        e.target.value
+                                                      )
                                                     }
-                                                  );
-                                                }}
-                                                onBlur={(e) => {
-                                                  const finalVal = Number(
-                                                    e.target.value || 0
-                                                  );
-                                                  handleUpdateServerItemAmount(
-                                                    it,
-                                                    finalVal
-                                                  );
-                                                }}
-                                              />
-                                            </td>
+                                                  >
+                                                    <option value="">--</option>
+                                                    {POITEM_STATUS_OPTIONS.map(
+                                                      (opt) => (
+                                                        <option
+                                                          key={opt}
+                                                          value={opt}
+                                                        >
+                                                          {opt}
+                                                        </option>
+                                                      )
+                                                    )}
+                                                  </select>
+                                                </td>
 
-                                            <td style={{ textAlign: "right" }}>
-                                              {unitPrice ?? "-"}
-                                            </td>
+                                                <td>
+                                                  <input
+                                                    className="form-control form-control-sm"
+                                                    type="number"
+                                                    value={Number(
+                                                      it.amount ?? 0
+                                                    )}
+                                                    onChange={(e) => {
+                                                      const v =
+                                                        e.target.value === ""
+                                                          ? 0
+                                                          : Number(
+                                                              e.target.value
+                                                            );
+                                                      setExpandedLocalDoc(
+                                                        (prev: any) => {
+                                                          if (!prev)
+                                                            return prev;
+                                                          const copy =
+                                                            JSON.parse(
+                                                              JSON.stringify(
+                                                                prev
+                                                              )
+                                                            );
+                                                          (
+                                                            copy.subPurchaseOrders ||
+                                                            []
+                                                          ).forEach(
+                                                            (s2: any) => {
+                                                              (
+                                                                s2.items || []
+                                                              ).forEach(
+                                                                (ii: any) => {
+                                                                  if (
+                                                                    String(
+                                                                      resolveId(
+                                                                        ii
+                                                                      )
+                                                                    ) ===
+                                                                    String(
+                                                                      resolveId(
+                                                                        it
+                                                                      )
+                                                                    )
+                                                                  ) {
+                                                                    ii.amount =
+                                                                      v;
+                                                                  }
+                                                                }
+                                                              );
+                                                            }
+                                                          );
+                                                          syncTotalsToOrders(
+                                                            copy
+                                                          );
+                                                          return copy;
+                                                        }
+                                                      );
+                                                    }}
+                                                    onBlur={(e) => {
+                                                      const finalVal = Number(
+                                                        e.target.value || 0
+                                                      );
+                                                      handleUpdateServerItemAmount(
+                                                        it,
+                                                        finalVal
+                                                      );
+                                                    }}
+                                                  />
+                                                </td>
 
-                                            <td style={{ textAlign: "right" }}>
-                                              {(
-                                                Number(it.amount ?? 0) *
-                                                Number(unitPrice ?? 0)
-                                              ).toLocaleString()}
-                                            </td>
-
-                                            <td>
-                                              <div
-                                                style={{
-                                                  display: "flex",
-                                                  gap: 6,
-                                                }}
-                                              >
-                                                <button
-                                                  className="btn btn-danger btn-sm"
-                                                  onClick={() =>
-                                                    handleDeleteServerItem(it)
-                                                  }
+                                                <td
+                                                  style={{ textAlign: "right" }}
                                                 >
-                                                  Delete
-                                                </button>
-                                              </div>
+                                                  {unitPrice ?? "-"}
+                                                </td>
+
+                                                <td
+                                                  style={{ textAlign: "right" }}
+                                                >
+                                                  {(
+                                                    Number(it.amount ?? 0) *
+                                                    Number(unitPrice ?? 0)
+                                                  ).toLocaleString()}
+                                                </td>
+
+                                                <td>
+                                                  <div
+                                                    style={{
+                                                      display: "flex",
+                                                      gap: 6,
+                                                    }}
+                                                  >
+                                                    <button
+                                                      className="btn btn-danger btn-sm"
+                                                      onClick={() =>
+                                                        handleDeleteServerItem(
+                                                          it
+                                                        )
+                                                      }
+                                                    >
+                                                      Xóa
+                                                    </button>
+                                                  </div>
+                                                </td>
+                                              </tr>
+                                            );
+                                          }
+                                        )}
+                                        {(s.items || []).length === 0 && (
+                                          <tr>
+                                            <td
+                                              colSpan={7}
+                                              className="text-muted"
+                                            >
+                                              Chưa có mã nào
                                             </td>
                                           </tr>
-                                        );
-                                      })}
-                                      {(s.items || []).length === 0 && (
-                                        <tr>
-                                          <td
-                                            colSpan={7}
-                                            className="text-muted"
-                                          >
-                                            No items for this sub-PO
-                                          </td>
-                                        </tr>
-                                      )}
-                                    </tbody>
-                                  </table>
+                                        )}
+                                      </tbody>
+                                    </table>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))
+                            );
+                          })
                         )}
                       </div>
                     )}
@@ -1085,7 +1250,6 @@ const PurchaseOrderList: React.FC = () => {
             return;
           }
           try {
-            // map selected products (contains productId/deliveryDate/status)
             const payload = {
               purchaseOrderId: poId,
               products: selectedProducts.map((p: any) => ({
@@ -1095,10 +1259,8 @@ const PurchaseOrderList: React.FC = () => {
               })),
             };
             await createSubFromProducts(payload).unwrap();
-            // optionally refetch subPOs and POs
             if (refetchSubs) await refetchSubs();
             await refetch();
-            // close modal
             setProductModalOpenForPo({ open: false });
           } catch (err: any) {
             console.error("Create sub-POs failed", err);
