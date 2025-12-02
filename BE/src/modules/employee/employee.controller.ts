@@ -19,12 +19,26 @@ export class EmployeeController {
   constructor(private emplService: EmployeeService) { }
 
   @Get("query/full-details")
-  @ApiOperation({ summary: "Query full details employees" })
-  @ApiResponseWith(Employee, { paginated: true })
   async queryList(
-    @Query() query: QueryListFullDetailsEmployeeRequestDto,
+    @Query() q: QueryListFullDetailsEmployeeRequestDto
   ): Promise<QueryListFullDetailsEmployeeResponseDto> {
-    const docs = await this.emplService.queryListFullDetails(query);
+    const { page = 1, limit = 10, query } = q;
+
+    const filter: any = {};
+    if (query && String(query).trim() !== "") {
+      const qTrim = String(query).trim();
+      filter.$or = [
+        { code: { $regex: qTrim, $options: "i" } },
+        { name: { $regex: qTrim, $options: "i" } },
+      ];
+    }
+
+    const docs = await this.emplService.queryListFullDetails({
+      page: Number(page),
+      limit: Number(limit),
+      filter,
+    });
+
     return {
       success: true,
       message: "Fetch successful",

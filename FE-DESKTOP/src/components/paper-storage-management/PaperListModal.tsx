@@ -1,11 +1,8 @@
-// src/components/paper-storage-management/PaperListModals.tsx
-import React from "react";
+// src/components/paper-storage-management/PaperListModal.tsx
 
-/**
- * Presentational modal components extracted from PaperList.
- * They are intentionally permissive on prop types (any) so you can drop them
- * into your existing PaperList without type churn. You can tighten types later.
- */
+"use client";
+
+import React, { useEffect, useState } from "react";
 
 /* Create single roll modal */
 export const CreateModal: React.FC<any> = ({
@@ -247,7 +244,7 @@ export const CreateModal: React.FC<any> = ({
 export const CreateMultipleModal: React.FC<any> = ({
   show,
   onClose,
-  createMultipleRows,
+  createMultipleRows = [],
   addCreateMultipleRow,
   removeCreateMultipleRow,
   updateCreateMultipleRow,
@@ -259,6 +256,35 @@ export const CreateMultipleModal: React.FC<any> = ({
   handleCreateMultipleSubmit,
   creatingMultiple,
 }) => {
+  // Hooks must come first — do NOT return before hooks
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>(() => {
+    const first = (createMultipleRows && createMultipleRows[0]) || null;
+    return String(first?.paperSupplierId ?? "") || "";
+  });
+
+  useEffect(() => {
+    (createMultipleRows || []).forEach((r: any) => {
+      if (r.paperSupplierId !== selectedSupplierId) {
+        updateCreateMultipleRow(r.id, { paperSupplierId: selectedSupplierId });
+      }
+    });
+    // intentionally depends on selectedSupplierId and createMultipleRows reference
+  }, [selectedSupplierId, updateCreateMultipleRow, createMultipleRows]);
+
+  useEffect(() => {
+    (createMultipleRows || []).forEach((r: any) => {
+      if (!r.paperSupplierId && selectedSupplierId) {
+        updateCreateMultipleRow(r.id, { paperSupplierId: selectedSupplierId });
+      }
+    });
+    // safe dependency: use length (guarded) so effect fires when rows change
+  }, [
+    (createMultipleRows || []).length,
+    selectedSupplierId,
+    updateCreateMultipleRow,
+  ]);
+
+  // Now it's safe to bail out if not shown
   if (!show) return null;
 
   return (
@@ -266,8 +292,38 @@ export const CreateMultipleModal: React.FC<any> = ({
       <div className="modal" role="dialog" style={{ display: "block" }}>
         <div className="modal-dialog modal-xl">
           <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">Tạo nhiều cuộn</h5>
+            <div
+              className="modal-header"
+              style={{ display: "flex", alignItems: "center", gap: 12 }}
+            >
+              <div style={{ flex: 1 }}>
+                <h5 className="modal-title" style={{ margin: 0 }}>
+                  Tạo nhiều cuộn
+                </h5>
+                <div className="small text-muted">Mỗi dòng = 1 cuộn</div>
+              </div>
+
+              <div style={{ minWidth: 320 }}>
+                <label className="form-label small mb-1">
+                  Nhà cung cấp (áp dụng cho tất cả)
+                </label>
+                <select
+                  className="form-control"
+                  value={selectedSupplierId}
+                  onChange={(e) => setSelectedSupplierId(e.target.value)}
+                >
+                  <option value="">-- chọn nhà cung cấp --</option>
+                  {(allSuppliers || []).map((s: any) => (
+                    <option
+                      key={getIdFromDoc(s) ?? s.code}
+                      value={getIdFromDoc(s)}
+                    >
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <button
                 type="button"
                 className="btn-close"
@@ -275,6 +331,7 @@ export const CreateMultipleModal: React.FC<any> = ({
                 onClick={onClose}
               />
             </div>
+
             <div className="modal-body">
               <div
                 style={{
@@ -291,8 +348,8 @@ export const CreateMultipleModal: React.FC<any> = ({
                   Thêm dòng
                 </button>
                 <small className="text-muted">
-                  Mỗi dòng tương ứng 1 cuộn — mỗi dòng có thể có
-                  loại/supplier/trọng lượng riêng
+                  Mỗi dòng tương ứng 1 cuộn — loại/trọng lượng/ngày/ghi chú có
+                  thể khác nhau. Nhà cung cấp được áp dụng chung phía trên.
                 </small>
               </div>
 
@@ -302,7 +359,6 @@ export const CreateMultipleModal: React.FC<any> = ({
                     <tr>
                       <th style={{ width: 36 }}>#</th>
                       <th style={{ minWidth: 420 }}>Loại giấy</th>
-                      <th>Nhà cung cấp</th>
                       <th style={{ width: 150 }}>Trọng lượng</th>
                       <th style={{ width: 140 }}>Ngày nhập</th>
                       <th>Ghi chú</th>
@@ -427,29 +483,24 @@ export const CreateMultipleModal: React.FC<any> = ({
                                 </div>
                               </>
                             )}
-                          </div>
-                        </td>
 
-                        <td>
-                          <select
-                            className="form-control"
-                            value={row.paperSupplierId}
-                            onChange={(e) =>
-                              updateCreateMultipleRow(row.id, {
-                                paperSupplierId: e.target.value,
-                              })
-                            }
-                          >
-                            <option value="">-- chọn nhà cung cấp --</option>
-                            {(allSuppliers || []).map((s: any) => (
-                              <option
-                                key={getIdFromDoc(s) ?? s.code}
-                                value={getIdFromDoc(s)}
-                              >
-                                {s.name}
-                              </option>
-                            ))}
-                          </select>
+                            <div style={{ width: "100%", marginTop: 6 }}>
+                              <small className="text-muted">
+                                Nhà cung cấp:{" "}
+                                {(() => {
+                                  const sid =
+                                    row.paperSupplierId ||
+                                    selectedSupplierId ||
+                                    "";
+                                  const s = (allSuppliers || []).find(
+                                    (x: any) =>
+                                      String(getIdFromDoc(x)) === String(sid)
+                                  );
+                                  return s ? s.name : "(chưa chọn)";
+                                })()}
+                              </small>
+                            </div>
+                          </div>
                         </td>
 
                         <td>
@@ -841,12 +892,4 @@ export const QrModal: React.FC<any> = ({
       </div>
     </div>
   );
-};
-
-export default {
-  CreateModal,
-  CreateMultipleModal,
-  UpdateModal,
-  SingleReimportModal,
-  QrModal,
 };

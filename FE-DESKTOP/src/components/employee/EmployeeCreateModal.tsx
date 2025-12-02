@@ -14,6 +14,30 @@ type Props = {
   creating?: boolean;
 };
 
+/* Move Label out to top-level so its identity is stable */
+const Label: React.FC<{
+  label: string;
+  required?: boolean;
+  children?: React.ReactNode;
+}> = ({ label, required, children }) => (
+  <label className="form-label" style={{ display: "block", marginBottom: 8 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <span>{label}</span>
+      {required && <span style={{ color: "red" }}>*</span>}
+    </div>
+    {children}
+  </label>
+);
+
+const getIdFromDoc = (doc: any) => {
+  if (!doc) return undefined;
+  if (typeof doc === "string") return doc;
+  if (doc._id?.$oid) return String(doc._id.$oid);
+  if (doc._id) return String(doc._id);
+  if (doc.id) return String(doc.id);
+  return undefined;
+};
+
 const EmployeeCreateModal: React.FC<Props> = ({
   show,
   onClose,
@@ -24,29 +48,6 @@ const EmployeeCreateModal: React.FC<Props> = ({
   creating,
 }) => {
   if (!show) return null;
-
-  const Label: React.FC<{
-    label: string;
-    required?: boolean;
-    children?: React.ReactNode;
-  }> = ({ label, required, children }) => (
-    <label className="form-label" style={{ display: "block", marginBottom: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span>{label}</span>
-        {required && <span style={{ color: "red" }}>*</span>}
-      </div>
-      {children}
-    </label>
-  );
-
-  const getIdFromDoc = (doc: any) => {
-    if (!doc) return undefined;
-    if (typeof doc === "string") return doc;
-    if (doc._id?.$oid) return String(doc._id.$oid);
-    if (doc._id) return String(doc._id);
-    if (doc.id) return String(doc.id);
-    return undefined;
-  };
 
   return (
     <div className="modal-backdrop" style={{ display: "block" }}>
@@ -66,10 +67,10 @@ const EmployeeCreateModal: React.FC<Props> = ({
                 <Label label="Code" required>
                   <input
                     className="form-control"
-                    value={createForm.code}
+                    value={createForm?.code ?? ""}
                     onChange={(e) =>
                       setCreateForm((p: any) => ({
-                        ...p,
+                        ...(p ?? {}),
                         code: e.target.value,
                       }))
                     }
@@ -79,10 +80,10 @@ const EmployeeCreateModal: React.FC<Props> = ({
                 <Label label="Name" required>
                   <input
                     className="form-control"
-                    value={createForm.name}
+                    value={createForm?.name ?? ""}
                     onChange={(e) =>
                       setCreateForm((p: any) => ({
-                        ...p,
+                        ...(p ?? {}),
                         name: e.target.value,
                       }))
                     }
@@ -92,10 +93,12 @@ const EmployeeCreateModal: React.FC<Props> = ({
                 <Label label="Role" required>
                   <select
                     className="form-control"
-                    value={getIdFromDoc(createForm.role) ?? createForm.role}
+                    value={
+                      getIdFromDoc(createForm?.role) ?? createForm?.role ?? ""
+                    }
                     onChange={(e) =>
                       setCreateForm((p: any) => ({
-                        ...p,
+                        ...(p ?? {}),
                         role: e.target.value,
                       }))
                     }
@@ -115,10 +118,10 @@ const EmployeeCreateModal: React.FC<Props> = ({
                 <Label label="Email">
                   <input
                     className="form-control"
-                    value={createForm.email}
+                    value={createForm?.email ?? ""}
                     onChange={(e) =>
                       setCreateForm((p: any) => ({
-                        ...p,
+                        ...(p ?? {}),
                         email: e.target.value,
                       }))
                     }
@@ -128,10 +131,10 @@ const EmployeeCreateModal: React.FC<Props> = ({
                 <Label label="Contact number">
                   <input
                     className="form-control"
-                    value={createForm.contactNumber}
+                    value={createForm?.contactNumber ?? ""}
                     onChange={(e) =>
                       setCreateForm((p: any) => ({
-                        ...p,
+                        ...(p ?? {}),
                         contactNumber: e.target.value,
                       }))
                     }
@@ -141,10 +144,10 @@ const EmployeeCreateModal: React.FC<Props> = ({
                 <Label label="Address">
                   <input
                     className="form-control"
-                    value={createForm.address}
+                    value={createForm?.address ?? ""}
                     onChange={(e) =>
                       setCreateForm((p: any) => ({
-                        ...p,
+                        ...(p ?? {}),
                         address: e.target.value,
                       }))
                     }
@@ -154,10 +157,10 @@ const EmployeeCreateModal: React.FC<Props> = ({
                 <Label label="Note">
                   <textarea
                     className="form-control"
-                    value={createForm.note}
+                    value={createForm?.note ?? ""}
                     onChange={(e) =>
                       setCreateForm((p: any) => ({
-                        ...p,
+                        ...(p ?? {}),
                         note: e.target.value,
                       }))
                     }

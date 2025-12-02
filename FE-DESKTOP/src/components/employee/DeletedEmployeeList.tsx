@@ -6,6 +6,20 @@ import {
   useRestoreEmployeeMutation,
 } from "@/service/api/employeeApiSlice";
 
+function getIdFromDoc(doc: any): string | undefined {
+  if (doc === null || doc === undefined) return undefined;
+  if (typeof doc === "string") return doc;
+  if (typeof doc === "number") return String(doc);
+  if (doc._id?.$oid) return String(doc._id.$oid);
+  if (doc.$oid) return String(doc.$oid);
+  if (doc._id) return String(doc._id);
+  if (doc.id) return String(doc.id);
+  try {
+    if (typeof doc.toString === "function") return doc.toString();
+  } catch {}
+  return undefined;
+}
+
 const DeletedEmployeeList: React.FC = () => {
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -15,17 +29,21 @@ const DeletedEmployeeList: React.FC = () => {
   });
   const [restore] = useRestoreEmployeeMutation();
 
+  // normalize response shapes (supports: { data: { data: [...] } }, { data: [...] }, [...], etc.)
   let items: any[] = [];
-  if (data?.data && Array.isArray(data.data)) items = data.data;
-  else if (data && Array.isArray(data)) items = data;
+  const resp = data;
+  if (resp?.data?.data && Array.isArray(resp.data.data)) items = resp.data.data;
+  else if (resp?.data && Array.isArray(resp.data)) items = resp.data;
+  else if (Array.isArray(resp)) items = resp;
+  else if (resp && resp.data && Array.isArray(resp.data)) items = resp.data;
   else items = [];
 
   const totalCount =
     Number(
-      data?.data?.total ??
-        data?.total ??
-        data?.data?.meta?.total ??
-        data?.meta?.total ??
+      resp?.data?.totalItems ??
+        resp?.total ??
+        resp?.data?.meta?.total ??
+        resp?.data?.meta?.count ??
         0
     ) || 0;
   const totalPages =
@@ -39,7 +57,10 @@ const DeletedEmployeeList: React.FC = () => {
   const handleRestore = async (idRaw: any) => {
     if (!confirm("Restore this employee?")) return;
     try {
-      const id = typeof idRaw === "string" ? idRaw : idRaw._id ?? idRaw.id;
+      const id =
+        getIdFromDoc(idRaw) ??
+        (typeof idRaw === "object" ? idRaw._id ?? idRaw.id : idRaw);
+      if (!id) return alert("No id provided");
       const res: any = await restore(id).unwrap();
       alert(res?.message ?? "Restored");
       try {
@@ -53,7 +74,6 @@ const DeletedEmployeeList: React.FC = () => {
 
   return (
     <div style={{ padding: 20 }}>
-      <h2 className="text-xl font-bold mb-4">Deleted Employees</h2>
       {isLoading && <div>Loading...</div>}
 
       {items.length > 0 ? (
@@ -63,24 +83,30 @@ const DeletedEmployeeList: React.FC = () => {
         >
           <thead>
             <tr>
-              <th>Code</th>
-              <th>Name</th>
-              <th>Deleted At</th>
-              <th>Actions</th>
+              <th>Mã nhân viên</th>
+              <th>Tên</th>
+              <th>Thời gian xóa</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {items.map((it: any) => (
-              <tr key={it._id ?? it.id}>
+              <tr key={getIdFromDoc(it) ?? it._id ?? it.id}>
                 <td>{it.code}</td>
                 <td>{it.name}</td>
-                <td>{it.deletedAt ?? "—"}</td>
+                <td>
+                  {it.deletedAt
+                    ? new Date(it.deletedAt).toLocaleDateString("en-CA", {
+                        timeZone: "Asia/Bangkok",
+                      })
+                    : "—"}
+                </td>
                 <td>
                   <button
                     className="btn btn-sm btn-success"
-                    onClick={() => handleRestore(it._id ?? it.id)}
+                    onClick={() => handleRestore(it)}
                   >
-                    Restore
+                    Khôi phục
                   </button>
                 </td>
               </tr>
@@ -88,7 +114,7 @@ const DeletedEmployeeList: React.FC = () => {
           </tbody>
         </table>
       ) : (
-        <div className="text-muted">No deleted employees</div>
+        <div className="text-muted">Chưa có nhân viên bị xóa</div>
       )}
 
       <div
@@ -99,17 +125,17 @@ const DeletedEmployeeList: React.FC = () => {
           onClick={() => goToPage(page - 1)}
           disabled={page <= 1}
         >
-          Prev
+          Trước
         </button>
         <span>
-          Page {page} {totalCount > 0 && `of ${totalPages}`}
+          Trang {page} {totalCount > 0 && `trong ${totalPages}`}
         </span>
         <button
           className="btn btn-sm btn-outline-secondary"
           onClick={() => goToPage(page + 1)}
           disabled={totalCount > 0 ? page >= totalPages : false}
         >
-          Next
+          Sau
         </button>
       </div>
     </div>

@@ -31,5 +31,3 @@ export type DeliveryNoteDocument = HydratedDocument<DeliveryNote>;
 
 export const DeliveryNoteSchema = SchemaFactory.createForClass(DeliveryNote);
 DeliveryNoteSchema.plugin(softDeletePlugin);
-
-// DeliveryNoteSchema.index({ code: 1 }, { unique: true });
