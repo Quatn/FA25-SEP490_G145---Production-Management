@@ -988,7 +988,7 @@ export const WareList: React.FC = () => {
               <th rowSpan={2}>Màu in</th>
 
               {/* Mặt giấy main header spanning small subcolumns */}
-              <th colSpan={PAPER_LAYER_KEYS.length}>Mặt giấy</th>
+              <th colSpan={PAPER_LAYER_KEYS.length} style={{ textAlign: 'center', verticalAlign: 'middle' }}>Mặt giấy</th>
 
               <th rowSpan={2}>Máy in</th>
               <th rowSpan={2}>Ghi chú</th>

@@ -32,3 +32,4 @@ export const FINISHED_GOOD_TRANSACTION_URL = "/finished-good-transaction";
 export const MATERIAL_REQUIREMENT_URL = "/material_requirement";
 export const EMPLOYEE_URL = "/employee";
 export const ROLE_URL = "/employee-role/role";
+export const DELIVERY_NOTE_URL = "/delivery-note";

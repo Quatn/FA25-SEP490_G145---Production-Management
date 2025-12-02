@@ -1,7 +1,7 @@
 // sub-purchase-order.service.ts
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model, Types } from "mongoose";
+import mongoose, { Model, Types } from "mongoose";
 import {
     SubPurchaseOrder,
     SubPurchaseOrderDocument,
@@ -14,6 +14,7 @@ import { Product, ProductDocument } from "../schemas/product.schema";
 import { CreateSubPurchaseOrderDto } from "./dto/create-sub-purchase-order.dto";
 import { UpdateSubPurchaseOrderDto } from "./dto/update-sub-purchase-order.dto";
 import { CreateSubFromProductsDto } from "./dto/create-sub-from-products.dto";
+import { PurchaseOrder, PurchaseOrderDocument } from "../schemas/purchase-order.schema";
 
 @Injectable()
 export class SubPurchaseOrderService {
@@ -24,6 +25,8 @@ export class SubPurchaseOrderService {
         private readonly poItemModel: Model<PurchaseOrderItemDocument>,
         @InjectModel(Product.name)
         private readonly productModel: Model<ProductDocument>,
+        @InjectModel(PurchaseOrder.name)
+        private readonly purchaseOrderModel: Model<PurchaseOrderDocument>,
     ) { }
 
     async findAll(options: { purchaseOrderId?: string } = {}) {
@@ -33,6 +36,59 @@ export class SubPurchaseOrderService {
         }
         return this.subPoModel.find(filter).populate("product").sort({ createdAt: -1 }).exec();
     }
+
+    async findDeleted(page = 1, limit = 20) {
+        const skip = (page - 1) * limit;
+        const filter = { isDeleted: true };
+
+        const [rawDocs, totalCount] = await Promise.all([
+            this.subPoModel.collection.find(filter).skip(skip).limit(limit).toArray(),
+            this.subPoModel.collection.countDocuments(filter),
+        ]);
+
+        const productIdStrings = Array.from(
+            new Set(rawDocs.map((d: any) => d.product).filter(Boolean).map((id: any) => id.toString())),
+        );
+        const poIdStrings = Array.from(
+            new Set(rawDocs.map((d: any) => d.purchaseOrder).filter(Boolean).map((id: any) => id.toString())),
+        );
+
+        const productIds = productIdStrings.map((s) => new Types.ObjectId(s));
+        const purchaseOrderIds = poIdStrings.map((s) => new Types.ObjectId(s));
+
+        const productColl = this.productModel.collection;
+        const purchaseOrderColl = this.purchaseOrderModel.collection;
+
+        const [products, purchaseOrders] = await Promise.all([
+            productIds.length ? productColl.find({ _id: { $in: productIds } }).toArray() : [],
+            purchaseOrderIds.length ? purchaseOrderColl.find({ _id: { $in: purchaseOrderIds } }).toArray() : [],
+        ]);
+
+        const productMap = new Map<string, any>(
+            products.map((p: any) => [p._id.toString(), p] as [string, any]),
+        );
+        const poMap = new Map<string, any>(
+            purchaseOrders.map((p: any) => [p._id.toString(), p] as [string, any]),
+        );
+
+        const populated = rawDocs.map((r: any) => ({
+            ...r,
+            product: r.product ? productMap.get(r.product.toString()) ?? null : null,
+            purchaseOrder: r.purchaseOrder ? poMap.get(r.purchaseOrder.toString()) ?? null : null,
+        }));
+
+        const totalPages = Math.ceil((totalCount || 0) / limit);
+        return {
+            data: populated,
+            page,
+            limit,
+            totalItems: totalCount,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+        };
+    }
+
 
     async findOneById(id: string) {
         const doc = await this.subPoModel.findById(id).populate("product").exec();
@@ -117,31 +173,7 @@ export class SubPurchaseOrderService {
         // optionally we could also soft-delete related PO items; decide as needed
     }
 
-    async findDeleted(page = 1, limit = 20) {
-        const skip = (page - 1) * limit;
-        const filter = { isDeleted: true };
 
-        const [rawDocs, totalCount] = await Promise.all([
-            this.subPoModel.collection.find(filter).skip(skip).limit(limit).toArray(),
-            this.subPoModel.collection.countDocuments(filter),
-        ]);
-
-        const populated = await this.subPoModel.populate(rawDocs, [
-            { path: "product" },
-            { path: "purchaseOrder" },
-        ]);
-
-        const totalPages = Math.ceil((totalCount || 0) / limit);
-        return {
-            data: populated,
-            page,
-            limit,
-            totalItems: totalCount,
-            totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
-        };
-    }
 
     async restore(id: string) {
         const doc = await this.subPoModel.findById(id) as any;

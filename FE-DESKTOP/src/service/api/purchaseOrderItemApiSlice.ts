@@ -8,8 +8,21 @@ import { QueryOrdersWithUnmanufacturedItemsDto } from "@/types/DTO/purchase-orde
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { BaseResponse } from "@/types/DTO/BaseResponse";
 
-export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
+export const purchaseOrderItemApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    queryPurchaseOrderItems: createApiEndpoint<
+      BaseResponse<PageResponse<PurchaseOrderItem>>,
+      { page?: number; limit?: number }
+    >(builder, {
+      query: ({ page = 1, limit = 25 }) => ({
+        url: `${PURCHASE_ORDER_ITEM_URL}/query`,
+        method: "GET",
+        params: { page, limit },
+        credentials: "include",
+      }),
+      providesTags: ["PurchaseOrderItem"],
+    }),
+
     getFullDetailsPurchaseOrderItemsByIds: createApiEndpoint<
       BaseResponse<Serialized<PurchaseOrderItem>[]>,
       { ids: string[] }
@@ -69,9 +82,10 @@ export const purchaseOrderApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
+  useQueryPurchaseOrderItemsQuery,
   useGetFullDetailsPurchaseOrderItemsByIdsQuery,
   useUpdatePurchaseOrderItemMutation,
   useDeletePurchaseOrderItemMutation,
-  useGetDeletedPurchaseOrderItemsQuery, 
+  useGetDeletedPurchaseOrderItemsQuery,
   useRestorePurchaseOrderItemMutation
-} = purchaseOrderApiSlice;
+} = purchaseOrderItemApiSlice;
