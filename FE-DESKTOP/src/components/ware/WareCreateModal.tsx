@@ -4,6 +4,17 @@ import React from "react";
 
 type CreateForm = any;
 
+type MultiSelectInlineProps = {
+  id?: string;
+  options?: any[];
+  selected?: any[];
+  // REQUIRED handlers
+  onAdd: (id: string) => void;
+  onRemove: (id: string) => void;
+  getLabel?: (o: any) => string;
+  placeholder?: string;
+};
+
 type Props = {
   show: boolean;
   onClose: () => void;
@@ -25,10 +36,28 @@ type Props = {
   ) => void;
   handleCreateSubmit: () => Promise<void>;
   creating?: boolean;
-  // passed from parent (no other new files)
   getIdFromDoc: (doc: any) => string | undefined;
-  MultiSelectInline: any; // React component passed from parent
+  MultiSelectInline: React.ComponentType<MultiSelectInlineProps>;
 };
+
+/* TOP-LEVEL stable Label component */
+const Label: React.FC<{
+  label: string;
+  required?: boolean;
+  style?: React.CSSProperties;
+  children?: React.ReactNode;
+}> = ({ label, required, children, style }) => (
+  <label
+    className="form-label"
+    style={{ display: "block", marginBottom: 8, ...style }}
+  >
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <span>{label}</span>
+      {required && <span style={{ color: "red", lineHeight: 1 }}>*</span>}
+    </div>
+    {children}
+  </label>
+);
 
 const WareCreateModal: React.FC<Props> = ({
   show,
@@ -48,25 +77,17 @@ const WareCreateModal: React.FC<Props> = ({
   getIdFromDoc,
   MultiSelectInline,
 }) => {
-  if (!show) return null;
+  // lightweight debug to help verify the parent state actually changes
+  React.useEffect(() => {
+    try {
+      console.debug(
+        "WareCreateModal createForm.printColors:",
+        createForm?.printColors
+      );
+    } catch {}
+  }, [createForm?.printColors]);
 
-  const Label: React.FC<{
-    label: string;
-    required?: boolean;
-    style?: React.CSSProperties;
-    children?: React.ReactNode;
-  }> = ({ label, required, children, style }) => (
-    <label
-      className="form-label"
-      style={{ display: "block", marginBottom: 8, ...style }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span>{label}</span>
-        {required && <span style={{ color: "red", lineHeight: 1 }}>*</span>}
-      </div>
-      {children}
-    </label>
-  );
+  if (!show) return null;
 
   return (
     <div className="modal-backdrop" style={{ display: "block" }}>
@@ -87,10 +108,10 @@ const WareCreateModal: React.FC<Props> = ({
                   <Label label="Mã hàng" required>
                     <input
                       className="form-control"
-                      value={createForm.code}
+                      value={createForm?.code ?? ""}
                       onChange={(e) =>
                         setCreateForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           code: e.target.value,
                         }))
                       }
@@ -101,10 +122,10 @@ const WareCreateModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
-                      value={createForm.unitPrice}
+                      value={createForm?.unitPrice ?? ""}
                       onChange={(e) =>
                         setCreateForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           unitPrice: e.target.value,
                         }))
                       }
@@ -114,19 +135,19 @@ const WareCreateModal: React.FC<Props> = ({
                   <Label label="Sóng" required>
                     <select
                       className="form-control"
-                      value={createForm.fluteCombination}
+                      value={createForm?.fluteCombination ?? ""}
                       onChange={(e) =>
                         setCreateForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           fluteCombination: e.target.value,
                         }))
                       }
                     >
-                      <option value="">-- select --</option>
+                      <option value="">-- chọn --</option>
                       {(fluteList || []).map((f) => (
                         <option
                           key={getIdFromDoc(f) ?? f.code}
-                          value={getIdFromDoc(f)}
+                          value={getIdFromDoc(f) ?? ""}
                         >
                           {f.code}
                           {f.description ? ` - ${f.description}` : ""}
@@ -138,19 +159,19 @@ const WareCreateModal: React.FC<Props> = ({
                   <Label label="Kiểu SP gia công" required>
                     <select
                       className="form-control"
-                      value={createForm.wareManufacturingProcessType}
+                      value={createForm?.wareManufacturingProcessType ?? ""}
                       onChange={(e) =>
                         setCreateForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           wareManufacturingProcessType: e.target.value,
                         }))
                       }
                     >
-                      <option value="">-- select --</option>
+                      <option value="">-- chọn --</option>
                       {(manufList || []).map((m) => (
                         <option
                           key={getIdFromDoc(m) ?? m.code}
-                          value={getIdFromDoc(m)}
+                          value={getIdFromDoc(m) ?? ""}
                         >
                           {m.code} {m.name ? `- ${m.name}` : ""}
                         </option>
@@ -162,10 +183,10 @@ const WareCreateModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
-                      value={createForm.wareWidth}
+                      value={createForm?.wareWidth ?? ""}
                       onChange={(e) =>
                         setCreateForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           wareWidth: e.target.value,
                         }))
                       }
@@ -176,10 +197,10 @@ const WareCreateModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
-                      value={createForm.wareLength}
+                      value={createForm?.wareLength ?? ""}
                       onChange={(e) =>
                         setCreateForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           wareLength: e.target.value,
                         }))
                       }
@@ -190,10 +211,10 @@ const WareCreateModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
-                      value={createForm.wareHeight}
+                      value={createForm?.wareHeight ?? ""}
                       onChange={(e) =>
                         setCreateForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           wareHeight: e.target.value,
                         }))
                       }
@@ -206,10 +227,10 @@ const WareCreateModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
-                      value={createForm.volume}
+                      value={createForm?.volume ?? ""}
                       onChange={(e) =>
                         setCreateForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           volume: e.target.value,
                         }))
                       }
@@ -222,10 +243,10 @@ const WareCreateModal: React.FC<Props> = ({
                         <input
                           className="form-control"
                           type="number"
-                          value={createForm.warePerSet}
+                          value={createForm?.warePerSet ?? ""}
                           onChange={(e) =>
                             setCreateForm((p: any) => ({
-                              ...p,
+                              ...(p ?? {}),
                               warePerSet: e.target.value,
                             }))
                           }
@@ -238,10 +259,10 @@ const WareCreateModal: React.FC<Props> = ({
                         <input
                           className="form-control"
                           type="number"
-                          value={createForm.warePerCombinedSet}
+                          value={createForm?.warePerCombinedSet ?? ""}
                           onChange={(e) =>
                             setCreateForm((p: any) => ({
-                              ...p,
+                              ...(p ?? {}),
                               warePerCombinedSet: e.target.value,
                             }))
                           }
@@ -254,10 +275,10 @@ const WareCreateModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
-                      value={createForm.horizontalWareSplit}
+                      value={createForm?.horizontalWareSplit ?? ""}
                       onChange={(e) =>
                         setCreateForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           horizontalWareSplit: e.target.value,
                         }))
                       }
@@ -265,41 +286,46 @@ const WareCreateModal: React.FC<Props> = ({
                   </Label>
 
                   <Label label="Màu in" required>
-                    {React.createElement(MultiSelectInline, {
-                      id: "create-printcolor",
-                      options: printColorList,
-                      selected: createForm.printColors || [],
-                      onAdd: (id: string) => addToCreateList("printColors", id),
-                      onRemove: (id: string) =>
-                        removeFromCreateList("printColors", id),
-                      getLabel: (o: any) =>
-                        o?.code ?? o?.name ?? getIdFromDoc(o) ?? "",
-                      placeholder: "-- choose print colors --",
-                    })}
+                    <MultiSelectInline
+                      id="create-printcolor"
+                      options={printColorList}
+                      selected={createForm?.printColors ?? []}
+                      onAdd={(id: string) => addToCreateList("printColors", id)}
+                      onRemove={(id: string) =>
+                        removeFromCreateList("printColors", id)
+                      }
+                      getLabel={(o: any) =>
+                        o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
+                      }
+                      placeholder="-- chọn màu in --"
+                    />
                   </Label>
 
                   <Label label="Công đoạn hoàn thiện">
-                    {React.createElement(MultiSelectInline, {
-                      id: "create-finishing",
-                      options: finishingList,
-                      selected: createForm.finishingProcesses || [],
-                      onAdd: (id: string) =>
-                        addToCreateList("finishingProcesses", id),
-                      onRemove: (id: string) =>
-                        removeFromCreateList("finishingProcesses", id),
-                      getLabel: (o: any) =>
-                        o?.code ?? o?.name ?? getIdFromDoc(o) ?? "",
-                      placeholder: "-- choose finishing processes --",
-                    })}
+                    <MultiSelectInline
+                      id="create-finishing"
+                      options={finishingList}
+                      selected={createForm?.finishingProcesses ?? []}
+                      onAdd={(id: string) =>
+                        addToCreateList("finishingProcesses", id)
+                      }
+                      onRemove={(id: string) =>
+                        removeFromCreateList("finishingProcesses", id)
+                      }
+                      getLabel={(o: any) =>
+                        o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
+                      }
+                      placeholder="-- chọn công đoạn --"
+                    />
                   </Label>
 
                   <Label label="Note">
                     <textarea
                       className="form-control"
-                      value={createForm.note}
+                      value={createForm?.note ?? ""}
                       onChange={(e) =>
                         setCreateForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           note: e.target.value,
                         }))
                       }
@@ -312,9 +338,9 @@ const WareCreateModal: React.FC<Props> = ({
 
               <div style={{ marginBottom: 8 }}>
                 <strong>
-                  Paper layers{" "}
+                  Lớp giấy{" "}
                   <span style={{ color: "#6c757d", fontSize: 13 }}>
-                    (at least one required)
+                    (chọn ít nhất 1)
                   </span>
                 </strong>
               </div>
@@ -330,18 +356,18 @@ const WareCreateModal: React.FC<Props> = ({
               >
                 <div className="row g-3">
                   <div className="col-md-4">
-                    <Label label="Face layer">
+                    <Label label="Mặt">
                       <select
                         className="form-control"
-                        value={createForm.faceLayerPaperType}
+                        value={createForm?.faceLayerPaperType ?? ""}
                         onChange={(e) =>
                           setCreateForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             faceLayerPaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -352,18 +378,18 @@ const WareCreateModal: React.FC<Props> = ({
                   </div>
 
                   <div className="col-md-4">
-                    <Label label="E flute">
+                    <Label label="Sóng E">
                       <select
                         className="form-control"
-                        value={createForm.EFlutePaperType}
+                        value={createForm?.EFlutePaperType ?? ""}
                         onChange={(e) =>
                           setCreateForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             EFlutePaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -374,18 +400,18 @@ const WareCreateModal: React.FC<Props> = ({
                   </div>
 
                   <div className="col-md-4">
-                    <Label label="E/B liner">
+                    <Label label="Lớp giữa E/B">
                       <select
                         className="form-control"
-                        value={createForm.EBLinerLayerPaperType}
+                        value={createForm?.EBLinerLayerPaperType ?? ""}
                         onChange={(e) =>
                           setCreateForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             EBLinerLayerPaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -396,18 +422,18 @@ const WareCreateModal: React.FC<Props> = ({
                   </div>
 
                   <div className="col-md-4">
-                    <Label label="B flute">
+                    <Label label="Sóng B">
                       <select
                         className="form-control"
-                        value={createForm.BFlutePaperType}
+                        value={createForm?.BFlutePaperType ?? ""}
                         onChange={(e) =>
                           setCreateForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             BFlutePaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -418,18 +444,18 @@ const WareCreateModal: React.FC<Props> = ({
                   </div>
 
                   <div className="col-md-4">
-                    <Label label="B/A C liner">
+                    <Label label="Lớp giữa B/A C">
                       <select
                         className="form-control"
-                        value={createForm.BACLinerLayerPaperType}
+                        value={createForm?.BACLinerLayerPaperType ?? ""}
                         onChange={(e) =>
                           setCreateForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             BACLinerLayerPaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -440,18 +466,18 @@ const WareCreateModal: React.FC<Props> = ({
                   </div>
 
                   <div className="col-md-4">
-                    <Label label="AC flute">
+                    <Label label="Sóng AC">
                       <select
                         className="form-control"
-                        value={createForm.ACFlutePaperType}
+                        value={createForm?.ACFlutePaperType ?? ""}
                         onChange={(e) =>
                           setCreateForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             ACFlutePaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -462,18 +488,18 @@ const WareCreateModal: React.FC<Props> = ({
                   </div>
 
                   <div className="col-md-4">
-                    <Label label="Back layer">
+                    <Label label="Đáy">
                       <select
                         className="form-control"
-                        value={createForm.backLayerPaperType}
+                        value={createForm?.backLayerPaperType ?? ""}
                         onChange={(e) =>
                           setCreateForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             backLayerPaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -488,18 +514,18 @@ const WareCreateModal: React.FC<Props> = ({
               <hr />
 
               <div style={{ marginTop: 12 }}>
-                <Label label="Type of printer">
+                <Label label="Loại máy in">
                   <select
                     className="form-control"
-                    value={createForm.typeOfPrinter}
+                    value={createForm?.typeOfPrinter ?? ""}
                     onChange={(e) =>
                       setCreateForm((p: any) => ({
-                        ...p,
+                        ...(p ?? {}),
                         typeOfPrinter: e.target.value,
                       }))
                     }
                   >
-                    <option value="">-- none --</option>
+                    <option value="">-- rỗng --</option>
                     {TYPE_OF_PRINTER_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
