@@ -152,6 +152,36 @@ export function fullDetailsFilterAggregationPipeline({
         preserveNullAndEmptyArrays: true,
       },
     },
+
+    // sort by code
+    {
+      $addFields: {
+        parts: { $split: ["$code", "/"] },
+      },
+    },
+    {
+      $addFields: {
+        n: {
+          $convert: {
+            input: { $arrayElemAt: ["$parts", 0] },
+            to: "int",
+            onError: -1, // fallback value for bad format
+            onNull: -1,
+          },
+        },
+        m: {
+          $convert: {
+            input: { $arrayElemAt: ["$parts", 1] },
+            to: "int",
+            onError: -1,
+            onNull: -1,
+          },
+        },
+      },
+    },
+    {
+      $sort: { m: 1, n: 1 },
+    },
   );
 
   const mainFilters: Record<string, unknown> = {};

@@ -7,6 +7,7 @@ import { useUpdateManyUsersMutation } from "@/service/api/userApiSlice";
 import { ALL_ACCESS_PRIVILEGE_VALUES, AnyAccessPrivileges } from "@/types/AccessPrivileges";
 import { User } from "@/types/User";
 import { devlog } from "@/utils/devlog";
+import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import { Button, createListCollection, HStack, Input, Portal, Select, Stack } from "@chakra-ui/react";
 import check from "check-types";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -82,8 +83,7 @@ export function EditUserForm(props: EditUserFormProps) {
         type: "success",
       });
     } catch (e) {
-      devlog(e)
-      const errorMsg = showAlert ? showAlert : ((e as { data: { message: string } }).data.message)
+      const errorMsg = showAlert ? showAlert : tryGetApiErrorMsg(e as Error)
 
       toaster.create({
         description: check.string(errorMsg) ? errorMsg : `Failed to save user`,

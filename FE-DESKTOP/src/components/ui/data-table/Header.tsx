@@ -12,6 +12,7 @@ export type DataTableHeaderCellProps<TData, TValue> = {
 export function DataTableHeaderCell<TData, TValue>(props: DataTableHeaderCellProps<TData, TValue>) {
   return (
     <ChakraTable.ColumnHeader key={props.header.id}
+      zIndex={0}
       colorPalette={"blue"}
       bgColor={"colorPalette.muted"}
       border={{ base: "1px solid black", _dark: "1px solid white" }}

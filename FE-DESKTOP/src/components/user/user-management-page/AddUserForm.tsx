@@ -7,6 +7,7 @@ import { PASSWORD_REGEX } from "@/constants/password-regex";
 import { useCreateUsersMutation } from "@/service/api/userApiSlice";
 import { Employee } from "@/types/Employee";
 import { devlog } from "@/utils/devlog";
+import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import { Button, HStack, Input, Stack } from "@chakra-ui/react";
 import check from "check-types";
 import { useMemo, useState } from "react";
@@ -73,8 +74,7 @@ export function AddUserForm(props: AddUserFormProps) {
         type: "success",
       });
     } catch (e) {
-      devlog(e)
-      const errorMsg = showAlert ? showAlert : ((e as { data: { message: string } }).data.message)
+      const errorMsg = showAlert ? showAlert : tryGetApiErrorMsg(e as Error)
 
       toaster.create({
         description: check.string(errorMsg) ? errorMsg : `Failed to add user to emploee ${props.employee.name}`,

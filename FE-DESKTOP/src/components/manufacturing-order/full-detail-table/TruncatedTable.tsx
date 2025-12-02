@@ -27,7 +27,7 @@ import {
 import check from "check-types";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { manufacturingOrderColumnsByTabs, manufacturingOrderMergedHeaders } from "./tableDefinition";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { getCoreRowModel } from "@tanstack/react-table";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
 import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
@@ -37,17 +37,19 @@ import useDataTable from "@/components/ui/data-table/hook";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import DataFetchError from "@/components/common/DataFetchError";
 import { useDataTableSelector } from "@/components/ui/data-table/Provider";
+import { convertSerializedMOToTruncatedManufacturingOrderTableData, truncatedManufacturingOrderTableColumns, TruncatedManufacturingOrderTableData } from "./truncatedTableDefinition";
+import { logTimestamp } from "@/utils/logTimestamp";
 import { toaster } from "@/components/ui/toaster";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 
-export type ManufacturingOrderTableProps = {
+export type TruncatedManufacturingOrderTableProps = {
   rootProps?: BoxProps;
   tabsRootProps?: TabsRootProps;
   tableRootProps?: TableRootProps;
 };
 
-export default function ManufacturingOrderTable(
-  props: ManufacturingOrderTableProps,
+export default function TruncatedManufacturingOrderTable(
+  props: TruncatedManufacturingOrderTableProps,
 ) {
   const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
   const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
@@ -91,11 +93,15 @@ export default function ManufacturingOrderTable(
     }
   }, [fullDetailMOPaginatedResponse?.data])
 
-  const rawTableData: Serialized<ManufacturingOrder>[] = moPaginatedList?.data ?? []
+  const moList = useMemo(() => moPaginatedList?.data ?? [], [moPaginatedList?.data])
+  const getMo = useCallback((id: string) => moList.find(mo => mo._id === id), [moList])
+  const rawTableData: TruncatedManufacturingOrderTableData[] = useMemo(() => moList.map(mo =>
+    convertSerializedMOToTruncatedManufacturingOrderTableData(mo, getMo)
+  ), [moList, getMo])
 
   const { table, tableComponent, tableData, resetTable } = useDataTable({
     data: rawTableData,
-    columns: manufacturingOrderColumnsByTabs[tab],
+    columns: truncatedManufacturingOrderTableColumns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (mo) => mo._id,
     bodyPropsStack: {
@@ -124,11 +130,11 @@ export default function ManufacturingOrderTable(
   });
 
   useEffect(() => {
-    console.log("Table hook re-calculated")
+    logTimestamp("Table hook re-calculated")
   }, [table, tableComponent, tableData]);
 
   useEffect(() => {
-    console.log("SET_TOTAL_ITEMS effect Triggered")
+    logTimestamp("SET_TOTAL_ITEMS effect Triggered")
     dispatch({
       type: "SET_TOTAL_ITEMS",
       payload: moPaginatedList ? moPaginatedList.totalItems : 0,
@@ -167,15 +173,15 @@ export default function ManufacturingOrderTable(
 
   const handleUpdateOrders = () => {
     const dto: UpdateManyManufacturingOrdersRequestDto = {
-      orders: tableData.filter(order => check.nonEmptyObject(order.purchaseOrderItem)).filter((row) => row.isEdited).map((order) => ({
+      orders: tableData.filter((row) => row.isEdited).map((order) => ({
         id: order._id,
         corrugatorLineAdjustment: order.corrugatorLineAdjustment,
         manufacturingDirective: order.manufacturingDirective,
         amount: order.amount,
         note: order.note,
-        manufacturingDateAdjustment: order.manufacturingDateAdjustment,
-        requestedDatetime: order.requestedDatetime,
-        purchaseOrderItemId: (order.purchaseOrderItem as Serialized<PurchaseOrderItem>)._id,
+        manufacturingDateAdjustment: order.manufacturingDateAdjustment?.toString(),
+        requestedDatetime: order.requestedDatetime?.toString(),
+        purchaseOrderItemId: order.purchaseOrderItemId,
       }))
     }
 
@@ -211,55 +217,14 @@ export default function ManufacturingOrderTable(
 
   return (
     <Box mt={3} {...props.rootProps}>
-      <Tabs.Root
-        value={tab}
-        onValueChange={(e) =>
-          dispatch({
-            type: "SET_TAB",
-            payload: e.value as ManufacturingTableTabType,
-          })}
-        {...props.tabsRootProps}
-      >
-        <Tabs.List ms={`${getTabBarOffset()}px`}>
-          <Tabs.Trigger value="all">
-            <LuUser />
-            Tổng quan
-          </Tabs.Trigger>
-          <Tabs.Trigger value="order">
-            <LuUser />
-            Thông tin đơn hàng
-          </Tabs.Trigger>
-          <Tabs.Trigger value="manufacture">
-            <LuFolder />
-            Gia công
-          </Tabs.Trigger>
-          <Tabs.Trigger value="layers">
-            <LuSquareCheck />
-            Cấu trúc lớp
-          </Tabs.Trigger>
-          <Tabs.Trigger value="notes">
-            <LuSquareCheck />
-            Ghi chú
-          </Tabs.Trigger>
-          <Tabs.Trigger value="weight">
-            <LuSquareCheck />
-            Trọng lượng giấy sử dụng
-          </Tabs.Trigger>
-          <Tabs.Trigger value="processes">
-            <LuSquareCheck />
-            Công đoạn hoàn thiện
-          </Tabs.Trigger>
-        </Tabs.List>
-      </Tabs.Root>
-
       <Table.ScrollArea borderWidth="1px">
         {tableComponent}
       </Table.ScrollArea>
 
       <ActionBar.Root open={editedItemsNum > 0}>
         <Portal>
-          <ActionBar.Positioner>
-            <ActionBar.Content zIndex={9999}>
+          <ActionBar.Positioner zIndex={9999}>
+            <ActionBar.Content>
               <ActionBar.SelectionTrigger>
                 Đã sửa {editedItemsNum} lệnh
               </ActionBar.SelectionTrigger>

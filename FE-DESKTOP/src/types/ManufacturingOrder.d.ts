@@ -6,21 +6,12 @@ import { ManufacturingOrderDirectives } from "./enums/ManufacturingOrderDirectiv
 import { ManufacturingOrderProcess } from "./OrderFinishingProcess";
 import { PurchaseOrderItem } from "./PurchaseOrderItem";
 
-export enum OrderStatus {
-  NOTSTARTED = "NOTSTARTED",
-  RUNNING = "RUNNING",
-  COMPLETED = "COMPLETED",
-  OVERCOMPLETED = "OVERCOMPLETED",
-  PAUSED = "PAUSED",
-  CANCELLED = "CANCELLED",
-}
-
 export interface ManufacturingOrder extends BaseSchema {
   code: string;
   approvalStatus: ManufacturingOrderApprovalStatus;
   manufacturingDate: Date;
   manufacturingDateAdjustment: Date | null;
-  requestedDatetime: Date;
+  requestedDatetime: Date | null;
   corrugatorLine: CorrugatorLine;
   corrugatorLineAdjustment?: CorrugatorLine | null;
   amount: number;
@@ -38,7 +29,6 @@ export interface ManufacturingOrder extends BaseSchema {
   totalWeight: number;
   manufacturingDirective?: ManufacturingOrderDirectives | null;
   note: string;
-  overallStatus: OrderStatus;
 
   purchaseOrderItem: string | PurchaseOrderItem;
   corrugatorProcess: CorrugatorProcess;

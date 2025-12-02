@@ -14,6 +14,9 @@ export function DataTableRoot<T>(props: DataTableRootProps<T>) {
         size="sm"
         variant={"outline"}
         showColumnBorder
+        borderCollapse={"collapse"}
+        tableLayout={"fixed"}
+        borderSpacing={-10}
         {...props.tableRootProps}
       >
         {props.children}

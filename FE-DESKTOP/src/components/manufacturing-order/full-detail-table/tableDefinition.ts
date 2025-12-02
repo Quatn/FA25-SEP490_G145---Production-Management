@@ -1,5 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
-import type { ManufacturingOrder, OrderStatus } from "@/types/ManufacturingOrder";
+import type { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import check from "check-types";
 import type { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { PrintColor } from "@/types/PrintColor";
@@ -11,12 +11,13 @@ import { createListCollection } from "@chakra-ui/react";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import ManufacturingOrderTableActionColumn from "./ActionColumn";
+import { LEGACY_OrderStatus } from "@/types/enums/LEGACY_OrderStatus";
 
 export type ManufacturingOrderTableDataType = Serialized<ManufacturingOrder> & { isEdited: boolean }
 
 const columnHelper = getDataTableColumnHelper<Serialized<ManufacturingOrder>>()
 
-const orderStatusNameMap: Record<OrderStatus, string> = {
+const orderStatusNameMap: Record<LEGACY_OrderStatus, string> = {
   NOTSTARTED: "Chưa bắt đầu",
   RUNNING: "Đang chạy",
   COMPLETED: "Đã hoàn thành",
@@ -103,13 +104,12 @@ export const manufacturingOrderMergedHeaders = [
   ["code", "1_code_code"],
   ["customerCode", "1_customerCode_customerCode"],
   ["wareCode", "1_wareCode_wareCode"],
-  ["wareCode", "1_wareCode_wareCode"],
   ["overallStatus", "1_overallStatus_overallStatus"],
   ["fluteCombination", "1_fluteCombination_fluteCombination"],
   ["wareManufacturingProcessType", "1_wareManufacturingProcessType_wareManufacturingProcessType"],
   ["amount", "1_amount_amount"],
   ["purchaseOrderCode", "1_purchaseOrderCode_purchaseOrderCode"],
-  ["purchaseOrderItemNote", "1_purchaseOrderItemNote_purchaseOrderItemNote"],
+  ["wareNote", "1_wareNote_wareNote"],
   ["note", "1_note_note"],
   ["manufacturingDateAdjustment", "1_manufacturingDateAdjustment_manufacturingDateAdjustment"],
   ["requestedDatetime", "1_requestedDatetime_requestedDatetime"],
@@ -481,7 +481,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   }),
 
   columnHelper.defineDataTableAccessorColumn({
-    id: "purchaseOrderItemNote",
+    id: "wareNote",
     accessorFn: (mo) => {
       return getPopulatedWare(mo)?.note
     },
@@ -656,7 +656,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   columnHelper.defineDataTableDisplayColumn({
     id: "actions-column",
     header: undefined,
-    cell: ({ cell, table }) => ManufacturingOrderTableActionColumn({ rowId: cell.row.id, isEdited: cell.row.original.isEdited, mo: cell.row.original, meta: table.options.meta })
+    cell: ({ cell, table }) => ManufacturingOrderTableActionColumn({ rowId: cell.row.id, isEdited: cell.row.original.isEdited, getOrder: () => cell.row.original, meta: table.options.meta })
   }),
 ];
 
@@ -713,7 +713,7 @@ export const manufacturingOrderColumnsByTabs: Record<
     check.in(col.id, [
       "manufacturingDirective",
       "code",
-      "purchaseOrderItemNote",
+      "wareNote",
       "note",
       "manufacturingDateAdjustment",
       "requestedDatetime",

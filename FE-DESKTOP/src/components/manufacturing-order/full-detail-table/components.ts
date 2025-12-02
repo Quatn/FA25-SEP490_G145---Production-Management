@@ -4,8 +4,8 @@ import ManufacturingOrderPagination from "./Pagination";
 import ManufacturingOrderPaginationControl from "./PaginationControl";
 import ManufacturingOrderSearchBar from "./SearchBar";
 import ManufacturingOrderSearchFilterControl from "./SearchFilterControl";
-import ManufacturingOrderTable from "./Table";
 import ManufacturingOrderTableControl from "./TableControl";
+import ManufacturingOrderTablePicker from "./TablePicker";
 
 export const ManufacturingOrderTableComponents = {
   ConfirmDialog: ManufacturingOrderFullDetailTableConfirmDialog,
@@ -13,7 +13,7 @@ export const ManufacturingOrderTableComponents = {
   PaginationControl: ManufacturingOrderPaginationControl,
   SearchBar: ManufacturingOrderSearchBar,
   SearchFilterControl: ManufacturingOrderSearchFilterControl,
-  Table: ManufacturingOrderTable,
+  Table: ManufacturingOrderTablePicker,
   TableControl: ManufacturingOrderTableControl,
   DetailsDialog: ManufacturingOrderDetailsDialog,
 };

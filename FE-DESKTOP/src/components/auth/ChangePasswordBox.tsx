@@ -8,6 +8,7 @@ import { useChangePasswordMutation } from "@/service/api/userApiSlice";
 import { useAppSelector } from "@/service/hooks";
 import { UserState } from "@/types/UserState";
 import { devlog } from "@/utils/devlog";
+import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import {
   Alert,
   Button,
@@ -92,9 +93,7 @@ export default function ChangePasswordBox() {
         description: `Changed password successfully`,
         type: "success",
       });
-    } catch (e) {
-      devlog(e);
-    }
+    } catch { }
   };
 
   const handleReset = () => {
@@ -140,7 +139,7 @@ export default function ChangePasswordBox() {
                 <Alert.Content>
                   <Alert.Title>Change password failed</Alert.Title>
                   <Alert.Description>
-                    {showAlert ? showAlert : ((updateError as { data: { message: string } }).data.message)}
+                    {showAlert ? showAlert : tryGetApiErrorMsg(updateError)}
                   </Alert.Description>
                 </Alert.Content>
               </Alert.Root>

@@ -34,6 +34,7 @@ interface StoreState {
   allowEdit: boolean | string;
   preparedSubmitFunction?: () => void;
   preparedSubmitAskText: string;
+  useFullTable: boolean,
 }
 
 type StoreAction =
@@ -52,6 +53,7 @@ type StoreAction =
   | { type: "SET_ALLOW_EDIT"; payload: boolean | string }
   | { type: "SET_PREPARED_SUBMIT_FUNCTION"; payload: (() => void) | undefined }
   | { type: "SET_PREPARED_SUBMIT_ASK_TEXT"; payload: string }
+  | { type: "SET_USE_FULL_TABLE"; payload: boolean }
   | { type: "RESET" };
 
 const initialState: StoreState = {
@@ -67,6 +69,7 @@ const initialState: StoreState = {
   paginationType: "paged",
   allowEdit: false,
   preparedSubmitAskText: "",
+  useFullTable: false,
 };
 
 function reducer(state: StoreState, action: StoreAction): StoreState {
@@ -115,6 +118,8 @@ function reducer(state: StoreState, action: StoreAction): StoreState {
       return { ...state, preparedSubmitFunction: action.payload }
     case "SET_PREPARED_SUBMIT_ASK_TEXT":
       return { ...state, preparedSubmitAskText: action.payload }
+    case "SET_USE_FULL_TABLE":
+      return { ...state, useFullTable: action.payload }
     case "RESET":
       return initialState;
     default:

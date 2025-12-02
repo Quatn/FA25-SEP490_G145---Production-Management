@@ -1,6 +1,6 @@
 "use client"
 import { ManufacturingOrder } from "@/types/ManufacturingOrder"
-import { Button, Card, DataList, Heading, HStack } from "@chakra-ui/react"
+import { Button, Card, DataList, Editable, Heading, HStack, Stack } from "@chakra-ui/react"
 import check from "check-types"
 import { useMemo } from "react"
 import { manufacturingOrderDetailsDialogUtils as utils } from "./utils"
@@ -31,20 +31,27 @@ export default function ManufacturingOrderDetailsDialogOrderDetailsCard(props: M
         <HStack justifyContent={"space-between"}>
           <Heading size="md">Thông tin đơn hàng</Heading>
           <Link href={`purchase-order${check.string(po?._id) ? "?id=" + po._id : ""}`}>
-            <Button colorPalette={"blue"} size="xs">Xem chi tiết</Button>
+            <Button colorPalette={"blue"} size="xs">Chỉnh sửa</Button>
           </Link>
         </HStack>
-
       </Card.Header>
-      <Card.Body color="fg.muted">
+
+      <Card.Body justifyContent={"space-between"}>
         <DataList.Root orientation="horizontal">
           {stats.map((item) => (
             <DataList.Item key={item.label}>
-              <DataList.ItemLabel>{item.label}</DataList.ItemLabel>
-              <DataList.ItemValue>{item.value}</DataList.ItemValue>
+              <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>{item.label}</Heading></DataList.ItemLabel>
+              <DataList.ItemValue color="fg.muted" flexGrow={1}>{item.value}</DataList.ItemValue>
             </DataList.Item>
           ))}
         </DataList.Root>
+        <Stack mt={5}>
+          <Heading size="lg">Ghi chú</Heading>
+          <Editable.Root value={po?.note} readOnly >
+            <Editable.Preview />
+          </Editable.Root>
+        </Stack>
+
       </Card.Body>
     </Card.Root>
   )

@@ -7,13 +7,15 @@ import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { useDeleteManufacturingOrderMutation, useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
+import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import { Box, Button, Group, Popover, Portal, Stack } from "@chakra-ui/react"
 import check from "check-types";
 import { BiSolidDownArrow } from "react-icons/bi"
 
 export type ManufacturingOrderTableActionColumnProps = {
   rowId: string,
-  mo: Serialized<ManufacturingOrder>,
+  getOrder: (id: string) => Serialized<ManufacturingOrder> | undefined,
   isEdited: boolean,
   meta?: DataTableMeta
 }
@@ -31,34 +33,51 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
     return undefined;
   }
 
+  const mo = props.getOrder(props.rowId)
+
+  if (check.undefined(mo)) {
+    return undefined;
+  }
+
   const handleUpdateOrder = () => {
     if (!props.isEdited) return false
 
-    if (check.string(props.mo.purchaseOrderItem)) {
+    if (check.string(mo.purchaseOrderItem)) {
       throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it reaches here")
     }
 
     const dto: UpdateManyManufacturingOrdersRequestDto = {
-      orders: [{ ...props.mo, id: props.mo._id, purchaseOrderItemId: props.mo.purchaseOrderItem._id }]
+      orders: [{
+        id: mo._id,
+        corrugatorLineAdjustment: mo.corrugatorLineAdjustment,
+        manufacturingDirective: mo.manufacturingDirective,
+        amount: mo.amount,
+        note: mo.note,
+        manufacturingDateAdjustment: mo.manufacturingDateAdjustment,
+        requestedDatetime: mo.requestedDatetime,
+        purchaseOrderItemId: (mo.purchaseOrderItem as Serialized<PurchaseOrderItem>)._id,
+      }]
     }
 
-    dispatch({ type: "SET_PREPARED_SUBMIT_ASK_TEXT", payload: `Lưu lệnh ${props.mo.code}?` })
+
+    dispatch({ type: "SET_PREPARED_SUBMIT_ASK_TEXT", payload: `Lưu lệnh ${mo.code}?` })
     dispatch({
       type: "SET_PREPARED_SUBMIT_FUNCTION", payload: () => {
         updateOrders(dto).unwrap().then((res) => {
-          if (check.equal(res.data?.patchedAmount, 1)) {
+          if (check.greaterOrEqual(res.data?.patchedAmount as number, 1)) {
             toaster.success({
               title: "Success",
               description: "Updated order successfully",
             })
+          } else {
+            toaster.warning({
+              title: "Order not updated",
+            })
           }
-          toaster.warning({
-            title: "Order not updated",
-          })
         }).catch(error => {
           toaster.warning({
             title: "Error updating order",
-            description: (error as Error).message,
+            description: tryGetApiErrorMsg(error),
           })
         })
       }
@@ -70,7 +89,7 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
   }
 
   const handleDeleteOrder = () => {
-    dispatch({ type: "SET_PREPARED_SUBMIT_ASK_TEXT", payload: `Xóa lệnh ${props.mo.code}?` })
+    dispatch({ type: "SET_PREPARED_SUBMIT_ASK_TEXT", payload: `Xóa lệnh ${mo.code}?` })
     dispatch({
       type: "SET_PREPARED_SUBMIT_FUNCTION", payload: () => deleteOrder({
         id: props.rowId
@@ -103,7 +122,7 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
             onClick={() =>
               dialogDispatch({
                 type: "OPEN_DIALOG_WITH_ORDER",
-                payload: props.mo,
+                payload: mo,
               })
             }
           >

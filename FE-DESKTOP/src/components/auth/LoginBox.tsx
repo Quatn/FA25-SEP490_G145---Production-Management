@@ -7,6 +7,7 @@ import { useLoginMutation } from "@/service/api/authApiSlice";
 import { setCredentials } from "@/service/features/authSlice";
 import { useAppDispatch } from "@/service/hooks";
 import { devlog } from "@/utils/devlog";
+import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import {
   Alert,
   Button,
@@ -48,9 +49,7 @@ export default function LoginBox() {
         type: "success",
       });
       router.push("/");
-    } catch (e) {
-      devlog(e);
-    }
+    } catch { }
   };
 
   return (
@@ -88,7 +87,7 @@ export default function LoginBox() {
                 <Alert.Content>
                   <Alert.Title>Failed to login</Alert.Title>
                   <Alert.Description>
-                    {(logInError as { data?: { message?: string } }).data?.message}
+                    {tryGetApiErrorMsg(logInError)}
                   </Alert.Description>
                 </Alert.Content>
               </Alert.Root>

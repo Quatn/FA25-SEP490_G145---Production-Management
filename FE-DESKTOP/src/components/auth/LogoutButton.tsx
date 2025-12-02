@@ -5,6 +5,7 @@ import { clearCredentials } from "@/service/features/authSlice";
 import { useAppDispatch } from "@/service/hooks";
 import { Button } from "@chakra-ui/react";
 import { toaster } from "../ui/toaster";
+import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 
 export default function LogoutButton() {
   const router = useRouter();
@@ -23,9 +24,9 @@ export default function LogoutButton() {
       });
       router.push("/login");
     } catch (e) {
-      devlog(e);
       toaster.create({
         title: "An error occurred while trying to logout",
+        description: tryGetApiErrorMsg(e as Error),
         type: "error",
       });
     }

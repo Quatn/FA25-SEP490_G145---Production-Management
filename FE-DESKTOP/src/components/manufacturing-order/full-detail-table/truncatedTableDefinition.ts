@@ -1,0 +1,435 @@
+import { ColumnDef } from "@tanstack/react-table";
+import type { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import check from "check-types";
+import type { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
+import { PrintColor } from "@/types/PrintColor";
+import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";
+import { getDataTableColumnHelper } from "@/components/ui/data-table/utils/getDataTableColumnHelper";
+import { DataTableCellType } from "@/components/ui/data-table/Cell";
+import { ManufacturingOrderDirectives } from "@/types/enums/ManufacturingOrderDirectives";
+import { createListCollection } from "@chakra-ui/react";
+import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
+import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
+import ManufacturingOrderTableActionColumn from "./ActionColumn";
+import { FluteCombination } from "@/types/FluteCombination";
+import { LEGACY_OrderStatus } from "@/types/enums/LEGACY_OrderStatus";
+
+const getPopulatedPoi = (mo: Serialized<ManufacturingOrder>) => {
+  if (check.string(mo.purchaseOrderItem)) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated")
+  return mo.purchaseOrderItem
+}
+
+const getPopulatedSubPo = (mo: Serialized<ManufacturingOrder>) => {
+  if (check.string(mo.purchaseOrderItem) || check.string(mo.purchaseOrderItem.subPurchaseOrder)
+  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder");
+  return mo.purchaseOrderItem.subPurchaseOrder
+}
+
+const getPopulatedPo = (mo: Serialized<ManufacturingOrder>) => {
+  if (check.string(mo.purchaseOrderItem)
+    || check.string(mo.purchaseOrderItem.subPurchaseOrder)
+    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder)
+  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder -> purchaseOrder");
+  return mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder
+}
+
+const getPopulatedCustomer = (mo: Serialized<ManufacturingOrder>) => {
+  if (check.string(mo.purchaseOrderItem)
+    || check.string(mo.purchaseOrderItem.subPurchaseOrder)
+    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder)
+    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder?.customer)
+  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder -> purchaseOrder -> customer");
+  return mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder?.customer
+}
+
+const getPopulatedWare = (mo: Serialized<ManufacturingOrder>) => {
+  if (check.string(mo.purchaseOrderItem)
+    || check.string(mo.purchaseOrderItem.ware)
+  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> ware");
+  return mo.purchaseOrderItem.ware
+}
+
+export type TruncatedManufacturingOrderTableData = {
+  _id: string,
+  code: string,
+  manufacturingDirective: ManufacturingOrderDirectives | null,
+  customerCode: string,
+  overallStatus: LEGACY_OrderStatus,
+  wareCode: string,
+  purchaseOrderCode: string,
+  fluteCombinationCode: string,
+  wareWidth: number,
+  wareLength: number,
+  wareHeight: number | null,
+  inventory: number,
+  amount: number,
+  orderDate: Date,
+  deliveryDate: Date,
+  manufacturingDate: Date,
+  requestedDatetime: Date | null,
+  manufacturingDateAdjustment: Date | null,
+  corrugatorLine: CorrugatorLine,
+  corrugatorLineAdjustment: CorrugatorLine | null,
+  wareManufacturingProcessType: Omit<WareFinishingProcessType, "createdAt" | "updatedAt">,
+  finishingProcesses: Omit<WareFinishingProcessType, "createdAt" | "updatedAt">[],
+  wareNote: string,
+  note: string,
+  getOrder: (id: string) => Serialized<ManufacturingOrder> | undefined,
+  purchaseOrderItemId: string,
+}
+
+export const convertSerializedMOToTruncatedManufacturingOrderTableData = (mo: Serialized<ManufacturingOrder>, getOrder: (id: string) => Serialized<ManufacturingOrder> | undefined): TruncatedManufacturingOrderTableData => {
+  const customer = getPopulatedCustomer(mo)
+  const ware = getPopulatedWare(mo)
+  const subPo = getPopulatedSubPo(mo)
+  const po = getPopulatedPo(mo)
+  const poi = getPopulatedPo(mo)
+
+  if (!check.object(ware?.wareManufacturingProcessType)) {
+    throw new UnpopulatedFieldError(
+      "ware.wareManufacturingProcessType should be populated before reaching convertSerializedMOToTruncatedManufacturingOrderTableData"
+    )
+  }
+
+  if (!check.array.of.object(ware.finishingProcesses)) {
+    throw new UnpopulatedFieldError(
+      "ware.finishingProcesses hould be populated before reaching convertSerializedMOToTruncatedManufacturingOrderTableData"
+    )
+  }
+
+  if (!check.object(poi)) {
+    throw new UnpopulatedFieldError(
+      "poi should be populated before reaching convertSerializedMOToTruncatedManufacturingOrderTableData"
+    )
+  }
+
+  return {
+    _id: mo._id,
+    code: mo.code,
+    manufacturingDirective: mo.manufacturingDirective ?? null,
+    customerCode: customer?.code ?? "",
+    overallStatus: mo.overallStatus,
+    wareCode: ware?.code ?? "",
+    purchaseOrderCode: po?.code ?? "",
+    fluteCombinationCode: check.string(ware?.fluteCombination) ? ware.fluteCombination : ware?.fluteCombination.code ?? "",
+    wareWidth: ware?.wareWidth ?? 0,
+    wareLength: ware?.wareLength ?? 0,
+    wareHeight: ware?.wareHeight ?? null,
+    inventory: 0,
+    amount: mo.amount,
+    orderDate: new Date(po?.orderDate ?? ""),
+    deliveryDate: new Date(subPo?.deliveryDate ?? ""),
+    manufacturingDate: new Date(mo.manufacturingDate),
+    requestedDatetime: check.date(new Date(mo.requestedDatetime)) ? new Date(mo.requestedDatetime) : null,
+    manufacturingDateAdjustment: check.date(new Date(mo.manufacturingDateAdjustment ?? "")) ? new Date(mo.requestedDatetime) : null,
+    corrugatorLine: mo.corrugatorLine,
+    corrugatorLineAdjustment: mo.corrugatorLineAdjustment ?? null,
+    wareManufacturingProcessType: ware.wareManufacturingProcessType,
+    finishingProcesses: (ware.finishingProcesses as Omit<WareFinishingProcessType, "createdAt" | "updatedAt">[]),
+    wareNote: ware.note,
+    note: mo.note,
+    getOrder,
+    purchaseOrderItemId: poi._id,
+  }
+}
+
+const columnHelper = getDataTableColumnHelper<TruncatedManufacturingOrderTableData>()
+
+const orderStatusNameMap: Record<LEGACY_OrderStatus, string> = {
+  NOTSTARTED: "Chưa bắt đầu",
+  RUNNING: "Đang chạy",
+  COMPLETED: "Đã hoàn thành",
+  OVERCOMPLETED: "Đã hoàn thành",
+  PAUSED: "Tạm dừng",
+  CANCELLED: "Đã hủy",
+}
+
+const manufacturingDirectives: { label: string, value: string }[] = [
+  { label: "Hủy", value: ManufacturingOrderDirectives.Cancel },
+  { label: "Tạm dừng", value: ManufacturingOrderDirectives.Pause },
+  { label: "Bắt buộc", value: ManufacturingOrderDirectives.Mandatory },
+  { label: "Bù lệnh", value: ManufacturingOrderDirectives.Compensate },
+]
+
+const manufacturingDirectivesCol = createListCollection({
+  items: manufacturingDirectives,
+})
+
+const corrugatorLines: { label: string, value: string }[] = [
+  { label: "Dàn 5", value: CorrugatorLine.L5 },
+  { label: "Dàn 7", value: CorrugatorLine.L7 },
+]
+
+const corrugatorLinesCol = createListCollection({
+  items: corrugatorLines,
+})
+
+const colSize = {
+  sm: {
+    minSize: 50,
+    size: 75,
+    maxSize: 100,
+  },
+  md: {
+    minSize: 100,
+    size: 150,
+    maxSize: 200,
+  },
+  lg: {
+    minSize: 200,
+    size: 300,
+    maxSize: 400,
+  },
+}
+
+export const truncatedManufacturingOrderTableMergedHeaders = [
+  ["manufacturingDirective", "1_manufacturingDirective_manufacturingDirective"],
+  ["code", "1_code_code"],
+  ["customerCode", "1_customerCode_customerCode"],
+  ["wareCode", "1_wareCode_wareCode"],
+  ["purchaseOrderCode", "1_purchaseOrderCode_purchaseOrderCode"],
+  ["overallStatus", "1_overallStatus_overallStatus"],
+  ["fluteCombinationCode", "1_fluteCombination_fluteCombination"],
+  ["wareManufacturingProcessType", "1_wareManufacturingProcessType_wareManufacturingProcessType"],
+  ["inventory", "1_inventory_inventory"],
+  ["amount", "1_amount_amount"],
+  ["wareNote", "1_wareNote_wareNote"],
+  ["note", "1_note_note"],
+  ["manufacturingDateAdjustment", "1_manufacturingDateAdjustment_manufacturingDateAdjustment"],
+  ["requestedDatetime", "1_requestedDatetime_requestedDatetime"],
+  ["corrugatorLineAdjustment", "1_corrugatorLineAdjustment_corrugatorLineAdjustment"],
+  ["finishingProcesses", "1_finishingProcesses_finishingProcesses"],
+  ["actions-column", "1_actions-column_actions-column"],
+]
+
+export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufacturingOrderTableData & { isEdited: boolean }>)[] = [
+  columnHelper.defineDataTableAccessorColumn({
+    id: "manufacturingDirective",
+    accessorKey: "manufacturingDirective",
+    header: "Kế hoạch giao",
+    enablePinning: true,
+    cellType: DataTableCellType.Select,
+    selectCollection: manufacturingDirectivesCol,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "code",
+    accessorKey: "code",
+    header: "Mã lệnh",
+    enablePinning: true,
+    cellType: DataTableCellType.Highlight,
+    ...colSize.sm,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "customerCode",
+    accessorKey: "customerCode",
+    header: "Khách hàng",
+    enablePinning: true,
+    cellType: DataTableCellType.Highlight,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "purchaseOrderCode",
+    accessorKey: "purchaseOrderCode",
+    header: "Đơn hàng",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "wareCode",
+    accessorKey: "wareCode",
+    header: "Mã hàng",
+    enablePinning: true,
+    cellType: DataTableCellType.Highlight,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "overallStatus",
+    accessorFn: (tmo) => {
+      return orderStatusNameMap[tmo.overallStatus]
+    },
+    header: "Trạng thái chạy",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "fluteCombinationCode",
+    accessorFn: (tmo) => {
+      return tmo.fluteCombinationCode
+    },
+    header: "Sóng",
+    enablePinning: true,
+    cellType: DataTableCellType.Highlight,
+    ...colSize.sm,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "wareManufacturingProcessType",
+    accessorFn: (mo) => {
+      return mo.wareManufacturingProcessType.name
+    },
+    header: "Kiểu gia công",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.sm,
+  }),
+
+  columnHelper.defineHeaderGroup({
+    id: "wareSize",
+    header: () => "Kích thước sản phẩm",
+    columns: [
+      columnHelper.defineDataTableAccessorColumn({
+        id: "wareWidth",
+        accessorKey: "wareWidth",
+        header: "Dài / Khổ",
+        enablePinning: true,
+        cellType: DataTableCellType.Readonly,
+        ...colSize.sm,
+      }),
+      columnHelper.defineDataTableAccessorColumn({
+        id: "wareLength",
+        accessorKey: "wareLength",
+        header: "Rộng",
+        enablePinning: true,
+        cellType: DataTableCellType.Readonly,
+        ...colSize.sm,
+      }),
+      columnHelper.defineDataTableAccessorColumn({
+        id: "wareHeight",
+        accessorKey: "wareHeight",
+        header: "Cao",
+        enablePinning: true,
+        cellType: DataTableCellType.Readonly,
+        ...colSize.sm,
+      }),
+    ],
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "inventory",
+    accessorKey: "inventory",
+    header: "Số lượng",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.sm,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "amount",
+    accessorKey: "amount",
+    header: "Số lượng",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.sm,
+  }),
+
+  columnHelper.defineHeaderGroup({
+    id: "orderDates",
+    header: () => "Ngày",
+    size: 500,
+    columns: [
+      columnHelper.defineDataTableAccessorColumn({
+        id: "orderDate",
+        accessorKey: "orderDate",
+        header: "Nhận đơn",
+        enablePinning: true,
+        cellType: DataTableCellType.Date,
+        ...colSize.md,
+      }),
+      columnHelper.defineDataTableAccessorColumn({
+        id: "deliveryDate",
+        accessorKey: "deliveryDate",
+        header: "Giao đơn",
+        enablePinning: true,
+        cellType: DataTableCellType.Date,
+        ...colSize.md,
+      }),
+      columnHelper.defineDataTableAccessorColumn({
+        id: "manufacturingDate",
+        accessorFn: (tmo) => {
+          return tmo.manufacturingDateAdjustment ?? tmo.manufacturingDate
+        },
+        header: "Ngày SX",
+        enablePinning: true,
+        cellType: DataTableCellType.Date,
+        ...colSize.md,
+      }),
+    ]
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "wareNote",
+    accessorKey: "wareNote",
+    header: "Ghi chú cố định",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "note",
+    accessorKey: "note",
+    header: "Ghi chú tạm thời",
+    enablePinning: true,
+    cellType: DataTableCellType.Text,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "manufacturingDateAdjustment",
+    accessorFn: (mo) => {
+      return check.assigned(mo.manufacturingDateAdjustment) ? mo.manufacturingDateAdjustment : mo.manufacturingDate
+    },
+    header: "Ngày SX",
+    enablePinning: true,
+    cellType: DataTableCellType.Date,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "requestedDatetime",
+    accessorKey: "requestedDatetime",
+    header: "Ngày và giờ cần",
+    enablePinning: true,
+    cellType: DataTableCellType.Date,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "corrugatorLineAdjustment",
+    accessorKey: "corrugatorLineAdjustment",
+    accessorFn: (mo) => {
+      return check.assigned(mo.corrugatorLineAdjustment) ? mo.corrugatorLineAdjustment : mo.corrugatorLine
+    },
+    header: "Dàn sóng",
+    enablePinning: true,
+    cellType: DataTableCellType.Select,
+    selectCollection: corrugatorLinesCol,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "finishingProcesses",
+    accessorFn: (tmo) => {
+      return tmo.finishingProcesses.map((p) => p.name).join(", ")
+    },
+    header: "Công đoạn gia công",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableDisplayColumn({
+    id: "actions-column",
+    header: undefined,
+    cell: ({ cell, table }) => ManufacturingOrderTableActionColumn({ rowId: cell.row.id, isEdited: cell.row.original.isEdited, getOrder: cell.row.original.getOrder, meta: table.options.meta })
+  }),
+];
