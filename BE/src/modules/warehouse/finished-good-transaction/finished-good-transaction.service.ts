@@ -5,14 +5,10 @@ import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
 import { FinishedGoodTransaction, FinishedGoodTransactionDocument, FinishedGoodTransactionSchema } from '../schemas/finished-good-transaction.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model, PipelineStage, Types } from 'mongoose';
-import { FinishedGood, FinishedGoodDocument, FinishedGoodSchema } from '../schemas/finished-good.schema';
-import { TransactionType } from '../enums/transaction-type.enum';
-import { ManufacturingOrderSchema } from '@/modules/production/schemas/manufacturing-order.schema';
-import { PurchaseOrderItemSchema } from '@/modules/production/schemas/purchase-order-item.schema';
-import { WareSchema } from '@/modules/production/schemas/ware.schema';
-import { SubPurchaseOrderSchema } from '@/modules/production/schemas/sub-purchase-order.schema';
-import { PurchaseOrderSchema } from '@/modules/production/schemas/purchase-order.schema';
+import { FinishedGood, FinishedGoodDocument } from '../schemas/finished-good.schema';
 import { GetFinishedGoodTransactionsDto } from './dto/get-finished-good-transaction.dto';
+import { FinishedGoodDailyReportResponse } from '@/common/types/finished-good-types';
+import { GetFinishedGoodDailyReportDto } from './dto/get-finished-good-daily-report.dto';
 
 type SoftFGTransaction = FinishedGoodTransaction & SoftDeleteDocument;
 @Injectable()
@@ -330,166 +326,188 @@ export class FinishedGoodTransactionService {
     return data[0];
   }
 
-  async getDailyReport(startDate: string, endDate: string, transactionType: TransactionType) {
+  async getDailyReport(dto: GetFinishedGoodDailyReportDto): Promise<FinishedGoodDailyReportResponse> {
+    const { startDate, endDate, transactionType, search } = dto;
+    const isPaginated = dto.page !== undefined && dto.limit !== undefined;
+
+    const page = isPaginated ? Number(dto.page) : 1;
+    const limit = isPaginated ? Number(dto.limit) : 0;
+    const skip = isPaginated ? (page - 1) * limit : 0;
+
+    const facetStage = isPaginated
+      ? {
+        $facet: {
+          metadata: [{ $count: 'totalFinishedGoods' }],
+          data: [{ $skip: skip }, { $limit: limit }],
+        },
+      }
+      : {
+        $facet: {
+          metadata: [{ $count: 'totalFinishedGoods' }],
+          data: [],
+        },
+      };
 
     const today = new Date();
     today.setHours(23, 59, 59, 999);
 
-    const transactionDateQuery: any = {};
-    const safeQuery: any = { transactionType };
+    const safeMatch: Record<string, any> = {};
+    if (transactionType) safeMatch.transactionType = transactionType;
+
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      if (start > today) throw new BadRequestException('startDate must be earlier than or equal to today');
+      safeMatch.transactionDate = { ...safeMatch.transactionDate, $gte: start };
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      safeMatch.transactionDate = { ...safeMatch.transactionDate, $lte: end };
+    }
 
     if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-
-      if (start > end) {
-        throw new BadRequestException("startDate must be earlier than or equal to endDate");
-      }
-
-      if (start > today) {
-        throw new BadRequestException("startDate must be earlier than or equal to today");
-      }
-
-      transactionDateQuery.transactionDate = {
-        $gte: start,
-        $lte: end,
-      };
-    } else if (startDate) {
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-
-      transactionDateQuery.transactionDate = { $gte: start };
-    } else if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-
-      transactionDateQuery.transactionDate = { $lte: end };
+      const s = new Date(startDate);
+      const e = new Date(endDate);
+      if (s > e) throw new BadRequestException('startDate must be earlier than or equal to endDate');
     }
 
-    if (Object.keys(transactionDateQuery).length > 0) {
-      Object.assign(safeQuery, transactionDateQuery);
-    }
+    const regex = search && search.trim() !== '' ? new RegExp(search.trim(), 'i') : null;
 
-    const fgPath = FinishedGoodTransactionSchema.path("finishedGood");
-    const emPath = FinishedGoodTransactionSchema.path("employee");
-    const moPath = FinishedGoodSchema.path("manufacturingOrder");
-    const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
-    const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
-    const warePath = PurchaseOrderItemSchema.path("ware");
-    const fluteCombinationPath = WareSchema.path("fluteCombination");
-    const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
-    const customerPath = PurchaseOrderSchema.path("customer");
+    const pipeline: any[] = [
+      { $match: safeMatch },
 
-    const populate = [
+      // 1. Finished Good
+      { $lookup: { from: 'finishedgoods', localField: 'finishedGood', foreignField: '_id', as: 'fg' } },
+      { $unwind: { path: '$fg', preserveNullAndEmptyArrays: false } },
+
+      // 2. Manufacturing Order
+      { $lookup: { from: 'manufacturingorders', localField: 'fg.manufacturingOrder', foreignField: '_id', as: 'mo' } },
+      { $unwind: { path: '$mo', preserveNullAndEmptyArrays: true } },
+
+      // 3. Purchase Order Item
+      { $lookup: { from: 'purchaseorderitems', localField: 'mo.purchaseOrderItem', foreignField: '_id', as: 'poi' } },
+      { $unwind: { path: '$poi', preserveNullAndEmptyArrays: true } },
+
+      // 4. Ware
+      { $lookup: { from: 'wares', localField: 'poi.ware', foreignField: '_id', as: 'ware' } },
+      { $unwind: { path: '$ware', preserveNullAndEmptyArrays: true } },
+
+      // 5. Flute
+      { $lookup: { from: 'flutecombinations', localField: 'ware.fluteCombination', foreignField: '_id', as: 'flute' } },
+      { $unwind: { path: '$flute', preserveNullAndEmptyArrays: true } },
+
+      // 6. Sub PO
+      { $lookup: { from: 'subpurchaseorders', localField: 'poi.subPurchaseOrder', foreignField: '_id', as: 'subpo' } },
+      { $unwind: { path: '$subpo', preserveNullAndEmptyArrays: true } },
+
+      // 7. PO
+      { $lookup: { from: 'purchaseorders', localField: 'subpo.purchaseOrder', foreignField: '_id', as: 'po' } },
+      { $unwind: { path: '$po', preserveNullAndEmptyArrays: true } },
+
+      // 8. Customer
+      { $lookup: { from: 'customers', localField: 'po.customer', foreignField: '_id', as: 'customer' } },
+      { $unwind: { path: '$customer', preserveNullAndEmptyArrays: true } },
+
       {
-        path: fgPath.path,
-        populate: {
-          path: moPath.path,
-          populate: [
-            {
-              path: poiPath.path,
-              populate: [
-                {
-                  path: warePath.path,
-                  populate:
-                  {
-                    path: fluteCombinationPath.path,
-                    // select: 'code',
-                  },
-                  // select: 'code wareWidth wareLength wareHeight',
-                },
-                {
-                  path: subpoPath.path,
-                  populate: [
-                    {
-                      path: poPath.path,
-                      populate: {
-                        path: customerPath.path,
-                        // select: 'code name address email contactNumber',
-                      },
-                      // select: 'code',
-                    },
-                  ],
-                  // select: 'deliveryDate',
-                },
+        $addFields: {
+          dateKey: { $dateToString: { format: '%Y-%m-%d', date: '$transactionDate' } },
+          qty: {
+            $cond: {
+              if: { $eq: ['$transactionType', 'IMPORT'] },
+              then: { $subtract: ['$finalQuantity', '$initialQuantity'] },
+              else: { $subtract: ['$initialQuantity', '$finalQuantity'] },
+            },
+          },
+        },
+      },
+
+      ...(regex
+        ? [
+          {
+            $match: {
+              $or: [
+                { 'mo.code': regex },
+                { 'ware.code': regex },
+                { 'po.code': regex },
+                { 'customer.name': regex },
+                { 'flute.code': regex },
               ],
-              // select: 'amount',
-            }
-          ],
-          // select: 'code',
+            },
+          },
+        ]
+        : []),
+
+      {
+        $addFields: {
+          'fg.manufacturingOrder': '$mo',
         }
       },
       {
-        path: emPath.path,
-      }
-    ]
-
-    const docs = await this.fgTransactionModel
-      .find(safeQuery)
-      .populate(populate)
-      .sort({ createdAt: 1 })
-      .lean()
-      .exec();
-
-    const dailySummary = new Map<
-      string,
+        $addFields: {
+          'fg.manufacturingOrder.purchaseOrderItem': '$poi',
+        }
+      },
       {
-        date: string;
-        dailyTotal: number;
-        summaryPerFinishedGood: Map<string, { finishedGood: any; total: number }>;
-      }
-    >();
+        $addFields: {
+          'fg.manufacturingOrder.purchaseOrderItem.ware': '$ware',
+          'fg.manufacturingOrder.purchaseOrderItem.subPurchaseOrder': '$subpo',
+        }
+      },
+      {
+        $addFields: {
+          'fg.manufacturingOrder.purchaseOrderItem.ware.fluteCombination': '$flute',
+          'fg.manufacturingOrder.purchaseOrderItem.subPurchaseOrder.purchaseOrder': '$po',
+        }
+      },
+      {
+        $addFields: {
+          'fg.manufacturingOrder.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer': '$customer',
+        }
+      },
 
-    for (const doc of docs) {
-      const fg = doc.finishedGood;
-      if (!fg?._id) continue;
+      // --- Grouping ---
+      // 1. Group by FG + Date
+      {
+        $group: {
+          _id: { fgId: '$fg._id', date: '$dateKey' },
+          quantity: { $sum: '$qty' },
+          finishedGood: { $first: '$fg' },
+        },
+      },
 
-      const fgId = fg._id.toString();
-      const date = new Date(doc.transactionDate ?? new Date());
-      const dateKey = date.toLocaleDateString("vi-VN", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      })
-        .split("/")
-        .reverse()
-        .join("-");
+      // 2. Group by FG (aggregate dates)
+      {
+        $group: {
+          _id: '$_id.fgId',
+          finishedGood: { $first: '$finishedGood' },
+          totalQuantity: { $sum: '$quantity' },
+          breakdownPerDate: {
+            $push: {
+              date: '$_id.date',
+              quantity: '$quantity',
+            },
+          },
+        },
+      },
 
-      const importQty = doc.finalQuantity - doc.initialQuantity;
-      const exportQty = doc.initialQuantity - doc.finalQuantity;
-      const qty = transactionType === "IMPORT" ? importQty : exportQty;
+      { $sort: { 'finishedGood.updatedAt': -1 } },
 
-      const daily = dailySummary.get(dateKey) ?? {
-        date: dateKey,
-        dailyTotal: 0,
-        summaryPerFinishedGood: new Map(),
-      };
+    ];
 
-      daily.dailyTotal += qty;
-
-      const dailyFG = daily.summaryPerFinishedGood.get(fgId) ?? {
-        finishedGood: fg,
-        total: 0,
-      };
-
-      dailyFG.total += qty;
-      daily.summaryPerFinishedGood.set(fgId, dailyFG);
-      dailySummary.set(dateKey, daily);
-    }
+    const aggResult = await this.fgTransactionModel.aggregate([...pipeline, facetStage,]).exec();
+    const metadata = aggResult?.[0]?.metadata?.[0] ?? { totalFinishedGoods: 0 };
+    const dataRaw = aggResult?.[0]?.data ?? [];
 
     return {
-      success: true,
-      message: "Fetch successful",
-      startDate,
-      endDate,
-      dailySummary: Array.from(dailySummary.values()).map((d) => ({
-        date: d.date,
-        dailyTotal: d.dailyTotal,
-        summaryPerFinishedGood: Array.from(d.summaryPerFinishedGood.values()),
-      })),
+      fromDate: startDate,
+      toDate: endDate,
+      page: isPaginated ? page : null,
+      limit: isPaginated ? limit : null,
+      totalFinishedGoods: metadata.totalFinishedGoods,
+      totalPages: isPaginated ? Math.ceil(metadata.totalFinishedGoods / limit) : 1,
+      data: dataRaw,
     };
   }
 

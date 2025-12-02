@@ -5,7 +5,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { SemiFinishedGood, SemiFinishedGoodDocument, SemiFinishedGoodSchema } from '../schemas/semi-finished-good.schema';
 import { Model, Types } from 'mongoose';
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
-import { FinishedGoodSchema } from '../schemas/finished-good.schema';
 import { ManufacturingOrderSchema } from '@/modules/production/schemas/manufacturing-order.schema';
 import { PurchaseOrderItemSchema } from '@/modules/production/schemas/purchase-order-item.schema';
 import { WareSchema } from '@/modules/production/schemas/ware.schema';

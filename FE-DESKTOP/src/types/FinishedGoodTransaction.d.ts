@@ -35,3 +35,45 @@ export interface CreateFinishedGoodTransactionDTO {
     note?: string;
     employee: string;
 }
+
+export interface BreakdownPerDate {
+    date: string;
+    quantity: number;
+}
+
+export interface FinishedGoodDailyItem {
+    _id: string;
+    finishedGood: FinishedGood;
+    totalQuantity: number;
+    breakdownPerDate: BreakdownPerDate[];
+}
+
+export interface FinishedGoodDailyReportResponse {
+    fromDate: string;
+    toDate: string;
+    page: number;
+    limit: number;
+    totalFinishedGoods: number;
+    totalPages: number;
+    data: FinishedGoodDailyItem[];
+}
+
+export interface GetFinishedGoodDetailDto {
+    startDate?: string;
+    endDate?: string;
+    transactionType?: string;
+    finishedGood?: string
+    search?: string;
+    page?: number;
+    limit?: number;
+    sort?: string;
+}
+
+export interface GetFinishedGoodDailyReportDto {
+    startDate?: string;
+    endDate?: string;
+    transactionType?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+}

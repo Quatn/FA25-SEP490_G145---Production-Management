@@ -5,26 +5,10 @@ import { UpdateFinishedGoodTransactionDto } from './dto/update-finished-good-tra
 import { FinishedGoodTransaction } from '../schemas/finished-good-transaction.schema';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { BaseResponse } from '@/common/dto/response.dto';
-import { TransactionType } from '../enums/transaction-type.enum';
-import { FinishedGood } from '../schemas/finished-good.schema';
 import { GetFinishedGoodTransactionsDto } from './dto/get-finished-good-transaction.dto';
+import { FinishedGoodDailyReportResponse } from '@/common/types/finished-good-types';
+import { GetFinishedGoodDailyReportDto } from './dto/get-finished-good-daily-report.dto';
 
-interface FinishedGoodSummary {
-  finishedGood: FinishedGood;
-  total: number;
-}
-
-interface DailySummaryItem {
-  date: string;
-  dailyTotal: number;
-  summaryPerFinishedGood: FinishedGoodSummary[];
-}
-
-interface DailyReportResponse {
-  startDate: string;
-  endDate: string;
-  dailySummary: DailySummaryItem[];
-}
 @Controller('finished-good-transaction')
 export class FinishedGoodTransactionController {
   constructor(private readonly fgtService: FinishedGoodTransactionService) { }
@@ -85,12 +69,8 @@ export class FinishedGoodTransactionController {
   // @UseGuards(JwtAuthGuard)
   @Get('report/daily')
   @ApiOperation({ summary: 'Get daily report of transactions' })
-  async getDailyReport(
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
-    @Query('transactionType') transactionType: TransactionType,
-  ): Promise<BaseResponse<DailyReportResponse>> {
-    const docs = await this.fgtService.getDailyReport(startDate, endDate, transactionType);
+  async getDailyReport(@Query() dto: GetFinishedGoodDailyReportDto): Promise<BaseResponse<FinishedGoodDailyReportResponse>> {
+    const docs = await this.fgtService.getDailyReport(dto);
     return { success: true, message: 'Fetch successful', data: docs };
   }
 

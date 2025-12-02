@@ -11,7 +11,7 @@ export default function SemiFinishedGoodHome() {
     >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"bold"} color={"black"}>
-          KHO BÁN THÀNH PHẨM
+          KHO PHÔI
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>
