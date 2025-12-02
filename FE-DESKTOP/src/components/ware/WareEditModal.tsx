@@ -4,6 +4,17 @@ import React from "react";
 
 type EditForm = any;
 
+type MultiSelectInlineProps = {
+  id?: string;
+  options?: any[];
+  selected?: any[];
+  // REQUIRED handlers to match the MultiSelectInline implementation
+  onAdd: (id: string) => void;
+  onRemove: (id: string) => void;
+  getLabel?: (o: any) => string;
+  placeholder?: string;
+};
+
 type Props = {
   show: boolean;
   onClose: () => void;
@@ -24,10 +35,29 @@ type Props = {
     id: string
   ) => void;
   handleEditSubmit: () => Promise<void>;
-  // passed from parent (no other new files)
   getIdFromDoc: (doc: any) => string | undefined;
-  MultiSelectInline: any;
+  // accept a component value
+  MultiSelectInline: React.ComponentType<MultiSelectInlineProps>;
 };
+
+/* TOP-LEVEL stable Label component */
+const Label: React.FC<{
+  label: string;
+  required?: boolean;
+  style?: React.CSSProperties;
+  children?: React.ReactNode;
+}> = ({ label, required, children, style }) => (
+  <label
+    className="form-label"
+    style={{ display: "block", marginBottom: 8, ...style }}
+  >
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <span>{label}</span>
+      {required && <span style={{ color: "red", lineHeight: 1 }}>*</span>}
+    </div>
+    {children}
+  </label>
+);
 
 const WareEditModal: React.FC<Props> = ({
   show,
@@ -46,25 +76,17 @@ const WareEditModal: React.FC<Props> = ({
   getIdFromDoc,
   MultiSelectInline,
 }) => {
-  if (!show || !editForm) return null;
+  // debug: observe selected printColors in edit form
+  React.useEffect(() => {
+    try {
+      console.debug(
+        "WareEditModal editForm.printColors:",
+        editForm?.printColors
+      );
+    } catch {}
+  }, [editForm?.printColors]);
 
-  const Label: React.FC<{
-    label: string;
-    required?: boolean;
-    style?: React.CSSProperties;
-    children?: React.ReactNode;
-  }> = ({ label, required, children, style }) => (
-    <label
-      className="form-label"
-      style={{ display: "block", marginBottom: 8, ...style }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span>{label}</span>
-        {required && <span style={{ color: "red", lineHeight: 1 }}>*</span>}
-      </div>
-      {children}
-    </label>
-  );
+  if (!show || !editForm) return null;
 
   return (
     <div className="modal-backdrop" style={{ display: "block" }}>
@@ -75,7 +97,7 @@ const WareEditModal: React.FC<Props> = ({
               className="modal-header"
               style={{ borderBottom: "1px solid #e9ecef" }}
             >
-              <h5 className="modal-title">Sửa {editForm.code}</h5>
+              <h5 className="modal-title">Sửa {editForm?.code ?? ""}</h5>
               <button type="button" className="btn-close" onClick={onClose} />
             </div>
 
@@ -85,10 +107,10 @@ const WareEditModal: React.FC<Props> = ({
                   <Label label="Mã hàng" required>
                     <input
                       className="form-control"
-                      value={editForm.code}
+                      value={editForm?.code ?? ""}
                       onChange={(e) =>
                         setEditForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           code: e.target.value,
                         }))
                       }
@@ -99,10 +121,10 @@ const WareEditModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
-                      value={editForm.unitPrice}
+                      value={editForm?.unitPrice ?? ""}
                       onChange={(e) =>
                         setEditForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           unitPrice: e.target.value,
                         }))
                       }
@@ -112,19 +134,19 @@ const WareEditModal: React.FC<Props> = ({
                   <Label label="Sóng" required>
                     <select
                       className="form-control"
-                      value={editForm.fluteCombination}
+                      value={editForm?.fluteCombination ?? ""}
                       onChange={(e) =>
                         setEditForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           fluteCombination: e.target.value,
                         }))
                       }
                     >
-                      <option value="">-- select --</option>
+                      <option value="">-- chọn --</option>
                       {(fluteList || []).map((f) => (
                         <option
                           key={getIdFromDoc(f) ?? f.code}
-                          value={getIdFromDoc(f)}
+                          value={getIdFromDoc(f) ?? ""}
                         >
                           {f.code}
                           {f.description ? ` - ${f.description}` : ""}
@@ -136,19 +158,19 @@ const WareEditModal: React.FC<Props> = ({
                   <Label label="Kiểu SP gia công" required>
                     <select
                       className="form-control"
-                      value={editForm.wareManufacturingProcessType}
+                      value={editForm?.wareManufacturingProcessType ?? ""}
                       onChange={(e) =>
                         setEditForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           wareManufacturingProcessType: e.target.value,
                         }))
                       }
                     >
-                      <option value="">-- select --</option>
+                      <option value="">-- chọn --</option>
                       {(manufList || []).map((m) => (
                         <option
                           key={getIdFromDoc(m) ?? m.code}
-                          value={getIdFromDoc(m)}
+                          value={getIdFromDoc(m) ?? ""}
                         >
                           {m.code} {m.name ? `- ${m.name}` : ""}
                         </option>
@@ -160,10 +182,10 @@ const WareEditModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
-                      value={editForm.wareWidth}
+                      value={editForm?.wareWidth ?? ""}
                       onChange={(e) =>
                         setEditForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           wareWidth: e.target.value,
                         }))
                       }
@@ -174,10 +196,10 @@ const WareEditModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
-                      value={editForm.wareLength}
+                      value={editForm?.wareLength ?? ""}
                       onChange={(e) =>
                         setEditForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           wareLength: e.target.value,
                         }))
                       }
@@ -188,10 +210,10 @@ const WareEditModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
-                      value={editForm.wareHeight}
+                      value={editForm?.wareHeight ?? ""}
                       onChange={(e) =>
                         setEditForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           wareHeight: e.target.value,
                         }))
                       }
@@ -204,10 +226,10 @@ const WareEditModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
-                      value={editForm.volume}
+                      value={editForm?.volume ?? ""}
                       onChange={(e) =>
                         setEditForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           volume: e.target.value,
                         }))
                       }
@@ -220,10 +242,10 @@ const WareEditModal: React.FC<Props> = ({
                         <input
                           className="form-control"
                           type="number"
-                          value={editForm.warePerSet}
+                          value={editForm?.warePerSet ?? ""}
                           onChange={(e) =>
                             setEditForm((p: any) => ({
-                              ...p,
+                              ...(p ?? {}),
                               warePerSet: e.target.value,
                             }))
                           }
@@ -236,10 +258,10 @@ const WareEditModal: React.FC<Props> = ({
                         <input
                           className="form-control"
                           type="number"
-                          value={editForm.warePerCombinedSet}
+                          value={editForm?.warePerCombinedSet ?? ""}
                           onChange={(e) =>
                             setEditForm((p: any) => ({
-                              ...p,
+                              ...(p ?? {}),
                               warePerCombinedSet: e.target.value,
                             }))
                           }
@@ -252,10 +274,10 @@ const WareEditModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
-                      value={editForm.horizontalWareSplit}
+                      value={editForm?.horizontalWareSplit ?? ""}
                       onChange={(e) =>
                         setEditForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           horizontalWareSplit: e.target.value,
                         }))
                       }
@@ -263,41 +285,46 @@ const WareEditModal: React.FC<Props> = ({
                   </Label>
 
                   <Label label="Màu in" required>
-                    {React.createElement(MultiSelectInline, {
-                      id: "edit-printcolor",
-                      options: printColorList,
-                      selected: editForm.printColors || [],
-                      onAdd: (id: string) => addToEditList("printColors", id),
-                      onRemove: (id: string) =>
-                        removeFromEditList("printColors", id),
-                      getLabel: (o: any) =>
-                        o?.code ?? o?.name ?? getIdFromDoc(o) ?? "",
-                      placeholder: "-- choose print colors --",
-                    })}
+                    <MultiSelectInline
+                      id="edit-printcolor"
+                      options={printColorList}
+                      selected={editForm?.printColors ?? []}
+                      onAdd={(id: string) => addToEditList("printColors", id)}
+                      onRemove={(id: string) =>
+                        removeFromEditList("printColors", id)
+                      }
+                      getLabel={(o: any) =>
+                        o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
+                      }
+                      placeholder="-- choose print colors --"
+                    />
                   </Label>
 
                   <Label label="Công đoạn hoàn thiện">
-                    {React.createElement(MultiSelectInline, {
-                      id: "edit-finishing",
-                      options: finishingList,
-                      selected: editForm.finishingProcesses || [],
-                      onAdd: (id: string) =>
-                        addToEditList("finishingProcesses", id),
-                      onRemove: (id: string) =>
-                        removeFromEditList("finishingProcesses", id),
-                      getLabel: (o: any) =>
-                        o?.code ?? o?.name ?? getIdFromDoc(o) ?? "",
-                      placeholder: "-- choose finishing processes --",
-                    })}
+                    <MultiSelectInline
+                      id="edit-finishing"
+                      options={finishingList}
+                      selected={editForm?.finishingProcesses ?? []}
+                      onAdd={(id: string) =>
+                        addToEditList("finishingProcesses", id)
+                      }
+                      onRemove={(id: string) =>
+                        removeFromEditList("finishingProcesses", id)
+                      }
+                      getLabel={(o: any) =>
+                        o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
+                      }
+                      placeholder="-- choose finishing processes --"
+                    />
                   </Label>
 
                   <Label label="Note">
                     <textarea
                       className="form-control"
-                      value={editForm.note}
+                      value={editForm?.note ?? ""}
                       onChange={(e) =>
                         setEditForm((p: any) => ({
-                          ...p,
+                          ...(p ?? {}),
                           note: e.target.value,
                         }))
                       }
@@ -310,9 +337,9 @@ const WareEditModal: React.FC<Props> = ({
 
               <div style={{ marginBottom: 8 }}>
                 <strong>
-                  Paper layers{" "}
+                  Lớp giấy{" "}
                   <span style={{ color: "#6c757d", fontSize: 13 }}>
-                    (at least one required)
+                    (chọn ít nhất 1)
                   </span>
                 </strong>
               </div>
@@ -328,18 +355,18 @@ const WareEditModal: React.FC<Props> = ({
               >
                 <div className="row g-3">
                   <div className="col-md-4">
-                    <Label label="Face layer">
+                    <Label label="Mặt">
                       <select
                         className="form-control"
-                        value={editForm.faceLayerPaperType}
+                        value={editForm?.faceLayerPaperType ?? ""}
                         onChange={(e) =>
                           setEditForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             faceLayerPaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -350,18 +377,18 @@ const WareEditModal: React.FC<Props> = ({
                   </div>
 
                   <div className="col-md-4">
-                    <Label label="E flute">
+                    <Label label="Sóng E">
                       <select
                         className="form-control"
-                        value={editForm.EFlutePaperType}
+                        value={editForm?.EFlutePaperType ?? ""}
                         onChange={(e) =>
                           setEditForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             EFlutePaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -372,18 +399,18 @@ const WareEditModal: React.FC<Props> = ({
                   </div>
 
                   <div className="col-md-4">
-                    <Label label="E/B liner">
+                    <Label label="Lớp giữa E/B">
                       <select
                         className="form-control"
-                        value={editForm.EBLinerLayerPaperType}
+                        value={editForm?.EBLinerLayerPaperType ?? ""}
                         onChange={(e) =>
                           setEditForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             EBLinerLayerPaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -394,18 +421,18 @@ const WareEditModal: React.FC<Props> = ({
                   </div>
 
                   <div className="col-md-4">
-                    <Label label="B flute">
+                    <Label label="Sóng B">
                       <select
                         className="form-control"
-                        value={editForm.BFlutePaperType}
+                        value={editForm?.BFlutePaperType ?? ""}
                         onChange={(e) =>
                           setEditForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             BFlutePaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -416,18 +443,18 @@ const WareEditModal: React.FC<Props> = ({
                   </div>
 
                   <div className="col-md-4">
-                    <Label label="B/A C liner">
+                    <Label label="Lớp giữa B/A C">
                       <select
                         className="form-control"
-                        value={editForm.BACLinerLayerPaperType}
+                        value={editForm?.BACLinerLayerPaperType ?? ""}
                         onChange={(e) =>
                           setEditForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             BACLinerLayerPaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -438,18 +465,18 @@ const WareEditModal: React.FC<Props> = ({
                   </div>
 
                   <div className="col-md-4">
-                    <Label label="AC flute">
+                    <Label label="Sóng AC">
                       <select
                         className="form-control"
-                        value={editForm.ACFlutePaperType}
+                        value={editForm?.ACFlutePaperType ?? ""}
                         onChange={(e) =>
                           setEditForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             ACFlutePaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -460,18 +487,18 @@ const WareEditModal: React.FC<Props> = ({
                   </div>
 
                   <div className="col-md-4">
-                    <Label label="Back layer">
+                    <Label label="Đáy">
                       <select
                         className="form-control"
-                        value={editForm.backLayerPaperType}
+                        value={editForm?.backLayerPaperType ?? ""}
                         onChange={(e) =>
                           setEditForm((p: any) => ({
-                            ...p,
+                            ...(p ?? {}),
                             backLayerPaperType: e.target.value,
                           }))
                         }
                       >
-                        <option value="">-- none --</option>
+                        <option value="">-- rỗng --</option>
                         {PAPER_LAYER_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -486,18 +513,18 @@ const WareEditModal: React.FC<Props> = ({
               <hr />
 
               <div style={{ marginTop: 12 }}>
-                <Label label="Type of printer">
+                <Label label="Loại máy in">
                   <select
                     className="form-control"
-                    value={editForm.typeOfPrinter}
+                    value={editForm?.typeOfPrinter ?? ""}
                     onChange={(e) =>
                       setEditForm((p: any) => ({
-                        ...p,
+                        ...(p ?? {}),
                         typeOfPrinter: e.target.value,
                       }))
                     }
                   >
-                    <option value="">-- none --</option>
+                    <option value="">-- rỗng --</option>
                     {TYPE_OF_PRINTER_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
