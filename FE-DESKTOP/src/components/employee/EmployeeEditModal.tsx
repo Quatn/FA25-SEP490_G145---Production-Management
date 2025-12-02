@@ -14,6 +14,30 @@ type Props = {
   updating?: boolean;
 };
 
+/* top-level Label (same as create modal) */
+const Label: React.FC<{
+  label: string;
+  required?: boolean;
+  children?: React.ReactNode;
+}> = ({ label, required, children }) => (
+  <label className="form-label" style={{ display: "block", marginBottom: 8 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <span>{label}</span>
+      {required && <span style={{ color: "red" }}>*</span>}
+    </div>
+    {children}
+  </label>
+);
+
+const getIdFromDoc = (doc: any) => {
+  if (!doc) return undefined;
+  if (typeof doc === "string") return doc;
+  if (doc._id?.$oid) return String(doc._id.$oid);
+  if (doc._id) return String(doc._id);
+  if (doc.id) return String(doc.id);
+  return undefined;
+};
+
 const EmployeeEditModal: React.FC<Props> = ({
   show,
   onClose,
@@ -24,29 +48,6 @@ const EmployeeEditModal: React.FC<Props> = ({
   updating,
 }) => {
   if (!show || !editForm) return null;
-
-  const Label: React.FC<{
-    label: string;
-    required?: boolean;
-    children?: React.ReactNode;
-  }> = ({ label, required, children }) => (
-    <label className="form-label" style={{ display: "block", marginBottom: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span>{label}</span>
-        {required && <span style={{ color: "red" }}>*</span>}
-      </div>
-      {children}
-    </label>
-  );
-
-  const getIdFromDoc = (doc: any) => {
-    if (!doc) return undefined;
-    if (typeof doc === "string") return doc;
-    if (doc._id?.$oid) return String(doc._id.$oid);
-    if (doc._id) return String(doc._id);
-    if (doc.id) return String(doc.id);
-    return undefined;
-  };
 
   return (
     <div className="modal-backdrop" style={{ display: "block" }}>
@@ -66,9 +67,12 @@ const EmployeeEditModal: React.FC<Props> = ({
                 <Label label="Code" required>
                   <input
                     className="form-control"
-                    value={editForm.code ?? ""}
+                    value={editForm?.code ?? ""}
                     onChange={(e) =>
-                      setEditForm((p: any) => ({ ...p, code: e.target.value }))
+                      setEditForm((p: any) => ({
+                        ...(p ?? {}),
+                        code: e.target.value,
+                      }))
                     }
                   />
                 </Label>
@@ -76,9 +80,12 @@ const EmployeeEditModal: React.FC<Props> = ({
                 <Label label="Name" required>
                   <input
                     className="form-control"
-                    value={editForm.name ?? ""}
+                    value={editForm?.name ?? ""}
                     onChange={(e) =>
-                      setEditForm((p: any) => ({ ...p, name: e.target.value }))
+                      setEditForm((p: any) => ({
+                        ...(p ?? {}),
+                        name: e.target.value,
+                      }))
                     }
                   />
                 </Label>
@@ -86,9 +93,12 @@ const EmployeeEditModal: React.FC<Props> = ({
                 <Label label="Role" required>
                   <select
                     className="form-control"
-                    value={getIdFromDoc(editForm.role) ?? editForm.role ?? ""}
+                    value={getIdFromDoc(editForm?.role) ?? editForm?.role ?? ""}
                     onChange={(e) =>
-                      setEditForm((p: any) => ({ ...p, role: e.target.value }))
+                      setEditForm((p: any) => ({
+                        ...(p ?? {}),
+                        role: e.target.value,
+                      }))
                     }
                   >
                     <option value="">-- select --</option>
@@ -106,9 +116,12 @@ const EmployeeEditModal: React.FC<Props> = ({
                 <Label label="Email">
                   <input
                     className="form-control"
-                    value={editForm.email ?? ""}
+                    value={editForm?.email ?? ""}
                     onChange={(e) =>
-                      setEditForm((p: any) => ({ ...p, email: e.target.value }))
+                      setEditForm((p: any) => ({
+                        ...(p ?? {}),
+                        email: e.target.value,
+                      }))
                     }
                   />
                 </Label>
@@ -116,10 +129,10 @@ const EmployeeEditModal: React.FC<Props> = ({
                 <Label label="Contact number">
                   <input
                     className="form-control"
-                    value={editForm.contactNumber ?? ""}
+                    value={editForm?.contactNumber ?? ""}
                     onChange={(e) =>
                       setEditForm((p: any) => ({
-                        ...p,
+                        ...(p ?? {}),
                         contactNumber: e.target.value,
                       }))
                     }
@@ -129,10 +142,10 @@ const EmployeeEditModal: React.FC<Props> = ({
                 <Label label="Address">
                   <input
                     className="form-control"
-                    value={editForm.address ?? ""}
+                    value={editForm?.address ?? ""}
                     onChange={(e) =>
                       setEditForm((p: any) => ({
-                        ...p,
+                        ...(p ?? {}),
                         address: e.target.value,
                       }))
                     }
@@ -142,9 +155,12 @@ const EmployeeEditModal: React.FC<Props> = ({
                 <Label label="Note">
                   <textarea
                     className="form-control"
-                    value={editForm.note ?? ""}
+                    value={editForm?.note ?? ""}
                     onChange={(e) =>
-                      setEditForm((p: any) => ({ ...p, note: e.target.value }))
+                      setEditForm((p: any) => ({
+                        ...(p ?? {}),
+                        note: e.target.value,
+                      }))
                     }
                   />
                 </Label>

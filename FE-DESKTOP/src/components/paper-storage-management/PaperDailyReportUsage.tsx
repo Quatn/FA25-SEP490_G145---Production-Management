@@ -46,9 +46,7 @@ const getColorIdFromPaperType = (pt: any, findType?: (id?: string) => any) => {
   if (ptObj.paperColor && typeof ptObj.paperColor === "object")
     return getIdFromDoc(ptObj.paperColor);
   return (
-    getIdFromDoc(ptObj.paperColorId) ??
-    getIdFromDoc(ptObj.paperColor) ??
-    undefined
+    getIdFromDoc(ptObj.paperColorId) ?? getIdFromDoc(ptObj.paperColor) ?? undefined
   );
 };
 
@@ -70,27 +68,16 @@ const computePaperRollId = (
 
   const supplierObj =
     r.paperSupplier ??
-    (r.paperSupplierId
-      ? supplierMap.get(String(getIdFromDoc(r.paperSupplierId)))
-      : undefined);
-  const supplierCode =
-    supplierObj?.code ?? r.paperSupplier?.code ?? supplierObj?.name;
+    (r.paperSupplierId ? supplierMap.get(String(getIdFromDoc(r.paperSupplierId))) : undefined);
+  const supplierCode = supplierObj?.code ?? r.paperSupplier?.code ?? supplierObj?.name;
 
   const width = pt?.width ?? r.width;
   const grammage = pt?.grammage ?? r.grammage;
   const seq = r.sequenceNumber ?? r.sequence;
   const receiving = r.receivingDate ?? r.createdAt;
-  const yy = receiving
-    ? new Date(receiving).getFullYear() % 100
-    : new Date().getFullYear() % 100;
+  const yy = receiving ? new Date(receiving).getFullYear() % 100 : new Date().getFullYear() % 100;
 
-  if (
-    colorCode &&
-    supplierCode &&
-    width != null &&
-    grammage != null &&
-    seq != null
-  ) {
+  if (colorCode && supplierCode && width != null && grammage != null && seq != null) {
     if (seq > 0 && seq < 10) {
       return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}0000${seq}XC${String(
         yy
@@ -141,8 +128,7 @@ export const PaperDailyUsageReport: React.FC = () => {
     limit,
     search: "",
   });
-  const transactions: any[] =
-    txResp?.data?.data ?? txResp?.data ?? txResp ?? [];
+  const transactions: any[] = txResp?.data?.data ?? txResp?.data ?? txResp ?? [];
 
   // fetch rolls (to help compute display id and other metadata)
   const {
@@ -153,8 +139,7 @@ export const PaperDailyUsageReport: React.FC = () => {
     page: 1,
     limit: 2000,
   });
-  const rollsRaw: any[] =
-    rollsResp?.data?.data ?? rollsResp?.data ?? rollsResp ?? [];
+  const rollsRaw: any[] = rollsResp?.data?.data ?? rollsResp?.data ?? rollsResp ?? [];
 
   // reference lists
   const { data: colorsResp } = useGetAllPaperColorsQuery();
@@ -169,17 +154,13 @@ export const PaperDailyUsageReport: React.FC = () => {
   // maps
   const colorMap = useMemo(() => {
     const m = new Map<string, any>();
-    (allColors || []).forEach((c: any) =>
-      m.set(String(getIdFromDoc(c) ?? c.code ?? c.title), c)
-    );
+    (allColors || []).forEach((c: any) => m.set(String(getIdFromDoc(c) ?? c.code ?? c.title), c));
     return m;
   }, [allColors]);
 
   const supplierMap = useMemo(() => {
     const m = new Map<string, any>();
-    (allSuppliers || []).forEach((s: any) =>
-      m.set(String(getIdFromDoc(s) ?? s.code ?? s.name), s)
-    );
+    (allSuppliers || []).forEach((s: any) => m.set(String(getIdFromDoc(s) ?? s.code ?? s.name), s));
     return m;
   }, [allSuppliers]);
 
@@ -187,19 +168,14 @@ export const PaperDailyUsageReport: React.FC = () => {
     const m = new Map<string, any>();
     (allTypes || []).forEach((t: any) =>
       m.set(
-        String(
-          getIdFromDoc(t) ??
-            t._id ??
-            `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColorId)}`
-        ),
+        String(getIdFromDoc(t) ?? t._id ?? `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColorId)}`),
         t
       )
     );
     return m;
   }, [allTypes]);
 
-  const findType = (id?: string) =>
-    (allTypes || []).find((t: any) => String(getIdFromDoc(t)) === String(id));
+  const findType = (id?: string) => (allTypes || []).find((t: any) => String(getIdFromDoc(t)) === String(id));
 
   // normalized rolls for quick lookup
   const rolls = useMemo(() => {
@@ -287,9 +263,16 @@ export const PaperDailyUsageReport: React.FC = () => {
     supplier?: string;
     width?: number | string;
     grammage?: number | string;
-    usedWeight: number;
     transactionsCount: number;
     netChange: number;
+
+    // new fields
+    initialWeight?: number;
+    finalWeight?: number;
+
+    // internal helpers
+    firstTxTime?: number;
+    lastTxTime?: number;
   };
 
   const usageByRoll = useMemo(() => {
@@ -334,26 +317,45 @@ export const PaperDailyUsageReport: React.FC = () => {
       const diff = initial - final;
       const used = Math.max(0, diff);
 
+      // timestamp for earliest/latest selection (fallback to idx-based stable value)
+      const ts = t.timeStamp ?? t.createdAt ?? t.time ?? null;
+      const tsNum = ts ? new Date(ts).getTime() : Date.now() + idx;
+
       const existing: UsageRow = m.get(key) ?? {
         key,
         displayId:
           (roll?.paperRollId ??
-            (String(
-              t.paperRollId ?? t.paperRoll?.paperRollId ?? dbIdCandidate
-            ) as string)) ||
+            (String(t.paperRollId ?? t.paperRoll?.paperRollId ?? dbIdCandidate) as string)) ||
           key,
         color: undefined,
         supplier: undefined,
         width: roll?.paperType?.width ?? roll?.width ?? "-",
         grammage: roll?.paperType?.grammage ?? roll?.grammage ?? "-",
-        usedWeight: 0,
         transactionsCount: 0,
         netChange: 0,
+
+        // init new fields
+        initialWeight: undefined,
+        finalWeight: undefined,
+        firstTxTime: Number.POSITIVE_INFINITY,
+        lastTxTime: 0,
       };
 
-      existing.usedWeight += used;
+      // accumulate net change (initial - final) and count
       existing.netChange += diff;
       existing.transactionsCount += 1;
+
+      // update earliest initial weight
+      if (tsNum < (existing.firstTxTime ?? Number.POSITIVE_INFINITY)) {
+        existing.firstTxTime = tsNum;
+        existing.initialWeight = initial;
+      }
+
+      // update latest final weight
+      if (tsNum > (existing.lastTxTime ?? 0)) {
+        existing.lastTxTime = tsNum;
+        existing.finalWeight = final;
+      }
 
       // populate color if missing (from roll, otherwise try tx-level fields)
       if (!existing.color) {
@@ -363,10 +365,7 @@ export const PaperDailyUsageReport: React.FC = () => {
         existing.color = colorObj?.title ?? colorObj?.code ?? undefined;
         if (!existing.color) {
           existing.color =
-            t.paperColorTitle ??
-            t.paperColor?.title ??
-            t.paperType?.paperColor?.title ??
-            undefined;
+            t.paperColorTitle ?? t.paperColor?.title ?? t.paperType?.paperColor?.title ?? undefined;
         }
       }
 
@@ -379,108 +378,174 @@ export const PaperDailyUsageReport: React.FC = () => {
             t.paperSupplier ??
             null
         );
-        const sObj = supplierId
-          ? supplierMap.get(String(supplierId))
-          : undefined;
+        const sObj = supplierId ? supplierMap.get(String(supplierId)) : undefined;
         existing.supplier =
-          sObj?.name ??
-          sObj?.code ??
-          t.paperSupplierName ??
-          t.paperSupplier?.name ??
-          undefined;
+          sObj?.name ?? sObj?.code ?? t.paperSupplierName ?? t.paperSupplier?.name ?? undefined;
       }
 
       // ensure width/grammage are resolved (prefer type values)
       existing.width =
-        existing.width ??
-        roll?.paperType?.width ??
-        roll?.width ??
-        t.width ??
-        "-";
+        existing.width ?? roll?.paperType?.width ?? roll?.width ?? t.width ?? "-";
       existing.grammage =
-        existing.grammage ??
-        roll?.paperType?.grammage ??
-        roll?.grammage ??
-        t.grammage ??
-        "-";
+        existing.grammage ?? roll?.paperType?.grammage ?? roll?.grammage ?? t.grammage ?? "-";
 
       m.set(key, existing);
     });
 
-    // convert map values to array and sort by usedWeight desc
-    const arr = Array.from(m.values()).sort(
-      (a, b) => b.usedWeight - a.usedWeight
-    );
+    const arr = Array.from(m.values()).sort((a, b) => b.netChange - a.netChange);
     return arr;
   }, [txsInRange, rolls, colorMap, supplierMap, findType]);
 
-  const formatNum = (n: number) =>
-    Number.isFinite(n) ? String(Math.round(n * 100) / 100) : "-";
+  const formatNum = (n: number) => (Number.isFinite(n) ? String(Math.round(n * 100) / 100) : "-");
 
-  /* ----------------------------- export ----------------------------- */
+  /* ----------------------------- export (template layout) ----------------------------- */
 
   const handleExport = async () => {
-    const rows = usageByRoll.map((r) => ({
-      "Paper Roll (display id)": r.displayId,
-      "DB Key": r.key,
-      Color: r.color ?? "-",
-      Supplier: r.supplier ?? "-",
-      Width: r.width ?? "-",
-      Grammage: r.grammage ?? "-",
-      "Used Weight (kg)": r.usedWeight,
-      "Net Change (kg)": r.netChange,
-      "Transactions Count": r.transactionsCount,
-    }));
+    // Build rows to match the template's layout:
+    // Row 0: Company name (single cell across many columns)
+    // Row 1: blank
+    // Row 2: Title (single cell across many columns)
+    // Row 3: blank
+    // Row 4: Date row with 'Từ ngày', startDate, 'Đến ngày', endDate
+    // Row 5: blank
+    // Row 6: Header row (STT, Mã cuộn, Màu, Nhà cung cấp, Rộng, Khổ, Tồn đầu, Tồn cuối, Trọng lượng sử dụng, Số lần nhập/xuất/kiểm kê)
+    // Row 7+: data rows
+
+    const header = [
+      "STT",
+      "Mã cuộn",
+      "Màu",
+      "Nhà cung cấp",
+      "Rộng",
+      "Khổ",
+      "Tồn đầu (kg)",
+      "Tồn cuối (kg)",
+      "Trọng lượng sử dụng (kg)",
+      "Số lần nhập/xuất/kiểm kê",
+    ];
+
+    // Create the 2D array
+    const aoa: any[] = [];
+
+    // Company row (A1)
+    aoa.push(["Xuan Cau Company"]); // will merge later
+    aoa.push([]); // blank
+    aoa.push(["Báo cáo sử dụng giấy"]); // title
+    aoa.push([]); // blank
+
+    // Date row (put labels a few columns in to match template appearance)
+    // We'll place 'Từ ngày' in column K? simpler: place into columns 11/12 like template showed.
+    // But to keep compatibility, we'll put: [ , , , , , , , , 'Từ ngày', startDate, '', 'Đến ngày', endDate ]
+    const dateRow: any[] = new Array(Math.max(header.length, 10)).fill("");
+    // Put labels near the right side
+    const rightIndex = Math.max(6, header.length - 2); // simple heuristic
+    // place Từ ngày and Đến ngày spaced
+    dateRow[rightIndex] = "Từ ngày";
+    dateRow[rightIndex + 1] = startDate;
+    dateRow[rightIndex + 2] = "";
+    dateRow[rightIndex + 3] = "Đến ngày";
+    dateRow[rightIndex + 4] = endDate;
+    aoa.push(dateRow);
+    aoa.push([]); // blank
+
+    // Header (put header in first columns)
+    aoa.push(header);
+
+    // Data rows
+    usageByRoll.forEach((r, i) => {
+      aoa.push([
+        i + 1,
+        r.displayId ?? "-",
+        r.color ?? "-",
+        r.supplier ?? "-",
+        r.width ?? "-",
+        r.grammage ?? "-",
+        r.initialWeight != null ? formatNum(r.initialWeight) : "-",
+        r.finalWeight != null ? formatNum(r.finalWeight) : "-",
+        formatNum(r.netChange),
+        r.transactionsCount ?? 0,
+      ]);
+    });
 
     try {
-      // dynamic import - optional xlsx
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const xlsx = await import("xlsx");
-      const ws = xlsx.utils.json_to_sheet(rows);
-      const wb = xlsx.utils.book_new();
-      xlsx.utils.book_append_sheet(wb, ws, "DailyUsage");
-      const filename = `paper-daily-usage-${startDate}${
-        startDate !== endDate ? `-to-${endDate}` : ""
-      }.xlsx`;
-      xlsx.writeFile(wb, filename);
-    } catch {
-      // fallback csv
-      const header = [
-        "Paper Roll (display id)",
-        "DB Key",
-        "Color",
-        "Supplier",
-        "Width",
-        "Grammage",
-        "Used Weight (kg)",
-        "Net Change (kg)",
-        "Transactions Count",
-      ];
-      const csvBody = [
-        header.join(","),
-        ...rows.map((r) =>
-          [
-            `"${String(r["Paper Roll (display id)"] ?? "")}"`,
-            `"${String(r["DB Key"] ?? "")}"`,
-            `"${String(r["Color"] ?? "")}"`,
-            `"${String(r["Supplier"] ?? "")}"`,
-            `"${String(r["Width"] ?? "")}"`,
-            `"${String(r["Grammage"] ?? "")}"`,
-            `${r["Used Weight (kg)"] ?? 0}`,
-            `${r["Net Change (kg)"] ?? 0}`,
-            `${r["Transactions Count"] ?? 0}`,
-          ].join(",")
-        ),
-      ].join("\r\n");
+      const ws = xlsx.utils.aoa_to_sheet(aoa);
 
+      // Merge company title across the width (merge first row columns A..J)
+      const numCols = Math.max(header.length, 10);
+      ws["!merges"] = ws["!merges"] || [];
+      // merge row 0 columns 0..(numCols-1)
+      ws["!merges"].push({ s: { r: 0, c: 0 }, e: { r: 0, c: numCols - 1 } });
+      // merge title row (row 2)
+      ws["!merges"].push({ s: { r: 2, c: 0 }, e: { r: 2, c: numCols - 1 } });
+
+      // Optionally set column widths (simple)
+      ws["!cols"] = new Array(numCols).fill({ wpx: 90 });
+      // Make the header bold-ish by setting the cell style for the header row (row index = aoa header row index)
+      const headerRowIndex = aoa.findIndex((r) => Array.isArray(r) && r.length && r[0] === "STT");
+      if (headerRowIndex >= 0) {
+        for (let c = 0; c < numCols; c++) {
+          const cellAddress = xlsx.utils.encode_cell({ r: headerRowIndex, c });
+          if (!ws[cellAddress]) continue;
+          // Basic style - many environments ignore style on client, but keep shape
+          ws[cellAddress].s = ws[cellAddress].s || {};
+          ws[cellAddress].s.font = { bold: true };
+        }
+      }
+
+      const wb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(wb, ws, "Sheet1");
+
+      const filename = `paper-daily-usage-${startDate}${startDate !== endDate ? `-to-${endDate}` : ""}.xlsx`;
+      xlsx.writeFile(wb, filename);
+    } catch (err) {
+      // fallback CSV with the same columns (best-effort)
+      const rows = [
+        [],
+        [],
+        ["Báo cáo sử dụng giấy"],
+        [],
+        [], // date row will be inserted below as simple text
+        header,
+        ...usageByRoll.map((r, i) => [
+          i + 1,
+          r.displayId ?? "-",
+          r.color ?? "-",
+          r.supplier ?? "-",
+          r.width ?? "-",
+          r.grammage ?? "-",
+          r.initialWeight != null ? formatNum(r.initialWeight) : "",
+          r.finalWeight != null ? formatNum(r.finalWeight) : "",
+          formatNum(r.netChange),
+          r.transactionsCount ?? 0,
+        ]),
+      ];
+
+      // add a simple date row after title (row index 4)
+      rows[4] = [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Từ ngày",
+        startDate,
+        "",
+        "Đến ngày",
+        endDate,
+      ];
+
+      const csvBody = rows.map((r) => r.map((c) => `"${String(c ?? "")}"`).join(",")).join("\r\n");
       const csvWithBom = "\uFEFF" + csvBody;
       const blob = new Blob([csvWithBom], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
       const url = URL.createObjectURL(blob);
       a.href = url;
-      a.download = `paper-daily-usage-${startDate}${
-        startDate !== endDate ? `-to-${endDate}` : ""
-      }.csv`;
+      a.download = `paper-daily-usage-${startDate}${startDate !== endDate ? `-to-${endDate}` : ""}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -500,7 +565,7 @@ export const PaperDailyUsageReport: React.FC = () => {
           marginBottom: 12,
         }}
       >
-        <h4 style={{ margin: 0 }}>Daily Paper Usage Report</h4>
+        <h4 style={{ margin: 0 }}>Báo cáo sử dụng giấy</h4>
 
         <div
           style={{
@@ -511,7 +576,7 @@ export const PaperDailyUsageReport: React.FC = () => {
           }}
         >
           <label className="small text-muted" style={{ marginBottom: 0 }}>
-            From
+            Từ ngày
           </label>
           <input
             type="date"
@@ -520,7 +585,7 @@ export const PaperDailyUsageReport: React.FC = () => {
             className="form-control"
           />
           <label className="small text-muted" style={{ marginBottom: 0 }}>
-            To
+            Đến ngày
           </label>
           <input
             type="date"
@@ -528,21 +593,20 @@ export const PaperDailyUsageReport: React.FC = () => {
             onChange={(e) => setEndDate(e.target.value)}
             className="form-control"
           />
-          <button
+          {/* <button
             className="btn btn-outline-primary"
             onClick={() => {
-              /* refresh is automatic via hooks */
             }}
           >
             Refresh
-          </button>
+          </button> */}
           <button
             className="btn btn-primary"
-            style={{maxWidth: 250, minWidth: 130}}
+            style={{ maxWidth: 250, minWidth: 130 }}
             onClick={handleExport}
             disabled={usageByRoll.length === 0}
           >
-            Export to Excel
+            Xuất Excel
           </button>
         </div>
       </div>
@@ -556,31 +620,32 @@ export const PaperDailyUsageReport: React.FC = () => {
       ) : (
         <>
           <div style={{ marginBottom: 8 }}>
-            Showing usage from <strong>{startDate}</strong> to{" "}
-            <strong>{endDate}</strong> — {usageByRoll.length} paper(s) with
-            usage.
+            Hiển thị các cuộn được sử dụng từ <strong>{startDate}</strong> đến{" "}
+            <strong>{endDate}</strong> — {usageByRoll.length} cuộn được
+            sử dụng.
           </div>
 
           <div style={{ overflowX: "auto" }}>
             <table className="table table-striped table-sm">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Paper Roll</th>
-                  <th>Color</th>
-                  <th>Supplier</th>
-                  <th style={{ textAlign: "right" }}>Width</th>
-                  <th style={{ textAlign: "right" }}>Grammage</th>
-                  <th style={{ textAlign: "right" }}>Used Weight (kg)</th>
-                  <th style={{ textAlign: "right" }}>Net Change (kg)</th>
-                  <th style={{ textAlign: "right" }}>Tx Count</th>
+                  <th>STT</th>
+                  <th>Mã cuộn</th>
+                  <th>Màu</th>
+                  <th>Nhà cung cấp</th>
+                  <th style={{ textAlign: "right" }}>Rộng</th>
+                  <th style={{ textAlign: "right" }}>Khổ</th>
+                  <th style={{ textAlign: "right" }}>Tồn đầu (kg)</th>
+                  <th style={{ textAlign: "right" }}>Tồn cuối (kg)</th>
+                  <th style={{ textAlign: "right" }}>Trọng lượng sử dụng (kg)</th>
+                  <th style={{ textAlign: "right" }}>Số lần thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {usageByRoll.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-muted">
-                      No usage found for the selected date(s)
+                    <td colSpan={11} className="text-muted">
+                      Chưa có cuộn nào được sử dụng trong thời gian này
                     </td>
                   </tr>
                 ) : (
@@ -595,7 +660,12 @@ export const PaperDailyUsageReport: React.FC = () => {
                         {r.grammage ?? "-"}
                       </td>
                       <td style={{ textAlign: "right" }}>
-                        {formatNum(r.usedWeight)}
+                        {r.initialWeight != null
+                          ? formatNum(r.initialWeight)
+                          : "-"}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        {r.finalWeight != null ? formatNum(r.finalWeight) : "-"}
                       </td>
                       <td style={{ textAlign: "right" }}>
                         {formatNum(r.netChange)}
