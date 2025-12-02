@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Button, Dialog, Portal, DataList, CloseButton, Text, Flex, Table } from "@chakra-ui/react";
-
+import { Button, Dialog, Portal, CloseButton, Text, Flex, Table } from "@chakra-ui/react";
 import FinishedTransactionHistory from "./FinishedTransactionHistory";
 import { FinishedGood } from "@/types/FinishedGood";
 import { dayGap, formatDate } from "@/utils/dateUtils";
+import { safeGet } from "@/utils/storagesUtils";
 
 interface Props {
     isOpen: boolean;
@@ -15,10 +15,6 @@ const FinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
     const [current, setCurrent] = useState<FinishedGood | undefined>(item);
 
     useEffect(() => { if (isOpen) setCurrent(item); }, [isOpen, item]);
-
-    const get = (obj: any, path: string, fallback: any = "-") => {
-        return path.split(".").reduce((o, k) => (o?.[k]), obj) ?? fallback;
-    };
 
     const renderDiffStatus = (transactionType: string, value: number, amount: number) => {
         const diff = value - amount;
@@ -130,18 +126,18 @@ const FinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
                                         <Table.Body>
                                             <Table.Row>
                                                 <Table.Cell>{mo?.code ?? "-"}</Table.Cell>
-                                                <Table.Cell>{get(poItem, "subPurchaseOrder.purchaseOrder.code")}</Table.Cell>
-                                                <Table.Cell>{get(poItem, "subPurchaseOrder.purchaseOrder.customer.code")}</Table.Cell>
-                                                <Table.Cell>{get(poItem, "ware.code")}</Table.Cell>
-                                                <Table.Cell>{get(poItem, "ware.fluteCombination.code")}</Table.Cell>
-                                                <Table.Cell>{get(poItem, "ware.wareLength")}</Table.Cell>
-                                                <Table.Cell>{get(poItem, "ware.wareWidth")}</Table.Cell>
-                                                <Table.Cell>{get(poItem, "ware.wareHeight")}</Table.Cell>
+                                                <Table.Cell>{safeGet(poItem, "subPurchaseOrder.purchaseOrder.code")}</Table.Cell>
+                                                <Table.Cell>{safeGet(poItem, "subPurchaseOrder.purchaseOrder.customer.code")}</Table.Cell>
+                                                <Table.Cell>{safeGet(poItem, "ware.code")}</Table.Cell>
+                                                <Table.Cell>{safeGet(poItem, "ware.fluteCombination.code")}</Table.Cell>
+                                                <Table.Cell>{safeGet(poItem, "ware.wareLength")}</Table.Cell>
+                                                <Table.Cell>{safeGet(poItem, "ware.wareWidth")}</Table.Cell>
+                                                <Table.Cell>{safeGet(poItem, "ware.wareHeight")}</Table.Cell>
 
                                                 <Table.Cell>{amount}</Table.Cell>
 
                                                 <Table.Cell>
-                                                    {formatDate(get(poItem, "subPurchaseOrder.deliveryDate", null))}
+                                                    {formatDate(safeGet(poItem, "subPurchaseOrder.deliveryDate", null))}
                                                 </Table.Cell>
 
                                                 {/** San luong nhap */}

@@ -12,6 +12,21 @@ export function formatDate(value?: string | Date | number | null): string {
   return `${dd}/${mm}/${yyyy}`;
 }
 
+export function formatDateTime(value?: string | Date | number | null): string {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) return "";
+
+  const hour = String(date.getHours());
+  const minute = String(date.getMinutes());
+  const second = String(date.getSeconds());
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+
+  return `${hour}:${minute}:${second} ${dd}/${mm}/${yyyy}`;
+}
+
 export function dayGap(date?: string): number {
   if (!date) return 0;
 
@@ -80,3 +95,7 @@ export function formatDateToYYYYMMDD(date: Date | string | null | undefined) {
   return `${year}-${month}-${day}`;
 }
 
+export function minDate(a: string, b: string): string {
+  const date = new Date(Math.min(new Date(a).getTime(), new Date(b).getTime()));
+  return date.toISOString().split("T")[0];
+}

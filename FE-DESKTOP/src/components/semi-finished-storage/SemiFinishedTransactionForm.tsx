@@ -107,7 +107,9 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                 <Dialog.Positioner>
                     <Dialog.Content>
                         <Dialog.Header>
-                            <Dialog.Title>{transaction.transactionType === "IMPORT" ? "Phiếu Nhập" : "Phiếu Xuất"} Kho Bán Thành Phẩm</Dialog.Title>
+                            <Dialog.Title>
+                                {transaction.transactionType === "IMPORT" ? "Phiếu Nhập" : "Phiếu Xuất"} Kho Bán Thành Phẩm
+                            </Dialog.Title>
                         </Dialog.Header>
                         <Dialog.Body>
                             <Flex direction="column" gap={3}>
@@ -228,22 +230,24 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                                                     <Select.Indicator />
                                                 </Select.IndicatorGroup>
                                             </Select.Control>
-                                                <Select.Positioner>
-                                                    <Select.Content>
-                                                        {departments.items.map((department) => (
-                                                            <Select.Item item={department} key={department.value}>
-                                                                {department.label}
-                                                                <Select.ItemIndicator />
-                                                            </Select.Item>
-                                                        ))}
-                                                    </Select.Content>
-                                                </Select.Positioner>
+                                            <Select.Positioner>
+                                                <Select.Content>
+                                                    {departments.items.map((department) => (
+                                                        <Select.Item item={department} key={department.value}>
+                                                            {department.label}
+                                                            <Select.ItemIndicator />
+                                                        </Select.Item>
+                                                    ))}
+                                                </Select.Content>
+                                            </Select.Positioner>
                                         </Select.Root>
                                     </Field.Root>
                                 }
 
                                 <Field.Root orientation="vertical">
-                                    <Field.Label fontSize="lg">Ngày {transaction.transactionType === "IMPORT" ? "nhập" : "xuất"} </Field.Label>
+                                    <Field.Label fontSize="lg">
+                                        Ngày {transaction.transactionType === "IMPORT" ? "nhập" : "xuất"}
+                                    </Field.Label>
                                     <Input
                                         type="date"
                                         value={transaction.transactionDate}
@@ -255,7 +259,9 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
 
                                 <Field.Root orientation="vertical">
                                     <Field.Label>Ghi chú</Field.Label>
-                                    <Input value={transaction.note} onChange={(e) => setTransaction({ ...transaction, note: e.target.value })} />
+                                    <Input
+                                        value={transaction.note}
+                                        onChange={(e) => setTransaction({ ...transaction, note: e.target.value })} />
                                 </Field.Root>
                             </Flex>
                         </Dialog.Body>

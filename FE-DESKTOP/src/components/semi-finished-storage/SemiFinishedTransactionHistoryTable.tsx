@@ -1,12 +1,12 @@
-import { FinishedGoodTransactionHistory } from "@/types/FinishedGoodTransaction";
+import { SemiFinishedGoodTransactionHistory } from "@/types/SemiFinishedTransaction";
 import { formatDate, formatDateTime } from "@/utils/dateUtils";
 import { Table } from "@chakra-ui/react";
 
 interface FGTTableProps {
-    items: FinishedGoodTransactionHistory[];
+    items: SemiFinishedGoodTransactionHistory[];
     poiAmount: number;
 }
-export const FinishedTransactionHistoryTable: React.FC<FGTTableProps> = ({ items, poiAmount }) => {
+export const SemiFinishedTransactionHistoryTable: React.FC<FGTTableProps> = ({ items, poiAmount }) => {
 
     return (
         <Table.ScrollArea borderWidth="1px" rounded="md" mt={4}>
@@ -30,8 +30,12 @@ export const FinishedTransactionHistoryTable: React.FC<FGTTableProps> = ({ items
                         <Table.Row key={it.index}>
                             <Table.Cell fontSize={"lg"}>{it.index}</Table.Cell>
                             <Table.Cell fontSize={"lg"}>{formatDateTime(it.createdDate)}</Table.Cell>
-                            <Table.Cell fontSize={"lg"}>{it.transactionDate ? formatDate(it.transactionDate) : '-'}</Table.Cell>
-                            <Table.Cell fontSize={"lg"}>{it.transactionType === 'IMPORT' ? 'Nhập' : 'Xuất'}</Table.Cell>
+                            <Table.Cell fontSize={"lg"}>
+                                {it.transactionDate ? formatDate(it.transactionDate) : '-'}
+                            </Table.Cell>
+                            <Table.Cell fontSize={"lg"}>
+                                {it.transactionType === 'IMPORT' ? 'Nhập' : 'Xuất'}
+                            </Table.Cell>
                             <Table.Cell fontSize={"lg"}>{poiAmount}</Table.Cell>
                             <Table.Cell fontSize={"lg"}>{it.totalImport}</Table.Cell>
                             <Table.Cell fontSize={"lg"}>{it.totalExport}</Table.Cell>

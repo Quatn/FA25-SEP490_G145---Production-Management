@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Button, ButtonGroup, CloseButton, Flex, IconButton, Input, InputGroup, Pagination, Spacer, Spinner, Icon, Stack } from "@chakra-ui/react";
-import { FaSearch, FaPlus, FaMinus } from "react-icons/fa";
+import { Button, ButtonGroup, Flex, IconButton, Input, InputGroup, Pagination, Spacer, Spinner, Icon, Stack } from "@chakra-ui/react";
+import { FaPlus } from "react-icons/fa";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import { useGetSemiFinishedGoodsQuery } from "@/service/api/semiFinishedGoodApiSlice";
 import { SemiFinishedGood } from "@/types/SemiFinishedGood";
@@ -78,15 +78,21 @@ const SemiFinishedList: React.FC = () => {
 
             <Flex direction="row-reverse" mb={4}>
                 <InputGroup w={"full"} maxW={"sm"}>
-                    <Input ref={inputRef} size="lg" placeholder="Tìm kiếm" value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} />
+                    <Input
+                        ref={inputRef}
+                        size="lg"
+                        placeholder="Tìm kiếm"
+                        value={search}
+                        onChange={(e) => { setPage(1); setSearch(e.target.value); }} />
                 </InputGroup>
                 <Spacer />
                 <Stack direction="row" spaceX={10}>
                     <Button
                         colorPalette="green"
                         onClick={() => handleOpenTx("IMPORT", undefined)}
+                        fontWeight={'bold'}
                     >
-                        <FaPlus /> Tạo phiếu nhập
+                        <FaPlus /> NHẬP PHÔI
                     </Button>
 
                 </Stack>
@@ -110,15 +116,24 @@ const SemiFinishedList: React.FC = () => {
             >
                 <ButtonGroup variant="ghost" size="sm" mt={4} justifyContent="center">
                     <Pagination.PrevTrigger asChild>
-                        <IconButton aria-label="Previous page"><HiChevronLeft /></IconButton>
+                        <IconButton aria-label="Previous page">
+                            <HiChevronLeft />
+                        </IconButton>
                     </Pagination.PrevTrigger>
 
                     <Pagination.Items render={(pageItem) => (
-                        <IconButton key={pageItem.value} variant={{ base: 'ghost', _selected: 'outline' }} onClick={() => setPage(pageItem.value)}>{pageItem.value}</IconButton>
+                        <IconButton
+                            key={pageItem.value}
+                            variant={{ base: 'ghost', _selected: 'outline' }}
+                            onClick={() => setPage(pageItem.value)}>
+                            {pageItem.value}
+                        </IconButton>
                     )} />
 
                     <Pagination.NextTrigger asChild>
-                        <IconButton aria-label="Next page"><HiChevronRight /></IconButton>
+                        <IconButton aria-label="Next page">
+                            <HiChevronRight />
+                        </IconButton>
                     </Pagination.NextTrigger>
                 </ButtonGroup>
             </Pagination.Root>
