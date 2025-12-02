@@ -56,7 +56,6 @@ export default function TruncatedManufacturingOrderTable(
   const dispatch = useDispatch();
   const page = useSelector(s => s.page)
   const limit = useSelector(s => s.limit)
-  const tab = useSelector(s => s.tab)
   const query = useDataTableSelector(s => s.query)
 
   const {

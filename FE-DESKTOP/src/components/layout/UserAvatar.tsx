@@ -6,7 +6,7 @@ import { Avatar, Box, HStack, Stack, Text } from "@chakra-ui/react";
 import check from "check-types";
 import Link from "next/link";
 
-export default function UserAvatar() {
+export default function UserAvatar(props: { displayDetails?: boolean }) {
   const userState: UserState | null = useAppSelector((state) =>
     state.auth.userState
   );
@@ -25,12 +25,14 @@ export default function UserAvatar() {
             <Avatar.Fallback name={userState.name} />
             {/*<Avatar.Image src={user.avatar} />*/}
           </Avatar.Root>
-          <Stack gap="0">
-            <Text fontWeight="medium">{userState.name}</Text>
-            <Text color="fg.muted" textStyle="sm">
-              {userState.email}
-            </Text>
-          </Stack>
+          {props.displayDetails &&
+            <Stack gap="0">
+              <Text fontWeight="medium">{userState.name}</Text>
+              <Text color="fg.muted" textStyle="sm">
+                {userState.email}
+              </Text>
+            </Stack>
+          }
         </HStack>
       </Link>
     </Stack>

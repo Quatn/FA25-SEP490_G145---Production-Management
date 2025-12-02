@@ -19,7 +19,7 @@ import {
   OrderFinishingProcess,
   OrderFinishingProcessSchema,
 } from "../schemas/order-finishing-process.schema";
-import { WareFinishingProcessType, WareFinishingProcessTypeSchema } from "../schemas/ware-finishing-process-type.schema";
+import { FinishedGood, FinishedGoodSchema } from "@/modules/warehouse/schemas/finished-good.schema";
 
 @Module({
   imports: [
@@ -29,6 +29,10 @@ import { WareFinishingProcessType, WareFinishingProcessTypeSchema } from "../sch
       {
         name: ManufacturingOrderProcess.name,
         schema: ManufacturingOrderProcessSchema,
+      },
+      {
+        name: FinishedGood.name,
+        schema: FinishedGoodSchema,
       },
       // {
       //   name: CorrugatorProcess.name,

@@ -7,11 +7,7 @@ import { RiEqualizerLine } from "react-icons/ri";
 import { useColorModeValue } from "../ui/color-mode";
 import AuthenticatedContent from "./AuthenticatedContent";
 import UserAvatar from "./UserAvatar";
-import PrivilegedContent from "./PrivilegedContent";
-import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
-
-const systemPrivs: AnyAccessPrivileges[] = ["system-admin", "system-read", "system-readWrite"]
-const usersPrivs: AnyAccessPrivileges[] = ["user-admin", "user-read", "user-readWrite"]
+import HeaderHomeButton from "./HeaderHomeButton";
 
 export default function Header() {
   const bg = useColorModeValue("gray.200", "gray.900");
@@ -20,15 +16,8 @@ export default function Header() {
   return (
     <header>
       <Flex bg={bg} color={color} p={1} gap={2} pt={2}>
-        <UserAvatar />
+        <HeaderHomeButton />
         <Box flexGrow={1} />
-        <PrivilegedContent
-          requiredPrivileges={[...systemPrivs, ...usersPrivs]}
-        >
-          <Link href={"/admin-dashboard"}>
-            <Button colorPalette={"blue"} variant="solid">Admin Dashboard</Button>
-          </Link>
-        </PrivilegedContent>
         <AuthenticatedContent
           unauthenticatedContent={
             <Link href={"/login"}>
@@ -36,6 +25,7 @@ export default function Header() {
             </Link>
           }
         />
+        <UserAvatar />
         <Flex alignItems={"center"}>
           <OptionsMenu
             trigger={

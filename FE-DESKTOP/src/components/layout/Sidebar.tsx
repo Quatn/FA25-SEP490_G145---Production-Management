@@ -1,3 +1,4 @@
+import "./css/sidebar-scrollbar.css"
 import type {
   FlexProps as ChakraFlexProps,
   TreeCollection,
@@ -64,7 +65,7 @@ export const SidebarHeader = (props: SidebarHeaderProps) => {
 export const SidebarBody = (props: SidebarBodyProps) => {
   return (
     <>
-      <Box flexGrow={"1"} overflow={"auto"}>
+      <Box flexGrow={"1"} overflow={"auto"} className="sidebar-scrollbar">
         {props.children}
       </Box>
     </>

@@ -11,6 +11,7 @@ import { FluteCombination } from "../../schemas/flute-combination.schema";
 import { WareFinishingProcessType } from "../../schemas/ware-finishing-process-type.schema";
 import { WareManufacturingProcessType } from "../../schemas/ware-manufacturing-process-type.schema";
 import { PrintColor } from "../../schemas/print-color.schema";
+import { FinishedGood } from "@/modules/warehouse/schemas/finished-good.schema";
 
 // Change the ref fields from id or object (unpopulated or populated) to just object since you are supposed to populate all of the full detail dto's fields
 class PopulatedPurchaseOrder extends PurchaseOrder {
@@ -145,7 +146,15 @@ export class FullDetailManufacturingOrderDto extends ManufacturingOrder {
   declare purchaseOrderItem: PopulatedPurchaseOrderItem &
     ManufacturingOrder["purchaseOrderItem"];
 
-  constructor(order: ManufacturingOrder) {
+  @ApiProperty({
+    type: FinishedGood,
+    description: "Populated FinishedGood record",
+  })
+  declare finishedGoodRecord?: FinishedGood;
+
+  constructor(
+    order: ManufacturingOrder & { finishedGoodRecord?: FinishedGood },
+  ) {
     if (!isRefPopulated(order.purchaseOrderItem)) {
       throw Error(
         "mo.purchaseOrderItem must be populated in order to be used in FullDetailManufacturingOrderDto",

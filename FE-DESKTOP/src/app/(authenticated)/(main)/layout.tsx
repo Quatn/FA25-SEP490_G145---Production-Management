@@ -12,6 +12,7 @@ import {
   useFilter,
 } from "@chakra-ui/react";
 import { useState } from "react";
+import NavBar from "@/components/layout/NavBar";
 
 const initialCollection = createTreeCollection<Node>({
   nodeToValue: (node) => node.id,

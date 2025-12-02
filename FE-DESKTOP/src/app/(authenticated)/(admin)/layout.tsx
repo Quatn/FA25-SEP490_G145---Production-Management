@@ -42,12 +42,6 @@ const initialCollection = createTreeCollection<Node>({
             href: "/user",
             children: [],
           },
-          {
-            id: "user-create",
-            name: "User Create",
-            href: "/user/create",
-            children: [],
-          },
         ],
       },
       {

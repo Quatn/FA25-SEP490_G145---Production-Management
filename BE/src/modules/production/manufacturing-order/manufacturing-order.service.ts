@@ -64,6 +64,7 @@ import { fullDetailsFilterAggregationPipeline } from "./aggregate-pipes/full-det
 import { PipelineStage } from "mongoose";
 import { async } from "rxjs";
 import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type.schema";
+import { FinishedGood } from "@/modules/warehouse/schemas/finished-good.schema";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -76,6 +77,8 @@ export class ManufacturingOrderService {
     private readonly orderFinishingProcessModel: Model<OrderFinishingProcess>,
     @InjectModel(ManufacturingOrderProcess.name)
     private readonly manufacturingOrderProcessModel: Model<ManufacturingOrderProcessDocument>,
+    @InjectModel(FinishedGood.name)
+    private readonly finishedGoodProcessModel: Model<FinishedGood>,
     // @InjectModel(CorrugatorProcess.name)
     // private readonly corrugatorProcessModel: Model<CorrugatorProcessDocument>,
   ) { }
@@ -799,8 +802,22 @@ export class ManufacturingOrderService {
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
 
+    const ids = data.map(
+      (mo) => (mo as ManufacturingOrder & { _id: Types.ObjectId })._id,
+    );
+
+    const finishedGoodRecords = await this.finishedGoodProcessModel.find({
+      _id: { $in: ids },
+    });
+
     const mappedData: FullDetailManufacturingOrderDto[] = data.map(
-      (mo) => new FullDetailManufacturingOrderDto(mo as ManufacturingOrder),
+      (mo) =>
+        new FullDetailManufacturingOrderDto({
+          ...(mo as ManufacturingOrder),
+          finishedGoodRecord: finishedGoodRecords.find((record) =>
+            record._id.equals((mo as { _id: Types.ObjectId })._id),
+          ),
+        }),
     );
 
     return {

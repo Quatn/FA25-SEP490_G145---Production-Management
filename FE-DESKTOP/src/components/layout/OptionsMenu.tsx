@@ -1,8 +1,7 @@
 "use client";
 
-import { Button } from "@chakra-ui/react";
+import { Button, Stack } from "@chakra-ui/react";
 import {
-  DrawerActionTrigger,
   DrawerBackdrop,
   DrawerBody,
   DrawerCloseTrigger,
@@ -18,6 +17,13 @@ import { Switch } from "@/components/ui/switch";
 import { useColorMode } from "@/components/ui/color-mode";
 import AuthenticatedContent from "./AuthenticatedContent";
 import LogoutButton from "../auth/LogoutButton";
+import UserAvatar from "./UserAvatar";
+import PrivilegedContent from "./PrivilegedContent";
+import Link from "next/link";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+
+const systemPrivs: AnyAccessPrivileges[] = ["system-admin", "system-read", "system-readWrite"]
+const usersPrivs: AnyAccessPrivileges[] = ["user-admin", "user-read", "user-readWrite"]
 
 export const OptionsMenu = (props: {
   open?: boolean;
@@ -44,7 +50,10 @@ export const OptionsMenu = (props: {
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>Options</DrawerTitle>
+          <Stack>
+            <UserAvatar displayDetails />
+            <DrawerTitle>Options</DrawerTitle>
+          </Stack>
         </DrawerHeader>
         <DrawerBody>
           <Switch
@@ -55,6 +64,14 @@ export const OptionsMenu = (props: {
           </Switch>
         </DrawerBody>
         <DrawerFooter>
+          <PrivilegedContent
+            requiredPrivileges={[...systemPrivs, ...usersPrivs]}
+          >
+            <Link href={"/admin-dashboard"}>
+              <Button colorPalette={"blue"} variant="solid">Admin Dashboard</Button>
+            </Link>
+          </PrivilegedContent>
+
           <AuthenticatedContent>
             <LogoutButton />
           </AuthenticatedContent>
