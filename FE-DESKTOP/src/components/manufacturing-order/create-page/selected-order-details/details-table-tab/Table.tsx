@@ -172,7 +172,7 @@ export default function CreatePageManufacturingOrderTable(
 
   const handleCreateOrder = () => {
     const formValue: CreateManyManufacturingOrdersRequestDto = {
-      orders: tableData.filter(order => check.nonEmptyObject(order.purchaseOrderItem)).filter((row) => row.isEdited).map((order) => ({
+      orders: tableData.filter(order => check.nonEmptyObject(order.purchaseOrderItem)).map((order) => ({
         purchaseOrderItemId: (order.purchaseOrderItem as Serialized<PurchaseOrderItem>)._id,
         corrugatorLineAdjustment: order.corrugatorLineAdjustment ?? null,
         manufacturingDirective: order.manufacturingDirective ?? null,

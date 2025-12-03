@@ -286,6 +286,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   columnHelper.defineHeaderGroup({
     id: "blankSize",
     header: () => "Kích thước gia công",
+    size: 500,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "blankWidth",
@@ -400,6 +401,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   columnHelper.defineHeaderGroup({
     id: "paperTypes",
     header: () => "Loại giấy",
+    size: 700,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "faceLayerPaperType",
@@ -536,6 +538,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   columnHelper.defineHeaderGroup({
     id: "paperWeights",
     header: () => "Trọng lượng",
+    size: 500,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "faceLayerPaperWeight",

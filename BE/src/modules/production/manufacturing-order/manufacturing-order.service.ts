@@ -998,7 +998,7 @@ export class ManufacturingOrderService {
         const processes: OrderFinishingProcess[] = ware.finishingProcesses.map(
           (type, index) => {
             return {
-              code: `${mo.code}-${index + 1}`,
+              code: `${mo.code}-${mo._id.toString()}-${index + 1}`,
               manufacturingOrder: mo._id,
               wareManufacturingProcessType: type,
               sequenceNumber: index + 1,
@@ -1128,6 +1128,9 @@ export class ManufacturingOrderService {
     if (!doc) throw new NotFoundException("Manufacturing Order not found");
     const code = doc.code;
     await doc.softDelete();
+
+    const res = await this.orderFinishingProcessModel.updateMany({ manufacturingOrder: id}, { $set: {isDeleted: true}})
+    console.log("Deleted", res)
     return {
       deletedAmount: 1,
       requestedAmount: 1,
