@@ -1,5 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { PurchaseOrder, PurchaseOrderSchema } from "../schemas/purchase-order.schema";
+import {
+  PurchaseOrder,
+  PurchaseOrderSchema,
+} from "../schemas/purchase-order.schema";
 
 import { Model, Types } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
@@ -10,9 +13,7 @@ import { ordersWithUnmanufacturedItemsLeanPipe } from "./aggregate-pipes/orders-
 import { CreatePurchaseOrderDto } from "./dto/create-purchase-order.dto";
 import { UpdatePurchaseOrderDto } from "./dto/update-purchase-order.dto";
 import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
-import {
-  QueryOrdersWithUnmanufacturedItemsResponseDto,
-} from "./dto/query-orders-with-unmanufactured-items.dto";
+import { QueryOrdersWithUnmanufacturedItemsResponseDto } from "./dto/query-orders-with-unmanufactured-items.dto";
 import {
   SubPurchaseOrder,
   SubPurchaseOrderSchema,
@@ -25,18 +26,12 @@ type SoftPurchaseOrder = PurchaseOrder & SoftDeleteDocument;
 @Injectable()
 export class PurchaseOrderService {
   constructor(
-    @InjectModel(PurchaseOrder.name) private readonly purchaseOrderModel: Model<
-      PurchaseOrder
-    >,
-    @InjectModel(
-      PurchaseOrderItem.name,
-    ) private readonly purchaseOrderItemModel: Model<PurchaseOrderItem>,
-    @InjectModel(
-      Customer.name,
-    ) private readonly customerModel: Model<Customer>,
-    @InjectModel(
-      Ware.name,
-    ) private readonly wareModel: Model<Ware>,
+    @InjectModel(PurchaseOrder.name)
+    private readonly purchaseOrderModel: Model<PurchaseOrder>,
+    @InjectModel(PurchaseOrderItem.name)
+    private readonly purchaseOrderItemModel: Model<PurchaseOrderItem>,
+    @InjectModel(Customer.name) private readonly customerModel: Model<Customer>,
+    @InjectModel(Ware.name) private readonly wareModel: Model<Ware>,
   ) { }
 
   async findAll() {
@@ -100,7 +95,15 @@ export class PurchaseOrderService {
     ]);
 
     await this.wareModel.populate(data, [
-      { path: "subPurchaseOrders.purchaseOrderItems.ware" },
+      {
+        path: "subPurchaseOrders.purchaseOrderItems.ware",
+        populate: [
+          { path: "fluteCombination" },
+          { path: "printColors" },
+          { path: "finishingProcesses" },
+          { path: "wareManufacturingProcessType" },
+        ],
+      },
     ]);
     // console.log(populatedData)
 
@@ -144,17 +147,26 @@ export class PurchaseOrderService {
     return doc;
   }
 
-  async updateOne(id: string, dto: UpdatePurchaseOrderDto): Promise<PurchaseOrder> {
+  async updateOne(
+    id: string,
+    dto: UpdatePurchaseOrderDto,
+  ): Promise<PurchaseOrder> {
     const payload: any = { ...dto };
     if (dto.orderDate) payload.orderDate = new Date(dto.orderDate as any);
 
-    const updated = await this.purchaseOrderModel.findByIdAndUpdate(id, payload, { new: true });
+    const updated = await this.purchaseOrderModel.findByIdAndUpdate(
+      id,
+      payload,
+      { new: true },
+    );
     if (!updated) throw new NotFoundException(`Purchase order ${id} not found`);
     return updated;
   }
 
   async softDelete(id: string) {
-    const doc = await this.purchaseOrderModel.findById(id) as SoftPurchaseOrder;
+    const doc = (await this.purchaseOrderModel.findById(
+      id,
+    )) as SoftPurchaseOrder;
     if (!doc) throw new NotFoundException("Purchase order not found");
     await doc.softDelete();
     return { success: true };
@@ -165,7 +177,11 @@ export class PurchaseOrderService {
     const filter = { isDeleted: true };
 
     const [rawDocs, totalCount] = await Promise.all([
-      this.purchaseOrderModel.collection.find(filter).skip(skip).limit(limit).toArray(),
+      this.purchaseOrderModel.collection
+        .find(filter)
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
       this.purchaseOrderModel.collection.countDocuments(filter),
     ]);
 
@@ -188,7 +204,9 @@ export class PurchaseOrderService {
   }
 
   async restore(id: string) {
-    const doc = await this.purchaseOrderModel.findById(id) as SoftPurchaseOrder;
+    const doc = (await this.purchaseOrderModel.findById(
+      id,
+    )) as SoftPurchaseOrder;
     if (!doc) throw new NotFoundException("Purchase order not found");
     await doc.restore();
     return { success: true };
@@ -210,7 +228,16 @@ export class PurchaseOrderService {
           from: "subpurchaseorders",
           let: { poId: "$_id" },
           pipeline: [
-            { $match: { $expr: { $and: [{ $eq: ["$purchaseOrder", "$$poId"] }, { $eq: ["$isDeleted", false] }] } } },
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$purchaseOrder", "$$poId"] },
+                    { $eq: ["$isDeleted", false] },
+                  ],
+                },
+              },
+            },
 
             {
               $lookup: {
@@ -227,7 +254,16 @@ export class PurchaseOrderService {
                 from: "purchaseorderitems",
                 let: { subId: "$_id" },
                 pipeline: [
-                  { $match: { $expr: { $and: [{ $eq: ["$subPurchaseOrder", "$$subId"] }, { $eq: ["$isDeleted", false] }] } } },
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ["$subPurchaseOrder", "$$subId"] },
+                          { $eq: ["$isDeleted", false] },
+                        ],
+                      },
+                    },
+                  },
 
                   {
                     $lookup: {
@@ -237,8 +273,12 @@ export class PurchaseOrderService {
                       as: "ware",
                     },
                   },
-                  { $unwind: { path: "$ware", preserveNullAndEmptyArrays: true } },
-
+                  {
+                    $unwind: {
+                      path: "$ware",
+                      preserveNullAndEmptyArrays: true,
+                    },
+                  },
                 ],
                 as: "items",
               },
@@ -249,7 +289,6 @@ export class PurchaseOrderService {
           as: "subPurchaseOrders",
         },
       },
-
     ];
 
     const agg = await this.purchaseOrderModel.aggregate(pipeline).exec();

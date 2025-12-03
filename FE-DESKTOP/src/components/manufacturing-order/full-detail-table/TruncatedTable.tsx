@@ -37,7 +37,7 @@ import useDataTable from "@/components/ui/data-table/hook";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import DataFetchError from "@/components/common/DataFetchError";
 import { useDataTableSelector } from "@/components/ui/data-table/Provider";
-import { convertSerializedMOToTruncatedManufacturingOrderTableData, truncatedManufacturingOrderTableColumns, TruncatedManufacturingOrderTableData } from "./truncatedTableDefinition";
+import { convertSerializedMOToTruncatedManufacturingOrderTableData, truncatedManufacturingOrderTableColumns, TruncatedManufacturingOrderTableData, truncatedManufacturingOrderTableMergedHeaders } from "./truncatedTableDefinition";
 import { logTimestamp } from "@/utils/logTimestamp";
 import { toaster } from "@/components/ui/toaster";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
@@ -119,7 +119,7 @@ export default function TruncatedManufacturingOrderTable(
         bg: { base: "colorPalette.muted" }
       },
     },
-    mergedHeadersIds: manufacturingOrderMergedHeaders,
+    mergedHeadersIds: truncatedManufacturingOrderTableMergedHeaders,
     initialState: {
       columnPinning: {
         left: ['manufacturingDirective', "code"],
@@ -160,15 +160,6 @@ export default function TruncatedManufacturingOrderTable(
   }
 
   const editedItemsNum = tableData.filter(row => row.isEdited).length
-
-  const getTabBarOffset = () => {
-    try {
-      return (table.getColumn("code")?.getStart("left") ?? 0) + (table.getColumn("code")?.getSize() ?? 0);
-    }
-    catch {
-      return 0
-    }
-  }
 
   const handleUpdateOrders = () => {
     const dto: UpdateManyManufacturingOrdersRequestDto = {

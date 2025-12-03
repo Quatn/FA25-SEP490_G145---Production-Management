@@ -7,6 +7,7 @@ import {
   Button,
   Center,
   HStack,
+  Spinner,
   Stack,
   Table,
   TableRootProps,
@@ -18,43 +19,24 @@ import { CSSProperties, useMemo, useState } from "react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { useCreateManyManufacturingOrdersMutation, useDeleteManufacturingOrderMutation, useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
-import { manufacturingOrderTableColumnsByTabs } from "@/components/manufacturing-order/full-detail-table/tableDefinition.old";
 import check from "check-types";
 import { CreateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
 import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
-import { manufacturingOrderColumnsByTabs, ManufacturingOrderTableDataType } from "@/components/manufacturing-order/full-detail-table/tableDefinition.old2";
 import { toaster } from "@/components/ui/toaster";
+import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
+import { manufacturingOrderColumnsByTabs, manufacturingOrderMergedHeaders, ManufacturingOrderTableDataType } from "@/components/manufacturing-order/full-detail-table/tableDefinition";
+import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import DataFetchError from "@/components/common/DataFetchError";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
+import useDataTable from "@/components/ui/data-table/hook";
 
 type TableProps = {
   rootProps?: BoxProps;
   tabsRootProps?: TabsRootProps;
   tableRootProps?: TableRootProps;
 };
-
-const getCommonPinningStyles = (column: Column<ManufacturingOrderTableDataType>): CSSProperties => {
-  const isPinned = column.getIsPinned()
-  const isLastLeftPinnedColumn =
-    isPinned === 'left' && column.getIsLastColumn('left')
-  const isFirstRightPinnedColumn =
-    isPinned === 'right' && column.getIsFirstColumn('right')
-
-  return {
-    boxShadow: isLastLeftPinnedColumn
-      ? '-4px 0 4px -4px gray inset'
-      : isFirstRightPinnedColumn
-        ? '4px 0 4px -4px gray inset'
-        : undefined,
-    left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
-    right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
-    opacity: isPinned ? 0.95 : 1,
-    position: isPinned ? 'sticky' : 'relative',
-    // width: column.getIsLastColumn() ? "100%" : column.getSize(),
-    width: column.getSize(),
-    zIndex: isPinned ? 1 : 0,
-  }
-}
 
 export default function CreatePageManufacturingOrderTable(
   props: TableProps,
@@ -64,7 +46,7 @@ export default function CreatePageManufacturingOrderTable(
   const selectedPOIsIds = useSelector(s => s.selectedPOIsIds);
 
   const [tab, setTab] = useState<ManufacturingTableTabType>("all");
-  const columnsForTab = manufacturingOrderTableColumnsByTabs[tab] ?? [];
+  const columnsForTab = manufacturingOrderColumnsByTabs[tab] ?? [];
 
   const {
     data: fullDetailMOsResponse,
@@ -101,21 +83,36 @@ export default function CreatePageManufacturingOrderTable(
     }
   }, [fullDetailMOsResponse?.data])
 
-  const tableData = useMemo<ManufacturingOrderTableDataType[]>(() => (moPaginatedList?.data?.map((mo) => ({
-    ...mo,
-    isEdited: false,
-  })) ?? []), [moPaginatedList?.data])
+  const rawTableData: Serialized<ManufacturingOrder>[] = moPaginatedList?.data ?? []
 
-  const table = useReactTable({
-    data: tableData,
-    columns: manufacturingOrderColumnsByTabs[tab].filter((r) => r.id !== "actions-column"),
+  const { table, tableComponent, tableData, resetTable } = useDataTable({
+    data: rawTableData,
+    columns: columnsForTab.filter((r) => r.id !== "actions-column"),
     getCoreRowModel: getCoreRowModel(),
+    getRowId: (mo) => mo._id,
+    bodyPropsStack: {
+      tableRowProps: {
+        bg: { base: "bg", _hover: "bg.muted" }
+      },
+      pinnedCellProps: {
+        bg: "bg.subtle",
+      },
+      editedRowProps: {
+        colorPalette: "yellow",
+        bg: { base: "colorPalette.subtle", _hover: "colorPalette.muted" }
+      },
+      editedRowPinnedCellProps: {
+        colorPalette: "yellow",
+        bg: { base: "colorPalette.muted" }
+      },
+    },
+    mergedHeadersIds: manufacturingOrderMergedHeaders,
     initialState: {
       columnPinning: {
         left: ['manufacturingDirective', "code"],
+        right: ['actions-column'],
       },
     },
-    getRowId: (row) => row._id,
   });
 
   const [createOrders] = useCreateManyManufacturingOrdersMutation();
@@ -138,27 +135,22 @@ export default function CreatePageManufacturingOrderTable(
   // const moPaginatedList = selectedManufacturingOrders;
 
   if (isFetchingList) {
-    return <Text>Loading table</Text>;
+    return (
+      <Center h={"full"} flex={1} flexGrow={1}>
+        <Stack alignItems={"center"}>
+          <Spinner size="xl" />
+          <Text>Đang tải lệnh</Text>
+        </Stack>
+      </Center>
+    );
   }
 
   if (fetchError) {
-    return <Text>{JSON.stringify(fetchError)}</Text>;
+    return <DataFetchError h={"full"} flexGrow={1} />;
   }
 
   if (check.undefined(moPaginatedList)) {
-    return <Text>Unable to load table</Text>;
-  }
-
-  const formValue: CreateManyManufacturingOrdersRequestDto = {
-    orders: moPaginatedList?.data.filter(order => !check.undefined(order.purchaseOrderItem)).map((order) => ({
-      purchaseOrderItemId: order.purchaseOrderItem!._id,
-      corrugatorLineAdjustment: null,
-      manufacturingDateAdjustment: null,
-      manufacturingDirective: null,
-      requestedDatetime: null,
-      amount: order.purchaseOrderItem!.amount,
-      note: "",
-    }))
+    return <DataFetchError h={"full"} flexGrow={1} />;
   }
 
   function handleEditOrder(
@@ -179,24 +171,42 @@ export default function CreatePageManufacturingOrderTable(
   }
 
   const handleCreateOrder = () => {
+    const formValue: CreateManyManufacturingOrdersRequestDto = {
+      orders: tableData.filter(order => check.nonEmptyObject(order.purchaseOrderItem)).filter((row) => row.isEdited).map((order) => ({
+        purchaseOrderItemId: (order.purchaseOrderItem as Serialized<PurchaseOrderItem>)._id,
+        corrugatorLineAdjustment: order.corrugatorLineAdjustment ?? null,
+        manufacturingDirective: order.manufacturingDirective ?? null,
+        amount: order.amount,
+        note: order.note,
+        manufacturingDateAdjustment: order.manufacturingDateAdjustment,
+        requestedDatetime: order.requestedDatetime,
+      }))
+    }
+
     createOrders(formValue).unwrap().then((res) => {
-      if (check.assigned(res.data) && check.equal(res.data?.createdAmount, res.data?.requestedAmount)) {
+      if (check.greaterOrEqual(res.data?.createdAmount as number, res.data?.createdAmount as number)) {
         toaster.success({
           title: "Success",
-          description: `Created ${res.data?.createdAmount} orders successfully`,
+          description: "All orders created successfully",
         })
       }
-      toaster.warning({
-        title: "Orders not updated",
-      })
+      else if (check.greaterOrEqual(res.data?.createdAmount as number, 1)) {
+        toaster.warning({
+          title: "Some orders was not created",
+        })
+      }
+      else {
+        toaster.warning({
+          title: "No orders created",
+        })
+      }
+      dispatch({ type: "RESET_TREE_STATE" })
     }).catch(error => {
       toaster.warning({
         title: "Error creating order",
-        description: (error as Error).message,
+        description: tryGetApiErrorMsg(error),
       })
     })
-
-    dispatch({ type: "RESET_TREE_STATE" })
   }
 
   const getTabBarOffset = () => {
@@ -248,49 +258,9 @@ export default function CreatePageManufacturingOrderTable(
       </Tabs.Root>
 
       <Table.ScrollArea borderWidth="1px">
-        <Table.Root
-          minW={table.getTotalSize()}
-          size="sm"
-          variant={"outline"}
-          showColumnBorder
-          {...props.tableRootProps}
-        >
-          <Table.Header colorPalette={"blue"} bgColor={"colorPalette.muted"}>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <Table.Row key={headerGroup.id} h={"3rem"}>
-                {headerGroup.headers.map((header) => (
-                  <Table.ColumnHeader key={header.id}
-                    colorPalette={"blue"} bgColor={"colorPalette.muted"}
-                    style={{ ...getCommonPinningStyles(header.column) }}
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                  </Table.ColumnHeader>
-                ))}
-              </Table.Row>
-            ))}
-          </Table.Header>
-          <Table.Body>
-            {table.getRowModel().rows.map((row) => (
-              <Table.Row
-                key={row.id}
-                h={"3.2rem"}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <Table.Cell
-                    key={cell.id}
-                    style={{
-                      ...getCommonPinningStyles(cell.column),
-                      background: cell.column.getIsPinned() ? "#fefefe" : "white"
-                    }}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </Table.Cell>
-                ))}
-              </Table.Row>
-            ))}
-          </Table.Body>
-        </Table.Root>
+        {tableComponent}
       </Table.ScrollArea>
+
       <HStack my={3} justifyContent={"end"}>
         <Button colorPalette={"blue"} onClick={() => dispatch({ type: "SET_PREPARED_SUBMIT_FUNCTION", payload: handleCreateOrder })}>Tạo {selectedPOIsIds.length} lệnh</Button>
         <Button colorPalette={"red"}>Đặt lại</Button>

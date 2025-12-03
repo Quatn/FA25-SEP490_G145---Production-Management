@@ -807,7 +807,7 @@ export class ManufacturingOrderService {
     );
 
     const finishedGoodRecords = await this.finishedGoodProcessModel.find({
-      _id: { $in: ids },
+      manufacturingOrder: { $in: ids },
     });
 
     const mappedData: FullDetailManufacturingOrderDto[] = data.map(
@@ -815,7 +815,7 @@ export class ManufacturingOrderService {
         new FullDetailManufacturingOrderDto({
           ...(mo as ManufacturingOrder),
           finishedGoodRecord: finishedGoodRecords.find((record) =>
-            record._id.equals((mo as { _id: Types.ObjectId })._id),
+            (record.manufacturingOrder as Types.ObjectId).equals((mo as { _id: Types.ObjectId })._id),
           ),
         }),
     );
