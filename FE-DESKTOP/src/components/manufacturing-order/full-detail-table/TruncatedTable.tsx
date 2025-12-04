@@ -152,7 +152,7 @@ export default function TruncatedManufacturingOrderTable(
   }
 
   if (fetchError) {
-    return <DataFetchError h={"full"} flexGrow={1} />;
+    return <DataFetchError h={"full"} flexGrow={1} errorText={tryGetApiErrorMsg(fetchError)} />;
   }
 
   if (check.undefined(moPaginatedList)) {

@@ -1130,7 +1130,6 @@ export class ManufacturingOrderService {
     await doc.softDelete();
 
     const res = await this.orderFinishingProcessModel.updateMany({ manufacturingOrder: id}, { $set: {isDeleted: true}})
-    console.log("Deleted", res)
     return {
       deletedAmount: 1,
       requestedAmount: 1,
