@@ -37,6 +37,13 @@ export class SubPurchaseOrderController {
     return { success: true, message: "Fetch successful", data: docs };
   }
 
+  @Get("deleted")
+  async findDeleted(@Query() q: PaginationQueryDto) {
+    const page = q.page ?? 1;
+    const limit = q.limit ?? 20;
+    return this.svc.findDeleted(page, limit);
+  }
+
   @Get("detail/:id")
   @ApiOperation({ summary: "Get sub purchase order by id (populated)" })
   async getDetail(@Param("id") id: string) {
@@ -61,13 +68,6 @@ export class SubPurchaseOrderController {
   @ApiOperation({ summary: "Soft delete sub-PO" })
   remove(@Param("id") id: string) {
     return this.svc.softRemove(id);
-  }
-
-  @Get("deleted")
-  async findDeleted(@Query() q: PaginationQueryDto) {
-    const page = q.page ?? 1;
-    const limit = q.limit ?? 20;
-    return this.svc.findDeleted(page, limit);
   }
 
   @Patch("restore/:id")

@@ -317,24 +317,6 @@ const PurchaseOrderList: React.FC = () => {
     setExpandedPoId((prev) => (prev === poId ? null : poId));
   };
 
-  const handleAddSubPO = (poId: string) => {
-    const newSub: SubPO = {
-      id: makeId("sub-"),
-      poId,
-      title: "New sub-PO",
-      status: "Open",
-      items: [],
-      productType: "Bộ",
-      customerCode: "",
-      size: "",
-    };
-    updatePOLocal(poId, (po) => {
-      po.subPOs = po.subPOs || [];
-      po.subPOs.push(newSub);
-      return po;
-    });
-  };
-
   const computeTotals = (po: PurchaseOrder) => {
     let items = 0;
     let value = 0;

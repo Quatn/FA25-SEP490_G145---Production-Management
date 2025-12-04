@@ -7,16 +7,25 @@ import {
 import mongoose, { Model } from "mongoose";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
 import { FullDetailPurchaseOrderItemDto } from "./dto/full-details-orders.dto";
-import { WareSchema } from "../schemas/ware.schema";
-import { SubPurchaseOrderSchema } from "../schemas/sub-purchase-order.schema";
-import { PurchaseOrderSchema } from "../schemas/purchase-order.schema";
+import { Ware, WareSchema } from "../schemas/ware.schema";
+import { SubPurchaseOrder, SubPurchaseOrderSchema } from "../schemas/sub-purchase-order.schema";
+import { PurchaseOrder, PurchaseOrderSchema } from "../schemas/purchase-order.schema";
 import { UpdatePurchaseOrderItemDto } from "./dto/update-purchase-order-item.dto";
+import { Product, ProductDocument } from "../schemas/product.schema";
 
 @Injectable()
 export class PurchaseOrderItemService {
   constructor(
     @InjectModel(PurchaseOrderItem.name)
     private readonly purchaseOrderItemModel: Model<PurchaseOrderItem>,
+    @InjectModel(SubPurchaseOrder.name)
+    private readonly subPOModel: Model<SubPurchaseOrder>,
+    @InjectModel(Ware.name)
+    private readonly wareModel: Model<Ware>,
+    @InjectModel(PurchaseOrder.name)
+    private readonly poModel: Model<PurchaseOrder>,
+    @InjectModel(Product.name)
+    private readonly productModel: Model<ProductDocument>,
   ) { }
 
   async findAll() {
@@ -31,21 +40,69 @@ export class PurchaseOrderItemService {
     limit: number;
   }): Promise<PaginatedList<PurchaseOrderItem>> {
     const skip = (page - 1) * limit;
-
-    // temp
     const filter = {};
 
-    // temp
-    const populate = [];
-
-    const [totalItems, data] = await Promise.all([
+    const [totalItems, items] = await Promise.all([
       this.purchaseOrderItemModel.countDocuments(filter),
       this.purchaseOrderItemModel
         .find(filter)
         .skip(skip)
         .limit(limit)
-        .populate(populate || []),
+        .lean(),
     ]);
+
+    const wareIdStrings = Array.from(
+      new Set((items as any[]).map((d) => d.ware).filter(Boolean).map((id: any) => id.toString())),
+    );
+    const subPoIdStrings = Array.from(
+      new Set((items as any[]).map((d) => d.subPurchaseOrder).filter(Boolean).map((id: any) => id.toString())),
+    );
+
+    const wareIds = wareIdStrings.map((s) => new mongoose.Types.ObjectId(s));
+    const subPoIds = subPoIdStrings.map((s) => new mongoose.Types.ObjectId(s));
+
+    const wareColl = this.wareModel.collection;
+    const subPoColl = this.subPOModel.collection;
+    const purchaseOrderColl = this.poModel.collection;
+
+    const [waresRaw, subPosRaw] = await Promise.all([
+      wareIds.length ? wareColl.find({ _id: { $in: wareIds } }).toArray() : [],
+      subPoIds.length ? subPoColl.find({ _id: { $in: subPoIds } }).toArray() : [],
+    ]) as any[];
+
+    const nestedPoIdStrings = Array.from(
+      new Set((subPosRaw as any[]).map((s: any) => s.purchaseOrder).filter(Boolean).map((id: any) => id.toString())),
+    );
+    const nestedPoIds = nestedPoIdStrings.map((s) => new mongoose.Types.ObjectId(s));
+    const purchaseOrders = nestedPoIds.length ? await purchaseOrderColl.find({ _id: { $in: nestedPoIds } }).toArray() : [];
+
+    const wareMap = (waresRaw as any[]).reduce<Map<string, any>>(
+      (m, w) => m.set(w._id.toString(), w),
+      new Map<string, any>(),
+    );
+    const subPoMap = (subPosRaw as any[]).reduce<Map<string, any>>(
+      (m, s) => m.set(s._id.toString(), s),
+      new Map<string, any>(),
+    );
+    const poMap = (purchaseOrders as any[]).reduce<Map<string, any>>(
+      (m, p) => m.set(p._id.toString(), p),
+      new Map<string, any>(),
+    );
+
+    const populatedSubPos = (subPosRaw as any[]).map((s) => ({
+      ...s,
+      purchaseOrder: s.purchaseOrder ? poMap.get(s.purchaseOrder.toString()) ?? null : null,
+    }));
+    const populatedSubPoMap = populatedSubPos.reduce<Map<string, any>>(
+      (m, s) => m.set(s._id.toString(), s),
+      new Map<string, any>(),
+    );
+
+    const populated = (items as any[]).map((r) => ({
+      ...r,
+      ware: r.ware ? wareMap.get(r.ware.toString()) ?? null : null,
+      subPurchaseOrder: r.subPurchaseOrder ? populatedSubPoMap.get(r.subPurchaseOrder.toString()) ?? null : null,
+    }));
 
     const totalPages = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
@@ -58,9 +115,11 @@ export class PurchaseOrderItemService {
       totalPages,
       hasNextPage,
       hasPrevPage,
-      data,
+      data: populated,
     };
   }
+
+
 
   async queryListFullDetails({
     page,
@@ -214,10 +273,60 @@ export class PurchaseOrderItemService {
       this.purchaseOrderItemModel.collection.countDocuments(filter),
     ]);
 
-    const populated = await this.purchaseOrderItemModel.populate(rawDocs, [
-      { path: "ware" },
-      { path: "subPurchaseOrder" },
-    ]);
+    const wareIdStrings = Array.from(
+      new Set(rawDocs.map((d: any) => d.ware).filter(Boolean).map((id: any) => id.toString())),
+    );
+    const subPoIdStrings = Array.from(
+      new Set(rawDocs.map((d: any) => d.subPurchaseOrder).filter(Boolean).map((id: any) => id.toString())),
+    );
+
+    const wareIds = wareIdStrings.map((s) => new mongoose.Types.ObjectId(s));
+    const subPoIds = subPoIdStrings.map((s) => new mongoose.Types.ObjectId(s));
+
+    const wareColl = this.wareModel.collection;
+    const subPoColl = this.subPOModel.collection;
+    const purchaseOrderColl = this.poModel.collection;
+
+    const [waresRaw, subPosRaw] = await Promise.all([
+      wareIds.length ? wareColl.find({ _id: { $in: wareIds } }).toArray() : [],
+      subPoIds.length ? subPoColl.find({ _id: { $in: subPoIds } }).toArray() : [],
+    ]) as any[];
+
+    const nestedPoIdStrings = Array.from(
+      new Set(subPosRaw.map((s: any) => s.purchaseOrder).filter(Boolean).map((id: any) => id.toString())),
+    );
+    const nestedPoIds = nestedPoIdStrings.map((s: any) => new mongoose.Types.ObjectId(s));
+    const purchaseOrders = nestedPoIds.length
+      ? await purchaseOrderColl.find({ _id: { $in: nestedPoIds } }).toArray()
+      : [];
+
+    const wareMap = (waresRaw as any[]).reduce<Map<string, any>>(
+      (m, w) => m.set(w._id.toString(), w),
+      new Map<string, any>(),
+    );
+    const subPoMap = (subPosRaw as any[]).reduce<Map<string, any>>(
+      (m, s) => m.set(s._id.toString(), s),
+      new Map<string, any>(),
+    );
+    const poMap = (purchaseOrders as any[]).reduce<Map<string, any>>(
+      (m, p) => m.set(p._id.toString(), p),
+      new Map<string, any>(),
+    );
+
+    const populatedSubPos = (subPosRaw as any[]).map((s) => ({
+      ...s,
+      purchaseOrder: s.purchaseOrder ? poMap.get(s.purchaseOrder.toString()) ?? null : null,
+    }));
+    const populatedSubPoMap = populatedSubPos.reduce<Map<string, any>>(
+      (m, s) => m.set(s._id.toString(), s),
+      new Map<string, any>(),
+    );
+
+    const populated = (rawDocs as any[]).map((r) => ({
+      ...r,
+      ware: r.ware ? wareMap.get(r.ware.toString()) ?? null : null,
+      subPurchaseOrder: r.subPurchaseOrder ? populatedSubPoMap.get(r.subPurchaseOrder.toString()) ?? null : null,
+    }));
 
     const totalPages = Math.ceil((totalCount || 0) / limit);
     return {
@@ -230,6 +339,8 @@ export class PurchaseOrderItemService {
       hasPrevPage: page > 1,
     };
   }
+
+
 
   async restore(id: string) {
     const doc = await this.purchaseOrderItemModel.findById(id) as any;

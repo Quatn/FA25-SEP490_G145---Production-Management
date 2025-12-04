@@ -273,12 +273,12 @@ const EmployeeList: React.FC = () => {
         }}
       >
         <div>
-          <strong>Employees</strong>
+          <strong>Nhân viên</strong>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
             className="form-control"
-            placeholder="Search by code/name"
+            placeholder="Tìm kiếm theo mã/tên"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -291,7 +291,7 @@ const EmployeeList: React.FC = () => {
             style={{maxWidth: 150, minWidth: 100}}
             onClick={() => setCreateOpen(true)}
           >
-            + Create
+            + Tạo
           </button>
         </div>
       </div>
@@ -303,13 +303,13 @@ const EmployeeList: React.FC = () => {
         >
           <thead>
             <tr>
-              <th>Code</th>
-              <th>Name</th>
-              <th>Role</th>
+              <th>Mã nhân viên</th>
+              <th>Tên</th>
+              <th>Quyền</th>
               <th>Email</th>
-              <th>Contact</th>
-              <th>Note</th>
-              <th>Actions</th>
+              <th>Thông tin liên lạc</th>
+              <th>Ghi chú</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -343,7 +343,7 @@ const EmployeeList: React.FC = () => {
                         className="btn btn-outline-secondary btn-sm"
                         onClick={() => openEdit(empl)}
                       >
-                        Edit
+                        Sửa
                       </button>
 
                       <button
@@ -351,7 +351,7 @@ const EmployeeList: React.FC = () => {
                         className="btn btn-outline-danger btn-sm"
                         onClick={() => handleSoftDelete(empl)}
                       >
-                        Delete
+                        Xóa
                       </button>
                     </div>
                   </td>
@@ -362,7 +362,7 @@ const EmployeeList: React.FC = () => {
             {!displayEmployees.length && (
               <tr>
                 <td colSpan={7} className="text-muted p-4">
-                  No employees
+                  Chưa có nhân viên
                 </td>
               </tr>
             )}
@@ -383,7 +383,7 @@ const EmployeeList: React.FC = () => {
             onClick={() => goToPage(page - 1)}
             disabled={page <= 1}
           >
-            Prev
+            Trước
           </button>
           <button
             className="btn btn-sm btn-outline-secondary"
@@ -391,10 +391,10 @@ const EmployeeList: React.FC = () => {
             disabled={totalCount > 0 ? page >= totalPages : false}
             style={{ marginLeft: 8 }}
           >
-            Next
+            Sau
           </button>
           <span style={{ marginLeft: 12 }}>
-            Page {page} {totalCount > 0 && `of ${totalPages}`}
+            Trang {page} {totalCount > 0 && `trong ${totalPages}`}
           </span>
         </div>
 

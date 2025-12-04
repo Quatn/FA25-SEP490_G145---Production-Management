@@ -110,39 +110,116 @@ const Chip: React.FC<{ label: string; onRemove?: () => void }> = ({
   </span>
 );
 
+/**
+ * MultiSelectInline
+ *
+ * - Uses onMouseDown for option selection and remove button to avoid
+ *   click/blur ordering races that would otherwise cause parent state to be
+ *   overwritten or removal to fire accidentally.
+ *
+ * - Adds some debug logs so you can observe selectedIds/options in DevTools.
+ */
 const MultiSelectInline: React.FC<{
-  options: any[];
-  selected: string[];
+  options?: any[];
+  selected?: any[];
   onAdd: (id: string) => void;
   onRemove: (id: string) => void;
-  getLabel?: (opt: any) => string;
+  getLabel?: (optOrId: any) => string;
   placeholder?: string;
   id?: string;
-}> = ({ options, selected, onAdd, onRemove, getLabel, placeholder, id }) => {
+}> = ({
+  options = [],
+  selected = [],
+  onAdd,
+  onRemove,
+  getLabel,
+  placeholder,
+  id,
+}) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (!rootRef.current) return;
-      if (!rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (!rootRef.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("click", onDocClick);
     return () => document.removeEventListener("click", onDocClick);
   }, []);
 
-  const labelOf = (opt: any) => {
-    if (getLabel) return getLabel(opt);
-    if (!opt) return "";
-    if (typeof opt === "string") return opt;
-    return opt.code ?? opt.name ?? getIdFromDoc(opt) ?? "";
+  const idOf = (o: any) => {
+    if (o === null || o === undefined) return "";
+    if (typeof o === "string" || typeof o === "number") return String(o);
+    if (o._id?.$oid) return String(o._id.$oid);
+    if (o._id) return String(o._id);
+    if (o.id) return String(o.id);
+    if (o.code) return String(o.code);
+    try {
+      if (typeof o.toString === "function") return o.toString();
+    } catch {}
+    return String(o);
   };
 
-  const avail = (options || []).filter(
-    (o) => !selected.includes(getIdFromDoc(o) ?? String(o))
+  // build lookup map: many keys -> option
+  const optionsMap = React.useMemo(() => {
+    const m = new Map<string, any>();
+    (options || []).forEach((opt) => {
+      const primary = idOf(opt);
+      if (primary) m.set(primary, opt);
+      // also store alternative keys if present
+      if (opt?._id) m.set(String(opt._id), opt);
+      if (opt?._id?.$oid) m.set(String(opt._id.$oid), opt);
+      if (opt?.id) m.set(String(opt.id), opt);
+      if (opt?.code) m.set(String(opt.code), opt);
+    });
+    return m;
+  }, [options]);
+
+  const labelFromOptionOrId = (optOrId: any) => {
+    if (getLabel) {
+      try {
+        const res = getLabel(optOrId);
+        if (res !== undefined && res !== null) return String(res);
+      } catch {}
+    }
+
+    if (optOrId && typeof optOrId === "object") {
+      return optOrId.code ?? optOrId.name ?? idOf(optOrId);
+    }
+
+    const idv = idOf(optOrId);
+    const found = optionsMap.get(idv);
+    if (found) return found.code ?? found.name ?? idOf(found);
+    return idv || "";
+  };
+
+  // normalize selected -> ids
+  const selectedIds: string[] = (Array.isArray(selected) ? selected : []).map(
+    (s) => idOf(s)
   );
+
+  // available = options not selected
+  const avail = (options || []).filter((o) => !selectedIds.includes(idOf(o)));
+
+  // find option object given id string
+  const findOptionById = (idv: string) => optionsMap.get(idv);
+
+  // debug: show shapes / ids
+  React.useEffect(() => {
+    try {
+      console.debug("MultiSelectInline render", {
+        id,
+        selectedIds,
+        optionsIds: (options || []).map((o) => idOf(o)),
+        availIds: (avail || []).map((o) => idOf(o)),
+      });
+    } catch {}
+  }, [
+    JSON.stringify(selectedIds),
+    JSON.stringify(options.map((o) => idOf(o))),
+    open,
+  ]);
 
   return (
     <div ref={rootRef} style={{ position: "relative" }}>
@@ -165,19 +242,55 @@ const MultiSelectInline: React.FC<{
           alignItems: "center",
           gap: 8,
           flexWrap: "wrap",
-          background: open ? "#fff" : "#fff",
+          background: "#fff",
           cursor: "pointer",
         }}
         id={id}
       >
-        {selected && selected.length > 0 ? (
-          selected.map((idv) => (
-            <Chip
-              key={idv}
-              label={labelOf(options.find((o) => getIdFromDoc(o) === idv))}
-              onRemove={() => onRemove(idv)}
-            />
-          ))
+        {selectedIds.length > 0 ? (
+          selectedIds.map((idv) => {
+            const opt = findOptionById(idv);
+            const label = labelFromOptionOrId(opt ?? idv);
+            return (
+              <span
+                key={idv}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "4px 8px",
+                  borderRadius: 16,
+                  background: "#f1f3f5",
+                  marginRight: 6,
+                  marginBottom: 6,
+                  fontSize: 13,
+                }}
+                // clicking the chip area should not toggle open
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span style={{ fontSize: 12 }}>{label}</span>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  style={{ padding: "0 6px", lineHeight: 1 }}
+                  // use onMouseDown so this runs before outer click/blur
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    try {
+                      console.debug("MultiSelectInline onRemove called", {
+                        idv,
+                      });
+                    } catch {}
+                    onRemove(idv);
+                    // do not close dropdown when removing
+                  }}
+                >
+                  ×
+                </button>
+              </span>
+            );
+          })
         ) : (
           <span className="text-muted" style={{ fontSize: 14 }}>
             {placeholder ?? "-- choose --"}
@@ -222,12 +335,20 @@ const MultiSelectInline: React.FC<{
             </div>
           ) : (
             avail.map((opt) => {
-              const idv = getIdFromDoc(opt) ?? String(opt);
+              const idv = idOf(opt);
               return (
                 <div
                   key={idv}
-                  onClick={() => {
+                  // use onMouseDown (not onClick) so selection fires before blur/focus ordering
+                  onMouseDown={(e: React.MouseEvent) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try {
+                      console.debug("MultiSelectInline onAdd called", { idv });
+                    } catch {}
                     onAdd(idv);
+                    // close dropdown so UI re-renders and shows the new chip
+                    setOpen(false);
                   }}
                   style={{
                     padding: "6px 8px",
@@ -238,7 +359,7 @@ const MultiSelectInline: React.FC<{
                     alignItems: "center",
                   }}
                 >
-                  <div>{labelOf(opt)}</div>
+                  <div>{labelFromOptionOrId(opt)}</div>
                   <div className="text-muted" style={{ fontSize: 12 }}>
                     +
                   </div>
@@ -337,6 +458,11 @@ export const WareList: React.FC = () => {
     note: "",
   });
 
+  // Debug observe createForm changes (helpful to see sequences)
+  useEffect(() => {
+    console.debug("WareList createForm.printColors:", createForm?.printColors);
+  }, [JSON.stringify(createForm?.printColors)]);
+
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
 
@@ -424,6 +550,8 @@ export const WareList: React.FC = () => {
     id: string
   ) => {
     if (!id) return;
+    console.log("addToCreateList", field, id);
+    // functional update to avoid race conditions
     setCreateForm((p: any) => {
       const arr = Array.isArray(p[field]) ? [...p[field]] : [];
       if (!arr.includes(id)) arr.push(id);
@@ -988,7 +1116,12 @@ export const WareList: React.FC = () => {
               <th rowSpan={2}>Màu in</th>
 
               {/* Mặt giấy main header spanning small subcolumns */}
-              <th colSpan={PAPER_LAYER_KEYS.length}>Mặt giấy</th>
+              <th
+                colSpan={PAPER_LAYER_KEYS.length}
+                style={{ textAlign: "center", verticalAlign: "middle" }}
+              >
+                Mặt giấy
+              </th>
 
               <th rowSpan={2}>Máy in</th>
               <th rowSpan={2}>Ghi chú</th>
