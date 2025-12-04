@@ -211,7 +211,6 @@ export class ManufacturingOrderController {
   async deleteOne(
     @Param() param: DeleteManufacturingOrderRequestDto,
   ): Promise<BaseResponse<DeleteResult<{ code: string }>>> {
-    console.log(param);
     const result = await this.moService.deleteOne(param.id);
     return {
       success: true,
@@ -225,7 +224,6 @@ export class ManufacturingOrderController {
   async RestoreOne(
     @Param() param: DeleteManufacturingOrderRequestDto,
   ): Promise<BaseResponse<PatchResult<{ code: string }>>> {
-    console.log(param);
     const result = await this.moService.restoreOne(param.id);
     return {
       success: true,

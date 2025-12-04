@@ -165,7 +165,6 @@ export class FullDetailManufacturingOrderDto extends ManufacturingOrder {
     this.purchaseOrderItem = new PopulatedPurchaseOrderItem(
       order.purchaseOrderItem,
     );
-    console.log(order.finishedGoodRecord)
     this.finishedGoodRecord = order.finishedGoodRecord;
   }
 }

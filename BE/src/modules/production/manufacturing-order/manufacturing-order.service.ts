@@ -139,13 +139,9 @@ export class ManufacturingOrderService {
             moDoc,
           );
 
-        console.log(recalcRes);
-
         return recalcRes;
       }),
     );
-
-    console.log("===-===");
 
     const ids = recalCheckedOrders.map((mo) => mo._id);
 
@@ -155,7 +151,6 @@ export class ManufacturingOrderService {
 
     const mappedData: FullDetailManufacturingOrderDto[] =
       recalCheckedOrders.map((mo) => {
-        console.log({ ...mo.toJSON() });
         return new FullDetailManufacturingOrderDto({
           ...mo.toJSON(),
           finishedGoodRecord: finishedGoodRecords.find((record) =>
@@ -324,6 +319,7 @@ export class ManufacturingOrderService {
               manufacturingOrder: mo._id,
               wareFinishingProcessType: type,
               sequenceNumber: index + 1,
+              requiredAmount: mo.numberOfBlanks * ware.warePerBlank,
               completedAmount: 0,
               status: OrderFinishingProcessStatus.PendingApproval,
               note: "",

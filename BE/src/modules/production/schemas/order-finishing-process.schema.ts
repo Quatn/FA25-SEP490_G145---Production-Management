@@ -57,6 +57,11 @@ export class OrderFinishingProcess extends BaseSchema {
   @ApiProperty()
   @Prop({ required: true, default: 0 })
   @IsNumber()
+  requiredAmount: number = 0;
+
+  @ApiProperty()
+  @Prop({ required: true, default: 0 })
+  @IsNumber()
   completedAmount: number = 0;
 
   @ApiProperty({

@@ -180,11 +180,23 @@ export class ProductionRecalculateService {
         );
       }
 
-      if (mo.purchaseOrderItem.recalculateFlag)
+      if (!isRefPopulated(mo.purchaseOrderItem.ware)) {
+        throw new UnpopulatedFieldError(
+          "mo.purchaseOrderItem.ware must be populated before it is passed to mo recalculate function",
+        );
+      }
+
+      if (mo.purchaseOrderItem.ware.recalculateFlag) {
+        const wareDoc = this.wareModel.hydrate(mo.purchaseOrderItem.ware)
+        mo.purchaseOrderItem.ware =
+          await this.checkAndRecalculateWareDoc(wareDoc);
+      }
+
+      if (mo.purchaseOrderItem.recalculateFlag) {
+        const poiDoc = this.purchaseOrderItemModel.hydrate(mo.purchaseOrderItem)
         mo.purchaseOrderItem =
-          await this.checkAndRecalculatePurchaseOrderItemById(
-            (mo.purchaseOrderItem as unknown as { _id: Types.ObjectId })._id,
-          );
+          await this.checkAndRecalculatePurchaseOrderItemDoc(poiDoc);
+      }
 
       const recalculatedOrder = recalculateManufacturingOrder(mo);
       Object.assign(mo, recalculatedOrder);
