@@ -14,6 +14,7 @@ import { BaseDenormalizedSchema } from "@/common/schemas/base.denormalized.schem
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
 import { PurchaseOrderItem } from "./purchase-order-item.schema";
 import { ApiProperty } from "@nestjs/swagger";
+import { RecalculateFlagPlugin } from "@/common/plugins/set-recalculate-flag-on-save.plugin";
 
 export enum CorrugatorProcessStatus {
   NOTSTARTED = "NOTSTARTED",
@@ -256,8 +257,11 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
 
 export type ManufacturingOrderDocument = HydratedDocument<ManufacturingOrder>;
 
-export const ManufacturingOrderSchema =
-  SchemaFactory.createForClass(ManufacturingOrder).plugin(softDeletePlugin);
+export const ManufacturingOrderSchema = SchemaFactory.createForClass(
+  ManufacturingOrder,
+)
+  .plugin(softDeletePlugin)
+  .plugin(RecalculateFlagPlugin);
 
 ManufacturingOrderSchema.index(
   { code: 1 },

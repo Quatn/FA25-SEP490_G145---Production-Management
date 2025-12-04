@@ -5,6 +5,8 @@ import { isRefPopulated } from "@/common/utils/populate-check";
 import { UnpopulatedFieldError } from "@/common/errors/unpopulated-field.error";
 import { NeedRecalculateError } from "@/common/errors/need-recalculate.error";
 import { ManufacturingOrder } from "../../schemas/manufacturing-order.schema";
+import { getManufacturingDate } from "./mo-manufacturing-date-getter";
+import { getCorrugatorLine } from "./mo-corrugator-line-getter";
 
 const paperConsumptionCalculation = (
   runningLength: number,
@@ -26,7 +28,7 @@ export function recalculateManufacturingOrder(
 ): ManufacturingOrder {
   if (!isRefPopulated(mo.purchaseOrderItem)) {
     throw new UnpopulatedFieldError(
-      "poi.ware must be populated before it is passed to poi recalculate function",
+      "mo.purchaseOrderItem must be populated before it is passed to mo recalculate function",
     );
   }
 
@@ -34,7 +36,25 @@ export function recalculateManufacturingOrder(
 
   if (!isRefPopulated(item.ware)) {
     throw new UnpopulatedFieldError(
-      "poi.ware must be populated before it is passed to poi recalculate function",
+      "mo.poi.ware must be populated before it is passed to mo recalculate function",
+    );
+  }
+
+  if (!isRefPopulated(item.subPurchaseOrder)) {
+    throw new UnpopulatedFieldError(
+      "mo.poi.subPurchaseOrder must be populated before it is passed to mo recalculate function",
+    );
+  }
+
+  if (!isRefPopulated(item.subPurchaseOrder.purchaseOrder)) {
+    throw new UnpopulatedFieldError(
+      "mo.poi.subPurchaseOrder.purchaseOrder must be populated before it is passed to mo recalculate function",
+    );
+  }
+
+  if (!isRefPopulated(item.subPurchaseOrder.purchaseOrder.customer)) {
+    throw new UnpopulatedFieldError(
+      "mo.poi.subPurchaseOrder.purchaseOrder.customer must be populated before it is passed to mo recalculate function",
     );
   }
 
@@ -45,6 +65,34 @@ export function recalculateManufacturingOrder(
       "poi.ware was found to have recalculateFlag set to true, please ensure all fields are properly recalculated and set the flag to false",
     );
   }
+
+  if (!isRefPopulated(ware.fluteCombination)) {
+    throw new NeedRecalculateError(
+      "poi.ware must be populated before it is passed to mo recalculate function",
+    );
+  }
+
+  const subpo = item.subPurchaseOrder;
+
+  if (ware.recalculateFlag) {
+    throw new NeedRecalculateError(
+      "poi.ware was found to have recalculateFlag set to true, please ensure all fields are properly recalculated and set the flag to false",
+    );
+  }
+
+  const manufacturingDate =
+    mo.manufacturingDateAdjustment ??
+    getManufacturingDate(
+      subpo.deliveryDate,
+      item.subPurchaseOrder.purchaseOrder.customer.code,
+    );
+
+  const corrugatorLine =
+    mo.corrugatorLineAdjustment ??
+    getCorrugatorLine(
+      ware.fluteCombination.code,
+      item.subPurchaseOrder.purchaseOrder.customer.code,
+    );
 
   const numberOfBlanks = Math.ceil(mo.amount / ware.warePerBlank);
   const longitudinalCutCount = Math.ceil(numberOfBlanks / ware.crossCutCount);
@@ -75,6 +123,8 @@ export function recalculateManufacturingOrder(
   return {
     ...mo,
     recalculateFlag: false,
+    manufacturingDate,
+    corrugatorLine,
     numberOfBlanks,
     longitudinalCutCount,
     runningLength,

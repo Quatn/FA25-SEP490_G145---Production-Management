@@ -15,6 +15,7 @@ import {
   FinishedGood,
   FinishedGoodSchema,
 } from "@/modules/warehouse/schemas/finished-good.schema";
+import { ProductionRecalculateModule } from "../common/recalculate/recalculate.module";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import {
       },
     ]),
     PurchaseOrderItemModule,
+    ProductionRecalculateModule,
   ],
   controllers: [ManufacturingOrderController],
   providers: [ManufacturingOrderService],

@@ -2,7 +2,6 @@ import { Module } from "@nestjs/common";
 import { ManufacturingOrderModule } from "./manufacturing-order/manufacturing-order.module";
 import { ProductModule } from "./product/product.module";
 import { WareModule } from "./ware/ware.module";
-// import { CorrugatorProcessModule } from "./corrugator-process/corrugator-process.module";
 import { ProductionDevModule } from "./dev/dev.module";
 import { PurchaseOrderModule } from "./purchase-order/purchase-order.module";
 import { SubPurchaseOrderModule } from "./sub-purchase-order/sub-purchase-order.module";
@@ -13,8 +12,9 @@ import { WareFinishingProcessTypeModule } from "./ware-finishing-process-type/wa
 import { ProductTypeModule } from "./product-type/product-type.module";
 import { FluteCombinationModule } from "./flute-combination/flute-combination.module";
 import { PrintColorModule } from "./print-color/print-color.module";
-import { DeliveryNoteModule } from './delivery-note/delivery-note.module';
-import { OrderFinishingProcessModule } from './order-finishing-process/order-finishing-process.module';
+import { DeliveryNoteModule } from "./delivery-note/delivery-note.module";
+import { OrderFinishingProcessModule } from "./order-finishing-process/order-finishing-process.module";
+import { ProductionCommonModule } from "./common/common.module";
 
 @Module({
   imports: [
@@ -22,7 +22,6 @@ import { OrderFinishingProcessModule } from './order-finishing-process/order-fin
     PurchaseOrderItemModule,
     ProductModule,
     WareModule,
-    // CorrugatorProcessModule,
     PurchaseOrderModule,
     SubPurchaseOrderModule,
     PurchaseOrderItemModule,
@@ -37,6 +36,7 @@ import { OrderFinishingProcessModule } from './order-finishing-process/order-fin
     PrintColorModule,
     DeliveryNoteModule,
     OrderFinishingProcessModule,
+    ProductionCommonModule,
   ],
 })
 export class ProductionModule { }

@@ -1,13 +1,11 @@
-import {
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import mongoose, { Model, MongooseError, Types } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import {
   CorrugatorProcessStatus,
   ManufacturingOrder,
   ManufacturingOrderApprovalStatus,
+  ManufacturingOrderDocument,
   ManufacturingOrderSchema,
   OrderStatus,
 } from "../schemas/manufacturing-order.schema";
@@ -41,6 +39,10 @@ import check from "check-types";
 import { fullDetailsFilterAggregationPipeline } from "./aggregate-pipes/full-details-filter";
 import { FinishedGood } from "@/modules/warehouse/schemas/finished-good.schema";
 import { IllogicalError } from "@/common/errors/illogical.error";
+import { recalculateManufacturingOrder } from "./business-logics/recalculate-manufacturing-orders";
+import { isRefPopulated } from "@/common/utils/populate-check";
+import { UnpopulatedFieldError } from "@/common/errors/unpopulated-field.error";
+import { ProductionRecalculateService } from "../common/recalculate/recalculate.service";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -53,6 +55,7 @@ export class ManufacturingOrderService {
     private readonly orderFinishingProcessModel: Model<OrderFinishingProcess>,
     @InjectModel(FinishedGood.name)
     private readonly finishedGoodProcessModel: Model<FinishedGood>,
+    private recalcService: ProductionRecalculateService,
   ) { }
 
   async findAll() {
@@ -119,29 +122,47 @@ export class ManufacturingOrderService {
     const totalItems =
       (countArr[0] as { total: number } | undefined)?.total ?? 0;
 
+    // console.log(data);
+
     const totalPages = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
 
-    const ids = data.map(
-      (mo) => (mo as ManufacturingOrder & { _id: Types.ObjectId })._id,
+    const needRecalcDocs = (data as ManufacturingOrderDocument[]).map((mo) =>
+      this.manufacturingOrderModel.hydrate(mo),
     );
+
+    const recalCheckedOrders = await Promise.all(
+      needRecalcDocs.map(async (moDoc) => {
+        const recalcRes =
+          await this.recalcService.checkAndRecalculateManufacturingOrderDoc(
+            moDoc,
+          );
+
+        console.log(recalcRes);
+
+        return recalcRes;
+      }),
+    );
+
+    console.log("===-===");
+
+    const ids = recalCheckedOrders.map((mo) => mo._id);
 
     const finishedGoodRecords = await this.finishedGoodProcessModel.find({
       manufacturingOrder: { $in: ids },
     });
 
-    const mappedData: FullDetailManufacturingOrderDto[] = data.map(
-      (mo) =>
-        new FullDetailManufacturingOrderDto({
-          ...(mo as ManufacturingOrder),
+    const mappedData: FullDetailManufacturingOrderDto[] =
+      recalCheckedOrders.map((mo) => {
+        console.log({ ...mo.toJSON() });
+        return new FullDetailManufacturingOrderDto({
+          ...mo.toJSON(),
           finishedGoodRecord: finishedGoodRecords.find((record) =>
-            (record.manufacturingOrder as Types.ObjectId).equals(
-              (mo as { _id: Types.ObjectId })._id,
-            ),
+            (record.manufacturingOrder as Types.ObjectId).equals(mo._id),
           ),
-        }),
-    );
+        });
+      });
 
     return {
       page,
