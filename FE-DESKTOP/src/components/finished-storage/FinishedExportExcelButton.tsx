@@ -3,6 +3,7 @@ import { saveAs } from "file-saver";
 import { FinishedGoodDailyItem } from "@/types/FinishedGoodTransaction";
 import { safeGet } from "@/utils/storagesUtils";
 import { formatDate } from "@/utils/dateUtils";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 
 export const exportFinishedDailyReport = (
   transactionType: string,
@@ -55,7 +56,7 @@ export const exportFinishedDailyReport = (
   const dataRows = rows.map((item, idx) => {
     const mo = item.finishedGood.manufacturingOrder;
     const poItem = mo?.purchaseOrderItem;
-    const amount = poItem?.amount ?? 0;
+    const amount = (poItem as PurchaseOrderItem)?.amount ?? 0;
 
     return [
       idx + 1,

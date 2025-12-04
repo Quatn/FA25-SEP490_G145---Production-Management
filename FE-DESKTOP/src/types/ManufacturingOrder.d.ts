@@ -36,10 +36,6 @@ export interface ManufacturingOrder extends BaseSchema {
 
   finishedGoodRecord?: string | FinishedGood,
 
-  // LEGACY CODE: KEPT DUE TO TIME LIMITATION, AVOID USING IF POSSIBLE
-  /** @deprecated MO should not be referencing *order finishing processes*, which is what this array is trying to be */
-  processes: string[] | ManufacturingOrderProcess[];
-
   /** @deprecated MO wont have *operative* status, it is supposed to derive that from other objects is it associated with */
   overallStatus: LEGACY_OrderStatus;
 }

@@ -6,20 +6,15 @@ import {
   ManufacturingOrder,
   ManufacturingOrderSchema,
 } from "../schemas/manufacturing-order.schema";
-import {
-  ManufacturingOrderProcess,
-  ManufacturingOrderProcessSchema,
-} from "../schemas/manufacturing-order-process.schema";
-// import {
-//   CorrugatorProcess,
-//   CorrugatorProcessSchema,
-// } from "../schemas/corrugator-process.schema";
 import { PurchaseOrderItemModule } from "../purchase-order-item/purchase-order-item.module";
 import {
   OrderFinishingProcess,
   OrderFinishingProcessSchema,
 } from "../schemas/order-finishing-process.schema";
-import { FinishedGood, FinishedGoodSchema } from "@/modules/warehouse/schemas/finished-good.schema";
+import {
+  FinishedGood,
+  FinishedGoodSchema,
+} from "@/modules/warehouse/schemas/finished-good.schema";
 
 @Module({
   imports: [
@@ -27,17 +22,9 @@ import { FinishedGood, FinishedGoodSchema } from "@/modules/warehouse/schemas/fi
       { name: ManufacturingOrder.name, schema: ManufacturingOrderSchema },
       { name: OrderFinishingProcess.name, schema: OrderFinishingProcessSchema },
       {
-        name: ManufacturingOrderProcess.name,
-        schema: ManufacturingOrderProcessSchema,
-      },
-      {
         name: FinishedGood.name,
         schema: FinishedGoodSchema,
       },
-      // {
-      //   name: CorrugatorProcess.name,
-      //   schema: CorrugatorProcessSchema,
-      // },
     ]),
     PurchaseOrderItemModule,
   ],

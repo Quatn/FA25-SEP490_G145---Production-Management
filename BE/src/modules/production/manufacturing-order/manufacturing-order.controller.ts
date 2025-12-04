@@ -22,7 +22,6 @@ import {
   CreateManufacturingOrderRequestDto,
 } from "./dto/create-order-request.dto";
 import {
-  QueryListManufacturingOrderRequestDto,
   QueryListManufacturingOrderResponseDto,
 } from "./dto/query-list.dto";
 import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
@@ -42,14 +41,8 @@ import {
   UpdateManyManufacturingOrdersResponseDto,
 } from "./dto/update-many-orders.dto";
 import { AssembledUpdateManufacturingOrderRequestDto } from "./dto/update-order-request.dto";
-import mongoose from "mongoose";
-import { FindAllMoQueryDto } from "./dto/find-all-mo-query.dto";
-import { UpdateOverallStatusDto } from "./dto/update-overall-status.dto";
 import { QueryListFullDetailsManufacturingOrderRequestDto } from "./dto/query-list-full-details.dto";
 import check from "check-types";
-import { CorrugatorProcessesDto } from "./dto/corrugator-processes.dto";
-import { UpdateManyCorrugatorProcessesDto } from "./dto/update-many-corrugator-processes.dto";
-import { UpdateCorrugatorProcessDto } from "./dto/update-corrugator-process.dto";
 import { PrivilegedJwtAuthGuard } from "@/common/guards/privileged-jwt-auth.guard";
 import { manufacturingOrderGetPrivileges } from "./manufacturing-order-module-access-privileges";
 
@@ -70,28 +63,6 @@ export class ManufacturingOrderController {
     private poiService: PurchaseOrderItemService,
   ) { }
 
-  @Get("tracking-list")
-  @ApiOperation({
-    summary: "List all manufacturing orders (populated, filtered, paginated)",
-  })
-  /** @deprecated Will be removed when query-full-details inherits all of the use cases or operation for this is broken down to smaller ones */
-  async findAll(
-    // 1. Dùng @Query() để nhận DTO chứa các tham số filter/pagination
-    @Query() queryDto: FindAllMoQueryDto,
-  ): Promise<BaseResponse<any>> {
-    // 2. Cập nhật kiểu trả về (hoặc dùng 'any')
-
-    // 3. Truyền DTO vào service
-    const paginatedResult = await this.moService.findAllPopulated(queryDto);
-
-    return {
-      success: true,
-      message: "Fetch successful",
-      // 4. Trả về toàn bộ đối tượng phân trang (data, total, page, limit)
-      data: paginatedResult,
-    };
-  }
-
   @UseGuards(ManufacturingOrderGetRequestGuard)
   @Get("list-all")
   @ApiOperation({ summary: "List manufacturing orders" })
@@ -101,35 +72,6 @@ export class ManufacturingOrderController {
       success: true,
       message: "Fetch successful",
       data: docs,
-    };
-  }
-
-  @Get("query")
-  @ApiOperation({ summary: "Query manufacturing orders" })
-  // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
-  @ApiResponseWith(ManufacturingOrder, { paginated: true })
-  async queryList(
-    @Query() query: QueryListManufacturingOrderRequestDto,
-  ): Promise<QueryListManufacturingOrderResponseDto> {
-    const docs = await this.moService.queryList(query);
-    return {
-      success: true,
-      message: "Fetch successful",
-      data: docs,
-    };
-  }
-
-  @Patch(":id/status") // Endpoint mới: PATCH /manufacturing-order/some-id/status
-  @ApiOperation({ summary: "Update MO overall status (Pause/Cancel)" })
-  async updateOverallStatus(
-    @Param("id") id: string,
-    @Body() body: UpdateOverallStatusDto,
-  ): Promise<BaseResponse<ManufacturingOrderDocument>> {
-    const result = await this.moService.updateOverallStatus(id, body);
-    return {
-      success: true,
-      message: "Cập nhật trạng thái tổng thể thành công",
-      data: result,
     };
   }
 
@@ -292,49 +234,4 @@ export class ManufacturingOrderController {
     };
   }
 
-  @Patch("run-corrugator")
-  @ApiOperation({ summary: "Chạy quy trình sóng cho các MO đã chọn" })
-  async runProcesses(
-    @Body() dto: CorrugatorProcessesDto,
-  ): Promise<BaseResponse<PatchResult<{ codes: string[] }>>> {
-    const result = await this.moService.runSelectedCorrugatorProcesses(
-      dto.moIds,
-    );
-    return {
-      success: true,
-      message: `Updated corrugator processes for MOs`,
-      data: result,
-    };
-  }
-
-  @Patch("update-many-corrugator")
-  @ApiOperation({
-    summary: "Cập nhật trạng thái cho nhiều quy trình sóng cùng lúc",
-  })
-  async updateManyCorrugatorProcesses(
-    @Body() dto: UpdateManyCorrugatorProcessesDto,
-  ): Promise<
-    BaseResponse<PatchResult<{ failedCount: number; errors: string[] }>>
-  > {
-    const result = await this.moService.updateManyCorrugatorProcesses(dto);
-    return {
-      success: true,
-      message: `Updated corrugator processes for MOs`,
-      data: result,
-    };
-  }
-
-  @Patch(":id/corrugator-process")
-  @ApiOperation({ summary: "Cập nhật quy trình sóng cho một MO" })
-  async updateOne(
-    @Param("id") id: string,
-    @Body() dto: UpdateCorrugatorProcessDto,
-  ): Promise<BaseResponse<ManufacturingOrder>> {
-    const result = await this.moService.updateCorrugatorProcess(id, dto);
-    return {
-      success: true,
-      message: "Cập nhật quy trình sóng thành công",
-      data: result,
-    };
-  }
 }

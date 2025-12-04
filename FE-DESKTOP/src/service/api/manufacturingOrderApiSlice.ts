@@ -1,7 +1,4 @@
 import { apiSlice } from "./apiSlice";
-import {
-  mockManufacturingOrderQuery,
-} from "../mock-data/functions/mock-manufacturing-orders-crud";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { PageResponse } from "@/types/DTO/PageResponse";
 import { createApiEndpoint } from "@/utils/endpointFactory";
@@ -16,19 +13,6 @@ import { UpdateManyManufacturingOrdersRequestDto, UpdateManyManufacturingOrdersR
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getManufacturingOrders: createApiEndpoint<
-      PageResponse<Serialized<ManufacturingOrder>>,
-      { page: number; limit: number, query?: string }
-    >(builder, {
-      query: ({ page, limit, query }) => ({
-        url: `${MANUFACTURING_ORDER_URL}/query/full-details`,
-        method: "GET",
-        params: { page, limit, query },
-        credentials: "include",
-      }),
-      providesTags: ["ManufacturingOrder"],
-      // mockFn: ({ page = 1, limit = 20 }) => mockManufacturingOrderQuery({ page, limit }),
-    }),
 
     getFullDetailManufacturingOrders: createApiEndpoint<
       PageResponse<Serialized<ManufacturingOrder>>,
@@ -107,7 +91,6 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
-  useGetManufacturingOrdersQuery,
   useGetFullDetailManufacturingOrdersQuery,
   useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery,
   useCreateManyManufacturingOrdersMutation,
