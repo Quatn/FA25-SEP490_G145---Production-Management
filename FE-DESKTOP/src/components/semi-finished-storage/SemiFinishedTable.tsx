@@ -4,6 +4,7 @@ import { FaEye, FaMinus, FaPlus } from "react-icons/fa";
 import { SemiFinishedGood } from "@/types/SemiFinishedGood";
 import { formatDate, hourGap } from "@/utils/dateUtils";
 import { safeGet } from "@/utils/storagesUtils";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 
 interface Props {
     page: number;
@@ -59,7 +60,7 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                             Lệnh SX
                         </Table.ColumnHeader>
 
-                        <Table.ColumnHeader textAlign={'center'} colSpan={2}>
+                        <Table.ColumnHeader textAlign={'center'} colSpan={3}>
                             Thông tin sản xuất
                         </Table.ColumnHeader>
 
@@ -100,6 +101,7 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                     </Table.Row>
                     <Table.Row >
                         <Table.ColumnHeader colSpan={1}>Khách hàng</Table.ColumnHeader>
+                        <Table.ColumnHeader colSpan={1}>Đơn hàng</Table.ColumnHeader>
                         <Table.ColumnHeader colSpan={1}>Mã hàng</Table.ColumnHeader>
                         <Table.ColumnHeader colSpan={1}>Dài</Table.ColumnHeader>
                         <Table.ColumnHeader colSpan={1}>Rộng</Table.ColumnHeader>
@@ -111,7 +113,7 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                     {items.map((item, index) => {
                         const mo = item.manufacturingOrder;
                         const poItem = mo?.purchaseOrderItem;
-                        const amount = poItem?.amount ?? 0;
+                        const amount = (poItem as PurchaseOrderItem)?.amount ?? 0;
                         const importDiff = item.importedQuantity - amount;
 
                         const hoursInStock = item.currentQuantity == 0 ? 0 : hourGap(item.createdAt);
@@ -142,6 +144,16 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
 
                                     >
                                         {safeGet(poItem, "subPurchaseOrder.purchaseOrder.customer.code")}
+                                    </Highlight>
+                                </Table.Cell>
+                                <Table.Cell>
+                                    <Highlight
+                                        ignoreCase
+                                        query={search}
+                                        styles={{ bg: "teal.muted" }}
+
+                                    >
+                                        {safeGet(poItem, "subPurchaseOrder.purchaseOrder.code")}
                                     </Highlight>
                                 </Table.Cell>
                                 <Table.Cell>

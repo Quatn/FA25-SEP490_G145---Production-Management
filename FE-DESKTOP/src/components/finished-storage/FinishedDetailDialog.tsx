@@ -4,6 +4,7 @@ import FinishedTransactionHistory from "./FinishedTransactionHistory";
 import { FinishedGood } from "@/types/FinishedGood";
 import { dayGap, formatDate } from "@/utils/dateUtils";
 import { safeGet } from "@/utils/storagesUtils";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 
 interface Props {
     isOpen: boolean;
@@ -34,7 +35,7 @@ const FinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
     const mo = current?.manufacturingOrder;
     const poItem = mo?.purchaseOrderItem;
 
-    const amount = poItem?.amount ?? 0;
+    const amount = (poItem as PurchaseOrderItem)?.amount ?? 0;
     const importDiff = (current?.importedQuantity ?? 0) - amount;
     const exportDiff = (current?.exportedQuantity ?? 0) - amount;
 

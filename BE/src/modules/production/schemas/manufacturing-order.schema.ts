@@ -12,7 +12,6 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import mongoose, { HydratedDocument, Types } from "mongoose";
 import { BaseDenormalizedSchema } from "@/common/schemas/base.denormalized.schema";
 import { softDeletePlugin } from "@/common/plugins/soft-delete.plugin";
-import { ManufacturingOrderProcess } from "./manufacturing-order-process.schema";
 import { PurchaseOrderItem } from "./purchase-order-item.schema";
 import { ApiProperty } from "@nestjs/swagger";
 
@@ -244,21 +243,6 @@ export class ManufacturingOrder extends BaseDenormalizedSchema {
   @IsOptional()
   @IsString()
   note?: string;
-
-  // LEGACY CODE: KEPT DUE TO TIME LIMITATION, AVOID USING IF POSSIBLE
-  /** @deprecated MO should not be referencing *order finishing processes*, which is what this array is trying to be */
-  @ApiProperty({
-    type: [String],
-    description: "List of ManufacturingOrderProcess ObjectIds",
-  })
-  @Prop({
-    type: [{ type: Types.ObjectId, ref: ManufacturingOrderProcess.name }],
-    required: true,
-    default: [],
-  })
-  @IsArray()
-  @IsMongoId({ each: true })
-  processes: Types.ObjectId[] | ManufacturingOrderProcess[];
 
   /** @deprecated MO wont have *operative* status, it is supposed to derive that from other objects is it associated with */
   @ApiProperty({ enum: OrderStatus })

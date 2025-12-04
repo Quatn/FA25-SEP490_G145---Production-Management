@@ -6,10 +6,6 @@ import {
   ManufacturingOrder,
   ManufacturingOrderSchema,
 } from "../schemas/manufacturing-order.schema";
-import {
-  ManufacturingOrderProcess,
-  ManufacturingOrderProcessSchema,
-} from "../schemas/manufacturing-order-process.schema";
 // import {
 //   CorrugatorProcess,
 //   CorrugatorProcessSchema,
@@ -19,17 +15,12 @@ import {
   OrderFinishingProcess,
   OrderFinishingProcessSchema,
 } from "../schemas/order-finishing-process.schema";
-import { WareFinishingProcessType, WareFinishingProcessTypeSchema } from "../schemas/ware-finishing-process-type.schema";
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: ManufacturingOrder.name, schema: ManufacturingOrderSchema },
       { name: OrderFinishingProcess.name, schema: OrderFinishingProcessSchema },
-      {
-        name: ManufacturingOrderProcess.name,
-        schema: ManufacturingOrderProcessSchema,
-      },
       // {
       //   name: CorrugatorProcess.name,
       //   schema: CorrugatorProcessSchema,

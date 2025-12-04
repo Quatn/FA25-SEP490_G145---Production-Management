@@ -4,6 +4,7 @@ import { useCreateBulkFinishedGoodTransactionsMutation } from "@/service/api/fin
 import { toaster } from "@/components/ui/toaster";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { CreateFinishedGoodTransactionDTO } from "@/types/FinishedGoodTransaction";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 
 interface Props {
     isOpen: boolean;
@@ -37,10 +38,16 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
     ]);
 
     const { contains } = useFilter({ sensitivity: "base" });
-    const initialMOs = manufacturingOrders.map((mo) => ({
-        label: `${mo.code} - ${mo.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.customer?.code} - ${mo.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.code} `,
-        value: mo._id,
-    }));
+    const initialMOs = manufacturingOrders.map((mo) => {
+            const poi: PurchaseOrderItem = mo.purchaseOrderItem as PurchaseOrderItem;
+            const subPO = poi.subPurchaseOrder;
+            const po = subPO?.purchaseOrder;
+            const customer = po?.customer;
+            return ({
+                label: `${mo.code} - ${customer?.code} - ${po?.code} `,
+                value: mo._id,
+            });
+        });
 
     const { collection: moCollection, filter: moFilter } = useListCollection({
         initialItems: initialMOs,

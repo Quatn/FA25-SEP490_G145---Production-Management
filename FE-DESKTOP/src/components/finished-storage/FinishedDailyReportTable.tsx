@@ -4,6 +4,7 @@ import { formatDate } from "@/utils/dateUtils";
 import { safeGet } from "@/utils/storagesUtils";
 import { FinishedGoodDailyItem } from "@/types/FinishedGoodTransaction";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 
 interface DailyReportTableProps {
     search: string;
@@ -110,7 +111,7 @@ const FinishedDailyReportTable: React.FC<DailyReportTableProps> = ({
                         {dailyItems.map((item, index) => {
                             const mo = item.finishedGood.manufacturingOrder;
                             const poItem = mo?.purchaseOrderItem;
-                            const amount = poItem?.amount;
+                            const amount = (poItem as PurchaseOrderItem)?.amount;
                             return (
                                 <Table.Row key={index}>
                                     <Table.Cell textAlign="center">{index + 1}</Table.Cell>

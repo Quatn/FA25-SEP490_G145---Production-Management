@@ -4,6 +4,7 @@ import { useCreateFinishedGoodTransactionMutation } from "@/service/api/finished
 import { toaster } from "@/components/ui/toaster";
 import { FinishedGood } from "@/types/FinishedGood";
 import { CreateFinishedGoodTransactionDTO } from "@/types/FinishedGoodTransaction";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 
 interface Props {
     isOpen: boolean;
@@ -29,7 +30,7 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
     const [mo, setMo] = useState('');
     const [customer, setCustomer] = useState('');
     const [po, setPo] = useState('');
-    
+
     useEffect(() => {
         if (isOpen) {
             setTransaction({
@@ -41,9 +42,11 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
                 employee: "69146dd889bf8e8ca320bcff", //TODO: hardcode employee
                 note: "",
             });
-            setMo(String(initialData?.manufacturingOrder?.code));
-            setCustomer(String(initialData?.manufacturingOrder?.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.customer?.code));
-            setPo(String(initialData?.manufacturingOrder?.purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.code));
+            const mo = initialData?.manufacturingOrder;
+            const poi = initialData?.manufacturingOrder?.purchaseOrderItem as PurchaseOrderItem;
+            setMo(String(mo?.code));
+            setCustomer(String(poi?.subPurchaseOrder?.purchaseOrder?.customer?.code));
+            setPo(String(poi?.subPurchaseOrder?.purchaseOrder?.code));
 
         }
     }, [isOpen]);
@@ -86,7 +89,7 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
                         <Dialog.Header>
                             <Dialog.Title>
                                 {transaction.transactionType === "IMPORT" ? "Phiếu Nhập" : "Phiếu Xuất"} Kho Thành Phẩm
-                                </Dialog.Title>
+                            </Dialog.Title>
                         </Dialog.Header>
                         <Dialog.Body>
                             <Flex direction="column" gap={3}>
@@ -160,8 +163,8 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
 
                                 <Field.Root orientation="vertical">
                                     <Field.Label fontSize="lg">
-                                        Ngày {transaction.transactionType === "IMPORT" ? "nhập" : "xuất"} 
-                                        </Field.Label>
+                                        Ngày {transaction.transactionType === "IMPORT" ? "nhập" : "xuất"}
+                                    </Field.Label>
                                     <Input
                                         type="date"
                                         value={transaction.transactionDate}
@@ -173,9 +176,9 @@ const FinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData
 
                                 <Field.Root orientation="vertical">
                                     <Field.Label>Ghi chú</Field.Label>
-                                    <Input 
-                                    value={transaction.note} 
-                                    onChange={(e) => setTransaction({ ...transaction, note: e.target.value })} />
+                                    <Input
+                                        value={transaction.note}
+                                        onChange={(e) => setTransaction({ ...transaction, note: e.target.value })} />
                                 </Field.Root>
                             </Flex>
                         </Dialog.Body>

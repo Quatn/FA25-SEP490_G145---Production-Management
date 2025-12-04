@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 import { ManufacturingOrderModule } from "./manufacturing-order/manufacturing-order.module";
-import { ManufacturingOrderProcessModule } from "./manufacturing-order-process/manufacturing-order-process.module";
 import { ProductModule } from "./product/product.module";
 import { WareModule } from "./ware/ware.module";
 // import { CorrugatorProcessModule } from "./corrugator-process/corrugator-process.module";
@@ -15,11 +14,11 @@ import { ProductTypeModule } from "./product-type/product-type.module";
 import { FluteCombinationModule } from "./flute-combination/flute-combination.module";
 import { PrintColorModule } from "./print-color/print-color.module";
 import { DeliveryNoteModule } from './delivery-note/delivery-note.module';
+import { OrderFinishingProcessModule } from './order-finishing-process/order-finishing-process.module';
 
 @Module({
   imports: [
     ManufacturingOrderModule,
-    ManufacturingOrderProcessModule,
     PurchaseOrderItemModule,
     ProductModule,
     WareModule,
@@ -37,6 +36,7 @@ import { DeliveryNoteModule } from './delivery-note/delivery-note.module';
     CustomerModule,
     PrintColorModule,
     DeliveryNoteModule,
+    OrderFinishingProcessModule,
   ],
 })
 export class ProductionModule { }
