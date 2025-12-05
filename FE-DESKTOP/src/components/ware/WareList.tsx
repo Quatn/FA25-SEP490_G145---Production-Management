@@ -440,6 +440,10 @@ export const WareList: React.FC = () => {
     margin: 0,
     paperWidth: 0,
     crossCutCount: 0,
+    warePerBlankAdjustment: "",
+    flapAdjustment: "",
+    flapOverlapAdjustment: "",
+    crossCutCountAdjustment: "",
     faceLayerPaperType: "",
     EFlutePaperType: "",
     EBLinerLayerPaperType: "",
@@ -505,6 +509,26 @@ export const WareList: React.FC = () => {
         ware.crossCutCount !== undefined && ware.crossCutCount !== null
           ? String(ware.crossCutCount)
           : 0,
+      // NEW: prefill adjustment fields for edit form
+      warePerBlankAdjustment:
+        ware.warePerBlankAdjustment !== undefined &&
+        ware.warePerBlankAdjustment !== null
+          ? String(ware.warePerBlankAdjustment)
+          : "",
+      flapAdjustment:
+        ware.flapAdjustment !== undefined && ware.flapAdjustment !== null
+          ? String(ware.flapAdjustment)
+          : "",
+      flapOverlapAdjustment:
+        ware.flapOverlapAdjustment !== undefined &&
+        ware.flapOverlapAdjustment !== null
+          ? String(ware.flapOverlapAdjustment)
+          : "",
+      crossCutCountAdjustment:
+        ware.crossCutCountAdjustment !== undefined &&
+        ware.crossCutCountAdjustment !== null
+          ? String(ware.crossCutCountAdjustment)
+          : "",
       volume:
         ware.volume !== undefined && ware.volume !== null
           ? String(ware.volume)
@@ -618,26 +642,23 @@ export const WareList: React.FC = () => {
   const handleCreateSubmit = async () => {
     try {
       if (!createForm.code || String(createForm.code).trim() === "")
-        return alert("Please provide code");
+        return alert("Mã hàng không được để trống");
       const unitPrice = parsePositiveNumberOrNull(createForm.unitPrice);
-      if (!unitPrice || unitPrice <= 0)
-        return alert("Please provide unitPrice > 0");
+      if (!unitPrice || unitPrice <= 0) return alert("Đơn giá phải > 0");
 
       const fluteCombination = String(createForm.fluteCombination || "");
-      if (!fluteCombination) return alert("Please select flute (sóng)");
+      if (!fluteCombination) return alert("Hãy chọn sóng");
 
       const wareWidth = parsePositiveNumberOrNull(createForm.wareWidth);
       const wareLength = parsePositiveNumberOrNull(createForm.wareLength);
-      if (!wareWidth || wareWidth <= 0)
-        return alert("Please provide wareWidth > 0");
-      if (!wareLength || wareLength <= 0)
-        return alert("Please provide wareLength > 0");
+      if (!wareWidth || wareWidth <= 0) return alert("Rộng phải > 0");
+      if (!wareLength || wareLength <= 0) return alert("Dài phải > 0");
 
       const wareManufacturingProcessType = String(
         createForm.wareManufacturingProcessType || ""
       );
       if (!wareManufacturingProcessType)
-        return alert("Please select Kiểu SP gia công");
+        return alert("Hãy chọn Kiểu SP gia công");
       const volume = parsePositiveNumberOrNull(createForm.volume);
       const warePerSet = parsePositiveNumberOrNull(createForm.warePerSet);
       const warePerCombinedSet = parsePositiveNumberOrNull(
@@ -646,20 +667,40 @@ export const WareList: React.FC = () => {
       const horizontalWareSplit = parsePositiveNumberOrNull(
         createForm.horizontalWareSplit
       );
+      const warePerBlankAdjustment = parsePositiveNumberOrNull(
+        createForm.warePerBlankAdjustment
+      );
+      const flapAdjustment = parsePositiveNumberOrNull(
+        createForm.flapAdjustment
+      );
+      const flapOverlapAdjustment = parsePositiveNumberOrNull(
+        createForm.flapOverlapAdjustment
+      );
+      const crossCutCountAdjustment = parsePositiveNumberOrNull(
+        createForm.crossCutCountAdjustment
+      );
 
-      if (!volume || volume <= 0) return alert("Please provide volume > 0");
-      if (!warePerSet || warePerSet <= 0)
-        return alert("Please provide warePerSet > 0");
+      if (!volume || volume <= 0) return alert("Thể tích phải > 0");
+      if (!warePerSet || warePerSet <= 0) return alert("Số SP bộ phải > 0");
       if (!warePerCombinedSet || warePerCombinedSet <= 0)
-        return alert("Please provide warePerCombinedSet > 0");
+        return alert("Số SP ghép bộ phải > 0");
       if (!horizontalWareSplit || horizontalWareSplit <= 0)
-        return alert("Please provide horizontalWareSplit > 0");
+        return alert("Dọc chia SP phải > 0");
+
+      if (!warePerBlankAdjustment || warePerBlankAdjustment <= 0)
+        return alert("Điều chỉnh số SP phải > 0");
+      if (!flapAdjustment || flapAdjustment <= 0)
+        return alert("Điều chỉnh tai phải > 0");
+      if (!flapOverlapAdjustment || flapOverlapAdjustment <= 0)
+        return alert("Điều chỉnh cộng cánh phải > 0");
+      if (!crossCutCountAdjustment || crossCutCountAdjustment <= 0)
+        return alert("Điều chỉnh part SX phải > 0");
 
       if (
         !Array.isArray(createForm.printColors) ||
         createForm.printColors.length === 0
       )
-        return alert("Please select at least one print color");
+        return alert("Chọn ít nhất 1 màu in");
 
       const oneLayerSelected = [
         createForm.faceLayerPaperType,
@@ -670,10 +711,7 @@ export const WareList: React.FC = () => {
         createForm.ACFlutePaperType,
         createForm.backLayerPaperType,
       ].some((v) => v && String(v).trim() !== "");
-      if (!oneLayerSelected)
-        return alert(
-          "Please select at least one paper layer (face/inner/back)"
-        );
+      if (!oneLayerSelected) return alert("Chọn ít nhất 1 mặt giấy");
 
       const payload: any = {
         code: String(createForm.code).trim(),
@@ -690,6 +728,10 @@ export const WareList: React.FC = () => {
         margin: 0,
         paperWidth: 0,
         crossCutCount: 0,
+        warePerBlankAdjustment: warePerBlankAdjustment,
+        flapAdjustment: flapAdjustment,
+        flapOverlapAdjustment: flapOverlapAdjustment,
+        crossCutCountAdjustment: crossCutCountAdjustment,
         faceLayerPaperType:
           createForm.faceLayerPaperType && createForm.faceLayerPaperType !== ""
             ? createForm.faceLayerPaperType
@@ -759,6 +801,10 @@ export const WareList: React.FC = () => {
         margin: 0,
         paperWidth: 0,
         crossCutCount: 0,
+        warePerBlankAdjustment: "",
+        flapAdjustment: "",
+        flapOverlapAdjustment: "",
+        crossCutCountAdjustment: "",
         faceLayerPaperType: "",
         EFlutePaperType: "",
         EBLinerLayerPaperType: "",
@@ -780,42 +826,38 @@ export const WareList: React.FC = () => {
       setTimeout(() => {
         try {
           refetchWares?.();
-          refetchDeleted?.();
         } catch {}
       }, 800);
 
-      alert(resp?.message ?? "Created");
+      alert(resp?.message ?? "Đã tạo");
     } catch (err: any) {
-      console.error("Create ware failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Create failed");
+      console.error("Tạo thất bại", err);
+      alert(err?.data?.message ?? err?.message ?? "Tạo thất bại");
     }
   };
 
   const handleEditSubmit = async () => {
     try {
-      if (!editForm?.id) return alert("No id");
+      if (!editForm?.id) return alert("Không tìm thấy mã này");
 
       if (!editForm.code || String(editForm.code).trim() === "")
-        return alert("Please provide code");
+        return alert("Mã hàng không được để trống");
       const unitPrice = parsePositiveNumberOrNull(editForm.unitPrice);
-      if (!unitPrice || unitPrice <= 0)
-        return alert("Please provide unitPrice > 0");
+      if (!unitPrice || unitPrice <= 0) return alert("Đơn giá phải > 0");
 
       const fluteCombination = String(editForm.fluteCombination || "");
-      if (!fluteCombination) return alert("Please select flute (sóng)");
+      if (!fluteCombination) return alert("Hãy chọn sóng");
 
       const wareWidth = parsePositiveNumberOrNull(editForm.wareWidth);
       const wareLength = parsePositiveNumberOrNull(editForm.wareLength);
-      if (!wareWidth || wareWidth <= 0)
-        return alert("Please provide wareWidth > 0");
-      if (!wareLength || wareLength <= 0)
-        return alert("Please provide wareLength > 0");
+      if (!wareWidth || wareWidth <= 0) return alert("Rộng phải > 0");
+      if (!wareLength || wareLength <= 0) return alert("Dài phải > 0");
 
       const wareManufacturingProcessType = String(
         editForm.wareManufacturingProcessType || ""
       );
       if (!wareManufacturingProcessType)
-        return alert("Please select Kiểu SP gia công");
+        return alert("Hãy chọn Kiểu SP gia công");
       const volume = parsePositiveNumberOrNull(editForm.volume);
       const warePerSet = parsePositiveNumberOrNull(editForm.warePerSet);
       const warePerCombinedSet = parsePositiveNumberOrNull(
@@ -825,19 +867,39 @@ export const WareList: React.FC = () => {
         editForm.horizontalWareSplit
       );
 
-      if (!volume || volume <= 0) return alert("Please provide volume > 0");
-      if (!warePerSet || warePerSet <= 0)
-        return alert("Please provide warePerSet > 0");
+      // parse new adjustments
+      const warePerBlankAdjustment = parsePositiveNumberOrNull(
+        editForm.warePerBlankAdjustment
+      );
+      const flapAdjustment = parsePositiveNumberOrNull(editForm.flapAdjustment);
+      const flapOverlapAdjustment = parsePositiveNumberOrNull(
+        editForm.flapOverlapAdjustment
+      );
+      const crossCutCountAdjustment = parsePositiveNumberOrNull(
+        editForm.crossCutCountAdjustment
+      );
+
+      if (!volume || volume <= 0) return alert("Thể tích phải > 0");
+      if (!warePerSet || warePerSet <= 0) return alert("Số SP bộ phải > 0");
       if (!warePerCombinedSet || warePerCombinedSet <= 0)
-        return alert("Please provide warePerCombinedSet > 0");
+        return alert("Số SP ghép bộ phải > 0");
       if (!horizontalWareSplit || horizontalWareSplit <= 0)
-        return alert("Please provide horizontalWareSplit > 0");
+        return alert("Dọc chia SP > 0");
+
+      if (!warePerBlankAdjustment || warePerBlankAdjustment <= 0)
+        return alert("Điều chỉnh số SP phải > 0");
+      if (!flapAdjustment || flapAdjustment <= 0)
+        return alert("Điều chỉnh tai phải > 0");
+      if (!flapOverlapAdjustment || flapOverlapAdjustment <= 0)
+        return alert("Điều chỉnh cộng cánh phải > 0");
+      if (!crossCutCountAdjustment || crossCutCountAdjustment <= 0)
+        return alert("Điều chỉnh part SX phải > 0");
 
       if (
         !Array.isArray(editForm.printColors) ||
         editForm.printColors.length === 0
       )
-        return alert("Please select at least one print color");
+        return alert("Chọn ít nhất 1 màu in");
 
       const oneLayerSelected = [
         editForm.faceLayerPaperType,
@@ -848,10 +910,7 @@ export const WareList: React.FC = () => {
         editForm.ACFlutePaperType,
         editForm.backLayerPaperType,
       ].some((v) => v && String(v).trim() !== "");
-      if (!oneLayerSelected)
-        return alert(
-          "Please select at least one paper layer (face/inner/back)"
-        );
+      if (!oneLayerSelected) return alert("Chọn ít nhất 1 mặt giấy");
 
       const payload: any = {
         code: String(editForm.code).trim(),
@@ -861,6 +920,11 @@ export const WareList: React.FC = () => {
         wareLength: wareLength,
         wareHeight: parsePositiveNumberOrNull(editForm.wareHeight),
         wareManufacturingProcessType: wareManufacturingProcessType,
+        // include adjustments in edit payload
+        warePerBlankAdjustment: warePerBlankAdjustment,
+        flapAdjustment: flapAdjustment,
+        flapOverlapAdjustment: flapOverlapAdjustment,
+        crossCutCountAdjustment: crossCutCountAdjustment,
         warePerBlank: 0,
         blankWidth: 0,
         blankLength: 0,
@@ -937,7 +1001,7 @@ export const WareList: React.FC = () => {
         } catch {}
       }, 800);
 
-      alert(res?.message ?? "Updated");
+      alert(res?.message ?? "Đã thay đổi thành công");
     } catch (err: any) {
       console.error("Update failed", err);
       alert(err?.data?.message ?? err?.message ?? "Update failed");
@@ -1114,21 +1178,17 @@ export const WareList: React.FC = () => {
               <th rowSpan={2}>Kiểu SP gia công</th>
               <th rowSpan={2}>Công đoạn hoàn thiện</th>
               <th rowSpan={2}>Màu in</th>
-
-              {/* Mặt giấy main header spanning small subcolumns */}
               <th
                 colSpan={PAPER_LAYER_KEYS.length}
                 style={{ textAlign: "center", verticalAlign: "middle" }}
               >
                 Mặt giấy
               </th>
-
               <th rowSpan={2}>Máy in</th>
               <th rowSpan={2}>Ghi chú</th>
               <th rowSpan={2}>Thao tác</th>
             </tr>
 
-            {/* second header row: small paper-layer headers */}
             <tr>
               {PAPER_LAYER_KEYS.map((k) => (
                 <th key={k.key}>{k.label}</th>

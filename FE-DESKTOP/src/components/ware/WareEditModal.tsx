@@ -219,6 +219,35 @@ const WareEditModal: React.FC<Props> = ({
                       }
                     />
                   </Label>
+
+                  {/* New adjustment fields in edit modal (required) */}
+                  <Label label="warePerBlankAdjustment" required>
+                    <input
+                      className="form-control"
+                      type="number"
+                      value={editForm?.warePerBlankAdjustment ?? ""}
+                      onChange={(e) =>
+                        setEditForm((p: any) => ({
+                          ...(p ?? {}),
+                          warePerBlankAdjustment: e.target.value,
+                        }))
+                      }
+                    />
+                  </Label>
+
+                  <Label label="flapAdjustment" required>
+                    <input
+                      className="form-control"
+                      type="number"
+                      value={editForm?.flapAdjustment ?? ""}
+                      onChange={(e) =>
+                        setEditForm((p: any) => ({
+                          ...(p ?? {}),
+                          flapAdjustment: e.target.value,
+                        }))
+                      }
+                    />
+                  </Label>
                 </div>
 
                 <div className="col-md-6">
@@ -279,6 +308,35 @@ const WareEditModal: React.FC<Props> = ({
                         setEditForm((p: any) => ({
                           ...(p ?? {}),
                           horizontalWareSplit: e.target.value,
+                        }))
+                      }
+                    />
+                  </Label>
+
+                  {/* New adjustment fields in edit modal (required) */}
+                  <Label label="flapOverlapAdjustment" required>
+                    <input
+                      className="form-control"
+                      type="number"
+                      value={editForm?.flapOverlapAdjustment ?? ""}
+                      onChange={(e) =>
+                        setEditForm((p: any) => ({
+                          ...(p ?? {}),
+                          flapOverlapAdjustment: e.target.value,
+                        }))
+                      }
+                    />
+                  </Label>
+
+                  <Label label="crossCutCountAdjustment" required>
+                    <input
+                      className="form-control"
+                      type="number"
+                      value={editForm?.crossCutCountAdjustment ?? ""}
+                      onChange={(e) =>
+                        setEditForm((p: any) => ({
+                          ...(p ?? {}),
+                          crossCutCountAdjustment: e.target.value,
                         }))
                       }
                     />

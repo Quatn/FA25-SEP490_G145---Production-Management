@@ -220,6 +220,35 @@ const WareCreateModal: React.FC<Props> = ({
                       }
                     />
                   </Label>
+
+                  {/* New adjustment fields placed in left column (required) */}
+                  <Label label="warePerBlankAdjustment" required>
+                    <input
+                      className="form-control"
+                      type="number"
+                      value={createForm?.warePerBlankAdjustment ?? ""}
+                      onChange={(e) =>
+                        setCreateForm((p: any) => ({
+                          ...(p ?? {}),
+                          warePerBlankAdjustment: e.target.value,
+                        }))
+                      }
+                    />
+                  </Label>
+
+                  <Label label="flapAdjustment" required>
+                    <input
+                      className="form-control"
+                      type="number"
+                      value={createForm?.flapAdjustment ?? ""}
+                      onChange={(e) =>
+                        setCreateForm((p: any) => ({
+                          ...(p ?? {}),
+                          flapAdjustment: e.target.value,
+                        }))
+                      }
+                    />
+                  </Label>
                 </div>
 
                 <div className="col-md-6">
@@ -280,6 +309,35 @@ const WareCreateModal: React.FC<Props> = ({
                         setCreateForm((p: any) => ({
                           ...(p ?? {}),
                           horizontalWareSplit: e.target.value,
+                        }))
+                      }
+                    />
+                  </Label>
+
+                  {/* New adjustment fields placed in right column (required) */}
+                  <Label label="flapOverlapAdjustment" required>
+                    <input
+                      className="form-control"
+                      type="number"
+                      value={createForm?.flapOverlapAdjustment ?? ""}
+                      onChange={(e) =>
+                        setCreateForm((p: any) => ({
+                          ...(p ?? {}),
+                          flapOverlapAdjustment: e.target.value,
+                        }))
+                      }
+                    />
+                  </Label>
+
+                  <Label label="crossCutCountAdjustment" required>
+                    <input
+                      className="form-control"
+                      type="number"
+                      value={createForm?.crossCutCountAdjustment ?? ""}
+                      onChange={(e) =>
+                        setCreateForm((p: any) => ({
+                          ...(p ?? {}),
+                          crossCutCountAdjustment: e.target.value,
                         }))
                       }
                     />
