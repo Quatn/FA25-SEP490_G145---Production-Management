@@ -70,15 +70,9 @@ const initialCollection = createTreeCollection<Node>({
         name: "Manufacturing Order",
         children: [
           {
-            id: "manufacturing-order-list",
-            name: "Manufacturing Order List",
+            id: "manufacturing-order-dashboard",
+            name: "Manufacturing Order Dashboard",
             href: "/manufacturing-order",
-            children: [],
-          },
-          {
-            id: "manufacturing-order-create",
-            name: "Manufacturing Order Create",
-            href: "/manufacturing-order/create",
             children: [],
           },
           {
@@ -88,9 +82,15 @@ const initialCollection = createTreeCollection<Node>({
             children: [],
           },
           {
-            id: "manufacturing-order-operate",
-            name: "Manufacturing Order Operate",
-            href: "/manufacturing-order/operate",
+            id: "manufacturing-order-create",
+            name: "Manufacturing Order Create",
+            href: "/manufacturing-order/create",
+            children: [],
+          },
+          {
+            id: "manufacturing-order-corrugator-process-operate",
+            name: "Manufacturing Order Corrugator Process Operate",
+            href: "/manufacturing-order/corrugator-process-operate",
             children: [],
           },
         ],
