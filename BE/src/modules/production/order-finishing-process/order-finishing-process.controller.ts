@@ -8,6 +8,7 @@ import { BaseResponse } from '@/common/dto/response.dto';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
 import { OrderFinishingProcess, OrderFinishingProcessDocument } from '../schemas/order-finishing-process.schema';
 import { FindManyOrderFinishingProcessesByManufacturingOrderIdsRequestDto } from './dto/find-many-by-manufacturing-order-ids.dto';
+import { BulkUpdateOrderFinishingProcessDto } from './dto/bulk-update-order-finishing-process.dto';
 
 @Controller('order-finishing-process')
 export class OrderFinishingProcessController {
@@ -82,6 +83,23 @@ export class OrderFinishingProcessController {
       success: true,
       message: 'Updated successfully',
       data,
+    };
+  }
+
+  @Patch('update-many')
+  @ApiOperation({ summary: 'Update many finishing processes' })
+  async updateMany(
+    @Body() bulkDto: BulkUpdateOrderFinishingProcessDto,
+  ): Promise<BaseResponse<any>> {
+
+    const { ids, data } = bulkDto;
+
+    const result = await this.service.updateMany(ids, data);
+
+    return {
+      success: true,
+      message: 'Updated successfully',
+      data: result,
     };
   }
 
