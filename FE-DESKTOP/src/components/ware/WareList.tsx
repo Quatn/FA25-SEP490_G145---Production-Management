@@ -639,10 +639,32 @@ export const WareList: React.FC = () => {
     return n;
   };
 
+  // --- new helper: check if a code already exists in the current list ---
+  const isCodeTaken = (code: string, excludeId?: string | null) => {
+    const norm = String(code ?? "")
+      .trim()
+      .toLowerCase();
+    if (!norm) return false;
+    const arr = displayWaresRef.current || [];
+    return arr.some((w) => {
+      const wCode = String(w?.code ?? "")
+        .trim()
+        .toLowerCase();
+      if (!wCode) return false;
+      const wid = getIdFromDoc(w) ?? w._id ?? w.code;
+      if (excludeId && wid && String(wid) === String(excludeId)) return false;
+      return wCode === norm;
+    });
+  };
+
   const handleCreateSubmit = async () => {
     try {
       if (!createForm.code || String(createForm.code).trim() === "")
         return alert("Mã hàng không được để trống");
+
+      // uniqueness check
+      if (isCodeTaken(createForm.code)) return alert("Mã hàng đã tồn tại");
+
       const unitPrice = parsePositiveNumberOrNull(createForm.unitPrice);
       if (!unitPrice || unitPrice <= 0) return alert("Đơn giá phải > 0");
 
@@ -842,6 +864,11 @@ export const WareList: React.FC = () => {
 
       if (!editForm.code || String(editForm.code).trim() === "")
         return alert("Mã hàng không được để trống");
+
+      // uniqueness check (exclude current record id)
+      if (isCodeTaken(editForm.code, editForm.id))
+        return alert("Mã hàng đã tồn tại");
+
       const unitPrice = parsePositiveNumberOrNull(editForm.unitPrice);
       if (!unitPrice || unitPrice <= 0) return alert("Đơn giá phải > 0");
 
