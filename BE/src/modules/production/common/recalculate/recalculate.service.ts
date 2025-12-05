@@ -21,6 +21,7 @@ import { recalculateWare } from "../../ware/business-logics/recalculate-ware";
 import { recalculatePurchaseOrderItem } from "../../purchase-order-item/business-logics/recalculate-poi";
 import { SubPurchaseOrderSchema } from "../../schemas/sub-purchase-order.schema";
 import { PurchaseOrderSchema } from "../../schemas/purchase-order.schema";
+import { OrderFinishingProcess } from "../../schemas/order-finishing-process.schema";
 
 @Injectable()
 export class ProductionRecalculateService {
@@ -31,6 +32,8 @@ export class ProductionRecalculateService {
     private readonly purchaseOrderItemModel: Model<PurchaseOrderItem>,
     @InjectModel(Ware.name)
     private readonly wareModel: Model<Ware>,
+    @InjectModel(OrderFinishingProcess.name)
+    private readonly orderFinishingProcessModel: Model<OrderFinishingProcess>,
   ) { }
   async checkAndRecalculateWareById(wareId: Types.ObjectId) {
     const wareDoc = await this.wareModel.findById(wareId);
@@ -173,30 +176,49 @@ export class ProductionRecalculateService {
   async checkAndRecalculateManufacturingOrderDoc(
     mo: ManufacturingOrderDocument,
   ) {
-    if (mo.recalculateFlag) {
-      if (!isRefPopulated(mo.purchaseOrderItem)) {
-        throw new UnpopulatedFieldError(
-          "mo.purchaseOrderItem must be populated before it is passed to mo recalculate function",
+    if (!isRefPopulated(mo.purchaseOrderItem)) {
+      throw new UnpopulatedFieldError(
+        "mo.purchaseOrderItem must be populated before it is passed to mo recalculate function",
+      );
+    }
+
+    if (!isRefPopulated(mo.purchaseOrderItem.ware)) {
+      throw new UnpopulatedFieldError(
+        "mo.purchaseOrderItem.ware must be populated before it is passed to mo recalculate function",
+      );
+    }
+
+    if (
+      mo.recalculateFlag ||
+      mo.purchaseOrderItem.ware.recalculateFlag ||
+      mo.purchaseOrderItem.recalculateFlag
+    ) {
+      const recalcWare = mo.purchaseOrderItem.ware.recalculateFlag;
+      const recalcPOI = mo.purchaseOrderItem.recalculateFlag;
+
+      // console.log("Check recalc ware", mo.purchaseOrderItem.ware.code);
+      if (recalcWare) {
+        // console.log("Need recalc ware", mo.purchaseOrderItem.ware.code);
+        const wareDoc = this.wareModel.hydrate(mo.purchaseOrderItem.ware);
+        const res = await this.checkAndRecalculateWareDoc(wareDoc);
+        // console.log("f1", mo.purchaseOrderItem.ware.recalculateFlag);
+        // console.log("res", res.recalculateFlag);
+        mo.purchaseOrderItem.ware = res;
+        // console.log("f2", mo.purchaseOrderItem.ware.recalculateFlag);
+      }
+
+      // console.log("Check recalc poi", mo.purchaseOrderItem.code);
+      if (recalcWare || recalcPOI) {
+        const poiDoc = this.purchaseOrderItemModel.hydrate(
+          mo.purchaseOrderItem,
         );
-      }
-
-      if (!isRefPopulated(mo.purchaseOrderItem.ware)) {
-        throw new UnpopulatedFieldError(
-          "mo.purchaseOrderItem.ware must be populated before it is passed to mo recalculate function",
-        );
-      }
-
-      if (mo.purchaseOrderItem.ware.recalculateFlag) {
-        const wareDoc = this.wareModel.hydrate(mo.purchaseOrderItem.ware)
-        mo.purchaseOrderItem.ware =
-          await this.checkAndRecalculateWareDoc(wareDoc);
-      }
-
-      if (mo.purchaseOrderItem.recalculateFlag) {
-        const poiDoc = this.purchaseOrderItemModel.hydrate(mo.purchaseOrderItem)
         mo.purchaseOrderItem =
           await this.checkAndRecalculatePurchaseOrderItemDoc(poiDoc);
       }
+
+      await this.orderFinishingProcessModel.updateMany({manufacturingOrder: mo._id}, {
+        $set: { requiredAmount: mo.amount },
+      });
 
       const recalculatedOrder = recalculateManufacturingOrder(mo);
       Object.assign(mo, recalculatedOrder);

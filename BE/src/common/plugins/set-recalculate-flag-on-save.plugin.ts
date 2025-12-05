@@ -17,10 +17,13 @@ export function RecalculateFlagPlugin(
   schema.pre("save", function(next) {
     const modified = this.modifiedPaths();
 
-    const shouldFlag = modified.some((path) => !ignoredFields.includes(path));
+    // allow manual flag setting
+    if (!modified.includes(flagField)) {
+      const shouldFlag = modified.some((path) => !ignoredFields.includes(path));
 
-    if (shouldFlag) {
-      this[flagField] = true;
+      if (shouldFlag) {
+        this[flagField] = true;
+      }
     }
 
     next();

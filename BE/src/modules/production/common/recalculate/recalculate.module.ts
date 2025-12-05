@@ -6,8 +6,12 @@ import {
   ManufacturingOrderSchema,
 } from "../../schemas/manufacturing-order.schema";
 import { PurchaseOrderItemModule } from "../../purchase-order-item/purchase-order-item.module";
-import { PurchaseOrderItem, PurchaseOrderItemSchema } from "../../schemas/purchase-order-item.schema";
+import {
+  PurchaseOrderItem,
+  PurchaseOrderItemSchema,
+} from "../../schemas/purchase-order-item.schema";
 import { Ware, WareSchema } from "../../schemas/ware.schema";
+import { OrderFinishingProcess, OrderFinishingProcessSchema } from "../../schemas/order-finishing-process.schema";
 
 @Module({
   imports: [
@@ -15,6 +19,10 @@ import { Ware, WareSchema } from "../../schemas/ware.schema";
       { name: ManufacturingOrder.name, schema: ManufacturingOrderSchema },
       { name: PurchaseOrderItem.name, schema: PurchaseOrderItemSchema },
       { name: Ware.name, schema: WareSchema },
+      {
+        name: OrderFinishingProcess.name,
+        schema: OrderFinishingProcessSchema,
+      },
     ]),
     PurchaseOrderItemModule,
   ],

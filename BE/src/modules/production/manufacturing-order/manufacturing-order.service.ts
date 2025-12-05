@@ -19,10 +19,14 @@ import {
 } from "./dto/update-order-request.dto";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
 import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
-import { PurchaseOrderItemSchema } from "../schemas/purchase-order-item.schema";
+import {
+  PurchaseOrderItem,
+  PurchaseOrderItemDocument,
+  PurchaseOrderItemSchema,
+} from "../schemas/purchase-order-item.schema";
 import { SubPurchaseOrderSchema } from "../schemas/sub-purchase-order.schema";
 import { PurchaseOrderSchema } from "../schemas/purchase-order.schema";
-import { Ware, WareSchema } from "../schemas/ware.schema";
+import { Ware, WareDocument, WareSchema } from "../schemas/ware.schema";
 import { MOCodeGenerator } from "./business-logics/mo-code-generator";
 import { getManufacturingDate } from "./business-logics/mo-manufacturing-date-getter";
 import { FullDetailPurchaseOrderItemDto } from "../purchase-order-item/dto/full-details-orders.dto";
@@ -57,6 +61,51 @@ export class ManufacturingOrderService {
     private readonly finishedGoodProcessModel: Model<FinishedGood>,
     private recalcService: ProductionRecalculateService,
   ) { }
+
+  async recalCheckDocs(docs: ManufacturingOrderDocument[]) {
+    const resultRocs: ManufacturingOrderDocument[] = [];
+
+    for (const moDoc of docs) {
+      const alreadyRecalcedPOI = resultRocs.find((co) =>
+        (co.purchaseOrderItem as PurchaseOrderItemDocument)._id.equals(
+          (moDoc.purchaseOrderItem as PurchaseOrderItemDocument)._id,
+        ),
+      );
+
+      if (alreadyRecalcedPOI) {
+        moDoc.purchaseOrderItem = alreadyRecalcedPOI.purchaseOrderItem;
+      } else {
+        const moDocWithSameWare = resultRocs.find((co) => {
+          return (
+            (co.purchaseOrderItem as PurchaseOrderItemDocument)
+              .ware as WareDocument
+          )._id.equals(
+            (
+              (moDoc.purchaseOrderItem as PurchaseOrderItemDocument)
+                .ware as WareDocument
+            )._id,
+          );
+        });
+        const alreadyRecalcedWare = (
+          moDocWithSameWare?.purchaseOrderItem as PurchaseOrderItemDocument
+        )?.ware;
+
+        if (alreadyRecalcedWare) {
+          (moDoc.purchaseOrderItem as PurchaseOrderItemDocument).ware =
+            alreadyRecalcedWare;
+        }
+      }
+
+      const recaledMoDoc =
+        await this.recalcService.checkAndRecalculateManufacturingOrderDoc(
+          moDoc,
+        );
+
+      resultRocs.push(recaledMoDoc);
+    }
+
+    return resultRocs;
+  }
 
   async findAll() {
     const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
@@ -128,20 +177,11 @@ export class ManufacturingOrderService {
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
 
-    const needRecalcDocs = (data as ManufacturingOrderDocument[]).map((mo) =>
+    const moDocs = (data as ManufacturingOrderDocument[]).map((mo) =>
       this.manufacturingOrderModel.hydrate(mo),
     );
 
-    const recalCheckedOrders = await Promise.all(
-      needRecalcDocs.map(async (moDoc) => {
-        const recalcRes =
-          await this.recalcService.checkAndRecalculateManufacturingOrderDoc(
-            moDoc,
-          );
-
-        return recalcRes;
-      }),
-    );
+    const recalCheckedOrders = await this.recalCheckDocs(moDocs);
 
     const ids = recalCheckedOrders.map((mo) => mo._id);
 
@@ -319,7 +359,7 @@ export class ManufacturingOrderService {
               manufacturingOrder: mo._id,
               wareFinishingProcessType: type,
               sequenceNumber: index + 1,
-              requiredAmount: mo.numberOfBlanks * ware.warePerBlank,
+              requiredAmount: mo.amount,
               completedAmount: 0,
               status: OrderFinishingProcessStatus.PendingApproval,
               note: "",
@@ -425,6 +465,11 @@ export class ManufacturingOrderService {
       );
 
       Object.assign(doc, dto);
+
+      await this.orderFinishingProcessModel.updateMany({manufacturingOrder: doc._id}, {
+        $set: { requiredAmount: doc.amount },
+      });
+
       await doc.save();
     }
 
