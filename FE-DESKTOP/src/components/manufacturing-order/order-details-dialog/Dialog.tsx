@@ -20,6 +20,7 @@ export default function ManufacturingOrderDetailsDialog() {
   const dispatch = useDispatch();
   const open = useSelector(s => s.open)
   const order = useSelector(s => s.order)
+  const processes = useSelector(s => s.processes)
 
   return (
     <Dialog.Root
@@ -51,7 +52,7 @@ export default function ManufacturingOrderDetailsDialog() {
                     <ManufacturingOrderDetailsDialogWareDetailsCard order={order} />
                   </GridItem>
                   <GridItem colSpan={{ base: 1, md: 2 }}>
-                    <ManufacturingOrderDetailsDialogManufacturingDetailsCard order={order} />
+                    <ManufacturingOrderDetailsDialogManufacturingDetailsCard order={order} processes={processes} />
                   </GridItem>
                 </SimpleGrid>
               )}

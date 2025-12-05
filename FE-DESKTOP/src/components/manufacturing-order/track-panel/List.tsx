@@ -37,7 +37,8 @@ export default function ManufacturingOrderTrackPanelList() {
           throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
         }
 
-        const process = orderFinishingProcessesResponse?.data.filter(p => (p.manufacturingOrder as string) === mo._id)
+        // Unpopulated field
+        const process = orderFinishingProcessesResponse?.data.filter(p => (p.manufacturingOrder as unknown as string) === mo._id)
 
         return {
           ...mo,

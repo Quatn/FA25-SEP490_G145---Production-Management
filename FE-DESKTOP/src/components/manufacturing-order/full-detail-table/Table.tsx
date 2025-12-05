@@ -26,7 +26,7 @@ import {
 } from "@chakra-ui/react";
 import check from "check-types";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
-import { manufacturingOrderColumnsByTabs, manufacturingOrderMergedHeaders } from "./tableDefinition";
+import { manufacturingOrderColumnsByTabs, manufacturingOrderMergedHeaders, ManufacturingOrderTableDataType } from "./tableDefinition";
 import { useEffect, useMemo } from "react";
 import { getCoreRowModel } from "@tanstack/react-table";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
@@ -41,6 +41,7 @@ import { toaster } from "@/components/ui/toaster";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import { ManufacturingOrderTableProps } from "./TablePicker";
 import { devlog } from "@/utils/devlog";
+import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
 
 export default function ManufacturingOrderTable(
   props: ManufacturingOrderTableProps,
@@ -59,6 +60,14 @@ export default function ManufacturingOrderTable(
     isLoading: isFetchingList,
   } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query });
 
+  const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
+
+  const {
+    data: orderFinishingProcessesResponse,
+    error: orderFinishingProcessFetchError,
+    isLoading: isOrderFinishingProcessFetchingList,
+  } = useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery({ orders: ids ?? [] });
+
   const moPaginatedList = useMemo(() => {
     if (fullDetailMOPaginatedResponse?.data) {
       const calculatedMoPaginatedList = fullDetailMOPaginatedResponse?.data?.data.map((mo) => {
@@ -72,9 +81,12 @@ export default function ManufacturingOrderTable(
           ware: calculatedWare
         })
 
+        const process = orderFinishingProcessesResponse?.data.filter(p => (p.manufacturingOrder as unknown as string) === mo._id)
+
         return {
           ...mo,
           purchaseOrderItem: calculatedPOI,
+          finishingProcesses: process ?? [],
         }
       })
       return {
@@ -87,7 +99,7 @@ export default function ManufacturingOrderTable(
     }
   }, [fullDetailMOPaginatedResponse?.data])
 
-  const rawTableData: Serialized<ManufacturingOrder>[] = moPaginatedList?.data ?? []
+  const rawTableData: (Omit<ManufacturingOrderTableDataType, "isEdited">)[] = moPaginatedList?.data ?? []
 
   const { table, tableComponent, tableData, resetTable } = useDataTable({
     data: rawTableData,

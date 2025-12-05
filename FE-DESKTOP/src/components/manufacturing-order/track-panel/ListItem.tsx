@@ -11,25 +11,11 @@ import { OrderFinishingProcessStatus } from "@/types/enums/OrderFinishingProcess
 import { LuChevronsDown, LuChevronsDownUp, LuCircleCheckBig, LuCircleMinus, LuCircleX, LuPause, LuPlay } from "react-icons/lu";
 import { useState } from "react";
 import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
+import { ManufacturingOrderOperativeStatus } from "@/types/enums/ManufacturingOrderOperativeStatus";
 
-const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo } = manufacturingOrderComponentUtils
-enum OrderStatus {
-  NOTSTARTED = "NOTSTARTED",
-  RUNNING = "RUNNING",
-  PAUSED = "PAUSED",
-  CANCELLED = "CANCELLED",
-  COMPLETED = "COMPLETED",
-}
+const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, getOrderStatus, OrderStatusNameMap } = manufacturingOrderComponentUtils
 
-const OrderStatusNameMap: Record<OrderStatus, string> = {
-  NOTSTARTED: "Chưa bắt đầu",
-  RUNNING: "Đang chạy",
-  PAUSED: "Tạm dừng",
-  COMPLETED: "Hoàn thành",
-  CANCELLED: "Hủy",
-}
-
-const OrderStatusAlertColorMap: Record<OrderStatus, string> = {
+const OrderStatusAlertColorMap: Record<ManufacturingOrderOperativeStatus, string> = {
   NOTSTARTED: "gray",
   RUNNING: "blue",
   PAUSED: "yellow",
@@ -37,19 +23,12 @@ const OrderStatusAlertColorMap: Record<OrderStatus, string> = {
   CANCELLED: "red",
 }
 
-const OrderStatusStatusSymbolMap: Record<OrderStatus, React.ReactNode> = {
+const OrderStatusStatusSymbolMap: Record<ManufacturingOrderOperativeStatus, React.ReactNode> = {
   NOTSTARTED: <LuCircleMinus />,
   RUNNING: <LuPlay />,
   PAUSED: <LuPause />,
   COMPLETED: <LuCircleCheckBig />,
   CANCELLED: <LuCircleX />,
-}
-
-const DirectiveNameMap: Record<ManufacturingOrderDirectives, string> = {
-  CANCEL: "Hủy",
-  COMPENSATE: "Bù lệnh",
-  MANDATORY: "Bắt buộc",
-  PAUSE: "Tạm dừng",
 }
 
 const getListItems = (mo: Serialized<ManufacturingOrder>) => {
@@ -61,37 +40,6 @@ const getListItems = (mo: Serialized<ManufacturingOrder>) => {
     { label: "Ngày nhận", value: formatDateToDDMMYYYY(getPopulatedPo(mo)?.orderDate) },
     { label: "Ngày giao", value: formatDateToDDMMYYYY(getPopulatedSubPo(mo)?.deliveryDate) },
   ]
-}
-
-const getOrderStatus = (mo: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[]) => {
-  if (mo.corrugatorProcess.status === CorrugatorProcessStatus.NOTSTARTED) {
-    return OrderStatus.NOTSTARTED;
-  }
-
-  // All is either completed or "overcompleted", not sure if overcompleted will be used
-  if (
-    (mo.corrugatorProcess.status === CorrugatorProcessStatus.COMPLETED || mo.corrugatorProcess.status === CorrugatorProcessStatus.OVERCOMPLETED)
-    && processes.every(p => p.status === OrderFinishingProcessStatus.COMPLETED || p.status === OrderFinishingProcessStatus.OVERCOMPLETED)) {
-    return OrderStatus.RUNNING;
-  }
-
-  if (mo.corrugatorProcess.status === CorrugatorProcessStatus.RUNNING || processes.some(p => p.status === OrderFinishingProcessStatus.RUNNING)) {
-    return OrderStatus.RUNNING;
-  }
-
-  // Nothing is running, but something is paused or all is paused
-  if (mo.corrugatorProcess.status === CorrugatorProcessStatus.PAUSED || processes.some(p => p.status === OrderFinishingProcessStatus.PAUSED)) {
-    return OrderStatus.PAUSED;
-  }
-
-  if (mo.corrugatorProcess.status === CorrugatorProcessStatus.CANCELLED && processes.every(p => p.status === OrderFinishingProcessStatus.CANCELLED)) {
-    return OrderStatus.CANCELLED;
-  }
-
-  // Nothing is running, but something (not) all is cancelled, this could mean that some temporary changes are comming, set to paused and await cancellation
-  if (mo.corrugatorProcess.status === CorrugatorProcessStatus.CANCELLED || processes.some(p => p.status === OrderFinishingProcessStatus.CANCELLED)) {
-    return OrderStatus.PAUSED;
-  }
 }
 
 export type ManufacturingOrderTrackPanelListItemProps = {
@@ -127,7 +75,7 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
             <Button colorPalette={"blue"} size="sm" onClick={
               () => dialogDispatch({
                 type: "OPEN_DIALOG_WITH_ORDER",
-                payload: props.mo,
+                payload: { order: props.mo, processes: props.processes },
               })
             }>Chi tiết lệnh</Button>
           </HStack>

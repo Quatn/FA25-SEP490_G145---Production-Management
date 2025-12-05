@@ -70,8 +70,8 @@ const initialCollection = createTreeCollection<Node>({
         name: "Manufacturing Order",
         children: [
           {
-            id: "manufacturing-order-list",
-            name: "Manufacturing Order List",
+            id: "manufacturing-order-dashboard",
+            name: "Manufacturing Order Dashboard",
             href: "/manufacturing-order",
             children: [],
           },
