@@ -39,12 +39,8 @@ import DataFetchError from "@/components/common/DataFetchError";
 import { useDataTableSelector } from "@/components/ui/data-table/Provider";
 import { toaster } from "@/components/ui/toaster";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
-
-export type ManufacturingOrderTableProps = {
-  rootProps?: BoxProps;
-  tabsRootProps?: TabsRootProps;
-  tableRootProps?: TableRootProps;
-};
+import { ManufacturingOrderTableProps } from "./TablePicker";
+import { devlog } from "@/utils/devlog";
 
 export default function ManufacturingOrderTable(
   props: ManufacturingOrderTableProps,
@@ -124,11 +120,11 @@ export default function ManufacturingOrderTable(
   });
 
   useEffect(() => {
-    console.log("Table hook re-calculated")
+    devlog("Table hook re-calculated")
   }, [table, tableComponent, tableData]);
 
   useEffect(() => {
-    console.log("SET_TOTAL_ITEMS effect Triggered")
+    devlog("SET_TOTAL_ITEMS effect Triggered")
     dispatch({
       type: "SET_TOTAL_ITEMS",
       payload: moPaginatedList ? moPaginatedList.totalItems : 0,

@@ -82,9 +82,9 @@ const initialCollection = createTreeCollection<Node>({
             children: [],
           },
           {
-            id: "manufacturing-order-tracking",
-            name: "Manufacturing Order Tracking",
-            href: "/manufacturing-order/tracking",
+            id: "manufacturing-order-list",
+            name: "Manufacturing Order List",
+            href: "/manufacturing-order/list",
             children: [],
           },
           {

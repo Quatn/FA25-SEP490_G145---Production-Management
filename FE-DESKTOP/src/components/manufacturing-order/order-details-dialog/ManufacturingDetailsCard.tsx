@@ -18,6 +18,7 @@ import { ManufacturingOrderTableReducerStore } from "@/context/manufacturing-ord
 import { useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice"
 import { toaster } from "@/components/ui/toaster"
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg"
+import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent"
 
 const orderStatusNameMap: Record<LEGACY_OrderStatus, string> = {
   NOTSTARTED: "Chưa bắt đầu",
@@ -61,7 +62,7 @@ type FormValue = {
 }
 
 export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(props: ManufacturingOrderDetailsDialogManufacturingDetailsCardProps) {
-  const { useDispatch } = ManufacturingOrderTableReducerStore;
+  const { useDispatch } = ManufacturingOrderDetailsDialogReducerStore;
   const dispatch = useDispatch();
   const [updateOrders, { isLoading: updating, error: updateError }] = useUpdateManyManufacturingOrdersMutation();
 

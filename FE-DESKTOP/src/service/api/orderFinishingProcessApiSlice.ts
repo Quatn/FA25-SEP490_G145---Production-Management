@@ -2,6 +2,7 @@ import { GetOrderFinishingProcessDto, OrderFinishingProcess } from "@/types/Orde
 import { ORDER_FINISHING_PROCESS_URL } from "../constants";
 import { apiSlice } from "./apiSlice";
 import { BaseResponse, PaginatedList } from "@/types/DTO/Response";
+import { createApiEndpoint } from "@/utils/endpointFactory";
 
 export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
@@ -15,7 +16,7 @@ export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
                 params: GetOrderFinishingProcessDto,
                 credentials: "include",
             }),
-            providesTags: ["OrderFinishingProcess"],
+            providesTags: ["OrderFinishingProcess", "ManufacturingOrder"],
         }),
 
         getOrderFinishingProcessDetail: builder.query<BaseResponse<OrderFinishingProcess>, { id: string }>({
@@ -64,7 +65,21 @@ export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ["OrderFinishingProcess"],
         }),
+
+    findManyOrderFinishingProcesssByManufacturingOrderId: createApiEndpoint<
+    BaseResponse<Serialized<OrderFinishingProcess>[]>,
+    { orders: string[] }
+    >(builder, {
+      query: ({ orders }) => ({
+        url: `${ORDER_FINISHING_PROCESS_URL}/find-by-manufacturing-order-id`,
+        method: "GET",
+        params: { orders },
+        credentials: "include",
+      }),
+      providesTags: ["OrderFinishingProcess", "ManufacturingOrder"],
     }),
+
+  }),
 });
 
 export const {
@@ -74,4 +89,5 @@ export const {
     useUpdateOrderFinishingProcessMutation,
     useDeleteOrderFinishingProcessMutation,
     useRestoreOrderFinishingProcessMutation,
+  useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery,
 } = OrderFinishingProcessApiSlice;

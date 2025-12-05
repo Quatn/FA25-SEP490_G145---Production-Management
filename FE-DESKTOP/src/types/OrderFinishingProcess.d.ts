@@ -7,6 +7,7 @@ export interface OrderFinishingProcess extends BaseSchema {
   manufacturingOrder: string | ManufacturingOrder;
   wareFinishingProcessType: string | WareFinishingProcessType;
   sequenceNumber: number;
+  requiredAmount: number;
   completedAmount: number;
   status: OrderFinishingProcessStatus;
   note: string;

@@ -1,5 +1,5 @@
 export class ChangePasswordRequestDto {
-  id: mongoose.Types.ObjectId;
+  id: string;
   currentPassword: string;
   newPassword: string;
 }

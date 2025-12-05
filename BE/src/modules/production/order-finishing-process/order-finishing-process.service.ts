@@ -245,4 +245,10 @@ export class OrderFinishingProcessService {
 
     return { message: 'Hard deleted successfully' };
   }
+
+  async findManyByManufacturingOrderIds(ids: Types.ObjectId[]): Promise<OrderFinishingProcess[]> {
+    const res = await this.ofpModel.find({ manufacturingOrder: { $in: ids }});
+
+    return res
+  }
 }

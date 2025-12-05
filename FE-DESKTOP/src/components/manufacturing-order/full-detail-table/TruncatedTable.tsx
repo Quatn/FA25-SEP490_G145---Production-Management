@@ -41,15 +41,10 @@ import { convertSerializedMOToTruncatedManufacturingOrderTableData, truncatedMan
 import { logTimestamp } from "@/utils/logTimestamp";
 import { toaster } from "@/components/ui/toaster";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
-
-export type TruncatedManufacturingOrderTableProps = {
-  rootProps?: BoxProps;
-  tabsRootProps?: TabsRootProps;
-  tableRootProps?: TableRootProps;
-};
+import { ManufacturingOrderTableProps } from "./TablePicker";
 
 export default function TruncatedManufacturingOrderTable(
-  props: TruncatedManufacturingOrderTableProps,
+  props: ManufacturingOrderTableProps,
 ) {
   const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
   const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
