@@ -1,0 +1,77 @@
+import { GetOrderFinishingProcessDto, OrderFinishingProcess } from "@/types/OrderFinishingProcess";
+import { ORDER_FINISHING_PROCESS_URL } from "../constants";
+import { apiSlice } from "./apiSlice";
+import { BaseResponse, PaginatedList } from "@/types/DTO/Response";
+
+export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
+    endpoints: (builder) => ({
+        getOrderFinishingProcesss: builder.query<
+            BaseResponse<PaginatedList<OrderFinishingProcess>>,
+            GetOrderFinishingProcessDto
+        >({
+            query: (GetOrderFinishingProcessDto) => ({
+                url: `${ORDER_FINISHING_PROCESS_URL}/list`,
+                method: "GET",
+                params: GetOrderFinishingProcessDto,
+                credentials: "include",
+            }),
+            providesTags: ["OrderFinishingProcess"],
+        }),
+
+        getOrderFinishingProcessDetail: builder.query<BaseResponse<OrderFinishingProcess>, { id: string }>({
+            query: ({ id }) => ({
+                url: `${ORDER_FINISHING_PROCESS_URL}/detail/${id}`,
+                method: "GET",
+                credentials: "include",
+            }),
+            providesTags: ["OrderFinishingProcess"],
+        }),
+
+        createOrderFinishingProcess: builder.mutation<BaseResponse<OrderFinishingProcess>, Partial<OrderFinishingProcess>>({
+            query: (body) => ({
+                url: `${ORDER_FINISHING_PROCESS_URL}/create`,
+                method: "POST",
+                body,
+                credentials: "include",
+            }),
+            invalidatesTags: ["OrderFinishingProcess"],
+        }),
+
+        updateOrderFinishingProcess: builder.mutation<BaseResponse<OrderFinishingProcess>, { id: string; data: Partial<OrderFinishingProcess> }>({
+            query: ({ id, data }) => ({
+                url: `${ORDER_FINISHING_PROCESS_URL}/update/${id}`,
+                method: "PATCH",
+                body: data,
+                credentials: "include",
+            }),
+            invalidatesTags: ["OrderFinishingProcess"],
+        }),
+
+        deleteOrderFinishingProcess: builder.mutation<BaseResponse<OrderFinishingProcess>, { id: string }>({
+            query: ({ id }) => ({
+                url: `${ORDER_FINISHING_PROCESS_URL}/delete-soft/${id}`,
+                method: "DELETE",
+                credentials: "include",
+            }),
+            invalidatesTags: ["OrderFinishingProcess"],
+        }),
+
+        restoreOrderFinishingProcess: builder.mutation<BaseResponse<OrderFinishingProcess>, { id: string }>({
+            query: ({ id }) => ({
+                url: `${ORDER_FINISHING_PROCESS_URL}/restore/${id}`,
+                method: "PATCH",
+                credentials: "include",
+            }),
+            invalidatesTags: ["OrderFinishingProcess"],
+        }),
+    }),
+});
+
+export const {
+    useGetOrderFinishingProcesssQuery,
+    useGetOrderFinishingProcessDetailQuery,
+    useCreateOrderFinishingProcessMutation,
+    useUpdateOrderFinishingProcessMutation,
+    useDeleteOrderFinishingProcessMutation,
+    useRestoreOrderFinishingProcessMutation,
+} = OrderFinishingProcessApiSlice;

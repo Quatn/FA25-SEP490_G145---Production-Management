@@ -11,7 +11,7 @@ export default function DataFetchError(props: DataFetchErrorProps) {
     <Center h={"full"} {...props}>
       <Stack alignItems={"center"} colorPalette={"red"}>
         <LuTriangleAlert color={"#ee6666"} strokeWidth={1} size={"10rem"} />
-        <Text>{check.undefined(props.errorText) ? "Có lỗi xảy ra trong quá trình lấy dữ liệu" : props.errorText}</Text>
+        <Text color={"colorPalette.solid"}>{check.undefined(props.errorText) ? "Có lỗi xảy ra trong quá trình lấy dữ liệu" : props.errorText}</Text>
       </Stack>
     </Center>
   )

@@ -4,6 +4,7 @@ import { SemiFinishedGood } from "@/types/SemiFinishedGood";
 import SemiFinishedTransactionHistory from "./SemiFinishedTransactionHistory";
 import { formatDate, hourGap } from "@/utils/dateUtils";
 import { safeGet } from "@/utils/storagesUtils";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 
 interface Props {
     isOpen: boolean;
@@ -33,7 +34,7 @@ const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) =>
     const mo = current?.manufacturingOrder;
     const poItem = mo?.purchaseOrderItem;
 
-    const amount = poItem?.amount ?? 0;
+    const amount = (poItem as PurchaseOrderItem)?.amount ?? 0;
     const importDiff = (current?.importedQuantity ?? 0) - amount;
     const hoursInStock = current?.currentQuantity == 0 ? 0 : hourGap(current?.createdAt);
 
@@ -171,7 +172,7 @@ const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) =>
                             <Text mt={10} mb={2} fontSize={"xl"} fontWeight={"bold"}>Lịch Sử Nhập Xuất</Text>
                             <SemiFinishedTransactionHistory
                                 id={current?._id}
-                                poiAmount={current?.manufacturingOrder?.purchaseOrderItem?.amount ?? 0} />
+                                poiAmount={amount} />
                         </Dialog.Body>
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>

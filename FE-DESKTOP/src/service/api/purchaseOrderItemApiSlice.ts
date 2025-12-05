@@ -42,7 +42,7 @@ export const purchaseOrderItemApiSlice = apiSlice.injectEndpoints({
         credentials: "include",
       }),
       invalidatesTags: (result, error, arg) => [
-        { type: "PurchaseOrder", id: "LIST" },
+        { type: "PurchaseOrder", id: "LIST" }, "ManufacturingOrder"
       ],
     }),
 
@@ -53,6 +53,7 @@ export const purchaseOrderItemApiSlice = apiSlice.injectEndpoints({
         credentials: "include",
       }),
       invalidatesTags: [{ type: "PurchaseOrder", id: "LIST" }],
+
     }),
 
     getDeletedPurchaseOrderItems: builder.query<any, { page?: number; limit?: number }>({
@@ -76,7 +77,7 @@ export const purchaseOrderItemApiSlice = apiSlice.injectEndpoints({
         method: "PATCH",
         credentials: "include",
       }),
-      invalidatesTags: [{ type: "PurchaseOrderItem", id: "DELETED_LIST" }, { type: "SubPurchaseOrder", id: "LIST" }, { type: "PurchaseOrder", id: "LIST" }],
+      invalidatesTags: [{ type: "PurchaseOrderItem", id: "DELETED_LIST" }, { type: "SubPurchaseOrder", id: "LIST" }, { type: "PurchaseOrder", id: "LIST" }, "ManufacturingOrder"],
     }),
   }),
 });

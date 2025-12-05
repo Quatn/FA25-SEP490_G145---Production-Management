@@ -127,6 +127,7 @@ export class WareService {
     if (payload.printColors) payload.printColors = (payload.printColors || []).map((s: string) => new Types.ObjectId(s));
     if (payload.finishingProcesses) payload.finishingProcesses = (payload.finishingProcesses || []).map((s: string) => new Types.ObjectId(s));
     if (payload.manufacturingProcesses) payload.manufacturingProcesses = (payload.manufacturingProcesses || []).map((s: string) => new Types.ObjectId(s));
+    payload.recalculateFlag = true
 
     const updated = await this.wareModel.findByIdAndUpdate(id, payload, { new: true }).exec();
     const populated = await this.wareModel.findById(updated?._id)

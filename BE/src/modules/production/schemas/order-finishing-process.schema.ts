@@ -10,12 +10,12 @@ import { WareFinishingProcessType } from "./ware-finishing-process-type.schema";
 export enum OrderFinishingProcessStatus {
   PendingApproval = "PENDINGAPPROVAL",
   Approved = "APPROVED",
-  Scheduled = "SCHEDULED",
+  Scheduled = "SCHEDULED", // wait
   OnHold = "ONHOLD",
   Cancelled = "CANCELLED",
-  InProduction = "INPRODUCTION",
+  InProduction = "INPRODUCTION", // running 
   Paused = "PAUSED",
-  FinishedProduction = "FINISHEDPRODUCTION",
+  FinishedProduction = "FINISHEDPRODUCTION", // done 
   QualityCheck = "QUALITYCHECK",
   Completed = "COMPLETED",
 }
@@ -37,7 +37,6 @@ export class OrderFinishingProcess extends BaseSchema {
   })
   manufacturingOrder: mongoose.Types.ObjectId | ManufacturingOrder;
 
-  /** @deprecated this is supposed to be named wareFinishingProcessType, this will probably be corrected in the future */
   @ApiProperty({
     type: mongoose.Types.ObjectId,
     description: "ObjectId by default, WareFinishingProcessType when populated",
@@ -46,7 +45,7 @@ export class OrderFinishingProcess extends BaseSchema {
     type: mongoose.Schema.Types.ObjectId,
     ref: WareFinishingProcessType.name,
   })
-  wareManufacturingProcessType:
+  wareFinishingProcessType:
     | mongoose.Types.ObjectId
     | WareFinishingProcessType;
 
@@ -54,6 +53,11 @@ export class OrderFinishingProcess extends BaseSchema {
   @Prop({ required: true })
   @IsNumber()
   sequenceNumber: number;
+
+  @ApiProperty()
+  @Prop({ required: true, default: 0 })
+  @IsNumber()
+  requiredAmount: number = 0;
 
   @ApiProperty()
   @Prop({ required: true, default: 0 })
