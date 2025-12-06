@@ -7,6 +7,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Min,
 } from "class-validator";
 
 export class CreateWareDto {
@@ -45,25 +46,37 @@ export class CreateWareDto {
   @IsNotEmpty()
   wareManufacturingProcessType: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
+  @ApiProperty({ description: "Adjustment for warePerBlank (must be > 0)" })
+  @Transform(({ value }) => (value === "" ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
-  warePerBlankAdjustment?: number | null;
+  @IsNotEmpty()
+  @Min(1)
+  warePerBlankAdjustment: number;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
+  @ApiProperty({ description: "Flap adjustment (must be > 0)" })
+  @Transform(({ value }) => (value === "" ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
-  flapAdjustment?: number | null;
+  @IsNotEmpty()
+  @Min(1)
+  flapAdjustment: number;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
+  @ApiProperty({ description: "Flap overlap adjustment (must be > 0)" })
+  @Transform(({ value }) => (value === "" ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
-  flapOverlapAdjustment?: number | null;
+  @IsNotEmpty()
+  @Min(1)
+  flapOverlapAdjustment: number;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
+  @ApiProperty({ description: "Cross cut count adjustment (must be > 0)" })
+  @Transform(({ value }) => (value === "" ? undefined : value))
+  @Type(() => Number)
   @IsNumber()
-  crossCutCountAdjustment?: number | null;
+  @IsNotEmpty()
+  @Min(1)
+  crossCutCountAdjustment: number;
 
   @ApiProperty({ required: false })
   @IsOptional()

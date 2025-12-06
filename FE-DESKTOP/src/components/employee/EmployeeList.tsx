@@ -113,17 +113,38 @@ const EmployeeList: React.FC = () => {
     setEditOpen(true);
   };
 
+  // --- new helper: check if a code already exists in the current list ---
+  const isCodeTaken = (code: string, excludeId?: string | null) => {
+    const norm = String(code ?? "")
+      .trim()
+      .toLowerCase();
+    if (!norm) return false;
+    return (displayEmployees || []).some((e) => {
+      const eCode = String(e?.code ?? "")
+        .trim()
+        .toLowerCase();
+      if (!eCode) return false;
+      const eid = getIdFromDoc(e) ?? e._id ?? e.id;
+      if (excludeId && eid && String(eid) === String(excludeId)) return false;
+      return eCode === norm;
+    });
+  };
+
   const handleCreateSubmit = async () => {
     try {
-      if (!createForm.code || String(createForm.code).trim() === "")
-        return alert("Please provide code");
+      const codeVal = String(createForm.code ?? "").trim();
+      if (!codeVal) return alert("Please provide code");
+
+      // validate uniqueness before creating
+      if (isCodeTaken(codeVal)) return alert("Mã nhân viên đã tồn tại");
+
       if (!createForm.name || String(createForm.name).trim() === "")
         return alert("Please provide name");
       if (!createForm.role || String(createForm.role).trim() === "")
         return alert("Please choose role");
 
       const payload = {
-        code: String(createForm.code).trim(),
+        code: codeVal,
         name: String(createForm.name).trim(),
         address: createForm.address ?? null,
         email: createForm.email ?? null,
@@ -165,15 +186,20 @@ const EmployeeList: React.FC = () => {
   const handleEditSubmit = async () => {
     try {
       if (!editForm?.id) return alert("No id");
-      if (!editForm.code || String(editForm.code).trim() === "")
-        return alert("Please provide code");
+      const codeVal = String(editForm.code ?? "").trim();
+      if (!codeVal) return alert("Please provide code");
+
+      // validate uniqueness (exclude current record id)
+      if (isCodeTaken(codeVal, editForm.id))
+        return alert("Mã nhân viên đã tồn tại");
+
       if (!editForm.name || String(editForm.name).trim() === "")
         return alert("Please provide name");
       if (!editForm.role || String(editForm.role).trim() === "")
         return alert("Please choose role");
 
       const payload = {
-        code: String(editForm.code).trim(),
+        code: codeVal,
         name: String(editForm.name).trim(),
         address: editForm.address ?? null,
         email: editForm.email ?? null,
@@ -288,7 +314,7 @@ const EmployeeList: React.FC = () => {
           />
           <button
             className="btn btn-primary"
-            style={{maxWidth: 150, minWidth: 100}}
+            style={{ maxWidth: 150, minWidth: 100 }}
             onClick={() => setCreateOpen(true)}
           >
             + Tạo
