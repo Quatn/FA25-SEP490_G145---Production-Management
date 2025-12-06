@@ -1,3 +1,4 @@
+import { CorrugatorProcess } from "@/types/CorrugatorProcess";
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 
@@ -8,7 +9,8 @@ export class UpdateManufacturingOrderRequestDto {
   requestedDatetime?: Date | null;
   corrugatorLineAdjustment?: CorrugatorLine | null;
   manufacturingDirective?: string | null;
-  approvalStatus: ManufacturingOrderApprovalStatus | null;
+  approvalStatus?: ManufacturingOrderApprovalStatus | null;
+  corrugatorProcess?: Partial<CorrugatorProcess>;
   amount?: number;
   note?: string;
 }
