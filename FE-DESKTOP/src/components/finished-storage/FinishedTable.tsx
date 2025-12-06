@@ -3,6 +3,8 @@ import { Table, Group, Button, Icon, Highlight } from "@chakra-ui/react";
 import { FaEye, FaMinus, FaPlus } from "react-icons/fa";
 import { FinishedGood } from "@/types/FinishedGood";
 import { dayGap, formatDate } from "@/utils/dateUtils";
+import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
+import { safeGet } from "@/utils/storagesUtils";
 
 
 interface Props {
@@ -15,11 +17,6 @@ interface Props {
 }
 
 const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransaction, search }) => {
-
-
-    const get = (obj: any, path: string, fallback: any = "-") => {
-        return path.split(".").reduce((o, k) => (o?.[k]), obj) ?? fallback;
-    };
 
     const renderDiffStatus = (transactionType: string, value: number, amount: number) => {
         const diff = value - amount;
@@ -122,7 +119,7 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                         const mo = item.manufacturingOrder;
                         const poItem = mo?.purchaseOrderItem;
 
-                        const amount = poItem?.amount ?? 0;
+                        const amount = (poItem as PurchaseOrderItem)?.amount ?? 0;
                         const importDiff = item.importedQuantity - amount;
                         const exportDiff = item.exportedQuantity - amount;
 
@@ -151,7 +148,7 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                                         styles={{ bg: "teal.muted" }}
 
                                     >
-                                        {get(poItem, "subPurchaseOrder.purchaseOrder.code")}
+                                        {safeGet(poItem, "subPurchaseOrder.purchaseOrder.code")}
                                     </Highlight>
                                 </Table.Cell>
                                 <Table.Cell>
@@ -161,7 +158,7 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                                         styles={{ bg: "teal.muted" }}
 
                                     >
-                                        {get(poItem, "subPurchaseOrder.purchaseOrder.customer.code")}
+                                        {safeGet(poItem, "subPurchaseOrder.purchaseOrder.customer.code")}
                                     </Highlight>
                                 </Table.Cell>
                                 <Table.Cell>
@@ -171,7 +168,7 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                                         styles={{ bg: "teal.muted" }}
 
                                     >
-                                        {get(poItem, "ware.code")}
+                                        {safeGet(poItem, "ware.code")}
                                     </Highlight>
                                 </Table.Cell>
                                 <Table.Cell>
@@ -181,19 +178,19 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                                         styles={{ bg: "teal.muted" }}
 
                                     >
-                                        {get(poItem, "ware.fluteCombination.code")}
+                                        {safeGet(poItem, "ware.fluteCombination.code")}
                                     </Highlight>
                                 </Table.Cell>
                                 <Table.Cell>
 
-                                    {get(poItem, "ware.wareLength")}
+                                    {safeGet(poItem, "ware.wareLength")}
                                 </Table.Cell>
                                 <Table.Cell>
 
-                                    {get(poItem, "ware.wareWidth")}
+                                    {safeGet(poItem, "ware.wareWidth")}
                                 </Table.Cell>
                                 <Table.Cell>
-                                    {get(poItem, "ware.wareHeight")}
+                                    {safeGet(poItem, "ware.wareHeight")}
                                 </Table.Cell>
 
                                 <Table.Cell>
@@ -207,7 +204,7 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                                         styles={{ bg: "teal.muted" }}
 
                                     >
-                                        {formatDate(get(poItem, "subPurchaseOrder.deliveryDate", null))}
+                                        {formatDate(safeGet(poItem, "subPurchaseOrder.deliveryDate", null))}
                                     </Highlight>
                                 </Table.Cell>
 

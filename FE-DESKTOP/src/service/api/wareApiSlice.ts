@@ -120,11 +120,11 @@ export const wareApiSlice = apiSlice.injectEndpoints({
     }),
     updateWare: builder.mutation<BaseResponse<any>, { id: string; data: any }>({
       query: ({ id, data }) => ({ url: `${WARE_URL}/update/${id}`, method: "PATCH", body: data, credentials: "include" }),
-      invalidatesTags: ["Ware"],
+      invalidatesTags: ["Ware", "PurchaseOrderItem", "ManufacturingOrder"],
     }),
     deleteWare: builder.mutation<BaseResponse<any>, { id: string }>({
       query: ({ id }) => ({ url: `${WARE_URL}/delete-soft/${id}`, method: "DELETE", credentials: "include" }),
-      invalidatesTags: ["Ware"],
+      invalidatesTags: ["Ware", "PurchaseOrderItem", "ManufacturingOrder"],
     }),
     getDeletedWares: builder.query<PaginatedList<Ware>, GetWaresParams>({
       query: ({ page = 1, limit = 20, search = "" } = {}) => ({
@@ -188,7 +188,7 @@ export const wareApiSlice = apiSlice.injectEndpoints({
         method: "PATCH",
         credentials: "include",
       }),
-      invalidatesTags: [{ type: "Ware", id: "DELETED_LIST" }, { type: "Ware", id: "LIST" }],
+      invalidatesTags: [{ type: "Ware", id: "DELETED_LIST" }, { type: "Ware", id: "LIST" }, "PurchaseOrderItem", "ManufacturingOrder"],
     }),
 
   }),

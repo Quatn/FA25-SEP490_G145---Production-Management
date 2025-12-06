@@ -27,9 +27,9 @@ const FinishedList: React.FC = () => {
 
     const { data: fgData, error: fgError, isLoading: fgLoading } = useGetFinishedGoodsQuery({ page, limit, search: debouncedSearch });
     const { data: moData, error: moError, isLoading: moLoading } = useGetAllManufacturingOrdersQuery();
-    const fgGoods: FinishedGood[] = (fgData as any)?.data?.data ?? [];
-    const mos: ManufacturingOrder[] = (moData as any)?.data ?? [];
-    const totalPages = (fgData as any)?.data?.totalPages ?? 1;
+    const fgGoods: FinishedGood[] = fgData?.data?.data ?? [];
+    const mos: ManufacturingOrder[] = moData?.data ?? [];
+    const totalPages = fgData?.data?.totalPages ?? 1;
 
     const [detailOpen, setDetailOpen] = useState(false);
     const [formOpen, setFormOpen] = useState(false);

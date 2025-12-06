@@ -3,13 +3,12 @@ import { ManufacturingOrder } from "@/types/ManufacturingOrder"
 import { Alert, Box, Button, Card, createListCollection, DataList, Editable, Heading, HStack, Input, NumberInput, Portal, Select, Stack, Table, TableHeader, Text } from "@chakra-ui/react"
 import check from "check-types"
 import { useMemo, useState } from "react"
-import { manufacturingOrderDetailsDialogUtils as utils } from "./utils"
+import { manufacturingOrderComponentUtils as utils } from "../utils"
 import { WareFinishingProcessType } from "@/types/WareFinishingProcessType"
 import { FluteCombination } from "@/types/FluteCombination"
 import { WareManufacturingProcessType } from "@/types/WareManufacturingProcessType"
 import { ManufacturingOrderDirectives } from "@/types/enums/ManufacturingOrderDirectives"
 import { formatDateToDDMMYYYY, formatDateToYYYYMMDD } from "@/utils/dateUtils"
-import { LEGACY_OrderStatus } from "@/types/enums/LEGACY_OrderStatus"
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine"
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError"
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto"
@@ -18,15 +17,9 @@ import { ManufacturingOrderTableReducerStore } from "@/context/manufacturing-ord
 import { useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice"
 import { toaster } from "@/components/ui/toaster"
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg"
-
-const orderStatusNameMap: Record<LEGACY_OrderStatus, string> = {
-  NOTSTARTED: "Chưa bắt đầu",
-  RUNNING: "Đang chạy",
-  COMPLETED: "Đã hoàn thành",
-  OVERCOMPLETED: "Đã hoàn thành",
-  PAUSED: "Tạm dừng",
-  CANCELLED: "Đã hủy",
-}
+import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent"
+import { OrderFinishingProcess } from "@/types/OrderFinishingProcess"
+import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus"
 
 const manufacturingDirectives: { label: string, value: string }[] = [
   { label: "Hủy", value: ManufacturingOrderDirectives.Cancel },
@@ -48,8 +41,19 @@ const corrugatorLinesCol = createListCollection({
   items: corrugatorLines,
 })
 
+const approvalStatuses: { label: string, value: string }[] = [
+  { label: utils.OrderApprovalStatusNameMap[ManufacturingOrderApprovalStatus.Draft], value: ManufacturingOrderApprovalStatus.Draft },
+  { label: utils.OrderApprovalStatusNameMap[ManufacturingOrderApprovalStatus.PendingApproval], value: ManufacturingOrderApprovalStatus.PendingApproval },
+  { label: utils.OrderApprovalStatusNameMap[ManufacturingOrderApprovalStatus.Approved], value: ManufacturingOrderApprovalStatus.Approved },
+]
+
+const approvalStatusCol = createListCollection({
+  items: approvalStatuses,
+})
+
 export type ManufacturingOrderDetailsDialogManufacturingDetailsCardProps = {
   order: Serialized<ManufacturingOrder>
+  processes: Serialized<OrderFinishingProcess>[]
 }
 
 type FormValue = {
@@ -57,21 +61,26 @@ type FormValue = {
   amount?: number,
   manufacturingDateAdjustment: string | null,
   requestedDatetime: string | null,
+  approvalStatus: ManufacturingOrderApprovalStatus,
+  corrugatorLineAdjustment: CorrugatorLine | null
   note: string,
 }
 
 export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(props: ManufacturingOrderDetailsDialogManufacturingDetailsCardProps) {
-  const { useDispatch } = ManufacturingOrderTableReducerStore;
+  const { useDispatch } = ManufacturingOrderDetailsDialogReducerStore;
   const dispatch = useDispatch();
   const [updateOrders, { isLoading: updating, error: updateError }] = useUpdateManyManufacturingOrdersMutation();
 
   const ware = utils.getPopulatedWare(props.order)
+  const orderStatue = utils.getOrderStatus(props.order, props.processes)
 
   const initialFormVal = {
     manufacturingDirective: props.order.manufacturingDirective ?? null,
     amount: props.order.amount,
-    manufacturingDateAdjustment: props.order.manufacturingDateAdjustment,
+    manufacturingDateAdjustment: props.order.manufacturingDateAdjustment ?? props.order.manufacturingDate,
     requestedDatetime: props.order.requestedDatetime,
+    approvalStatus: props.order.approvalStatus,
+    corrugatorLineAdjustment: props.order.corrugatorLineAdjustment ?? props.order.corrugatorLine,
     note: props.order.note,
     isEdited: false,
   }
@@ -79,10 +88,24 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
   const [formValue, setFormValue] = useState<FormValue & { isEdited: boolean }>(initialFormVal)
   const setFormValueWrapped = (setFunc: (val: FormValue) => FormValue) => setFormValue(prev => ({ ...(setFunc(prev)), isEdited: true }))
 
+  const setApprovalStatus = (value?: string) => {
+    setFormValueWrapped(prev => ({
+      ...prev,
+      approvalStatus: (check.undefined(value) || !check.in(value, Object.values(ManufacturingOrderApprovalStatus))) ? prev.approvalStatus : (value as ManufacturingOrderApprovalStatus)
+    }))
+  }
+
   const setManufacturingDirective = (value?: string) => {
     setFormValueWrapped(prev => ({
       ...prev,
       manufacturingDirective: (check.undefined(value) || !check.in(value, Object.values(ManufacturingOrderDirectives))) ? null : (value as ManufacturingOrderDirectives)
+    }))
+  }
+
+  const setCorrugatorLine = (value?: string) => {
+    setFormValueWrapped(prev => ({
+      ...prev,
+      corrugatorLineAdjustment: (check.undefined(value) || !check.in(value, Object.values(CorrugatorLine))) ? null : (value as CorrugatorLine)
     }))
   }
 
@@ -120,6 +143,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
         note: formValue.note,
         manufacturingDateAdjustment: formValue.manufacturingDateAdjustment,
         requestedDatetime: formValue.requestedDatetime,
+        approvalStatus: formValue.approvalStatus,
         purchaseOrderItemId: (props.order.purchaseOrderItem as Serialized<PurchaseOrderItem>)._id,
       }]
     }
@@ -165,6 +189,42 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
               </DataList.Item>
 
               <DataList.Item>
+                <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Trạng thái duyệt</Heading></DataList.ItemLabel>
+                <DataList.ItemValue color="fg.muted" flexGrow={1}>
+                  <Select.Root
+                    collection={approvalStatusCol}
+                    size="sm"
+                    width="320px"
+                    value={check.null(formValue.approvalStatus) ? undefined : [formValue.approvalStatus]}
+                    onValueChange={(v) => setApprovalStatus(v.value.at(0))}
+                  >
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                      <Select.Trigger>
+                        <Select.ValueText placeholder="Chọn trạng thái duyệt" />
+                      </Select.Trigger>
+                      <Select.IndicatorGroup>
+                        <Select.ClearTrigger />
+                        <Select.Indicator />
+                      </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Portal>
+                      <Select.Positioner>
+                        <Select.Content zIndex={9999}>
+                          {approvalStatusCol.items.map((approvalStatus) => (
+                            <Select.Item item={approvalStatus} key={approvalStatus.value}>
+                              {approvalStatus.label}
+                              <Select.ItemIndicator />
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Positioner>
+                    </Portal>
+                  </Select.Root>
+                </DataList.ItemValue>
+              </DataList.Item>
+
+              <DataList.Item>
                 <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Kế hoạch giao</Heading></DataList.ItemLabel>
                 <DataList.ItemValue color="fg.muted" flexGrow={1}>
                   <Select.Root
@@ -190,6 +250,42 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                           {manufacturingDirectivesCol.items.map((directive) => (
                             <Select.Item item={directive} key={directive.value}>
                               {directive.label}
+                              <Select.ItemIndicator />
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Positioner>
+                    </Portal>
+                  </Select.Root>
+                </DataList.ItemValue>
+              </DataList.Item>
+
+              <DataList.Item>
+                <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Dàn sóng</Heading></DataList.ItemLabel>
+                <DataList.ItemValue color="fg.muted" flexGrow={1}>
+                  <Select.Root
+                    collection={corrugatorLinesCol}
+                    size="sm"
+                    width="320px"
+                    value={check.null(formValue.corrugatorLineAdjustment) ? undefined : [formValue.corrugatorLineAdjustment]}
+                    onValueChange={(v) => setManufacturingDirective(v.value.at(0))}
+                  >
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                      <Select.Trigger>
+                        <Select.ValueText placeholder="Chọn dàn sóng" />
+                      </Select.Trigger>
+                      <Select.IndicatorGroup>
+                        <Select.ClearTrigger />
+                        <Select.Indicator />
+                      </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Portal>
+                      <Select.Positioner>
+                        <Select.Content zIndex={9999}>
+                          {corrugatorLinesCol.items.map((line) => (
+                            <Select.Item item={line} key={line.value}>
+                              {line.label}
                               <Select.ItemIndicator />
                             </Select.Item>
                           ))}
@@ -251,7 +347,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
 
               <DataList.Item>
                 <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Trạng thái chạy</Heading></DataList.ItemLabel>
-                <DataList.ItemValue color="fg.muted" flexGrow={1}>{orderStatusNameMap[props.order.overallStatus]}</DataList.ItemValue>
+                <DataList.ItemValue color="fg.muted" flexGrow={1}>{orderStatue ? utils.OrderStatusNameMap[orderStatue] : ""}</DataList.ItemValue>
               </DataList.Item>
             </DataList.Root>
             <Stack mt={2}>

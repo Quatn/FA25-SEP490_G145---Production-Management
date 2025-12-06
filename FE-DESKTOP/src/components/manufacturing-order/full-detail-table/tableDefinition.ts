@@ -12,19 +12,14 @@ import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import ManufacturingOrderTableActionColumn from "./ActionColumn";
 import { LEGACY_OrderStatus } from "@/types/enums/LEGACY_OrderStatus";
+import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
+import { manufacturingOrderComponentUtils as utils } from "../utils"
 
-export type ManufacturingOrderTableDataType = Serialized<ManufacturingOrder> & { isEdited: boolean }
+const { getPopulatedPoi, getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, getOrderStatus, OrderStatusNameMap } = utils
 
-const columnHelper = getDataTableColumnHelper<Serialized<ManufacturingOrder>>()
+export type ManufacturingOrderTableDataType = Serialized<ManufacturingOrder> & { finishingProcesses: Serialized<OrderFinishingProcess>[], isEdited: boolean }
 
-const orderStatusNameMap: Record<LEGACY_OrderStatus, string> = {
-  NOTSTARTED: "Chưa bắt đầu",
-  RUNNING: "Đang chạy",
-  COMPLETED: "Đã hoàn thành",
-  OVERCOMPLETED: "Đã hoàn thành",
-  PAUSED: "Tạm dừng",
-  CANCELLED: "Đã hủy",
-}
+const columnHelper = getDataTableColumnHelper<Serialized<ManufacturingOrder> & { finishingProcesses: Serialized<OrderFinishingProcess>[] }>()
 
 const manufacturingDirectives: { label: string, value: string }[] = [
   { label: "Hủy", value: ManufacturingOrderDirectives.Cancel },
@@ -64,47 +59,12 @@ const colSize = {
   },
 }
 
-const getPopulatedPoi = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem)) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated")
-  return mo.purchaseOrderItem
-}
-
-const getPopulatedSubPo = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem) || check.string(mo.purchaseOrderItem.subPurchaseOrder)
-  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder");
-  return mo.purchaseOrderItem.subPurchaseOrder
-}
-
-const getPopulatedPo = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder)
-  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder -> purchaseOrder");
-  return mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder
-}
-
-const getPopulatedCustomer = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder?.customer)
-  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder -> purchaseOrder -> customer");
-  return mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder?.customer
-}
-
-const getPopulatedWare = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem)
-    || check.string(mo.purchaseOrderItem.ware)
-  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> ware");
-  return mo.purchaseOrderItem.ware
-}
-
 export const manufacturingOrderMergedHeaders = [
   ["manufacturingDirective", "1_manufacturingDirective_manufacturingDirective"],
   ["code", "1_code_code"],
   ["customerCode", "1_customerCode_customerCode"],
   ["wareCode", "1_wareCode_wareCode"],
-  ["overallStatus", "1_overallStatus_overallStatus"],
+  ["orderStatusDisplay", "1_orderStatusDisplay_orderStatusDisplay"],
   ["fluteCombination", "1_fluteCombination_fluteCombination"],
   ["wareManufacturingProcessType", "1_wareManufacturingProcessType_wareManufacturingProcessType"],
   ["amount", "1_amount_amount"],
@@ -120,7 +80,7 @@ export const manufacturingOrderMergedHeaders = [
   ["actions-column", "1_actions-column_actions-column"],
 ]
 
-export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder> & { isEdited: boolean }>)[] = [
+export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataType>)[] = [
   columnHelper.defineDataTableAccessorColumn({
     id: "manufacturingDirective",
     accessorKey: "manufacturingDirective",
@@ -163,9 +123,10 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   }),
 
   columnHelper.defineDataTableAccessorColumn({
-    id: "overallStatus",
+    id: "orderStatusDisplay",
     accessorFn: (mo) => {
-      return orderStatusNameMap[mo.overallStatus]
+      const orderStatus = getOrderStatus(mo, mo.finishingProcesses)
+      return orderStatus ? OrderStatusNameMap[orderStatus] : ""
     },
     header: "Trạng thái chạy",
     enablePinning: true,
@@ -286,6 +247,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   columnHelper.defineHeaderGroup({
     id: "blankSize",
     header: () => "Kích thước gia công",
+    size: 500,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "blankWidth",
@@ -400,6 +362,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   columnHelper.defineHeaderGroup({
     id: "paperTypes",
     header: () => "Loại giấy",
+    size: 700,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "faceLayerPaperType",
@@ -536,6 +499,7 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   columnHelper.defineHeaderGroup({
     id: "paperWeights",
     header: () => "Trọng lượng",
+    size: 500,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "faceLayerPaperWeight",
@@ -656,13 +620,13 @@ export const manufacturingOrderColumns: (ColumnDef<Serialized<ManufacturingOrder
   columnHelper.defineDataTableDisplayColumn({
     id: "actions-column",
     header: undefined,
-    cell: ({ cell, table }) => ManufacturingOrderTableActionColumn({ rowId: cell.row.id, isEdited: cell.row.original.isEdited, getOrder: () => cell.row.original, meta: table.options.meta })
+    cell: ({ cell, table }) => ManufacturingOrderTableActionColumn({ rowId: cell.row.id, isEdited: cell.row.original.isEdited, getOrder: () => ({ order: cell.row.original, processes: cell.row.original.finishingProcesses }), meta: table.options.meta })
   }),
 ];
 
 export const manufacturingOrderColumnsByTabs: Record<
   ManufacturingTableTabType,
-  ColumnDef<Serialized<ManufacturingOrder> & { isEdited: boolean }>[]
+  ColumnDef<ManufacturingOrderTableDataType>[]
 > = {
   all: manufacturingOrderColumns,
 
@@ -682,7 +646,7 @@ export const manufacturingOrderColumnsByTabs: Record<
   manufacture: manufacturingOrderColumns.filter((col) =>
     check.in(col.id, [
       "manufacturingDirective",
-      "overallStatus",
+      "orderStatusDisplay",
       "code",
       "amount",
       "orderDates",

@@ -38,6 +38,7 @@ const tagTypes = [
   "Employee",
   "Role",
   "DeliveryNote",
+  "OrderFinishingProcess",
 ];
 
 export const apiSlice = createApi({

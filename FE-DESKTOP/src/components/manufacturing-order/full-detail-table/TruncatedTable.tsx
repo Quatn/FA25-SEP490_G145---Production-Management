@@ -41,15 +41,11 @@ import { convertSerializedMOToTruncatedManufacturingOrderTableData, truncatedMan
 import { logTimestamp } from "@/utils/logTimestamp";
 import { toaster } from "@/components/ui/toaster";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
-
-export type TruncatedManufacturingOrderTableProps = {
-  rootProps?: BoxProps;
-  tabsRootProps?: TabsRootProps;
-  tableRootProps?: TableRootProps;
-};
+import { ManufacturingOrderTableProps } from "./TablePicker";
+import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
 
 export default function TruncatedManufacturingOrderTable(
-  props: TruncatedManufacturingOrderTableProps,
+  props: ManufacturingOrderTableProps,
 ) {
   const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
   const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
@@ -64,6 +60,14 @@ export default function TruncatedManufacturingOrderTable(
     isLoading: isFetchingList,
   } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query });
 
+  const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
+
+  const {
+    data: orderFinishingProcessesResponse,
+    error: orderFinishingProcessFetchError,
+    isLoading: isOrderFinishingProcessFetchingList,
+  } = useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery({ orders: ids ?? [] });
+
   const moPaginatedList = useMemo(() => {
     if (fullDetailMOPaginatedResponse?.data) {
       const calculatedMoPaginatedList = fullDetailMOPaginatedResponse?.data?.data.map((mo) => {
@@ -71,15 +75,19 @@ export default function TruncatedManufacturingOrderTable(
           throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
         }
 
+        /*
         const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
         const calculatedPOI = recalculatePurchaseOrderItem({
           ...mo.purchaseOrderItem!,
           ware: calculatedWare
         })
+        */
+
+        const process = orderFinishingProcessesResponse?.data.filter(p => (p.manufacturingOrder as unknown as string) === mo._id)
 
         return {
           ...mo,
-          purchaseOrderItem: calculatedPOI,
+          finishingProcesses: process ?? [],
         }
       })
       return {
@@ -93,9 +101,17 @@ export default function TruncatedManufacturingOrderTable(
   }, [fullDetailMOPaginatedResponse?.data])
 
   const moList = useMemo(() => moPaginatedList?.data ?? [], [moPaginatedList?.data])
-  const getMo = useCallback((id: string) => moList.find(mo => mo._id === id), [moList])
+  const getMo = useCallback((id: string) => {
+    const mo = moList.find(mo => mo._id === id)
+    if (!mo) {
+      return undefined
+    }
+    return {
+      order: mo, processes: mo.finishingProcesses ?? []
+    }
+  }, [moList])
   const rawTableData: TruncatedManufacturingOrderTableData[] = useMemo(() => moList.map(mo =>
-    convertSerializedMOToTruncatedManufacturingOrderTableData(mo, getMo)
+    convertSerializedMOToTruncatedManufacturingOrderTableData(mo, mo.finishingProcesses, getMo)
   ), [moList, getMo])
 
   const { table, tableComponent, tableData, resetTable } = useDataTable({
@@ -152,7 +168,7 @@ export default function TruncatedManufacturingOrderTable(
   }
 
   if (fetchError) {
-    return <DataFetchError h={"full"} flexGrow={1} />;
+    return <DataFetchError h={"full"} flexGrow={1} errorText={tryGetApiErrorMsg(fetchError)} />;
   }
 
   if (check.undefined(moPaginatedList)) {

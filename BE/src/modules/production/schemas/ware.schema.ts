@@ -15,6 +15,7 @@ import { PrintColor } from "./print-color.schema";
 import { WareFinishingProcessType } from "./ware-finishing-process-type.schema";
 import { Optional } from "@nestjs/common";
 import { ApiProperty } from "@nestjs/swagger";
+import { RecalculateFlagPlugin } from "@/common/plugins/set-recalculate-flag-on-save.plugin";
 
 @Schema({ timestamps: true })
 export class Ware extends BaseDenormalizedSchema {
@@ -104,7 +105,7 @@ export class Ware extends BaseDenormalizedSchema {
   blankLength: number;
 
   @ApiProperty()
-  @Prop({ required: true, type: Number, default: null })
+  @Prop({ required: false, type: Number, default: null })
   @IsOptional()
   @IsNumber()
   flapLength: number | null;
@@ -220,5 +221,6 @@ export class Ware extends BaseDenormalizedSchema {
 
 export type WareDocument = HydratedDocument<Ware>;
 
-export const WareSchema =
-  SchemaFactory.createForClass(Ware).plugin(softDeletePlugin);
+export const WareSchema = SchemaFactory.createForClass(Ware)
+  .plugin(softDeletePlugin)
+  .plugin(RecalculateFlagPlugin);
