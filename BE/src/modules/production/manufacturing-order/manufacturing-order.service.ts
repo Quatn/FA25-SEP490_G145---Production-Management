@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import mongoose, { Model, MongooseError, Types } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import {
+  CorrugatorProcess,
   CorrugatorProcessStatus,
   ManufacturingOrder,
   ManufacturingOrderApprovalStatus,
@@ -508,7 +509,29 @@ export class ManufacturingOrderService {
         }
       }
 
-      Object.assign(doc, dto);
+      if (dto.corrugatorProcess) {
+        // Object.assign(doc.corrugatorProcess, dto.corrugatorProcess);
+
+        const shouldUpdateStatus =
+          check.equal(
+            dto.corrugatorProcess?.status,
+            doc.corrugatorProcess.status,
+          ) &&
+          check.number(dto.corrugatorProcess?.manufacturedAmount) &&
+          check.greater(
+            dto.corrugatorProcess?.manufacturedAmount,
+            doc.corrugatorProcess.manufacturedAmount,
+          );
+
+        if (shouldUpdateStatus) {
+          dto.corrugatorProcess.status = CorrugatorProcessStatus.RUNNING
+        }
+
+        doc.set("corrugatorProcess", dto.corrugatorProcess)
+
+      }
+      const { corrugatorProcess: _, ...dtoWOCorruProgress } = dto;
+      Object.assign(doc, dtoWOCorruProgress);
 
       await this.orderFinishingProcessModel.updateMany(
         { manufacturingOrder: doc._id },
@@ -518,6 +541,7 @@ export class ManufacturingOrderService {
       );
 
       await doc.save();
+      console.log(doc)
     }
 
     return {
