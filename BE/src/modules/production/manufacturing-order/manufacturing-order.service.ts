@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import mongoose, { Model, MongooseError, Types } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import {
+  CorrugatorProcess,
   CorrugatorProcessStatus,
   ManufacturingOrder,
   ManufacturingOrderApprovalStatus,
@@ -47,6 +48,7 @@ import { recalculateManufacturingOrder } from "./business-logics/recalculate-man
 import { isRefPopulated } from "@/common/utils/populate-check";
 import { UnpopulatedFieldError } from "@/common/errors/unpopulated-field.error";
 import { ProductionRecalculateService } from "../common/recalculate/recalculate.service";
+import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type.schema";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -464,13 +466,82 @@ export class ManufacturingOrderService {
         poi.subPurchaseOrder.purchaseOrder.customer.code,
       );
 
-      Object.assign(doc, dto);
+      if (dto.approvalStatus === ManufacturingOrderApprovalStatus.Approved) {
+        const currentCount =
+          await this.orderFinishingProcessModel.countDocuments({
+            manufacturingOrder: doc._id,
+          });
+        if (currentCount < 1) {
+          const ware = poi.ware as Ware;
 
-      await this.orderFinishingProcessModel.updateMany({manufacturingOrder: doc._id}, {
-        $set: { requiredAmount: doc.amount },
-      });
+          const processes: OrderFinishingProcess[] = (
+            ware.finishingProcesses as WareFinishingProcessType[]
+          ).map((type, index) => {
+            return {
+              code: `${doc.code}-${index + 1}`,
+              manufacturingOrder: doc._id,
+              wareFinishingProcessType: type,
+              sequenceNumber: index + 1,
+              requiredAmount: doc.amount,
+              completedAmount: 0,
+              status: OrderFinishingProcessStatus.Scheduled,
+              note: "",
+              isDeleted: false,
+            };
+          });
+
+          await this.orderFinishingProcessModel.create(processes);
+        } else {
+          const processes = await this.orderFinishingProcessModel.find({
+            manufacturingOrder: doc._id,
+          });
+
+          processes.forEach((pro) => {
+            if (
+              pro.status === OrderFinishingProcessStatus.PendingApproval ||
+              pro.status === OrderFinishingProcessStatus.Approved
+            ) {
+              pro.set("status", OrderFinishingProcessStatus.Scheduled);
+            }
+          });
+
+          await Promise.all(processes.map((pro) => pro.save()));
+        }
+      }
+
+      if (dto.corrugatorProcess) {
+        // Object.assign(doc.corrugatorProcess, dto.corrugatorProcess);
+
+        const shouldUpdateStatus =
+          check.equal(
+            dto.corrugatorProcess?.status,
+            doc.corrugatorProcess.status,
+          ) &&
+          check.number(dto.corrugatorProcess?.manufacturedAmount) &&
+          check.greater(
+            dto.corrugatorProcess?.manufacturedAmount,
+            doc.corrugatorProcess.manufacturedAmount,
+          );
+
+        if (shouldUpdateStatus) {
+          dto.corrugatorProcess.status = CorrugatorProcessStatus.RUNNING
+        }
+
+        doc.set("corrugatorProcess", dto.corrugatorProcess)
+
+      }
+      const { corrugatorProcess: _, ...dtoWOCorruProgress } = dto;
+      Object.assign(doc, dtoWOCorruProgress);
+
+      await this.orderFinishingProcessModel.updateMany(
+        { manufacturingOrder: doc._id },
+        {
+          $set: { requiredAmount: doc.amount },
+        },
+      );
 
       await doc.save();
+      console.log(doc)
     }
 
     return {

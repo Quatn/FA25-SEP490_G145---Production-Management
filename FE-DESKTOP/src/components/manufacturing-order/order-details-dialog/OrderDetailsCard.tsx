@@ -3,7 +3,7 @@ import { ManufacturingOrder } from "@/types/ManufacturingOrder"
 import { Button, Card, DataList, Editable, Heading, HStack, Stack } from "@chakra-ui/react"
 import check from "check-types"
 import { useMemo } from "react"
-import { manufacturingOrderDetailsDialogUtils as utils } from "./utils"
+import { manufacturingOrderComponentUtils as utils } from "../utils"
 import { formatDateToDDMMYYYY } from "@/utils/dateUtils"
 import Link from "next/link"
 

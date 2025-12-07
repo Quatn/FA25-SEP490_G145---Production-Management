@@ -13,41 +13,12 @@ import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import ManufacturingOrderTableActionColumn from "./ActionColumn";
 import { FluteCombination } from "@/types/FluteCombination";
 import { LEGACY_OrderStatus } from "@/types/enums/LEGACY_OrderStatus";
+import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
+import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
+import { OrderFinishingProcessStatus } from "@/types/enums/OrderFinishingProcessStatus";
+import { manufacturingOrderComponentUtils as utils } from "../utils"
 
-const getPopulatedPoi = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem)) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated")
-  return mo.purchaseOrderItem
-}
-
-const getPopulatedSubPo = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem) || check.string(mo.purchaseOrderItem.subPurchaseOrder)
-  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder");
-  return mo.purchaseOrderItem.subPurchaseOrder
-}
-
-const getPopulatedPo = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder)
-  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder -> purchaseOrder");
-  return mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder
-}
-
-const getPopulatedCustomer = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder?.customer)
-  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder -> purchaseOrder -> customer");
-  return mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder?.customer
-}
-
-const getPopulatedWare = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem)
-    || check.string(mo.purchaseOrderItem.ware)
-  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> ware");
-  return mo.purchaseOrderItem.ware
-}
+const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, getOrderStatus, OrderStatusNameMap } = utils
 
 export type TruncatedManufacturingOrderTableData = {
   _id: string,
@@ -74,11 +45,12 @@ export type TruncatedManufacturingOrderTableData = {
   finishingProcesses: Omit<WareFinishingProcessType, "createdAt" | "updatedAt">[],
   wareNote: string,
   note: string,
-  getOrder: (id: string) => Serialized<ManufacturingOrder> | undefined,
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined,
   purchaseOrderItemId: string,
+  orderStatusDisplay: string,
 }
 
-export const convertSerializedMOToTruncatedManufacturingOrderTableData = (mo: Serialized<ManufacturingOrder>, getOrder: (id: string) => Serialized<ManufacturingOrder> | undefined): TruncatedManufacturingOrderTableData => {
+export const convertSerializedMOToTruncatedManufacturingOrderTableData = (mo: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[], getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined): TruncatedManufacturingOrderTableData => {
   const customer = getPopulatedCustomer(mo)
   const ware = getPopulatedWare(mo)
   const subPo = getPopulatedSubPo(mo)
@@ -102,6 +74,8 @@ export const convertSerializedMOToTruncatedManufacturingOrderTableData = (mo: Se
       "poi should be populated before reaching convertSerializedMOToTruncatedManufacturingOrderTableData"
     )
   }
+
+  const orderStatus = getOrderStatus(mo, processes)
 
   return {
     _id: mo._id,
@@ -130,6 +104,7 @@ export const convertSerializedMOToTruncatedManufacturingOrderTableData = (mo: Se
     note: mo.note,
     getOrder,
     purchaseOrderItemId: poi._id,
+    orderStatusDisplay: orderStatus ? OrderStatusNameMap[orderStatus] : ""
   }
 }
 
@@ -188,7 +163,7 @@ export const truncatedManufacturingOrderTableMergedHeaders = [
   ["customerCode", "1_customerCode_customerCode"],
   ["wareCode", "1_wareCode_wareCode"],
   ["purchaseOrderCode", "1_purchaseOrderCode_purchaseOrderCode"],
-  ["overallStatus", "1_overallStatus_overallStatus"],
+  ["orderStatusDisplay", "1_orderStatusDisplay_orderStatusDisplay"],
   ["fluteCombinationCode", "1_fluteCombination_fluteCombination"],
   ["wareManufacturingProcessType", "1_wareManufacturingProcessType_wareManufacturingProcessType"],
   ["fluteCombinationCode", "1_fluteCombinationCode_fluteCombinationCode"],
@@ -251,10 +226,8 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
   }),
 
   columnHelper.defineDataTableAccessorColumn({
-    id: "overallStatus",
-    accessorFn: (tmo) => {
-      return orderStatusNameMap[tmo.overallStatus]
-    },
+    id: "orderStatusDisplay",
+    accessorKey: "orderStatusDisplay",
     header: "Trạng thái chạy",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
@@ -372,7 +345,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     header: "Ghi chú cố định",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.lg,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -381,7 +354,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     header: "Ghi chú tạm thời",
     enablePinning: true,
     cellType: DataTableCellType.Text,
-    ...colSize.md,
+    ...colSize.lg,
   }),
 
   columnHelper.defineDataTableAccessorColumn({

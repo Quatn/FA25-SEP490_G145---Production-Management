@@ -14,12 +14,14 @@ import check from "check-types";
 import ManufacturingOrderDetailsDialogOrderDetailsCard from "./OrderDetailsCard";
 import ManufacturingOrderDetailsDialogWareDetailsCard from "./WareDetailsCard";
 import ManufacturingOrderDetailsDialogManufacturingDetailsCard from "./ManufacturingDetailsCard";
+import ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCard from "./CorrugatorProcessDetailsCard";
 
 export default function ManufacturingOrderDetailsDialog() {
   const { useDispatch, useSelector } = ManufacturingOrderDetailsDialogReducerStore;
   const dispatch = useDispatch();
   const open = useSelector(s => s.open)
   const order = useSelector(s => s.order)
+  const processes = useSelector(s => s.processes)
 
   return (
     <Dialog.Root
@@ -51,8 +53,13 @@ export default function ManufacturingOrderDetailsDialog() {
                     <ManufacturingOrderDetailsDialogWareDetailsCard order={order} />
                   </GridItem>
                   <GridItem colSpan={{ base: 1, md: 2 }}>
-                    <ManufacturingOrderDetailsDialogManufacturingDetailsCard order={order} />
+                    <ManufacturingOrderDetailsDialogManufacturingDetailsCard order={order} processes={processes} />
                   </GridItem>
+
+                  <GridItem colSpan={{ base: 1, md: 2 }}>
+                    <ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCard order={order} />
+                  </GridItem>
+
                 </SimpleGrid>
               )}
             </Dialog.Body>

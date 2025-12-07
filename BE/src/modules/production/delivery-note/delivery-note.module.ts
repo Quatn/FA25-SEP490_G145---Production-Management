@@ -4,11 +4,13 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { DeliveryNote, DeliveryNoteSchema } from './../schemas/delivery-note.schema';
 import { DeliveryNoteService } from './delivery-note.service';
 import { DeliveryNoteController } from './delivery-note.controller';
+import { PurchaseOrderItem, PurchaseOrderItemSchema } from '../schemas/purchase-order-item.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: DeliveryNote.name, schema: DeliveryNoteSchema },
+      { name: PurchaseOrderItem.name, schema: PurchaseOrderItemSchema },
     ]),
   ],
   providers: [DeliveryNoteService],
