@@ -1,36 +1,29 @@
 "use client";
 
-import { useGetOrderFinishingProcesssQuery } from "@/service/api/orderFinishingProcessApiSlice";
-import { Spinner } from "@chakra-ui/react";
+import { useGetOrderFinishingProcesssQuery, useUpdateManyOrderFinishingProcessMutation, useUpdateOrderFinishingProcessMutation } from "@/service/api/orderFinishingProcessApiSlice";
+import { Flex, Input, InputGroup, Spinner, Tabs, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { toaster } from "@/components/ui/toaster";
 import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
+import OrderFinishingProcessTable from "./OrderFinishingProcessTable";
+import { OrderFinishingProcessStatus } from "@/types/enums/OrderFinishingProcessStatus";
+import { LuSquareCheck } from "react-icons/lu";
+import { VscRunAll } from "react-icons/vsc";
+import OrderFinishingProcessDialog from "./OrderFinishingProcessDialog";
 
 const OrderFinishingProcessList: React.FC = () => {
 
     const [scheduledPage, setScheduledPage] = useState(1);
     const [inProductionPage, setInProductionPage] = useState(1);
     const [finishedProductionPage, setFinishedProductionPage] = useState(1);
-    const limit = 10;
-    const [scheduledSearch, setScheduledSearch] = useState("");
-    const [inProductionSearch, setInProductionSearch] = useState("");
-    const [finishedProductionSearch, setFinishedProductionSearch] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState(scheduledSearch);
+    const limit = 5;
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState(search);
 
     useEffect(() => {
-        const t = setTimeout(() => setDebouncedSearch(scheduledSearch), 400);
+        const t = setTimeout(() => setDebouncedSearch(search), 400);
         return () => clearTimeout(t);
-    }, [scheduledSearch]);
-
-    useEffect(() => {
-        const t = setTimeout(() => setDebouncedSearch(inProductionSearch), 400);
-        return () => clearTimeout(t);
-    }, [inProductionSearch]);
-
-    useEffect(() => {
-        const t = setTimeout(() => setDebouncedSearch(finishedProductionSearch), 400);
-        return () => clearTimeout(t);
-    }, [finishedProductionSearch]);
+    }, [search]);
 
     const {
         data: scheduledData,
@@ -39,7 +32,8 @@ const OrderFinishingProcessList: React.FC = () => {
     } = useGetOrderFinishingProcesssQuery({
         page: scheduledPage,
         limit,
-        search: debouncedSearch
+        search: debouncedSearch,
+        status: OrderFinishingProcessStatus.Scheduled,
     });
     const {
         data: inProductionData,
@@ -48,7 +42,8 @@ const OrderFinishingProcessList: React.FC = () => {
     } = useGetOrderFinishingProcesssQuery({
         page: inProductionPage,
         limit,
-        search: debouncedSearch
+        search: debouncedSearch,
+        status: OrderFinishingProcessStatus.InProduction,
     });
     const {
         data: finishedProductionData,
@@ -57,12 +52,113 @@ const OrderFinishingProcessList: React.FC = () => {
     } = useGetOrderFinishingProcesssQuery({
         page: finishedProductionPage,
         limit,
-        search: debouncedSearch
+        search: debouncedSearch,
+        status: OrderFinishingProcessStatus.FinishedProduction,
     });
 
-    const scheduledOFP: OrderFinishingProcess[] = (scheduledData as any)?.data?.data ?? [];
-    const inProductionOFP: OrderFinishingProcess[] = (inProductionData as any)?.data ?? [];
-    const finishedProductionOFP: OrderFinishingProcess[] = (finishedProductionData as any)?.data ?? [];
+    // const [updateMany, {isLoading: isUpdateManyLoading }] = useUpdateManyOrderFinishingProcessMutation();
+    const [updateOne, { isLoading: isUpdateOneLoading }] = useUpdateOrderFinishingProcessMutation();
+
+    const scheduledOFP: OrderFinishingProcess[] = scheduledData?.data?.data ?? [];
+    const inProductionOFP: OrderFinishingProcess[] = inProductionData?.data?.data ?? [];
+    const finishedProductionOFP: OrderFinishingProcess[] = finishedProductionData?.data?.data ?? [];
+
+    const scheduledTotalPages: number = scheduledData?.data.totalPages ?? 0;
+    const inProductionTotalPages: number = inProductionData?.data.totalPages ?? 0;
+    const finishedProductionTotalPages: number = finishedProductionData?.data.totalPages ?? 0;
+
+    // handle bulk update later
+
+    // const [selection, setSelection] = useState<string[]>([])
+
+    // const handleBulkUpdateStatus = async () => {
+
+    //     try {
+    //         const docs = await updateMany({
+    //             ids: selection,
+    //             data: {
+    //                 status: OrderFinishingProcessStatus.InProduction,
+    //             }
+    //         }).unwrap();
+
+    //         toaster.create({
+    //             title: "Thành công",
+    //             description: `Bắt đầu gia công ${docs.data.modified} kế hoạch`,
+    //             type: "success",
+    //             closable: true,
+    //         });
+    //     } catch (error: any) {
+    //         const msg =
+    //             error?.data?.message || error?.message || "Đã xảy ra lỗi, thử lại sau";
+    //         toaster.create({
+    //             title: "Thao tác thất bại",
+    //             description: msg,
+    //             type: "error",
+    //             closable: true,
+    //         });
+    //     }
+    // };
+
+    const handleUpdateOne = async (
+        updateId: string,
+        updateStatus: OrderFinishingProcessStatus,
+        updateCompletedAmount?: number,) => {
+        const today = new Date();
+        const localDate = today.toISOString().split("T")[0];
+        try {
+            const updateData: Partial<OrderFinishingProcess> = {};
+
+            updateData.status = updateStatus;
+
+            if (updateStatus == OrderFinishingProcessStatus.InProduction) {
+                updateData.employee = '6926c834c0637050c69dc2a3'; //TODO: hardcode employee id
+                updateData.startedAt = localDate;
+            }
+
+            if (updateStatus == OrderFinishingProcessStatus.FinishedProduction) {
+                if (updateCompletedAmount !== undefined) updateData.completedAmount = updateCompletedAmount;
+                updateData.completedAt = localDate;
+            }
+
+            const docs = await updateOne({
+                id: updateId,
+                data: updateData,
+            }).unwrap();
+
+            toaster.create({
+                title: "Thành công",
+                description: `${docs.data.status == OrderFinishingProcessStatus.InProduction ? 'Bắt đầu' : 'Hoàn thành'} kế hoạch ${docs.data.code}`,
+                type: "success",
+                closable: true,
+            });
+        } catch (error: any) {
+            const msg =
+                error?.data?.message || error?.message || "Đã xảy ra lỗi, thử lại sau";
+            toaster.create({
+                title: "Thao tác thất bại",
+                description: msg,
+                type: "error",
+                closable: true,
+            });
+        }
+    };
+
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedOFP, setSelectedOFP] = useState<OrderFinishingProcess | undefined>(undefined);
+    const [updateToStatus, setUpdateToStatus] = useState<OrderFinishingProcessStatus | undefined>(undefined);
+
+    const handleOpenAlertDialog = (tableStatus: OrderFinishingProcessStatus, ofp: OrderFinishingProcess) => {
+        if (tableStatus == OrderFinishingProcessStatus.Scheduled) setUpdateToStatus(OrderFinishingProcessStatus.InProduction);
+        if (tableStatus == OrderFinishingProcessStatus.InProduction) setUpdateToStatus(OrderFinishingProcessStatus.FinishedProduction);
+        setSelectedOFP(ofp);
+        setDialogOpen(true);
+    }
+
+
+    const handleCloseAlertDialog = () => {
+        setDialogOpen(false);
+    };
+
 
     if (scheduledLoading || inProductionLoading || finishedProductionLoading) return <Spinner />;
     if (scheduledError || inProductionError || finishedProductionError) {
@@ -72,6 +168,80 @@ const OrderFinishingProcessList: React.FC = () => {
 
     return (
         <>
+
+            <OrderFinishingProcessDialog
+                isOpen={dialogOpen}
+                onClose={handleCloseAlertDialog}
+                initialData={selectedOFP}
+                updateToStatus={updateToStatus}
+                onUpdate={handleUpdateOne} />
+
+            <Flex direction="row" mb={4}>
+                <InputGroup w={"full"} maxW={"sm"}>
+                    <Input
+                        size="lg"
+                        placeholder="Tìm kiếm"
+                        value={search}
+                        onChange={(e) => {
+                            setScheduledPage(1);
+                            setInProductionPage(1);
+                            setFinishedProductionPage(1);
+                            setSearch(e.target.value);
+                        }} />
+                </InputGroup>
+            </Flex>
+
+            <Tabs.Root
+                lazyMount
+                unmountOnExit
+                defaultValue={'list'}
+                variant={"outline"}>
+                <Tabs.List colorPalette={'green'}>
+                    <Tabs.Trigger fontWeight={'bold'} value={'list'}>
+                        <VscRunAll />
+                        Danh sách kế hoạch gia công
+                    </Tabs.Trigger>
+                    <Tabs.Trigger fontWeight={'bold'} value={'history'}>
+                        <LuSquareCheck />
+                        Lịch sử hoàn thành
+                    </Tabs.Trigger>
+                </Tabs.List>
+                <Tabs.Content value={'list'}>
+
+                    <Text fontSize={'lg'} fontWeight={'bold'}>Bảng kế hoạch chạy</Text>
+                    <OrderFinishingProcessTable
+                        tableStatus={OrderFinishingProcessStatus.InProduction}
+                        items={inProductionOFP}
+                        page={inProductionPage}
+                        limit={limit}
+                        handlePagination={setInProductionPage}
+                        totalPages={inProductionTotalPages}
+                        handleUpdate={handleOpenAlertDialog} />
+
+                    <Text mt={5} fontSize={'lg'} fontWeight={'bold'}>Danh sách kế hoạch chờ</Text>
+                    <OrderFinishingProcessTable
+                        tableStatus={OrderFinishingProcessStatus.Scheduled}
+                        items={scheduledOFP}
+                        page={scheduledPage}
+                        limit={limit}
+                        handlePagination={setScheduledPage}
+                        totalPages={scheduledTotalPages}
+                        handleUpdate={handleOpenAlertDialog} />
+                </Tabs.Content>
+                <Tabs.Content value={'history'}>
+                    <OrderFinishingProcessTable
+                        tableStatus={OrderFinishingProcessStatus.FinishedProduction}
+                        items={finishedProductionOFP}
+                        page={finishedProductionPage}
+                        limit={limit}
+                        handlePagination={setFinishedProductionPage}
+                        totalPages={finishedProductionTotalPages}
+                        handleUpdate={handleOpenAlertDialog} />
+                </Tabs.Content>
+            </Tabs.Root>
+
         </>
     );
 }
+
+export default OrderFinishingProcessList;

@@ -1,15 +1,21 @@
 "use client"
-import { ManufacturingOrderTableReducerStore } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import ManufacturingOrderTable from "./Table";
 import TruncatedManufacturingOrderTable from "./TruncatedTable";
+import { BoxProps, TableRootProps, TabsRootProps } from "@chakra-ui/react";
 
-export default function ManufacturingOrderTablePicker() {
+export type ManufacturingOrderTableProps = {
+  rootProps?: BoxProps;
+  tabsRootProps?: TabsRootProps;
+  tableRootProps?: TableRootProps;
+};
+
+export default function ManufacturingOrderTablePicker(props: ManufacturingOrderTableProps) {
   // const { useSelector } = ManufacturingOrderTableReducerStore;
   const useFullTable =  false
   //useSelector(s => s.useFullTable)
 
   if (useFullTable) {
-    return <ManufacturingOrderTable />
+    return <ManufacturingOrderTable {...props} />
   }
-  return <TruncatedManufacturingOrderTable />
+  return <TruncatedManufacturingOrderTable {...props} />
 }

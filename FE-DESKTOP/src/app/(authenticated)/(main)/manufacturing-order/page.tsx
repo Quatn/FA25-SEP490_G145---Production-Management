@@ -1,61 +1,21 @@
-import { ManufacturingOrderTableComponents } from "@/components/manufacturing-order/full-detail-table/components";
-import { DataTableProvider } from "@/components/ui/data-table/Provider";
+import ManufacturingOrderOrderDetailsConfirmDialog from "@/components/manufacturing-order/order-details-dialog/ConfirmDialog";
+import ManufacturingOrderDetailsDialog from "@/components/manufacturing-order/order-details-dialog/Dialog";
+import { ManufacturingOrderTrackPanel } from "@/components/manufacturing-order/track-panel/components";
 import { ManufacturingOrderDialogProvider } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
-import { ManufacturingOrderTableProvider } from "@/context/manufacturing-order/manufacturingOrderTableContext";
-import { Box, Button, HStack, Stack, Text } from "@chakra-ui/react";
-import Link from "next/link";
+import { ManufacturingOrderTrackPanelListProvider } from "@/context/manufacturing-order/manufacturingOrderTrackPanelContext";
+import { Box, Heading } from "@chakra-ui/react";
 
-export default function ManufacturingOrderHome() {
+export default function ManufacturingOrderDashboard() {
   return (
-    <ManufacturingOrderTableProvider>
-      <DataTableProvider>
-        <ManufacturingOrderDialogProvider>
-          <Box
-            m={5}
-            p={2}
-            flexGrow={1}
-          >
-            <Box
-              px={3}
-              py={5}
-              rounded={"md"}
-              colorPalette={"gray"}
-              backgroundColor={"colorPalette.subtle"}
-            >
-              <Stack
-                gapY={2}
-                minHeight={"80vh"}
-              >
-                <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-                  Danh sách lệnh
-                </Text>
-                <HStack justifyContent={"space-between"}>
-                  <ManufacturingOrderTableComponents.SearchBar />
-
-                  {/*<ManufacturingOrderTableComponents.SearchFilterControl />*/}
-
-                  <Link href="/manufacturing-order/create">
-                    <Button size={"sm"} colorPalette={"cyan"}>Tạo mới</Button>
-                  </Link>
-                </HStack>
-
-                <ManufacturingOrderTableComponents.TableControl />
-
-                <Stack flexGrow={1}>
-                  <ManufacturingOrderTableComponents.Table rootProps={{ flexGrow: 1 }} />
-                </Stack>
-
-                {/*<ManufacturingOrderTableComponents.PaginationControl />*/}
-
-                <ManufacturingOrderTableComponents.Pagination />
-              </Stack>
-            </Box>
-          </Box>
-
-          <ManufacturingOrderTableComponents.DetailsDialog />
-        </ManufacturingOrderDialogProvider>
-        <ManufacturingOrderTableComponents.ConfirmDialog />
-      </DataTableProvider>
-    </ManufacturingOrderTableProvider>
+    <ManufacturingOrderTrackPanelListProvider>
+      <ManufacturingOrderDialogProvider>
+        <Box mt={5}>
+          <Heading>Dashboard lệnh sản xuất</Heading>
+          <ManufacturingOrderTrackPanel.List />
+        </Box>
+        <ManufacturingOrderDetailsDialog />
+        <ManufacturingOrderOrderDetailsConfirmDialog />
+      </ManufacturingOrderDialogProvider>
+    </ManufacturingOrderTrackPanelListProvider>
   );
 }

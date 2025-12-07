@@ -7,6 +7,7 @@ import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { useDeleteManufacturingOrderMutation, useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import { Box, Button, Group, Popover, Portal, Stack } from "@chakra-ui/react"
@@ -15,7 +16,7 @@ import { BiSolidDownArrow } from "react-icons/bi"
 
 export type ManufacturingOrderTableActionColumnProps = {
   rowId: string,
-  getOrder: (id: string) => Serialized<ManufacturingOrder> | undefined,
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined,
   isEdited: boolean,
   meta?: DataTableMeta
 }
@@ -33,9 +34,10 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
     return undefined;
   }
 
-  const mo = props.getOrder(props.rowId)
+  const moObj = props.getOrder(props.rowId)
+  const mo = moObj?.order
 
-  if (check.undefined(mo)) {
+  if (check.undefined(moObj) || check.undefined(mo)) {
     return undefined;
   }
 
@@ -122,7 +124,7 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
             onClick={() =>
               dialogDispatch({
                 type: "OPEN_DIALOG_WITH_ORDER",
-                payload: mo,
+                payload: moObj,
               })
             }
           >

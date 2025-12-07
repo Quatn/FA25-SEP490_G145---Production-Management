@@ -2,6 +2,7 @@ import { GetOrderFinishingProcessDto, OrderFinishingProcess } from "@/types/Orde
 import { ORDER_FINISHING_PROCESS_URL } from "../constants";
 import { apiSlice } from "./apiSlice";
 import { BaseResponse, PaginatedList } from "@/types/DTO/Response";
+import { createApiEndpoint } from "@/utils/endpointFactory";
 
 export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
@@ -15,7 +16,7 @@ export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
                 params: GetOrderFinishingProcessDto,
                 credentials: "include",
             }),
-            providesTags: ["OrderFinishingProcess"],
+            providesTags: ["OrderFinishingProcess", "ManufacturingOrder"],
         }),
 
         getOrderFinishingProcessDetail: builder.query<BaseResponse<OrderFinishingProcess>, { id: string }>({
@@ -47,6 +48,22 @@ export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: ["OrderFinishingProcess"],
         }),
 
+        updateManyOrderFinishingProcess: builder.mutation<
+            BaseResponse<{ matched: number, modified: number }>, // Returns { success: true, data: { matched: n, modified: n } }
+            { ids: string[]; data: Partial<OrderFinishingProcess> }
+        >({
+            query: ({ ids, data }) => ({
+                url: `${ORDER_FINISHING_PROCESS_URL}/update-many`,
+                method: "PATCH",
+                body: {
+                    ids,
+                    data
+                },
+                credentials: "include",
+            }),
+            invalidatesTags: ["OrderFinishingProcess"],
+        }),
+
         deleteOrderFinishingProcess: builder.mutation<BaseResponse<OrderFinishingProcess>, { id: string }>({
             query: ({ id }) => ({
                 url: `${ORDER_FINISHING_PROCESS_URL}/delete-soft/${id}`,
@@ -64,7 +81,21 @@ export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ["OrderFinishingProcess"],
         }),
+
+    findManyOrderFinishingProcesssByManufacturingOrderId: createApiEndpoint<
+    BaseResponse<Serialized<OrderFinishingProcess>[]>,
+    { orders: string[] }
+    >(builder, {
+      query: ({ orders }) => ({
+        url: `${ORDER_FINISHING_PROCESS_URL}/find-by-manufacturing-order-id`,
+        method: "GET",
+        params: { orders },
+        credentials: "include",
+      }),
+      providesTags: ["OrderFinishingProcess", "ManufacturingOrder"],
     }),
+
+  }),
 });
 
 export const {
@@ -72,6 +103,8 @@ export const {
     useGetOrderFinishingProcessDetailQuery,
     useCreateOrderFinishingProcessMutation,
     useUpdateOrderFinishingProcessMutation,
+    useUpdateManyOrderFinishingProcessMutation,
     useDeleteOrderFinishingProcessMutation,
     useRestoreOrderFinishingProcessMutation,
+  useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery,
 } = OrderFinishingProcessApiSlice;

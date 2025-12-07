@@ -6,7 +6,9 @@ import { GetOrderFinishingProcessDto } from './dto/get-order-finishing-process.d
 import { ApiOperation } from '@nestjs/swagger';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
-import { OrderFinishingProcessDocument } from '../schemas/order-finishing-process.schema';
+import { OrderFinishingProcess, OrderFinishingProcessDocument } from '../schemas/order-finishing-process.schema';
+import { FindManyOrderFinishingProcessesByManufacturingOrderIdsRequestDto } from './dto/find-many-by-manufacturing-order-ids.dto';
+import { BulkUpdateOrderFinishingProcessDto } from './dto/bulk-update-order-finishing-process.dto';
 
 @Controller('order-finishing-process')
 export class OrderFinishingProcessController {
@@ -84,6 +86,23 @@ export class OrderFinishingProcessController {
     };
   }
 
+  @Patch('update-many')
+  @ApiOperation({ summary: 'Update many finishing processes' })
+  async updateMany(
+    @Body() bulkDto: BulkUpdateOrderFinishingProcessDto,
+  ): Promise<BaseResponse<any>> {
+
+    const { ids, data } = bulkDto;
+
+    const result = await this.service.updateMany(ids, data);
+
+    return {
+      success: true,
+      message: 'Updated successfully',
+      data: result,
+    };
+  }
+
   @Delete('delete-soft/:id')
   @ApiOperation({ summary: 'Soft delete finishing process' })
   async softDelete(
@@ -123,6 +142,21 @@ export class OrderFinishingProcessController {
       success: true,
       message: 'Permanently deleted successfully',
       data: null,
+    };
+  }
+
+
+  @Get("find-by-manufacturing-order-id")
+  @ApiOperation({ summary: "Find all order finishing process that have which have mo ids in the query" })
+  async findByManufacturingOrderId(
+    @Query() query: FindManyOrderFinishingProcessesByManufacturingOrderIdsRequestDto,
+  ): Promise<BaseResponse<OrderFinishingProcess[]>> {
+    const res = await this.service.findManyByManufacturingOrderIds(query.orders);
+
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: res,
     };
   }
 }

@@ -6,6 +6,7 @@ import { IsEnum, IsNumber, IsOptional, IsString } from "class-validator";
 import mongoose, { HydratedDocument } from "mongoose";
 import { ManufacturingOrder } from "./manufacturing-order.schema";
 import { WareFinishingProcessType } from "./ware-finishing-process-type.schema";
+import { Employee } from "@/modules/employee/schemas/employee.schema";
 
 export enum OrderFinishingProcessStatus {
   PendingApproval = "PENDINGAPPROVAL",
@@ -75,6 +76,15 @@ export class OrderFinishingProcess extends BaseSchema {
   })
   @IsEnum(OrderFinishingProcessStatus)
   status: OrderFinishingProcessStatus;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: Employee.name, required: false })
+  employee?: mongoose.Types.ObjectId | Employee;
+
+  @Prop({ required: false })
+  startedAt?: Date;
+
+  @Prop({ required: false })
+  completedAt?: Date;
 
   @ApiProperty()
   @Prop({ required: false, default: "" })

@@ -26,7 +26,7 @@ function ReadonlyCell<RowData>(props: CellProps<RowData, DataTableEditableCellVa
   let value: DataTableEditableCellValueTypes = props.context.cell.getValue()
   if (check.date(value)) value = formatDateToYYYYMMDD(value)
 
-  return <Text>{value}</Text>;
+  return <Text textWrap={"wrap"}>{value}</Text>;
 }
 
 function HighlightCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueTypes>) {
