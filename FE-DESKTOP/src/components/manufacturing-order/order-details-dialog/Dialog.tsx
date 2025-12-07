@@ -14,6 +14,7 @@ import check from "check-types";
 import ManufacturingOrderDetailsDialogOrderDetailsCard from "./OrderDetailsCard";
 import ManufacturingOrderDetailsDialogWareDetailsCard from "./WareDetailsCard";
 import ManufacturingOrderDetailsDialogManufacturingDetailsCard from "./ManufacturingDetailsCard";
+import ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCard from "./CorrugatorProcessDetailsCard";
 
 export default function ManufacturingOrderDetailsDialog() {
   const { useDispatch, useSelector } = ManufacturingOrderDetailsDialogReducerStore;
@@ -54,6 +55,11 @@ export default function ManufacturingOrderDetailsDialog() {
                   <GridItem colSpan={{ base: 1, md: 2 }}>
                     <ManufacturingOrderDetailsDialogManufacturingDetailsCard order={order} processes={processes} />
                   </GridItem>
+
+                  <GridItem colSpan={{ base: 1, md: 2 }}>
+                    <ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCard order={order} />
+                  </GridItem>
+
                 </SimpleGrid>
               )}
             </Dialog.Body>

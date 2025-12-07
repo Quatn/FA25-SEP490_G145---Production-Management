@@ -23,6 +23,28 @@ const OrderStatusAlertColorMap: Record<ManufacturingOrderOperativeStatus, string
   CANCELLED: "red",
 }
 
+const CorrugatorProcessProgressColorMap: Record<CorrugatorProcessStatus, string> = {
+  NOTSTARTED: "gray",
+  RUNNING: "blue",
+  PAUSED: "yellow",
+  COMPLETED: "green",
+  CANCELLED: "red",
+  OVERCOMPLETED: "teal",
+}
+
+const OrderFinishingProcessProcessProgressColorMap: Record<OrderFinishingProcessStatus, string> = {
+  PENDINGAPPROVAL: "gray",
+  APPROVED: "cyan",
+  SCHEDULED: "cyan",
+  INPRODUCTION: "blue",
+  ONHOLD: "blue",
+  PAUSED: "yellow",
+  FINISHEDPRODUCTION: "green",
+  CANCELLED: "green",
+  QUALITYCHECK: "teal",
+  COMPLETED: "green",
+}
+
 const OrderStatusStatusSymbolMap: Record<ManufacturingOrderOperativeStatus, React.ReactNode> = {
   NOTSTARTED: <LuCircleMinus />,
   RUNNING: <LuPlay />,
@@ -86,7 +108,7 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
               </Alert.Indicator>
               <Alert.Title>{statusDisplayName}</Alert.Title>
             </Alert.Root>}
-            {!check.undefined(completedAmount) && <Progress.Root value={completedAmount} max={requiredAmount} flexGrow={1}>
+            {!check.undefined(completedAmount) && <Progress.Root value={completedAmount} max={requiredAmount} flexGrow={1} colorPalette={orderStatus ? OrderStatusAlertColorMap[orderStatus] : "gray"}>
               <HStack gap="5">
                 <Progress.Label>Số lượng đã sản xuất</Progress.Label>
                 <Progress.Track flex="1">
@@ -99,19 +121,19 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
           </HStack>
           <Collapsible.Root open={open} onOpenChange={(e) => setOpen(e.open)}>
             <Collapsible.Content>
-              <Box padding="4" borderWidth="1px">
+              <Stack padding="4" borderWidth="1px" gapY={4}>
                 <Card.Root size="sm">
                   <Card.Header>
                     <Heading size="md">Quy trình sóng</Heading>
                   </Card.Header>
                   <Card.Body color="fg.muted">
-                    <Progress.Root value={props.mo.corrugatorProcess.manufacturedAmount} max={requiredAmount} flexGrow={1}>
-                      <HStack gap="5" gapX={10}>
+                    <Progress.Root value={props.mo.corrugatorProcess.manufacturedAmount} max={requiredAmount} flexGrow={1} colorPalette={CorrugatorProcessProgressColorMap[props.mo.corrugatorProcess.status]}>
+                      <HStack gap="10" gapX={10}>
                         <Progress.Label>Số lượng phôi</Progress.Label>
                         <Progress.Track flex="1">
                           <Progress.Range />
                         </Progress.Track>
-                        <Progress.ValueText>{props.mo.corrugatorProcess.manufacturedAmount}/{requiredAmount} Đã hoàn thành</Progress.ValueText>
+                        <Progress.ValueText w={"15%"}>{props.mo.corrugatorProcess.manufacturedAmount}/{props.mo.numberOfBlanks} tấm phôi </Progress.ValueText>
                       </HStack>
                     </Progress.Root>
                   </Card.Body>
@@ -124,19 +146,19 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
                       <Heading size="md">{check.string(proc.wareFinishingProcessType) ? proc.wareFinishingProcessType : proc.wareFinishingProcessType.name}</Heading>
                     </Card.Header>
                     <Card.Body color="fg.muted">
-                      <Progress.Root value={proc.completedAmount} max={proc.requiredAmount} flexGrow={1}>
-                        <HStack gap="5">
+                      <Progress.Root value={proc.completedAmount} max={proc.requiredAmount} flexGrow={1} colorPalette={OrderFinishingProcessProcessProgressColorMap[proc.status]}>
+                        <HStack gap="10">
                           <Progress.Label>Số lượng đã hoàn thiện</Progress.Label>
                           <Progress.Track flex="1">
                             <Progress.Range />
                           </Progress.Track>
-                          <Progress.ValueText>{proc.completedAmount}/{proc.requiredAmount} Đã hoàn thành</Progress.ValueText>
+                          <Progress.ValueText w={"15%"}>{proc.completedAmount}/{proc.requiredAmount} thành phẩm</Progress.ValueText>
                         </HStack>
                       </Progress.Root>
                     </Card.Body>
                   </Card.Root>
                 ))}
-              </Box>
+              </Stack>
             </Collapsible.Content>
           </Collapsible.Root>
         </Stack>

@@ -56,7 +56,7 @@ export default function ManufacturingOrderTrackPanelList() {
     else {
       return undefined
     }
-  }, [fullDetailMOPaginatedResponse?.data])
+  }, [fullDetailMOPaginatedResponse?.data, orderFinishingProcessesResponse?.data])
 
   const moList = useMemo(() => moPaginatedList?.data ?? [], [moPaginatedList?.data])
   const getMo = useCallback((id: string) => moList.find(mo => mo._id === id), [moList])

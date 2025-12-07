@@ -222,7 +222,7 @@ const WareCreateModal: React.FC<Props> = ({
                   </Label>
 
                   {/* New adjustment fields placed in left column (required) */}
-                  <Label label="warePerBlankAdjustment" required>
+                  <Label label="Điều chỉnh số SP" required>
                     <input
                       className="form-control"
                       type="number"
@@ -236,7 +236,7 @@ const WareCreateModal: React.FC<Props> = ({
                     />
                   </Label>
 
-                  <Label label="flapAdjustment" required>
+                  <Label label="Điều chỉnh tai" required>
                     <input
                       className="form-control"
                       type="number"
@@ -315,7 +315,7 @@ const WareCreateModal: React.FC<Props> = ({
                   </Label>
 
                   {/* New adjustment fields placed in right column (required) */}
-                  <Label label="flapOverlapAdjustment" required>
+                  <Label label="Điều chỉnh cộng cánh" required>
                     <input
                       className="form-control"
                       type="number"
@@ -329,7 +329,7 @@ const WareCreateModal: React.FC<Props> = ({
                     />
                   </Label>
 
-                  <Label label="crossCutCountAdjustment" required>
+                  <Label label="Điều chỉnh part SX" required>
                     <input
                       className="form-control"
                       type="number"

@@ -137,7 +137,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
     const dto: UpdateManyManufacturingOrdersRequestDto = {
       orders: [{
         id: props.order._id,
-        corrugatorLineAdjustment: props.order.corrugatorLineAdjustment,
+        corrugatorLineAdjustment: formValue.corrugatorLineAdjustment,
         manufacturingDirective: formValue.manufacturingDirective,
         amount: formValue.amount,
         note: formValue.note,
@@ -268,7 +268,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     size="sm"
                     width="320px"
                     value={check.null(formValue.corrugatorLineAdjustment) ? undefined : [formValue.corrugatorLineAdjustment]}
-                    onValueChange={(v) => setManufacturingDirective(v.value.at(0))}
+                    onValueChange={(v) => setCorrugatorLine(v.value.at(0))}
                   >
                     <Select.HiddenSelect />
                     <Select.Control>
