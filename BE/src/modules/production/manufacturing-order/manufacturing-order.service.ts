@@ -231,7 +231,7 @@ export class ManufacturingOrderService {
         corrugatorProcess: {
           manufacturedAmount: 0,
           status: CorrugatorProcessStatus.NOTSTARTED,
-          actualBlankWidth: 0,
+          actualPaperWidth: 0,
           actualRunningLength: 0,
           note: "",
         },
@@ -302,7 +302,7 @@ export class ManufacturingOrderService {
           corrugatorProcess: {
             manufacturedAmount: 0,
             status: CorrugatorProcessStatus.NOTSTARTED,
-            actualBlankWidth: 0,
+            actualPaperWidth: 0,
             actualRunningLength: 0,
             note: "",
           },

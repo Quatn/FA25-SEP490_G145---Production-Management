@@ -69,10 +69,10 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
     if (check.null(props.order)) return []
 
     return [
-      { label: "Khổ giấy thực", value: props.order.corrugatorProcess.actualBlankWidth ?? 0 + "" },
-      { label: "Mét dài thực", value: props.order.corrugatorProcess.actualRunningLength ?? 0 + "" },
+      { label: "Khổ giấy thực", value: (props.order.corrugatorProcess.actualPaperWidth ?? 0) + "" },
+      { label: "Mét dài thực", value: (props.order.corrugatorProcess.actualRunningLength ?? 0) + "" },
     ]
-  }, [props.order, po])
+  }, [props.order])
 
 
   const { useDispatch } = ManufacturingOrderDetailsDialogReducerStore;

@@ -1,44 +1,32 @@
 "use client";
 
-import {
-  ManufacturingOrderTableReducerStore,
-} from "@/context/manufacturing-order/manufacturingOrderTableContext";
-import {
-  useGetFullDetailManufacturingOrdersQuery,
-  useUpdateManyManufacturingOrdersMutation,
-} from "@/service/api/manufacturingOrderApiSlice";
-import {
-  ActionBar,
-  Box,
-  Button,
-  Center,
-  Kbd,
-  Portal,
-  Spinner,
-  Stack,
-  Table,
-  Text,
-} from "@chakra-ui/react";
-import check from "check-types";
-import { useCallback, useEffect, useMemo } from "react";
-import { getCoreRowModel } from "@tanstack/react-table";
-import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
-import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
-import useDataTable from "@/components/ui/data-table/hook";
 import DataFetchError from "@/components/common/DataFetchError";
 import { useDataTableSelector } from "@/components/ui/data-table/Provider";
-import { convertSerializedMOToTruncatedManufacturingOrderTableData, truncatedManufacturingOrderTableColumns, TruncatedManufacturingOrderTableData, truncatedManufacturingOrderTableMergedHeaders } from "./truncatedTableDefinition";
-import { logTimestamp } from "@/utils/logTimestamp";
-import { toaster } from "@/components/ui/toaster";
-import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
-import { ManufacturingOrderTableProps } from "./TablePicker";
+import { ManufacturingOrderCorrugatorProcessOperateReducerStore } from "@/context/manufacturing-order/manufacturingOrderCorrugatorProcessOperateContext";
+import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
+import { useGetFullDetailManufacturingOrdersQuery, useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice";
 import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
+import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
+import { ActionBar, Box, BoxProps, Button, Center, Kbd, Portal, Spinner, Stack, Table, TableRootProps, Text } from "@chakra-ui/react";
+import check from "check-types";
+import { useCallback, useEffect, useMemo } from "react";
+import { convertSerializedMOToManufacturingOrderCorrugatorOperatePageTableData, manufacturingOrderCorrugatorOperatePageTableColumns, ManufacturingOrderCorrugatorOperatePageTableData, manufacturingOrderCorrugatorOperatePageTableMergedHeaders } from "./tableDefinition";
+import useDataTable from "@/components/ui/data-table/hook";
+import { getCoreRowModel } from "@tanstack/react-table";
+import { devlog } from "@/utils/devlog";
+import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
+import { toaster } from "@/components/ui/toaster";
 
-export default function TruncatedManufacturingOrderTable(
-  props: ManufacturingOrderTableProps,
+export type ManufacturingOrderCorrugatorOperatePageTableProps = {
+  rootProps?: BoxProps;
+  tableRootProps?: TableRootProps;
+};
+
+export default function ManufacturingOrderCorrugatorOperatePageTable(
+  props: ManufacturingOrderCorrugatorOperatePageTableProps,
 ) {
   const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
-  const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
+  const { useDispatch, useSelector } = ManufacturingOrderCorrugatorProcessOperateReducerStore;
   const dispatch = useDispatch();
   const page = useSelector(s => s.page)
   const limit = useSelector(s => s.limit)
@@ -65,14 +53,6 @@ export default function TruncatedManufacturingOrderTable(
         if (check.string(mo.purchaseOrderItem)) {
           throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
         }
-
-        /*
-        const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
-        const calculatedPOI = recalculatePurchaseOrderItem({
-          ...mo.purchaseOrderItem!,
-          ware: calculatedWare
-        })
-        */
 
         const process = orderFinishingProcessesResponse?.data.filter(p => (p.manufacturingOrder as unknown as string) === mo._id)
 
@@ -102,13 +82,13 @@ export default function TruncatedManufacturingOrderTable(
     }
   }, [moList])
 
-  const rawTableData: TruncatedManufacturingOrderTableData[] = useMemo(() => moList.map(mo =>
-    convertSerializedMOToTruncatedManufacturingOrderTableData(mo, mo.finishingProcesses, getMo)
+  const rawTableData: ManufacturingOrderCorrugatorOperatePageTableData[] = useMemo(() => moList.map(mo =>
+    convertSerializedMOToManufacturingOrderCorrugatorOperatePageTableData(mo, getMo)
   ), [moList, getMo])
 
   const { tableComponent, tableData, resetTable } = useDataTable({
     data: rawTableData,
-    columns: truncatedManufacturingOrderTableColumns,
+    columns: manufacturingOrderCorrugatorOperatePageTableColumns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (mo) => mo._id,
     bodyPropsStack: {
@@ -127,7 +107,7 @@ export default function TruncatedManufacturingOrderTable(
         bg: { base: "colorPalette.muted" }
       },
     },
-    mergedHeadersIds: truncatedManufacturingOrderTableMergedHeaders,
+    mergedHeadersIds: manufacturingOrderCorrugatorOperatePageTableMergedHeaders,
     initialState: {
       columnPinning: {
         left: ['manufacturingDirective', "code"],
@@ -137,7 +117,7 @@ export default function TruncatedManufacturingOrderTable(
   });
 
   useEffect(() => {
-    logTimestamp("SET_TOTAL_ITEMS effect Triggered")
+    devlog("SET_TOTAL_ITEMS effect Triggered")
     dispatch({
       type: "SET_TOTAL_ITEMS",
       payload: moPaginatedList ? moPaginatedList.totalItems : 0,
@@ -169,13 +149,12 @@ export default function TruncatedManufacturingOrderTable(
     const dto: UpdateManyManufacturingOrdersRequestDto = {
       orders: tableData.filter((row) => row.isEdited).map((order) => ({
         id: order._id,
-        corrugatorLineAdjustment: order.corrugatorLineAdjustment,
-        manufacturingDirective: order.manufacturingDirective,
-        amount: order.amount,
-        note: order.note,
-        manufacturingDateAdjustment: order.manufacturingDateAdjustment?.toString(),
-        requestedDatetime: order.requestedDatetime?.toString(),
         purchaseOrderItemId: order.purchaseOrderItemId,
+        corrugatorProcess: {
+          manufacturedAmount: order.manufacturedAmount,
+          note: order.corrugatorProcess.note,
+          status: order.corrugatorProcess.status,
+        },
       }))
     }
 
@@ -217,8 +196,8 @@ export default function TruncatedManufacturingOrderTable(
 
       <ActionBar.Root open={editedItemsNum > 0}>
         <Portal>
-          <ActionBar.Positioner zIndex={9999}>
-            <ActionBar.Content>
+          <ActionBar.Positioner>
+            <ActionBar.Content zIndex={9999}>
               <ActionBar.SelectionTrigger>
                 Đã sửa {editedItemsNum} lệnh
               </ActionBar.SelectionTrigger>

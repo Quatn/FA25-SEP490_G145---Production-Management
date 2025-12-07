@@ -14,7 +14,7 @@ const paperConsumptionCalculation = (
 
   if (!check.number(parsed))
     throw new BusinessLogicError(
-      `Unable to parse paper weight information from paper type value ${paperType}`,
+      `Unable to parse paper weight information from paper type value "${paperType}"`,
     );
 
   return (parsed * runningLength) / 1000000;
