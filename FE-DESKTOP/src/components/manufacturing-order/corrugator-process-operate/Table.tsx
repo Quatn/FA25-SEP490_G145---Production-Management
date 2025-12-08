@@ -16,10 +16,12 @@ import { getCoreRowModel } from "@tanstack/react-table";
 import { devlog } from "@/utils/devlog";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
 import { toaster } from "@/components/ui/toaster";
+import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
 
 export type ManufacturingOrderCorrugatorOperatePageTableProps = {
   rootProps?: BoxProps;
   tableRootProps?: TableRootProps;
+  corrugatorProcessStatuses?: CorrugatorProcessStatus[],
 };
 
 export default function ManufacturingOrderCorrugatorOperatePageTable(
@@ -37,7 +39,7 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
     error: fetchError,
     isLoading: isFetchingList,
     refetch: refetchTable,
-  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query });
+  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query, corrugatorProcessStatuses: props.corrugatorProcessStatuses });
 
   const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
 

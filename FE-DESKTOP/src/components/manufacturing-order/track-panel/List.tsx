@@ -77,9 +77,9 @@ export default function ManufacturingOrderTrackPanelList() {
           gapY={2}
           minHeight={"80vh"}
         >
-          {/*<Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-            
-          </Text>*/}
+          <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
+            Quản lý lệnh
+          </Text>
           <HStack justifyContent={"end"}>
 
             <Link href="/manufacturing-order/list">

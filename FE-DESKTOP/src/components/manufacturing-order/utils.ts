@@ -87,6 +87,15 @@ const getOrderStatus = (mo: Serialized<ManufacturingOrder>, processes: Serialize
   }
 }
 
+const corrugatorProcessStatusNameMap: Record<CorrugatorProcessStatus, string> = {
+  NOTSTARTED: "Chưa bắt đầu",
+  RUNNING: "Đang chạy",
+  PAUSED: "Tạm dừng",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Hủy",
+  OVERCOMPLETED: "Hoàn thành",
+}
+
 export const manufacturingOrderComponentUtils = {
   getPopulatedPoi,
   getPopulatedSubPo,
@@ -96,4 +105,5 @@ export const manufacturingOrderComponentUtils = {
   OrderStatusNameMap,
   getOrderStatus,
   OrderApprovalStatusNameMap,
+  corrugatorProcessStatusNameMap,
 }

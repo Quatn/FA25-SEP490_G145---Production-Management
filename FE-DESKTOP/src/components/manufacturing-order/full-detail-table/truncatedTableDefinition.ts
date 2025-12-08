@@ -199,7 +199,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     accessorKey: "purchaseOrderCode",
     header: "Đơn hàng",
     enablePinning: true,
-    cellType: DataTableCellType.Readonly,
+    cellType: DataTableCellType.Highlight,
     ...colSize.md,
   }),
 

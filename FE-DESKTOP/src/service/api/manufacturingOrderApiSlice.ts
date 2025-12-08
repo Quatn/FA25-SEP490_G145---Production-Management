@@ -10,18 +10,24 @@ import {
 } from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
 import { DeleteManufacturingOrderRequestDto, DeleteManufacturingOrderResponseDto } from "@/types/DTO/manufacturing-order/DeleteManufacturingOrderDto";
 import { UpdateManyManufacturingOrdersRequestDto, UpdateManyManufacturingOrdersResponseDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
+import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
 
     getFullDetailManufacturingOrders: createApiEndpoint<
       PageResponse<Serialized<ManufacturingOrder>>,
-      { page: number; limit: number, query?: string }
+      {
+        page: number,
+        limit: number,
+        query?: string,
+        corrugatorProcessStatuses?: CorrugatorProcessStatus[],
+      }
     >(builder, {
-      query: ({ page, limit, query }) => ({
+      query: ({ page, limit, query, corrugatorProcessStatuses }) => ({
         url: `${MANUFACTURING_ORDER_URL}/query/full-details`,
         method: "GET",
-        params: { page, limit, query },
+        params: { page, limit, query, corrugatorProcessStatuses },
         credentials: "include",
       }),
       providesTags: ["ManufacturingOrder"],

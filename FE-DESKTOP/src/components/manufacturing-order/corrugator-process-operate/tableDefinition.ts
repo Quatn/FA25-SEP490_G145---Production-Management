@@ -8,13 +8,16 @@ import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
 import { manufacturingOrderComponentUtils as utils } from "../utils"
 import { CorrugatorProcess } from "@/types/CorrugatorProcess";
+import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
+import { createListCollection } from "@chakra-ui/react";
 
-const { getPopulatedPo, getPopulatedWare, getPopulatedSubPo } = utils
+const { getPopulatedPo, getPopulatedWare, getPopulatedSubPo, corrugatorProcessStatusNameMap } = utils
 
 export type ManufacturingOrderCorrugatorOperatePageTableData = {
   _id: string,
   code: string,
   corrugatorProcess: CorrugatorProcess,
+  corrugatorProcessStatus: CorrugatorProcessStatus,
   manufacturingDirective: ManufacturingOrderDirectives | null,
   wareCode: string,
   purchaseOrderCode: string,
@@ -57,6 +60,7 @@ export const convertSerializedMOToManufacturingOrderCorrugatorOperatePageTableDa
     _id: mo._id,
     code: mo.code,
     corrugatorProcess: mo.corrugatorProcess,
+    corrugatorProcessStatus: mo.corrugatorProcess.status,
     manufacturingDirective: mo.manufacturingDirective ?? null,
     wareCode: ware?.code ?? "",
     purchaseOrderCode: po?.code ?? "",
@@ -85,6 +89,20 @@ const manufacturingDirectives: { label: string, value: string }[] = [
   { label: "Bù lệnh", value: ManufacturingOrderDirectives.Compensate },
 ]
 
+const CorrugatorProcessStatuses: { label: string, value: string }[] = [
+  { label: "Chưa bắt đầu", value: CorrugatorProcessStatus.NOTSTARTED },
+  { label: "Đang chạy", value: CorrugatorProcessStatus.RUNNING },
+  { label: "Tạm dừng", value: CorrugatorProcessStatus.PAUSED },
+  { label: "Hoàn thành", value: CorrugatorProcessStatus.COMPLETED },
+  { label: "Hủy", value: CorrugatorProcessStatus.CANCELLED },
+  { label: "Hoàn thành", value: CorrugatorProcessStatus.OVERCOMPLETED },
+]
+
+const corrugatorProcessStatusCol = createListCollection({
+  items: CorrugatorProcessStatuses,
+})
+
+
 const colSize = {
   sm: {
     minSize: 50,
@@ -106,6 +124,7 @@ const colSize = {
 export const manufacturingOrderCorrugatorOperatePageTableMergedHeaders = [
   ["manufacturingDirective", "1_manufacturingDirective_manufacturingDirective"],
   ["code", "1_code_code"],
+  ["corrugatorProcessStatus", "1_corrugatorProcessStatus_corrugatorProcessStatus"],
   ["customerCode", "1_customerCode_customerCode"],
   ["wareCode", "1_wareCode_wareCode"],
   ["purchaseOrderCode", "1_purchaseOrderCode_purchaseOrderCode"],
@@ -115,6 +134,7 @@ export const manufacturingOrderCorrugatorOperatePageTableMergedHeaders = [
   ["fluteCombinationCode", "1_fluteCombinationCode_fluteCombinationCode"],
   ["inventory", "1_inventory_inventory"],
   ["amount", "1_amount_amount"],
+  ["manufacturedAmount", "1_manufacturedAmount_manufacturedAmount"],
   ["wareNote", "1_wareNote_wareNote"],
   ["note", "1_note_note"],
   ["manufacturingDateAdjustment", "1_manufacturingDateAdjustment_manufacturingDateAdjustment"],
@@ -133,6 +153,16 @@ export const manufacturingOrderCorrugatorOperatePageTableColumns: (ColumnDef<Man
     header: "Kế hoạch giao",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "corrugatorProcessStatus",
+    accessorKey: "corrugatorProcessStatus",
+    header: "Trạng thái chạy",
+    enablePinning: true,
+    cellType: DataTableCellType.Select,
+    selectCollection: corrugatorProcessStatusCol,
     ...colSize.md,
   }),
 
@@ -172,6 +202,26 @@ export const manufacturingOrderCorrugatorOperatePageTableColumns: (ColumnDef<Man
     enablePinning: true,
     cellType: DataTableCellType.Highlight,
     ...colSize.sm,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "amount",
+    accessorKey: "amount",
+    header: "Số lượng",
+    enablePinning: true,
+    cellType: DataTableCellType.Readonly,
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
+    id: "manufacturedAmount",
+    accessorFn: (mo) => {
+      return mo.corrugatorProcess.manufacturedAmount
+    },
+    header: "Số lượng đã sản xuất",
+    enablePinning: true,
+    cellType: DataTableCellType.Number,
+    ...colSize.md,
   }),
 
   columnHelper.defineHeaderGroup({
@@ -222,26 +272,6 @@ export const manufacturingOrderCorrugatorOperatePageTableColumns: (ColumnDef<Man
         ...colSize.sm,
       }),
     ]
-  }),
-
-  columnHelper.defineDataTableAccessorColumn({
-    id: "amount",
-    accessorKey: "amount",
-    header: "Số lượng",
-    enablePinning: true,
-    cellType: DataTableCellType.Readonly,
-    ...colSize.md,
-  }),
-
-  columnHelper.defineDataTableAccessorColumn({
-    id: "manufacturedAmount",
-    accessorFn: (mo) => {
-      return mo.corrugatorProcess.manufacturedAmount
-    },
-    header: "Số lượng đã sản xuất",
-    enablePinning: true,
-    cellType: DataTableCellType.Number,
-    ...colSize.md,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
