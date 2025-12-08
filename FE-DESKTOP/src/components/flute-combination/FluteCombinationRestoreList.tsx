@@ -1,19 +1,16 @@
 "use client";
 
-import { useDeleteHardFluteCombinationMutation, useGetDeletedFluteCombinationQuery, useRestoreFluteCombinationMutation } from "@/service/api/fluteCombinationApiSlice";
+import { useGetDeletedFluteCombinationQuery, useRestoreFluteCombinationMutation } from "@/service/api/fluteCombinationApiSlice";
 import { FluteCombination } from "@/types/FluteCombination";
 import { useState } from "react";
 import { toaster } from "@/components/ui/toaster";
 import { ButtonGroup, IconButton, Pagination, Spinner, Text } from "@chakra-ui/react";
-import FluteCombinationAlertDialog from "./FluteCombinationAlertDialog";
-import FluteCombinationTable from "./FluteCombinationTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import FluteCombinationRestoreTable from "./FluteCombinationRestoreTable";
 import FluteCombinationDetailDialog from "./FluteCombinationDetailDialog";
 
 const FluteCombinationRestoreList: React.FC = () => {
 
-    const [deleteItem] = useDeleteHardFluteCombinationMutation();
     const [restoreItem] = useRestoreFluteCombinationMutation();
 
     const [page, setPage] = useState(1);
@@ -25,13 +22,7 @@ const FluteCombinationRestoreList: React.FC = () => {
     const totalPages = dataResp?.data?.totalPages ?? 1;
 
     const [detailOpen, setDetailOpen] = useState(false);
-    const [alertOpen, setAlertOpen] = useState(false);
     const [selected, setSelected] = useState<FluteCombination | undefined>(undefined);
-
-    const handleOpenAlert = (item: FluteCombination) => {
-        setSelected(item);
-        setAlertOpen(true);
-    }
 
     const handleOpenDetail = (item?: FluteCombination) => {
         setSelected(item);
@@ -42,8 +33,6 @@ const FluteCombinationRestoreList: React.FC = () => {
         setDetailOpen(false);
         setSelected(undefined);
     }
-
-    const handleCloseAlert = () => setAlertOpen(false);
 
     const handleMutation = async (
         fn: Function,
@@ -77,24 +66,11 @@ const FluteCombinationRestoreList: React.FC = () => {
         );
     }
 
-    const handleDelete = async (data: FluteCombination) => {
-        handleMutation(
-            () => deleteItem(data).unwrap(),
-            `Xóa tổ hợp sóng ${data.code}`,
-            'Xóa thất bại',
-        );
-    }
-
     if (isLoading) return <Text>Đang tải dữ liệu...</Text>;
     if (error) return <Text>Không thể tải dữ liệu. Vui lòng thử lại.</Text>;
 
     return (
         <>
-            <FluteCombinationAlertDialog
-                isOpen={alertOpen}
-                onClose={handleCloseAlert}
-                initialData={selected}
-                onDelete={(d) => handleDelete(d)} />
 
             <FluteCombinationDetailDialog
                 isOpen={detailOpen}
@@ -108,8 +84,7 @@ const FluteCombinationRestoreList: React.FC = () => {
                         page={page}
                         limit={limit}
                         items={items}
-                        onRestore={handleRestore} // check this
-                        onDelete={handleOpenAlert}
+                        onRestore={handleRestore}
                         onDetail={handleOpenDetail}
                     />
 
