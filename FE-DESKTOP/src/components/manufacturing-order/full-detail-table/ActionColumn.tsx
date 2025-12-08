@@ -99,12 +99,14 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
         if (check.equal(res.data?.deletedAmount, 1)) {
           toaster.success({
             title: "Success",
-            description: "Updated deleted successfully",
+            description: "Order deleted successfully",
           })
         }
-        toaster.warning({
-          title: "Order not deleted",
-        })
+        else {
+          toaster.warning({
+            title: "Order not deleted",
+          })
+        }
       }).catch(error => {
         toaster.warning({
           title: "Error deleting order",

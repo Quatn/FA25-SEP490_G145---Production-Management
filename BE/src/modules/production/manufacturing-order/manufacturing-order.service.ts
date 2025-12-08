@@ -231,7 +231,7 @@ export class ManufacturingOrderService {
         corrugatorProcess: {
           manufacturedAmount: 0,
           status: CorrugatorProcessStatus.NOTSTARTED,
-          actualBlankWidth: 0,
+          actualPaperWidth: 0,
           actualRunningLength: 0,
           note: "",
         },
@@ -302,7 +302,7 @@ export class ManufacturingOrderService {
           corrugatorProcess: {
             manufacturedAmount: 0,
             status: CorrugatorProcessStatus.NOTSTARTED,
-            actualBlankWidth: 0,
+            actualPaperWidth: 0,
             actualRunningLength: 0,
             note: "",
           },
@@ -510,25 +510,40 @@ export class ManufacturingOrderService {
       }
 
       if (dto.corrugatorProcess) {
-        // Object.assign(doc.corrugatorProcess, dto.corrugatorProcess);
-
-        const shouldUpdateStatus =
-          check.equal(
-            dto.corrugatorProcess?.status,
-            doc.corrugatorProcess.status,
-          ) &&
-          check.number(dto.corrugatorProcess?.manufacturedAmount) &&
-          check.greater(
-            dto.corrugatorProcess?.manufacturedAmount,
-            doc.corrugatorProcess.manufacturedAmount,
-          );
-
-        if (shouldUpdateStatus) {
-          dto.corrugatorProcess.status = CorrugatorProcessStatus.RUNNING
+        if (
+          check.in(doc.corrugatorProcess?.status, [
+            CorrugatorProcessStatus.NOTSTARTED,
+            CorrugatorProcessStatus.PAUSED,
+          ])
+        ) {
+          if (
+            check.greater(
+              parseInt(dto.corrugatorProcess.manufacturedAmount + ""),
+              parseInt(doc.corrugatorProcess.manufacturedAmount + ""),
+            )
+          ) {
+            dto.corrugatorProcess.status = CorrugatorProcessStatus.RUNNING;
+          }
         }
 
-        doc.set("corrugatorProcess", dto.corrugatorProcess)
+        if (
+          !check.in(doc.corrugatorProcess?.status, [
+            CorrugatorProcessStatus.COMPLETED,
+            CorrugatorProcessStatus.CANCELLED,
+            CorrugatorProcessStatus.OVERCOMPLETED,
+          ])
+        ) {
+          if (
+            check.greaterOrEqual(
+              parseInt(dto.corrugatorProcess.manufacturedAmount + ""),
+              parseInt(doc.numberOfBlanks + ""),
+            )
+          ) {
+            dto.corrugatorProcess.status = CorrugatorProcessStatus.COMPLETED;
+          }
+        }
 
+        doc.set("corrugatorProcess", dto.corrugatorProcess);
       }
       const { corrugatorProcess: _, ...dtoWOCorruProgress } = dto;
       Object.assign(doc, dtoWOCorruProgress);
@@ -541,7 +556,6 @@ export class ManufacturingOrderService {
       );
 
       await doc.save();
-      console.log(doc)
     }
 
     return {

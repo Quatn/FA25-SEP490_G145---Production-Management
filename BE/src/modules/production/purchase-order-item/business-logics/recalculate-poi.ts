@@ -12,9 +12,11 @@ const paperConsumptionCalculation = (
   const lastThree = paperType.slice(-3);
   const parsed = parseInt(lastThree, 10);
 
+  console.log("A", paperType, parsed)
+
   if (!check.number(parsed))
     throw new BusinessLogicError(
-      `Unable to parse paper weight information from paper type value ${paperType}`,
+      `Unable to parse paper weight information from paper type value "${paperType}"`,
     );
 
   return (parsed * runningLength) / 1000000;
@@ -41,6 +43,7 @@ export function recalculatePurchaseOrderItem(
   const longitudinalCutCount = Math.ceil(numberOfBlanks / ware.crossCutCount);
   const runningLength = (longitudinalCutCount * ware.blankLength) / 1000;
 
+  console.log(ware)
   const faceLayerPaperWeight = check.null(ware.faceLayerPaperType)
     ? null
     : paperConsumptionCalculation(runningLength, ware.faceLayerPaperType);

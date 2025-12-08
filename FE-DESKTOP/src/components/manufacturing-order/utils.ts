@@ -1,4 +1,5 @@
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
+import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 import { ManufacturingOrderOperativeStatus } from "@/types/enums/ManufacturingOrderOperativeStatus";
@@ -87,6 +88,20 @@ const getOrderStatus = (mo: Serialized<ManufacturingOrder>, processes: Serialize
   }
 }
 
+const corrugatorProcessStatusNameMap: Record<CorrugatorProcessStatus, string> = {
+  NOTSTARTED: "Chưa bắt đầu",
+  RUNNING: "Đang chạy",
+  PAUSED: "Tạm dừng",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Hủy",
+  OVERCOMPLETED: "Hoàn thành",
+}
+
+const corrugatorLineNameMap: Record<CorrugatorLine, string> = {
+  LINE5: "Dàn 5",
+  LINE7: "Dàn 7",
+}
+
 export const manufacturingOrderComponentUtils = {
   getPopulatedPoi,
   getPopulatedSubPo,
@@ -96,4 +111,6 @@ export const manufacturingOrderComponentUtils = {
   OrderStatusNameMap,
   getOrderStatus,
   OrderApprovalStatusNameMap,
+  corrugatorProcessStatusNameMap,
+  corrugatorLineNameMap,
 }

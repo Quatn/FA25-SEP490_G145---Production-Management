@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import type { PurchaseOrder, SubPO, POItem } from "@/types/PurchaseOrderTypes";
+import type { PurchaseOrder } from "@/types/PurchaseOrderTypes";
 import PurchaseOrderDetailModal from "./PurchaseOrderDetailModal";
 import ProductSelectorModal from "./SubPOSelectorModal";
 import {
@@ -61,7 +61,8 @@ function normalizeServerPo(raw: any): PurchaseOrder {
     poType: (raw as any).poType ?? "",
     style: (raw as any).style ?? "",
     styleDetails: (raw as any).styleDetails ?? "",
-    status: raw.status ?? "",
+    // default to DRAFT if missing
+    status: raw.status ?? "DRAFT",
     subPOs: raw.subPOs ?? [],
     totalItems: (raw as any).totalItems ?? 0,
     totalValue: (raw as any).totalValue ?? 0,
@@ -82,49 +83,10 @@ const SearchInput: React.FC<{
   />
 );
 
-const PO_STATUS_OPTIONS = [
-  "DRAFT",
-  "PENDINGAPPROVAL",
-  "APPROVED",
-  "SCHEDULED",
-  "CANCELLED",
-  "INPRODUCTION",
-  "PAUSED",
-  "PARTIALLYCOMPLETED",
-  "COMPLETED",
-  "PARTIALLYFINISHED",
-  "FINISHED",
-  "CLOSED",
-];
-
-const SUBPO_STATUS_OPTIONS = [
-  "PENDINGAPPROVAL",
-  "APPROVED",
-  "SCHEDULED",
-  "CANCELLED",
-  "INPRODUCTION",
-  "PAUSED",
-  "PARTIALLYCOMPLETED",
-  "COMPLETED",
-  "INDELIVERY",
-  "DELIVERED",
-];
-
-const POITEM_STATUS_OPTIONS = [
-  "PENDINGAPPROVAL",
-  "APPROVED",
-  "SCHEDULED",
-  "ONHOLD",
-  "CANCELLED",
-  "INPRODUCTION",
-  "PAUSED",
-  "FINISHEDPRODUCTION",
-  "QUALITYCHECK",
-  "COMPLETED",
-];
-
-// Considered "done" for an item
-const DONE_ITEM_STATUSES = ["COMPLETED", "FINISHEDPRODUCTION"];
+// reduced statuses
+const PO_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
+const SUBPO_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
+const POITEM_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
 
 const PurchaseOrderList: React.FC = () => {
   const [query, setQuery] = useState<string>("");
@@ -172,6 +134,20 @@ const PurchaseOrderList: React.FC = () => {
     skip: !expandedPoId,
   });
 
+  // guard for creating sub-POs to avoid double submissions
+  const [isCreatingSubs, setIsCreatingSubs] = useState(false);
+
+  // safe refetch helper for the subs query
+  const safeRefetchSubs = async () => {
+    try {
+      if (!expandedPoId) return; // don't call refetch if no target id
+      if (typeof refetchSubs !== "function") return;
+      await refetchSubs();
+    } catch (err) {
+      console.warn("safeRefetchSubs: skipping refetch because it failed", err);
+    }
+  };
+
   useEffect(() => {
     const payload = poResp?.data?.data ?? poResp?.data ?? [];
     if (Array.isArray(payload)) {
@@ -204,7 +180,6 @@ const PurchaseOrderList: React.FC = () => {
     return "";
   };
 
-  // helper: compute totals from expandedLocalDoc and push them into orders list
   const syncTotalsToOrders = (localDoc: any | null) => {
     if (!localDoc) return;
     const poId = String(localDoc._id ?? localDoc._id?.$oid ?? "") || "";
@@ -289,7 +264,11 @@ const PurchaseOrderList: React.FC = () => {
       } else {
         await updatePo({ id: updated.id, body: payload }).unwrap();
       }
-      await refetch();
+      try {
+        if (typeof refetch === "function") await refetch();
+      } catch (e) {
+        console.warn("refetch purchase orders failed", e);
+      }
       setSelected(null);
     } catch (err: any) {
       console.error("Save PO failed", err);
@@ -301,10 +280,19 @@ const PurchaseOrderList: React.FC = () => {
 
   const handleDeleteFromList = async (po: PurchaseOrder) => {
     if (!po?.id) return;
+    // only allow delete if PO is DRAFT
+    if (po.status !== "DRAFT") {
+      alert("Chỉ có thể xóa khi PO ở trạng thái DRAFT.");
+      return;
+    }
     if (!confirm("Delete this Purchase Order?")) return;
     try {
       await deletePo(po.id).unwrap();
-      await refetch();
+      try {
+        if (typeof refetch === "function") await refetch();
+      } catch (e) {
+        console.warn("refetch purchase orders failed", e);
+      }
     } catch (err: any) {
       console.error("Delete failed", err);
       alert(
@@ -317,34 +305,46 @@ const PurchaseOrderList: React.FC = () => {
     setExpandedPoId((prev) => (prev === poId ? null : poId));
   };
 
-  const computeTotals = (po: PurchaseOrder) => {
-    let items = 0;
-    let value = 0;
-    (po.subPOs || []).forEach((s) => {
-      (s.items || []).forEach((it) => {
-        items += 1;
-        const t =
-          Number(
-            it.total ??
-              (it.unitPrice && it.quantity ? it.unitPrice * it.quantity : 0)
-          ) || 0;
-        value += t;
-      });
-    });
-    return { items, value };
-  };
-
-  // server-expanded PO doc (if fetched)
-  const expandedPoDoc: any | null =
-    expandedPoResp?.data ?? expandedPoResp ?? null;
-
   // Handler: update server item amount
   const handleUpdateServerItemAmount = async (
     itemIdRaw: any,
     newAmount: number
   ) => {
     const idStr = String(resolveId(itemIdRaw));
-    // Optimistically update expandedLocalDoc
+
+    // check editability: item & its parents must be DRAFT
+    if (!expandedLocalDoc) {
+      // safe fallback
+      alert("Không thể sửa - dữ liệu chưa tải xong.");
+      return;
+    }
+
+    // find parent sub and po
+    const parentPOId = String(
+      expandedLocalDoc._id ?? expandedLocalDoc.id ?? expandedPoId ?? ""
+    );
+    const parentPO = orders.find((o) => String(o.id) === String(parentPOId));
+    if (!parentPO || parentPO.status !== "DRAFT") {
+      alert("Chỉ có thể sửa item khi PO ở trạng thái DRAFT.");
+      return;
+    }
+
+    let itemStatus: string | null = null;
+    let parentSubStatus: string | null = null;
+    (expandedLocalDoc.subPurchaseOrders || []).forEach((s: any) => {
+      (s.items || []).forEach((it: any) => {
+        if (String(resolveId(it)) === idStr) {
+          itemStatus = it.status ?? "DRAFT";
+          parentSubStatus = s.status ?? "DRAFT";
+        }
+      });
+    });
+    if (itemStatus !== "DRAFT" || parentSubStatus !== "DRAFT") {
+      alert("Chỉ có thể sửa item khi PO và Sub-PO đều ở trạng thái DRAFT.");
+      return;
+    }
+
+    // Optimistic update locally
     setExpandedLocalDoc((prev: any) => {
       if (!prev) return prev;
       const copy = JSON.parse(JSON.stringify(prev));
@@ -359,14 +359,12 @@ const PurchaseOrderList: React.FC = () => {
         });
       });
       if (touched) {
-        // synchronize totals into the left-hand orders summary
         syncTotalsToOrders(copy);
         return copy;
       }
       return prev;
     });
 
-    // send update to server (no full refetch)
     try {
       await updatePoItem({
         id: idStr,
@@ -374,46 +372,8 @@ const PurchaseOrderList: React.FC = () => {
       }).unwrap();
     } catch (err: any) {
       console.error("Update failed, refetching sub-POs", err);
-      if (refetchSubs) await refetchSubs();
+      await safeRefetchSubs();
     }
-  };
-
-  // compute done count / total / anyInProduction for a sub-PO
-  const computeSubWaresState = (sub: any) => {
-    const items = sub.items || [];
-    const total = items.length;
-    let done = 0;
-    let anyInProduction = false;
-    for (const it of items) {
-      const st = (it.status ?? "").toString();
-      if (DONE_ITEM_STATUSES.includes(st)) done += 1;
-      if (st === "INPRODUCTION") anyInProduction = true;
-    }
-    return { done, total, anyInProduction };
-  };
-
-  // compute PO-level product counts.
-  // - productsWithProgress is used for status decisions (some progress or in production)
-  // - productsCompleted is used to DISPLAY PO progress (completedProducts / totalProducts)
-  const computePoProductsProgress = (subs: any[]) => {
-    const totalProducts = (subs || []).length;
-    let productsWithProgress = 0;
-    let productsCompleted = 0;
-    let anyProductInProduction = false;
-    for (const s of subs || []) {
-      const { done, total, anyInProduction } = computeSubWaresState(s);
-      const hasProgress = total > 0 && (done > 0 || anyInProduction);
-      if (hasProgress) productsWithProgress += 1;
-      if (anyInProduction) anyProductInProduction = true;
-      if (total > 0 && done === total) productsCompleted += 1;
-    }
-
-    return {
-      totalProducts,
-      productsWithProgress,
-      productsCompleted,
-      anyProductInProduction,
-    };
   };
 
   // Handler: update server item status
@@ -423,133 +383,115 @@ const PurchaseOrderList: React.FC = () => {
   ) => {
     const idStr = String(resolveId(itemRaw));
 
-    let affectedSubId: string | null = null;
-    let computedSubStatus: string | null = null;
-    let computedPoStatus: string | null = null;
+    if (!expandedLocalDoc) {
+      alert("Không thể thay đổi trạng thái item - dữ liệu chưa tải xong.");
+      return;
+    }
+    const parentPOId = String(
+      expandedLocalDoc._id ?? expandedLocalDoc.id ?? expandedPoId ?? ""
+    );
+    const parentPO = orders.find((o) => String(o.id) === String(parentPOId));
+    if (!parentPO || parentPO.status !== "DRAFT") {
+      alert("Chỉ có thể thay đổi trạng thái item khi PO ở trạng thái DRAFT.");
+      return;
+    }
 
-    // Optimistic: update expandedLocalDoc
+    // locate item and parent sub
+    let itemStatus: string | null = null;
+    let parentSub: any = null;
+    (expandedLocalDoc.subPurchaseOrders || []).forEach((s: any) => {
+      (s.items || []).forEach((it: any) => {
+        if (String(resolveId(it)) === idStr) {
+          itemStatus = it.status ?? "DRAFT";
+          parentSub = s;
+        }
+      });
+    });
+
+    if (!itemStatus) {
+      alert("Item không tồn tại.");
+      return;
+    }
+    if (itemStatus !== "DRAFT") {
+      alert("Chỉ có thể thay đổi trạng thái item khi nó đang ở DRAFT.");
+      return;
+    }
+
+    // If changing to PENDINGAPPROVAL, ask confirm
+    if (newStatus === "PENDINGAPPROVAL") {
+      if (
+        !confirm(
+          "Xác nhận chuyển item này sang trạng thái PENDINGAPPROVAL? Sau khi xác nhận, không thể chỉnh sửa."
+        )
+      ) {
+        return;
+      }
+    }
+
+    // optimistic update
     setExpandedLocalDoc((prev: any) => {
       if (!prev) return prev;
       const copy = JSON.parse(JSON.stringify(prev));
-      let touched = false;
       (copy.subPurchaseOrders || []).forEach((s: any) => {
         (s.items || []).forEach((it: any) => {
           if (String(resolveId(it)) === idStr) {
             it.status = newStatus;
-            touched = true;
           }
         });
-        if (touched && !affectedSubId) {
-          affectedSubId = resolveId(s);
-        }
       });
-      if (touched) {
-        if (affectedSubId) {
-          const sub = (copy.subPurchaseOrders || []).find(
-            (x: any) => resolveId(x) === affectedSubId
-          );
-          if (sub) {
-            const { done, total, anyInProduction } = computeSubWaresState(sub);
-            if (anyInProduction) {
-              computedSubStatus = "INPRODUCTION";
-              sub.status = computedSubStatus;
-            } else if (total > 0 && done === total) {
-              computedSubStatus = "COMPLETED";
-              sub.status = computedSubStatus;
-            } else if (done > 0) {
-              computedSubStatus = "PARTIALLYCOMPLETED";
-              sub.status = computedSubStatus;
-            }
-          }
-        }
-
-        syncTotalsToOrders(copy);
-
-        const poSubs = copy.subPurchaseOrders || [];
-        const {
-          totalProducts,
-          productsWithProgress,
-          productsCompleted,
-          anyProductInProduction,
-        } = computePoProductsProgress(poSubs);
-
-        if (anyProductInProduction) {
-          computedPoStatus = "INPRODUCTION";
-        } else if (totalProducts > 0 && productsCompleted === totalProducts) {
-          computedPoStatus = "COMPLETED";
-        } else if (productsWithProgress > 0) {
-          computedPoStatus = "PARTIALLYCOMPLETED";
-        } else {
-          computedPoStatus = null;
-        }
-
-        if (computedPoStatus) {
-          copy.status = computedPoStatus;
-        }
-
-        return copy;
-      }
-      return prev;
+      syncTotalsToOrders(copy);
+      return copy;
     });
 
-    // Persist item status to server
     try {
       await updatePoItem({ id: idStr, body: { status: newStatus } }).unwrap();
-
-      if (computedSubStatus && affectedSubId) {
-        try {
-          await updateSub({
-            id: affectedSubId,
-            body: { status: computedSubStatus },
-          }).unwrap();
-        } catch (err: any) {
-          console.error("Persisting sub-PO status failed, refetching", err);
-          if (refetchSubs) await refetchSubs();
-        }
-      }
-
-      if (computedPoStatus && expandedLocalDoc) {
-        try {
-          const poId = String(
-            expandedLocalDoc._id ?? expandedLocalDoc.id ?? expandedPoId ?? ""
-          );
-          if (poId) {
-            // only update the PO status in the left-hand list (no full refetch)
-            setOrders((prev) =>
-              prev.map((p) =>
-                String(p.id) === String(poId)
-                  ? { ...p, status: computedPoStatus! }
-                  : p
-              )
-            );
-            await updatePo({
-              id: poId,
-              body: { status: computedPoStatus },
-            }).unwrap();
-          }
-        } catch (err: any) {
-          console.error("Persisting PO status failed, refetching", err);
-          await refetch();
-        }
-      }
+      // if item moved to PENDINGAPPROVAL, keep readonly state (selects disabled by UI)
     } catch (err: any) {
       console.error("Update item status failed", err);
-      if (refetchSubs) await refetchSubs();
+      await safeRefetchSubs();
       alert(
         "Update failed: " + (err?.data?.message || err?.message || "unknown")
       );
     }
   };
 
-  // Handler: delete server item
+  // Delete item (only if allowed)
   const handleDeleteServerItem = async (itemRaw: any) => {
     const idStr = String(resolveId(itemRaw));
+    // check editability via expandedLocalDoc
+    if (!expandedLocalDoc) {
+      alert("Cannot delete - data not loaded.");
+      return;
+    }
+    const parentPOId = String(
+      expandedLocalDoc._id ?? expandedLocalDoc.id ?? expandedPoId ?? ""
+    );
+    const parentPO = orders.find((o) => String(o.id) === String(parentPOId));
+    if (!parentPO || parentPO.status !== "DRAFT") {
+      alert("Only deletable when PO is DRAFT.");
+      return;
+    }
+    // ensure item and parent sub are DRAFT
+    let itemStatus: string | null = null;
+    let parentSubStatus: string | null = null;
+    (expandedLocalDoc.subPurchaseOrders || []).forEach((s: any) => {
+      (s.items || []).forEach((it: any) => {
+        if (String(resolveId(it)) === idStr) {
+          itemStatus = it.status ?? "DRAFT";
+          parentSubStatus = s.status ?? "DRAFT";
+        }
+      });
+    });
+    if (itemStatus !== "DRAFT" || parentSubStatus !== "DRAFT") {
+      alert("Only deletable when PO/Sub-PO/Item are DRAFT.");
+      return;
+    }
+
     if (!confirm("Delete this item?")) return;
 
     const prevCopy = expandedLocalDoc
       ? JSON.parse(JSON.stringify(expandedLocalDoc))
       : null;
-
     setExpandedLocalDoc((prev: any) => {
       if (!prev) return prev;
       const copy = JSON.parse(JSON.stringify(prev));
@@ -567,22 +509,42 @@ const PurchaseOrderList: React.FC = () => {
     } catch (err: any) {
       console.error("Delete failed, rolling back & refetching", err);
       if (prevCopy) setExpandedLocalDoc(prevCopy);
-      if (refetchSubs) await refetchSubs();
+      await safeRefetchSubs();
       alert(
         "Delete failed: " + (err?.data?.message || err?.message || "unknown")
       );
     }
   };
 
-  // Delete sub
+  // Delete sub (only when allowed)
   const handleDeleteServerSub = async (subRaw: any) => {
     const subId = String(resolveId(subRaw));
+    if (!expandedLocalDoc) {
+      alert("Data not loaded.");
+      return;
+    }
+    const parentPOId = String(
+      expandedLocalDoc._id ?? expandedLocalDoc.id ?? expandedPoId ?? ""
+    );
+    const parentPO = orders.find((o) => String(o.id) === String(parentPOId));
+    if (!parentPO || parentPO.status !== "DRAFT") {
+      alert("Only deletable when PO is DRAFT.");
+      return;
+    }
+    // find sub in expandedLocalDoc
+    const sub = (expandedLocalDoc.subPurchaseOrders || []).find(
+      (x: any) => String(resolveId(x)) === subId
+    );
+    if (!sub || (sub.status ?? "DRAFT") !== "DRAFT") {
+      alert("Only deletable when Sub-PO is DRAFT.");
+      return;
+    }
+
     if (!confirm("Xác nhận xóa sản phẩm này?")) return;
 
     const prevCopy = expandedLocalDoc
       ? JSON.parse(JSON.stringify(expandedLocalDoc))
       : null;
-
     setExpandedLocalDoc((prev: any) => {
       if (!prev) return prev;
       const copy = JSON.parse(JSON.stringify(prev));
@@ -598,7 +560,7 @@ const PurchaseOrderList: React.FC = () => {
     } catch (err: any) {
       console.error("Delete sub-PO failed, rolling back & refetching", err);
       if (prevCopy) setExpandedLocalDoc(prevCopy);
-      if (refetchSubs) await refetchSubs();
+      await safeRefetchSubs();
       alert(
         "Xóa sản phẩm thất bại: " +
           (err?.data?.message || err?.message || "unknown")
@@ -606,43 +568,194 @@ const PurchaseOrderList: React.FC = () => {
     }
   };
 
+  // Handler: update PO status with propagation
   const handleUpdatePoStatus = async (poId: string, newStatus: string) => {
-    setOrders((prev) =>
-      prev.map((p) =>
-        String(p.id) === String(poId) ? { ...p, status: newStatus } : p
-      )
-    );
-    try {
-      await updatePo({ id: poId, body: { status: newStatus } }).unwrap();
-    } catch (err: any) {
-      console.error("Update PO status failed", err);
-      await refetch();
-      alert(
-        "Update PO status failed: " +
-          (err?.data?.message || err?.message || "unknown")
-      );
+    const po = orders.find((o) => String(o.id) === String(poId));
+    if (!po) {
+      alert("PO not found");
+      return;
+    }
+    if (po.status !== "DRAFT") {
+      alert("Only editable when PO is DRAFT.");
+      return;
+    }
+    if (newStatus === po.status) return;
+
+    // Only allow transition from DRAFT. If target is PENDINGAPPROVAL, propagate.
+    if (newStatus === "PENDINGAPPROVAL") {
+      if (
+        !confirm(
+          "Xác nhận chuyển PO này sang PENDINGAPPROVAL? Sau khi xác nhận, PO và toàn bộ Sub-PO và Item sẽ được khoá."
+        )
+      ) {
+        return;
+      }
+      try {
+        // update PO
+        await updatePo({
+          id: poId,
+          body: { status: "PENDINGAPPROVAL" },
+        }).unwrap();
+
+        // fetch sub list (either from snapshot or expandedLocalDoc)
+        // prefer server snapshot from orders
+        const poSnapshot =
+          orders.find((o) => String(o.id) === String(poId)) ?? po;
+        const subs = (poSnapshot as any).subPOs ?? [];
+
+        // if expanded and fetched, use expandedLocalDoc list instead (to catch ids)
+        let subsToUpdate = subs;
+        if (
+          expandedLocalDoc &&
+          String(resolveId(expandedLocalDoc)) === String(poId)
+        ) {
+          subsToUpdate = expandedLocalDoc.subPurchaseOrders || subs;
+        }
+
+        // update each sub and its items to PENDINGAPPROVAL
+        for (const s of subsToUpdate) {
+          const sid = String(resolveId(s));
+          try {
+            await updateSub({
+              id: sid,
+              body: { status: "PENDINGAPPROVAL" },
+            }).unwrap();
+          } catch (e) {
+            // continue but log
+            console.warn("updateSub failed for", sid, e);
+          }
+          // update items
+          const items = s.items || [];
+          for (const it of items) {
+            const iid = String(resolveId(it));
+            try {
+              await updatePoItem({
+                id: iid,
+                body: { status: "PENDINGAPPROVAL" },
+              }).unwrap();
+            } catch (e) {
+              console.warn("updatePoItem failed for", iid, e);
+            }
+          }
+        }
+
+        // refresh lists
+        await safeRefetchSubs();
+        try {
+          if (typeof refetch === "function") await refetch();
+        } catch (e) {
+          console.warn("refetch purchase orders failed", e);
+        }
+      } catch (err: any) {
+        console.error("Update PO status failed", err);
+        try {
+          if (typeof refetch === "function") await refetch();
+        } catch (e) {
+          console.warn("refetch purchase orders failed", e);
+        }
+        alert(
+          "Update PO status failed: " +
+            (err?.data?.message || err?.message || "unknown")
+        );
+      }
+    } else {
+      // Allow update to APPROVED directly (no propagation) from DRAFT
+      try {
+        await updatePo({ id: poId, body: { status: newStatus } }).unwrap();
+        try {
+          if (typeof refetch === "function") await refetch();
+        } catch (e) {
+          console.warn("refetch purchase orders failed", e);
+        }
+      } catch (err: any) {
+        console.error("Update PO status failed", err);
+        try {
+          if (typeof refetch === "function") await refetch();
+        } catch (e) {
+          console.warn("refetch purchase orders failed", e);
+        }
+        alert(
+          "Update PO status failed: " +
+            (err?.data?.message || err?.message || "unknown")
+        );
+      }
     }
   };
 
+  // Handler: update Sub status with propagation to items when going to pending
   const handleUpdateSubStatus = async (subIdRaw: any, newStatus: string) => {
     const subId = String(resolveId(subIdRaw));
-    setExpandedLocalDoc((prev: any) => {
-      if (!prev) return prev;
-      const copy = JSON.parse(JSON.stringify(prev));
-      (copy.subPurchaseOrders || []).forEach((s: any) => {
-        if (resolveId(s) === subId) s.status = newStatus;
-      });
-      return copy;
-    });
+    if (!expandedLocalDoc) {
+      alert("Data not loaded.");
+      return;
+    }
+    const poId = String(
+      expandedLocalDoc._id ?? expandedLocalDoc.id ?? expandedPoId ?? ""
+    );
+    const poSnapshot = orders.find((o) => String(o.id) === String(poId));
+    if (!poSnapshot || poSnapshot.status !== "DRAFT") {
+      alert("Only editable when PO is DRAFT.");
+      return;
+    }
 
-    try {
-      await updateSub({ id: subId, body: { status: newStatus } }).unwrap();
-    } catch (err: any) {
-      console.error("Update sub-PO status failed", err);
-      if (refetchSubs) await refetchSubs();
-      alert(
-        "Update failed: " + (err?.data?.message || err?.message || "unknown")
-      );
+    // find sub and current status
+    const sub = (expandedLocalDoc.subPurchaseOrders || []).find(
+      (s: any) => String(resolveId(s)) === subId
+    );
+    const current = sub?.status ?? "DRAFT";
+    if (current !== "DRAFT") {
+      alert("Only editable when Sub-PO is DRAFT.");
+      return;
+    }
+    if (newStatus === current) return;
+
+    if (newStatus === "PENDINGAPPROVAL") {
+      if (
+        !confirm(
+          "Xác nhận chuyển Sub-PO này sang PENDINGAPPROVAL? Sau khi xác nhận, Sub-PO và toàn bộ Item bên trong sẽ bị khoá."
+        )
+      ) {
+        return;
+      }
+      try {
+        // update sub
+        await updateSub({
+          id: subId,
+          body: { status: "PENDINGAPPROVAL" },
+        }).unwrap();
+        // update all its items to pending
+        const items = sub.items || [];
+        for (const it of items) {
+          const iid = String(resolveId(it));
+          try {
+            await updatePoItem({
+              id: iid,
+              body: { status: "PENDINGAPPROVAL" },
+            }).unwrap();
+          } catch (e) {
+            console.warn("updatePoItem failed for", iid, e);
+          }
+        }
+        await safeRefetchSubs();
+      } catch (err: any) {
+        console.error("Update sub-PO status failed", err);
+        await safeRefetchSubs();
+        alert(
+          "Update failed: " + (err?.data?.message || err?.message || "unknown")
+        );
+      }
+    } else {
+      // APPROVED allowed directly from DRAFT (no propagation)
+      try {
+        await updateSub({ id: subId, body: { status: newStatus } }).unwrap();
+        await safeRefetchSubs();
+      } catch (err: any) {
+        console.error("Update sub-PO status failed", err);
+        await safeRefetchSubs();
+        alert(
+          "Update failed: " + (err?.data?.message || err?.message || "unknown")
+        );
+      }
     }
   };
 
@@ -651,6 +764,27 @@ const PurchaseOrderList: React.FC = () => {
     newDateStr: string
   ) => {
     const subId = String(resolveId(subIdRaw));
+    if (!expandedLocalDoc) {
+      alert("Data not loaded.");
+      return;
+    }
+    const poId = String(
+      expandedLocalDoc._id ?? expandedLocalDoc.id ?? expandedPoId ?? ""
+    );
+    const poSnapshot = orders.find((o) => String(o.id) === String(poId));
+    if (!poSnapshot || poSnapshot.status !== "DRAFT") {
+      alert("Only editable when PO is DRAFT.");
+      return;
+    }
+    // check sub status
+    const sub = (expandedLocalDoc.subPurchaseOrders || []).find(
+      (s: any) => String(resolveId(s)) === subId
+    );
+    if (!sub || (sub.status ?? "DRAFT") !== "DRAFT") {
+      alert("Chỉ có thể chỉnh ngày giao khi Sub-PO đang DRAFT.");
+      return;
+    }
+
     setExpandedLocalDoc((prev: any) => {
       if (!prev) return prev;
       const copy = JSON.parse(JSON.stringify(prev));
@@ -665,9 +799,10 @@ const PurchaseOrderList: React.FC = () => {
         id: subId,
         body: { deliveryDate: newDateStr },
       }).unwrap();
+      await safeRefetchSubs();
     } catch (err: any) {
       console.error("Update sub-PO delivery failed", err);
-      if (refetchSubs) await refetchSubs();
+      await safeRefetchSubs();
       alert(
         "Update failed: " + (err?.data?.message || err?.message || "unknown")
       );
@@ -676,7 +811,6 @@ const PurchaseOrderList: React.FC = () => {
 
   return (
     <div style={{ padding: 16 }}>
-      {/* Inline styles for smooth progress animation are applied directly to progress-bar elements */}
       <div
         style={{
           display: "flex",
@@ -721,23 +855,19 @@ const PurchaseOrderList: React.FC = () => {
                 ? expandedLocalDoc.subPurchaseOrders ?? []
                 : [];
 
-            // If no expandedLocalDoc for this Po, fall back to the static snapshot on `po`
             const usedSubs = expandedDocMatchesPo
               ? expandedLocalDoc.subPurchaseOrders || []
               : isExpanded
               ? serverSubs
               : po.subPOs || [];
 
-            // Compute PO progress: display uses completedProducts/totalProducts (so partial product doesn't count)
-            const { totalProducts, productsWithProgress, productsCompleted } =
-              computePoProductsProgress(usedSubs);
+            const totals = {
+              items: po.totalItems ?? 0,
+              value: po.totalValue ?? 0,
+            };
 
-            const poPercent =
-              totalProducts === 0
-                ? 0
-                : Math.round((productsCompleted / totalProducts) * 100);
-
-            const totals = computeTotals(po);
+            // editable only when PO is DRAFT
+            const poEditable = po.status === "DRAFT";
 
             return (
               <div key={String(po.id)} className="card mb-3">
@@ -763,7 +893,6 @@ const PurchaseOrderList: React.FC = () => {
                           <div className="small text-muted">{po.address}</div>
                         </div>
 
-                        {/* PO-level progress bar */}
                         <div
                           style={{
                             marginLeft: 12,
@@ -771,30 +900,6 @@ const PurchaseOrderList: React.FC = () => {
                             maxWidth: 280,
                           }}
                         >
-                          <div
-                            className="d-flex align-items-center"
-                            title={`${productsCompleted}/${totalProducts}`}
-                          >
-                            <div style={{ flex: 1, marginRight: 8 }}>
-                              <div className="progress" style={{ height: 18 }}>
-                                <div
-                                  className="progress-bar"
-                                  role="progressbar"
-                                  style={{
-                                    width: `${poPercent}%`,
-                                    transition: "width 320ms ease",
-                                  }}
-                                  aria-valuenow={poPercent}
-                                  aria-valuemin={0}
-                                  aria-valuemax={100}
-                                >
-                                  <small
-                                    style={{ color: "white" }}
-                                  >{`${productsCompleted}/${totalProducts}`}</small>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -803,12 +908,12 @@ const PurchaseOrderList: React.FC = () => {
                       <div style={{ marginBottom: 8 }}>
                         <select
                           className="form-select form-select-sm"
-                          value={po.status ?? ""}
+                          value={po.status}
                           onChange={(e) =>
                             handleUpdatePoStatus(po.id, e.target.value)
                           }
+                          disabled={!poEditable}
                         >
-                          <option value="">-- Status --</option>
                           {PO_STATUS_OPTIONS.map((s) => (
                             <option key={s} value={s}>
                               {s}
@@ -828,6 +933,7 @@ const PurchaseOrderList: React.FC = () => {
                         <button
                           className="btn btn-outline-secondary btn-sm"
                           onClick={() => setSelected(po)}
+                          disabled={!poEditable}
                         >
                           Xem chi tiết
                         </button>
@@ -840,6 +946,7 @@ const PurchaseOrderList: React.FC = () => {
                         <button
                           className="btn btn-danger btn-sm"
                           onClick={() => handleDeleteFromList(po)}
+                          disabled={!poEditable}
                         >
                           Xóa
                         </button>
@@ -866,6 +973,7 @@ const PurchaseOrderList: React.FC = () => {
                               poId: po.id,
                             })
                           }
+                          disabled={!poEditable}
                         >
                           + Tạo Sub-PO (Chọn sản phẩm)
                         </button>
@@ -883,11 +991,10 @@ const PurchaseOrderList: React.FC = () => {
                             const subKey =
                               resolveId(s) ||
                               `sub-noid-${String(po.id)}-${sIdx}`;
-                            const { done, total } = computeSubWaresState(s);
-                            const percent =
-                              total === 0
-                                ? 0
-                                : Math.round((done / total) * 100);
+                            const subStatus = s.status ?? "DRAFT";
+                            const subEditable =
+                              po.status === "DRAFT" && subStatus === "DRAFT";
+
                             return (
                               <div key={subKey} className="card mb-2">
                                 <div className="card-body">
@@ -914,57 +1021,19 @@ const PurchaseOrderList: React.FC = () => {
                                       </div>
                                     </div>
 
-                                    {/* product-level progress */}
-                                    <div
-                                      style={{ width: 220, marginRight: 12 }}
-                                    >
-                                      <div
-                                        className="d-flex align-items-center"
-                                        title={`${done}/${total}`}
-                                      >
-                                        <div
-                                          style={{ flex: 1, marginRight: 8 }}
-                                        >
-                                          <div
-                                            className="progress"
-                                            style={{ height: 14 }}
-                                          >
-                                            <div
-                                              className="progress-bar"
-                                              role="progressbar"
-                                              style={{
-                                                width: `${percent}%`,
-                                                transition: "width 320ms ease",
-                                              }}
-                                              aria-valuenow={percent}
-                                              aria-valuemin={0}
-                                              aria-valuemax={100}
-                                            >
-                                              <small
-                                                style={{
-                                                  color: "white",
-                                                  fontSize: 12,
-                                                }}
-                                              >{`${done}/${total}`}</small>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-
                                     <div style={{ textAlign: "right" }}>
                                       <div style={{ marginBottom: 6 }}>
                                         <select
                                           className="form-select form-select-sm"
-                                          value={s.status ?? ""}
+                                          value={subStatus}
                                           onChange={(e) =>
                                             handleUpdateSubStatus(
                                               s._id ?? s.id,
                                               e.target.value
                                             )
                                           }
+                                          disabled={!subEditable}
                                         >
-                                          <option value="">-- Status --</option>
                                           {SUBPO_STATUS_OPTIONS.map((st) => (
                                             <option key={st} value={st}>
                                               {st}
@@ -1001,6 +1070,7 @@ const PurchaseOrderList: React.FC = () => {
                                               e.target.value
                                             )
                                           }
+                                          disabled={!subEditable}
                                         />
 
                                         <button
@@ -1008,6 +1078,7 @@ const PurchaseOrderList: React.FC = () => {
                                           onClick={() =>
                                             handleDeleteServerSub(s)
                                           }
+                                          disabled={!subEditable}
                                         >
                                           Xóa sản phẩm
                                         </button>
@@ -1042,6 +1113,12 @@ const PurchaseOrderList: React.FC = () => {
                                               : `noid-${
                                                   resolveId(s) || String(po.id)
                                                 }-${idx}`;
+                                            const itemStatus =
+                                              it.status ?? "DRAFT";
+                                            const itemEditable =
+                                              po.status === "DRAFT" &&
+                                              subStatus === "DRAFT" &&
+                                              itemStatus === "DRAFT";
                                             const amountVal = it.amount ?? 0;
                                             const unitPrice =
                                               it.ware?.unitPrice ?? 0;
@@ -1063,15 +1140,15 @@ const PurchaseOrderList: React.FC = () => {
                                                 <td>
                                                   <select
                                                     className="form-select form-select-sm"
-                                                    value={it.status ?? ""}
+                                                    value={itemStatus}
                                                     onChange={(e) =>
                                                       handleUpdateServerItemStatus(
                                                         it,
                                                         e.target.value
                                                       )
                                                     }
+                                                    disabled={!itemEditable}
                                                   >
-                                                    <option value="">--</option>
                                                     {POITEM_STATUS_OPTIONS.map(
                                                       (opt) => (
                                                         <option
@@ -1153,6 +1230,7 @@ const PurchaseOrderList: React.FC = () => {
                                                         finalVal
                                                       );
                                                     }}
+                                                    disabled={!itemEditable}
                                                   />
                                                 </td>
 
@@ -1185,6 +1263,7 @@ const PurchaseOrderList: React.FC = () => {
                                                           it
                                                         )
                                                       }
+                                                      disabled={!itemEditable}
                                                     >
                                                       Xóa
                                                     </button>
@@ -1231,18 +1310,70 @@ const PurchaseOrderList: React.FC = () => {
             setProductModalOpenForPo({ open: false });
             return;
           }
+
+          // Prevent double submissions
+          if (isCreatingSubs) return;
+          setIsCreatingSubs(true);
+
           try {
+            // Build a set of existing product ids for this purchase order
+            const existingProductIds = new Set<string>();
+            const poSnapshot = orders.find(
+              (o) => String(o.id) === String(poId)
+            );
+            if (poSnapshot && Array.isArray(poSnapshot.subPOs)) {
+              poSnapshot.subPOs.forEach((s: any) => {
+                const pid = s.product?._id ?? s.product ?? s.productId;
+                if (pid) existingProductIds.add(String(pid));
+              });
+            }
+            // If we have expandedLocalDoc for that po, include them too
+            if (
+              expandedLocalDoc &&
+              String(resolveId(expandedLocalDoc)) === String(poId)
+            ) {
+              (expandedLocalDoc.subPurchaseOrders || []).forEach((s: any) => {
+                const pid = s.product?._id ?? s.product ?? s.productId;
+                if (pid) existingProductIds.add(String(pid));
+              });
+            }
+
+            const duplicates: string[] = [];
+            const payloadProducts = selectedProducts.map((p: any) => {
+              const productId = p.productId ?? p._id ?? p.unique_id;
+              if (existingProductIds.has(String(productId)))
+                duplicates.push(String(productId));
+              return {
+                productId: productId,
+                deliveryDate: p.deliveryDate,
+                status: p.status ?? "DRAFT",
+              };
+            });
+
+            if (duplicates.length > 0) {
+              alert(
+                `Không thể thêm: có ${duplicates.length} sản phẩm đã tồn tại trong PO này.`
+              );
+              setIsCreatingSubs(false);
+              return;
+            }
+
             const payload = {
               purchaseOrderId: poId,
-              products: selectedProducts.map((p: any) => ({
-                productId: p.productId ?? p._id ?? p.unique_id,
-                deliveryDate: p.deliveryDate,
-                status: p.status,
-              })),
+              products: payloadProducts,
             };
+
             await createSubFromProducts(payload).unwrap();
-            if (refetchSubs) await refetchSubs();
-            await refetch();
+
+            // safe refetch of expanded subs (only attempts if the query has been started)
+            await safeRefetchSubs();
+
+            try {
+              if (typeof refetch === "function") await refetch();
+            } catch (e) {
+              console.warn("refetch purchase orders failed", e);
+            }
+
             setProductModalOpenForPo({ open: false });
           } catch (err: any) {
             console.error("Create sub-POs failed", err);
@@ -1250,6 +1381,8 @@ const PurchaseOrderList: React.FC = () => {
               "Create sub-POs failed: " +
                 (err?.data?.message || err?.message || "unknown")
             );
+          } finally {
+            setIsCreatingSubs(false);
           }
         }}
       />

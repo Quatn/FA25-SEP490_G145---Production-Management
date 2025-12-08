@@ -59,7 +59,6 @@ export default function ManufacturingOrderTrackPanelList() {
   }, [fullDetailMOPaginatedResponse?.data, orderFinishingProcessesResponse?.data])
 
   const moList = useMemo(() => moPaginatedList?.data ?? [], [moPaginatedList?.data])
-  const getMo = useCallback((id: string) => moList.find(mo => mo._id === id), [moList])
 
   return (
     <Box
@@ -79,11 +78,11 @@ export default function ManufacturingOrderTrackPanelList() {
           minHeight={"80vh"}
         >
           <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-            Các lệnh đáng chú ý
+            Quản lý lệnh
           </Text>
-          <HStack justifyContent={"space-between"}>
+          <HStack justifyContent={"end"}>
 
-            <Link href="/manufacturing-order/create">
+            <Link href="/manufacturing-order/list">
               <Button size={"sm"} colorPalette={"cyan"}>Xem danh sách chi tiết</Button>
             </Link>
           </HStack>

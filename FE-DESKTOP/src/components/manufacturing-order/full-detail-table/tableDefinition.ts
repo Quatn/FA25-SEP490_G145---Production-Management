@@ -11,7 +11,6 @@ import { createListCollection } from "@chakra-ui/react";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import ManufacturingOrderTableActionColumn from "./ActionColumn";
-import { LEGACY_OrderStatus } from "@/types/enums/LEGACY_OrderStatus";
 import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
 import { manufacturingOrderComponentUtils as utils } from "../utils"
 
@@ -217,7 +216,7 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         },
         header: "Nhận đơn",
         enablePinning: true,
-        cellType: DataTableCellType.Date,
+        cellType: DataTableCellType.Readonly,
         ...colSize.sm,
       }),
       columnHelper.defineDataTableAccessorColumn({
@@ -227,7 +226,7 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         },
         header: "Giao đơn",
         enablePinning: true,
-        cellType: DataTableCellType.Date,
+        cellType: DataTableCellType.Readonly,
         ...colSize.sm,
       }),
     ]

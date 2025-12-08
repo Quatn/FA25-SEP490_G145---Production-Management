@@ -11,7 +11,6 @@ import {
 import {
   ActionBar,
   Box,
-  BoxProps,
   Button,
   Center,
   Kbd,
@@ -19,9 +18,7 @@ import {
   Spinner,
   Stack,
   Table,
-  TableRootProps,
   Tabs,
-  TabsRootProps,
   Text,
 } from "@chakra-ui/react";
 import check from "check-types";
@@ -34,7 +31,6 @@ import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-da
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import useDataTable from "@/components/ui/data-table/hook";
-import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import DataFetchError from "@/components/common/DataFetchError";
 import { useDataTableSelector } from "@/components/ui/data-table/Provider";
 import { toaster } from "@/components/ui/toaster";
@@ -58,6 +54,7 @@ export default function ManufacturingOrderTable(
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
+    refetch: refetchTable,
   } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query });
 
   const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
@@ -97,7 +94,7 @@ export default function ManufacturingOrderTable(
     else {
       return undefined
     }
-  }, [fullDetailMOPaginatedResponse?.data])
+  }, [fullDetailMOPaginatedResponse?.data, orderFinishingProcessesResponse?.data])
 
   const rawTableData: (Omit<ManufacturingOrderTableDataType, "isEdited">)[] = moPaginatedList?.data ?? []
 
@@ -143,7 +140,7 @@ export default function ManufacturingOrderTable(
     });
   }, [dispatch, moPaginatedList, moPaginatedList?.totalItems]);
 
-  if (isFetchingList) {
+  if (isFetchingList || isOrderFinishingProcessFetchingList) {
     return (
       <Center h={"full"} flex={1} flexGrow={1}>
         <Stack alignItems={"center"}>
@@ -154,8 +151,8 @@ export default function ManufacturingOrderTable(
     );
   }
 
-  if (fetchError) {
-    return <DataFetchError h={"full"} flexGrow={1} />;
+  if (fetchError || orderFinishingProcessFetchError) {
+    return <DataFetchError h={"full"} flexGrow={1} refetch={refetchTable} />;
   }
 
   if (check.undefined(moPaginatedList)) {
