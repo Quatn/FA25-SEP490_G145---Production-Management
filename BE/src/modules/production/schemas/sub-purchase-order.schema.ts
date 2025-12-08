@@ -14,6 +14,7 @@ import { Product } from "./product.schema";
 import { ApiProperty } from "@nestjs/swagger";
 
 export enum SubPurchaseOrderStatus {
+  Draft = "DRAFT",
   PendingApproval = "PENDINGAPPROVAL",
   Approved = "APPROVED",
   Scheduled = "SCHEDULED",
