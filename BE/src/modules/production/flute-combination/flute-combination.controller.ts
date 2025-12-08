@@ -37,6 +37,20 @@ export class FluteCombinationController {
     };
   }
 
+  @Get('list-deleted')
+  @ApiOperation({ summary: 'List deleted flute combinations' })
+  async findDeleted( 
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+  ): Promise<BaseResponse<PaginatedList<FluteCombination>>> {
+    const docs = await this.service.findDeleted(page, limit);
+    return {
+      success: true,
+      message: 'Fetch successful',
+      data: docs,
+    };
+  }
+
   @Get('detail/:id')
   @ApiOperation({ summary: 'flute combination detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<FluteCombination>> {

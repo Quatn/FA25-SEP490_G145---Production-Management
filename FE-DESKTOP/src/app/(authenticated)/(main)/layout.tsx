@@ -216,7 +216,13 @@ const initialCollection = createTreeCollection<Node>({
           {
             id: "flute-combination-list",
             name: "Flute Combination List",
-            href: "/flute-combination",
+            href: "/flute-combination/list",
+            children: [],
+          },
+          {
+            id: "flute-combination-restore-list",
+            name: "Flute Combination Restore List",
+            href: "/flute-combination/restore-list",
             children: [],
           },
         ],

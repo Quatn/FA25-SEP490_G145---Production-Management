@@ -13,6 +13,10 @@ export class FluteCombination extends BaseSchema {
   code: string;
 
   @ApiProperty()
+  @Prop({ required: true})
+  flutes: string[];
+
+  @ApiProperty()
   @Prop({ required: false, default: "" })
   @IsOptional()
   @IsString()

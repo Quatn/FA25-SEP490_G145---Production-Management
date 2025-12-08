@@ -1,10 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, Length } from 'class-validator';
+import { IsArray, IsOptional, IsString, Length } from 'class-validator';
 export class CreateFluteCombinationDto {
     @ApiProperty({ example: '3B', description: 'Unique code of the flute combination' })
     @IsString()
     @Length(1, 10, { message: 'Code must be between 1 and 10 characters' })
     code: string;
+
+    @ApiProperty({
+        description: 'A list of flutes',
+        type: [String],
+        example: ['EFlute', 'EBLinerLayer', 'BFlute', 'BACLinerLayer', 'ACFlute', 'faceLayer', 'backLayer'],
+        required: true,
+    })
+    @IsArray()
+    flutes: string[];
 
     @ApiProperty({ example: 'Single Wall - B Flute (3 layers)', description: 'Optional description', required: false })
     @IsOptional()
