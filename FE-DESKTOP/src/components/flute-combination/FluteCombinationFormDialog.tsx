@@ -39,7 +39,7 @@ const FluteCombinationFormDialog: React.FC<Props> = ({ isOpen, onClose, initialD
         switch (field) {
             case "code":
                 if (!value.trim()) errorMsg = "Mã không được để trống";
-                if (!value.trim().match("^[A-Z0-9-]{1,10}$")) errorMsg = "Mã chỉ cho phép chứa từ 1 đến 10 chữ cái in hoa và số"
+                if (!value.trim().match("^[A-Z0-9-]{1,10}$")) errorMsg = "Mã tổ hợp sóng chỉ cho phép chứa từ 1 đến 10 chữ cái in hoa và số"
                 break;
         }
 
