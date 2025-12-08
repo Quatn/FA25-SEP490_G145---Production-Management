@@ -1,18 +1,20 @@
 import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
-import { FaEdit, FaEye } from "react-icons/fa";
+import { FaEdit, FaEye, FaTrashRestore } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
 import { FluteCombination } from "@/types/FluteCombination";
+import { TbRestore } from "react-icons/tb";
+import React from "react";
 
 interface Props {
     page: number;
     limit: number;
     items: FluteCombination[];
-    onEdit: (item: FluteCombination) => void;
+    onRestore: (item: FluteCombination) => void;
     onDelete: (item: FluteCombination) => void;
     onDetail: (item: FluteCombination) => void;
 }
 
-const FluteCombinationTable: React.FC<Props> = ({ page, limit, items, onEdit, onDelete, onDetail }) => {
+const FluteCombinationRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, onDelete, onDetail }) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
@@ -61,13 +63,13 @@ const FluteCombinationTable: React.FC<Props> = ({ page, limit, items, onEdit, on
                                     </Button>
                                     <Button
                                         variant="surface"
-                                        colorPalette="yellow"
-                                        onClick={() => onEdit(item)}
+                                        colorPalette="green"
+                                        onClick={() => onRestore(item)}
                                     >
                                         <Icon>
-                                            <FaEdit />
+                                            <TbRestore />
                                         </Icon>
-                                        Sửa
+                                        Khôi phục
                                     </Button>
                                     <Button
                                         variant="surface"
@@ -77,7 +79,7 @@ const FluteCombinationTable: React.FC<Props> = ({ page, limit, items, onEdit, on
                                         <Icon>
                                             <FaTrashCan />
                                         </Icon>
-                                        Xóa
+                                        Xóa vĩnh viễn
                                     </Button>
                                 </Group>
                             </Table.Cell>
@@ -89,4 +91,4 @@ const FluteCombinationTable: React.FC<Props> = ({ page, limit, items, onEdit, on
     );
 };
 
-export default FluteCombinationTable;
+export default FluteCombinationRestoreTable;
