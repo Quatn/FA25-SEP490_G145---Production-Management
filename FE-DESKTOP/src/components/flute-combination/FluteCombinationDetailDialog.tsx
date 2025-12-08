@@ -1,29 +1,13 @@
 import { FluteCombination } from "@/types/FluteCombination";
-import { Button, CloseButton, DataList, Dialog, Icon, List, Portal } from "@chakra-ui/react"
-import { useEffect, useState } from "react";
+import { Button, CloseButton, DataList, Dialog, List, Portal } from "@chakra-ui/react"
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: FluteCombination;
+    initialData: FluteCombination | undefined;
 }
 
 const FluteCombinationDetailDialog: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
-    const [item, setItem] = useState<FluteCombination>({
-        _id: "",
-        code: "",
-        flutes: [],
-        description: "",
-        note: "",
-    });
-
-    useEffect(() => {
-        if (isOpen) {
-            if (initialData) {
-                setItem(initialData);
-            }
-        }
-    }, [isOpen, initialData]);
 
     const fluteLabel = (value: string) => {
         switch (value) {
@@ -57,14 +41,14 @@ const FluteCombinationDetailDialog: React.FC<Props> = ({ isOpen, onClose, initia
                         <Dialog.Body>
                             <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
                                 <DataList.Item pt="4">
-                                    <DataList.ItemLabel>Mã</DataList.ItemLabel>
-                                    <DataList.ItemValue>{item.code}</DataList.ItemValue>
+                                    <DataList.ItemLabel>Mã tổ hợp sóng</DataList.ItemLabel>
+                                    <DataList.ItemValue>{initialData?.code ?? '-'}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Tổ hợp sóng</DataList.ItemLabel>
                                     <DataList.ItemValue>
                                         <List.Root>
-                                            {item.flutes.map((item, index) => (
+                                            {initialData?.flutes.map((item, index) => (
                                                 <List.Item key={index}>
                                                     {fluteLabel(item)}
                                                 </List.Item>
@@ -75,11 +59,11 @@ const FluteCombinationDetailDialog: React.FC<Props> = ({ isOpen, onClose, initia
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Mô tả</DataList.ItemLabel>
-                                    <DataList.ItemValue>{item.description}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.description ?? '-'}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Ghi chú</DataList.ItemLabel>
-                                    <DataList.ItemValue>{item.note}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.note ?? '-'}</DataList.ItemValue>
                                 </DataList.Item>
                             </DataList.Root>
                         </Dialog.Body>

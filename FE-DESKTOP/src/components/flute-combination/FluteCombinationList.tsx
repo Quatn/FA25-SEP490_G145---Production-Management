@@ -66,7 +66,10 @@ const FluteCombinationList: React.FC = () => {
         setDetailOpen(false);
         setSelected(undefined);
     }
-    const handleCloseAlert = () => setAlertOpen(false);
+    const handleCloseAlert = () => {
+        setAlertOpen(false);
+        setSelected(undefined);
+    }
 
     const handleMutation = async (
         fn: Function,
@@ -103,7 +106,7 @@ const FluteCombinationList: React.FC = () => {
     const handleUpdate = async (data: FluteCombination) => {
         handleMutation(
             () => updateItem(data).unwrap(),
-            `Đã cập nhật tổ hợp sóng ${data.code}}`,
+            `Đã cập nhật tổ hợp sóng ${data.code}`,
             'Cập nhật thất bại',
         );
     }
@@ -163,7 +166,7 @@ const FluteCombinationList: React.FC = () => {
                         ref={inputRef}
                         flex="1"
                         size={"lg"}
-                        placeholder="Tìm kiếm"
+                        placeholder="Tìm kiếm mã tổ hợp sóng"
                         value={search}
                         onChange={(e) => { setPage(1); setSearch(e.target.value) }} />
                 </InputGroup>

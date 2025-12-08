@@ -1,13 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, Length } from 'class-validator';
+import { IsString, Length, Matches } from 'class-validator';
 
 export class CreatePaperColorRequestDto {
     @ApiProperty({
         example: 'T',
         description: 'Unique code of the paper color',
     })
+    @Matches(/^[A-Z0-9]{1,3}$/, {
+        message: 'Code can only contain between 1 and 3 letters or numbers'
+    })
     @IsString()
-    @Length(1, 3, { message: 'Code must be between 1 and 3 characters' })
     code: string;
 
     @ApiProperty({

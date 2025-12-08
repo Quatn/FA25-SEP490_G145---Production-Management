@@ -1,35 +1,19 @@
-import { useState, useEffect } from "react";
-import { Box, Button, CloseButton, Dialog, Portal } from "@chakra-ui/react"
+import { Button, CloseButton, Dialog, Portal } from "@chakra-ui/react"
 import { FluteCombination } from "@/types/FluteCombination";
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: FluteCombination;
+    initialData: FluteCombination | undefined;
     onDelete: (data: FluteCombination) => void;
 }
 
 const FluteCombinationAlertDialog: React.FC<Props> = ({ isOpen, onClose, initialData, onDelete }) => {
-    const [item, setItem] = useState<FluteCombination>({
-        _id: "",
-        code: "",
-        flutes: [],
-        description: "",
-        note: "",
-    });
 
     const handleSubmit = () => {
-        onDelete(item);
+        if(initialData) onDelete(initialData);
         onClose();
     };
-
-    useEffect(() => {
-        if (isOpen) {
-            if (initialData) {
-                setItem(initialData);
-            }
-        }
-    }, [isOpen, initialData]);
 
     return (
         <Dialog.Root role="alertdialog" open={isOpen} onOpenChange={onClose}>
@@ -42,7 +26,7 @@ const FluteCombinationAlertDialog: React.FC<Props> = ({ isOpen, onClose, initial
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
-                                Xóa loại sóng {item.code}?
+                                Xóa tổ hợp sóng {initialData?.code ?? '-'}?
                             </p>
                         </Dialog.Body>
                         <Dialog.Footer>

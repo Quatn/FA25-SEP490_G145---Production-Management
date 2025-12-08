@@ -15,36 +15,36 @@ export class PaperColorService {
         private readonly paperColorModel: Model<PaperColor>,
     ) { }
 
-    async checkDuplicates(dto: CreatePaperColorRequestDto | UpdatePaperColorRequestDto) {
-        const duplicates = await this.paperColorModel.aggregate([
-            {
-                $match: {
-                    $or: [
-                        { code: dto.code },
-                        { title: dto.title },
-                    ],
-                },
-            },
-            {
-                $project: {
-                    _id: 0,
-                    code: 1,
-                    title: 1,
-                },
-            },
-        ]);
+    async checkDuplicates(
+        dto: CreatePaperColorRequestDto | UpdatePaperColorRequestDto,
+        excludeId?: string,
+    ) {
+        const code = dto.code?.trim();
+        const title = dto.title?.trim();
+
+        const query: any = {
+            $or: [{ code }, { title }],
+        };
+
+        if (excludeId) {
+            query._id = { $ne: excludeId };
+        }
+
+        const duplicates = await this.paperColorModel.find(query).lean();
 
         if (duplicates.length > 0) {
             const duplicateFields: string[] = [];
-            duplicates.forEach((d) => {
-                if (d.code === dto.code) duplicateFields.push('Mã màu giấy');
-                if (d.title === dto.title) duplicateFields.push('Tiêu đề màu giấy');
+            duplicates.forEach((item) => {
+                if (item.code === code) duplicateFields.push('Mã màu giấy');
+                if (item.title === title) duplicateFields.push('Tiêu đề màu giấy');
             });
+
             throw new BadRequestException(
                 `Trùng lặp giá trị ở các trường: ${duplicateFields.join(', ')}`,
             );
         }
     }
+
 
     async findPaginated(page = 1, limit = 10, search?: string) {
         const skip = (page - 1) * limit;
@@ -55,7 +55,7 @@ export class PaperColorService {
             const regex = new RegExp(search.trim(), 'i');
             query.$or = [
                 { code: regex },
-                { name: regex },
+                { title: regex },
             ];
         }
 
@@ -81,6 +81,31 @@ export class PaperColorService {
         return await this.paperColorModel.find();
     }
 
+    async findDeleted(page = 1, limit = 10) {
+        const skip = (page - 1) * limit;
+        const filter = { isDeleted: true };
+
+        const [data, totalItems] = await Promise.all([
+            this.paperColorModel
+                .find(filter)
+                .skip(skip)
+                .limit(limit)
+                .exec(),
+            this.paperColorModel.countDocuments(filter),
+        ]);
+
+        const totalPages = Math.ceil((totalItems || 0) / limit);
+        return {
+            data,
+            page,
+            limit,
+            totalItems,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+        };
+    }
+
     async findOne(id: string) {
         const color = await this.paperColorModel.findById(id);
         if (!color) throw new NotFoundException("Paper color not found");
@@ -88,48 +113,20 @@ export class PaperColorService {
     }
 
     async createOne(dto: CreatePaperColorRequestDto): Promise<PaperColorDocument> {
-        try {
-            const doc = new this.paperColorModel(dto);
-            return await doc.save();
-        } catch (err: any) {
-            if (err.code === 11000 && err.keyValue) {
-                const field = Object.keys(err.keyValue)[0];
-                const value = err.keyValue[field];
-                let message = '';
+        dto.title = dto.title.trim();
 
-                if (field === 'code') {
-                    message = `Mã màu giấy "${value}" đã tồn tại.`;
-                } else {
-                    message = `Giá trị "${value}" ở trường "${field}" đã tồn tại.`;
-                }
+        await this.checkDuplicates(dto);
 
-                throw new BadRequestException(message);
-            }
-            throw err;
-        }
+        const doc = new this.paperColorModel(dto);
+        return await doc.save();
     }
 
     async updateOne(id: string, dto: UpdatePaperColorRequestDto): Promise<PaperColorDocument> {
-        try {
-            const updated = await this.paperColorModel.findByIdAndUpdate(id, dto, { new: true });
-            if (!updated) throw new NotFoundException('Paper color not found');
-            return updated;
-        } catch (err: any) {
-            if (err.code === 11000 && err.keyValue) {
-                const field = Object.keys(err.keyValue)[0];
-                const value = err.keyValue[field];
-                let message = '';
-
-                if (field === 'code') {
-                    message = `Mã màu giấy "${value}" đã tồn tại.`;
-                } else {
-                    message = `Giá trị "${value}" ở trường "${field}" đã tồn tại.`;
-                }
-
-                throw new BadRequestException(message);
-            }
-            throw err;
-        }
+        dto.title = dto.title?.trim();
+        await this.checkDuplicates(dto, id);
+        const updated = await this.paperColorModel.findByIdAndUpdate(id, dto, { new: true });
+        if (!updated) throw new NotFoundException('Paper color not found');
+        return updated;
     }
 
     async softDelete(id: string) {
@@ -140,14 +137,20 @@ export class PaperColorService {
     }
 
     async restore(id: string) {
-        const color = await this.paperColorModel.findById(id) as SoftPaperColor;
+        const color = await this.paperColorModel.findOne({
+            _id: id,
+            isDeleted: true
+        }) as SoftPaperColor;
         if (!color) throw new NotFoundException("Paper color not found");
         await color.restore();
         return { success: true };
     }
 
     async removeHard(id: string) {
-        const result = await this.paperColorModel.findByIdAndDelete(id);
+        const result = await this.paperColorModel.findOneAndDelete({
+            _id: id,
+            isDeleted: true
+        });
         if (!result) throw new NotFoundException("Paper color not found");
         return { success: true };
     }

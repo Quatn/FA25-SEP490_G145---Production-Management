@@ -1,9 +1,9 @@
 "use client";
 
 import { Button, ButtonGroup, CloseButton, Flex, IconButton, Input, InputGroup, Pagination, Spacer, Spinner } from "@chakra-ui/react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Text } from "@chakra-ui/react"
-import { useAddPaperColorMutation, useUpdatePaperColorMutation, useDeletePaperColorMutation, useGetPaperColorQuery } from "@/service/api/paperColorApiSlice";
+import { useAddPaperColorMutation, useUpdatePaperColorMutation, useGetPaperColorQuery, useDeleteSoftPaperColorMutation } from "@/service/api/paperColorApiSlice";
 import { PaperColor } from "@/types/PaperColor";
 import { toaster } from "@/components/ui/toaster";
 import { Icon } from "@chakra-ui/react";
@@ -12,13 +12,14 @@ import PaperColorFormDialog from "./PaperColorFormDialog";
 import PaperColorAlertDialog from "./PaperColorAlertDialog";
 import PaperColorTable from "./PaperColorTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
+import PaperColorDetailDialog from "./PaperColorDetailDialog";
 
 
 const PaperColorList: React.FC = () => {
 
     const [addPaperColor] = useAddPaperColorMutation();
     const [updatePaperColor] = useUpdatePaperColorMutation();
-    const [deletePaperColor] = useDeletePaperColorMutation();
+    const [deletePaperColor] = useDeleteSoftPaperColorMutation();
 
     const [page, setPage] = useState(1);
     const limit = 10;
@@ -30,22 +31,31 @@ const PaperColorList: React.FC = () => {
         return () => clearTimeout(timer);
     }, [search]);
 
-    const { data: colorsData, error: colorsError, isLoading: isColorsLoading } = useGetPaperColorQuery({ page: page, limit: limit, search: debouncedSearch });
+    const { data: colorsData, error: colorsError, isLoading: isColorsLoading } = useGetPaperColorQuery({
+        page: page,
+        limit: limit,
+        search: debouncedSearch
+    });
 
     const colors = colorsData?.data?.data ?? [];
 
     const totalPages = colorsData?.data?.totalPages ?? 1;
 
     const [formDialogOpen, setFormDialogOpen] = useState(false);
+    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [alertDialogOpen, setAlertDialogOpen] = useState(false);
     const [selectedColor, setSelectedColor] = useState<PaperColor | undefined>(undefined);
-
 
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     const handleOpenFormDialog = (color?: PaperColor) => {
         setSelectedColor(color);
         setFormDialogOpen(true);
+    };
+
+    const handleOpenDetailDialog = (color?: PaperColor) => {
+        setSelectedColor(color);
+        setDetailDialogOpen(true);
     };
 
     const handleOpenAlertDialog = (color: PaperColor) => {
@@ -55,10 +65,17 @@ const PaperColorList: React.FC = () => {
 
     const handleCloseFormDialog = () => {
         setFormDialogOpen(false);
+        setSelectedColor(undefined);
+    };
+
+    const handleCloseDetailDialog = () => {
+        setDetailDialogOpen(false);
+        setSelectedColor(undefined);
     };
 
     const handleCloseAlertDialog = () => {
         setAlertDialogOpen(false);
+        setSelectedColor(undefined);
     };
 
     const handleMutation = async (
@@ -147,6 +164,12 @@ const PaperColorList: React.FC = () => {
                 onAdd={(data) => handleAddColor(data)}
                 onUpdate={(data) => handleUpdateColor(data)} />
 
+            <PaperColorDetailDialog
+                isOpen={detailDialogOpen}
+                onClose={handleCloseDetailDialog}
+                initialData={selectedColor}
+            />
+
             <PaperColorAlertDialog
                 isOpen={alertDialogOpen}
                 onClose={handleCloseAlertDialog}
@@ -159,7 +182,7 @@ const PaperColorList: React.FC = () => {
                         ref={inputRef}
                         flex="1"
                         size={"lg"}
-                        placeholder="Tìm kiếm"
+                        placeholder="Tìm kiếm theo mã, tiêu đề"
                         value={search}
                         onChange={(e) => {
                             setPage(1);
@@ -167,7 +190,14 @@ const PaperColorList: React.FC = () => {
                         }} />
                 </InputGroup>
                 <Spacer />
-                <Button colorPalette={"green"} onClick={() => handleOpenFormDialog()}><Icon><FaPlus /></Icon>Thêm màu giấy</Button>
+                <Button
+                    colorPalette={"green"}
+                    onClick={() => handleOpenFormDialog()}>
+                    <Icon>
+                        <FaPlus />
+                    </Icon>
+                    Thêm màu giấy
+                </Button>
             </Flex>
             {isColorsLoading ? (<Spinner />) : (
                 <>
@@ -176,6 +206,7 @@ const PaperColorList: React.FC = () => {
                         limit={limit}
                         colors={colors}
                         onEdit={handleOpenFormDialog}
+                        onDetail={handleOpenDetailDialog}
                         onDelete={handleOpenAlertDialog}
                     />
 

@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
-import { Box, Button, CloseButton, Dialog, Field, Flex, Input, Portal } from "@chakra-ui/react"
+import { Button, CloseButton, Dialog, Portal } from "@chakra-ui/react"
 import { PaperColor } from "@/types/PaperColor";
 
 interface PaperColorAlertDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: PaperColor;
+    initialData: PaperColor | undefined;
     onDelete: (data: PaperColor) => void;
 }
 
@@ -16,22 +15,10 @@ const PaperColorAlertDialog: React.FC<PaperColorAlertDialogProps> = ({
     onDelete,
 }) => {
 
-    const [color, setColor] = useState<PaperColor>({
-        _id: "",
-        code: "",
-        title: "",
-    });
-
     const handleSubmit = () => {
-        onDelete(color);
+        if (initialData) onDelete(initialData);
         onClose();
     };
-
-    useEffect(() => {
-        if (isOpen) {
-            setColor(initialData ?? { _id: "", code: "", title: "" });
-        }
-    }, [isOpen, initialData]);
 
     return (
         <Dialog.Root role="alertdialog" open={isOpen} onOpenChange={onClose}>
@@ -44,7 +31,7 @@ const PaperColorAlertDialog: React.FC<PaperColorAlertDialogProps> = ({
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
-                                Xóa Màu Giấy {color.code} - {color.title}?
+                                Xóa Màu Giấy {initialData?.code ?? '-'} - {initialData?.title ?? '-'}?
                             </p>
                         </Dialog.Body>
                         <Dialog.Footer>
