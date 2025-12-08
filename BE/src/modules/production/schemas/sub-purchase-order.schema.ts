@@ -61,7 +61,7 @@ export class SubPurchaseOrder extends BaseSchema {
   @Prop({
     required: true,
     enum: SubPurchaseOrderStatus,
-    default: SubPurchaseOrderStatus.PendingApproval,
+    default: SubPurchaseOrderStatus.Draft,
   })
   @IsEnum(SubPurchaseOrderStatus)
   status: SubPurchaseOrderStatus;

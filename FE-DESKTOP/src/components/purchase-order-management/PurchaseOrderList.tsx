@@ -899,8 +899,7 @@ const PurchaseOrderList: React.FC = () => {
                             minWidth: 200,
                             maxWidth: 280,
                           }}
-                        >
-                        </div>
+                        ></div>
                       </div>
                     </div>
 
@@ -1343,10 +1342,11 @@ const PurchaseOrderList: React.FC = () => {
               const productId = p.productId ?? p._id ?? p.unique_id;
               if (existingProductIds.has(String(productId)))
                 duplicates.push(String(productId));
+              // Force newly added products to DRAFT status regardless of p.status
               return {
                 productId: productId,
                 deliveryDate: p.deliveryDate,
-                status: p.status ?? "DRAFT",
+                status: "DRAFT",
               };
             });
 
