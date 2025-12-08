@@ -5,14 +5,20 @@ interface Props {
     isOpen: boolean;
     onClose: () => void;
     initialData: FluteCombination | undefined;
-    onDelete: (data: FluteCombination) => void;
+    onDelete: (data: FluteCombination) => Promise<boolean>;
 }
 
 const FluteCombinationAlertDialog: React.FC<Props> = ({ isOpen, onClose, initialData, onDelete }) => {
 
-    const handleSubmit = () => {
-        if(initialData) onDelete(initialData);
-        onClose();
+    const handleSubmit = async () => {
+        let isSuccess = false;
+        if (!!initialData) {
+            isSuccess = await onDelete(initialData);
+        }
+
+        if (isSuccess) {
+            onClose();
+        }
     };
 
     return (
@@ -26,7 +32,7 @@ const FluteCombinationAlertDialog: React.FC<Props> = ({ isOpen, onClose, initial
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
-                                Xóa tổ hợp sóng {initialData?.code ?? '-'}?
+                                Xóa tổ hợp sóng {initialData?.code}?
                             </p>
                         </Dialog.Body>
                         <Dialog.Footer>

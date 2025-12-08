@@ -75,7 +75,7 @@ const FluteCombinationList: React.FC = () => {
         fn: Function,
         successMessage: string,
         errorMessage: string
-    ) => {
+    ): Promise<boolean> => {
         try {
             await fn();
             toaster.create({
@@ -84,6 +84,7 @@ const FluteCombinationList: React.FC = () => {
                 type: "success",
                 closable: true,
             });
+            return true;
         } catch (error: any) {
             const msg = error?.data?.message || error?.message || "Đã xảy ra lỗi, thử lại sau";
             toaster.create({
@@ -92,11 +93,12 @@ const FluteCombinationList: React.FC = () => {
                 type: "error",
                 closable: true,
             });
+            return false;
         }
     };
 
     const handleAdd = async (data: FluteCombination) => {
-        handleMutation(
+        return await handleMutation(
             () => addItem(data).unwrap(),
             `Đã lưu tổ hợp sóng ${data.code}`,
             'Lưu thất bại',
@@ -104,7 +106,7 @@ const FluteCombinationList: React.FC = () => {
     }
 
     const handleUpdate = async (data: FluteCombination) => {
-        handleMutation(
+        return await handleMutation(
             () => updateItem(data).unwrap(),
             `Đã cập nhật tổ hợp sóng ${data.code}`,
             'Cập nhật thất bại',
@@ -112,7 +114,7 @@ const FluteCombinationList: React.FC = () => {
     }
 
     const handleDelete = async (data: FluteCombination) => {
-        handleMutation(
+        return await handleMutation(
             () => deleteItem(data).unwrap(),
             `Xóa tổ hợp sóng ${data.code}`,
             'Xóa thất bại',

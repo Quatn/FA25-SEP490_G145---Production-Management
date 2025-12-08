@@ -82,7 +82,7 @@ const PaperColorList: React.FC = () => {
         fn: Function,
         successMessage: string,
         errorMessage: string
-    ) => {
+    ): Promise<boolean> => {
         try {
             await fn();
             toaster.create({
@@ -91,6 +91,7 @@ const PaperColorList: React.FC = () => {
                 type: "success",
                 closable: true,
             });
+            return true;
         } catch (error: any) {
 
             const msg =
@@ -101,12 +102,13 @@ const PaperColorList: React.FC = () => {
                 type: "error",
                 closable: true,
             });
+            return false;
         }
     };
 
     const handleAddColor = async (data: PaperColor) => {
 
-        handleMutation(
+        return await handleMutation(
             () => addPaperColor(data).unwrap(),
             `Đã lưu màu giấy ${data.code} - ${data.title}`,
             'Lưu thất bại',
@@ -115,7 +117,7 @@ const PaperColorList: React.FC = () => {
 
     const handleUpdateColor = async (data: PaperColor) => {
 
-        handleMutation(
+        return await handleMutation(
             () => updatePaperColor(data).unwrap(),
             `Đã cập nhật màu giấy ${data.code} - ${data.title}`,
             'Cập nhật thất bại',
@@ -125,7 +127,7 @@ const PaperColorList: React.FC = () => {
 
     const handleDeleteColor = async (data: PaperColor) => {
 
-        handleMutation(
+         return await handleMutation(
             () => deletePaperColor(data).unwrap(),
             `Xóa màu giấy ${data.code} - ${data.title}`,
             'Xóa thất bại',

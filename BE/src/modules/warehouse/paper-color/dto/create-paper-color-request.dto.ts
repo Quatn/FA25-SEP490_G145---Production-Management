@@ -17,7 +17,9 @@ export class CreatePaperColorRequestDto {
         description: 'Full title of the paper color',
     })
     @IsString()
-    @Length(2, 10, { message: 'Title must be between 2 and 10 characters' })
+    @Matches(/^(?!.* {2})[A-ZÀ-Ỹ0-9 ]{2,10}$/, {
+        message: 'Title can only contain between 2 and 10 letters or numbers; no more than 2 spaces between characters'
+    })
     title: string;
 
 }

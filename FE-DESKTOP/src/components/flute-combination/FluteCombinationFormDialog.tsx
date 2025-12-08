@@ -6,8 +6,8 @@ interface Props {
     isOpen: boolean;
     onClose: () => void;
     initialData: FluteCombination | undefined;
-    onAdd: (data: FluteCombination) => void;
-    onUpdate: (data: FluteCombination) => void;
+    onAdd: (data: FluteCombination) => Promise<boolean>;
+    onUpdate: (data: FluteCombination) => Promise<boolean>;
 }
 
 type ErrorMap = Record<string, string>;
@@ -70,13 +70,22 @@ const FluteCombinationFormDialog: React.FC<Props> = ({ isOpen, onClose, initialD
         }
     }, [isOpen, initialData]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const isCodeValid = validateField("code", item.code);
 
         if (isCodeValid) {
-            !!initialData ? onUpdate(item) : onAdd(item);
-        } else return;
-        onClose();
+            let isSuccess = false;
+
+            if (!!initialData) {
+                isSuccess = await onUpdate(item);
+            } else {
+                isSuccess = await onAdd(item);
+            }
+
+            if (isSuccess) {
+                onClose();
+            }
+        }
     }
 
     const hasError = Object.values(errors).some((m) => m) || !item.code.trim() || item.flutes.length < 1;

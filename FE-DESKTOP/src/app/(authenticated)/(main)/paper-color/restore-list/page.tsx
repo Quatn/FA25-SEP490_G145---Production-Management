@@ -1,4 +1,3 @@
-import PaperColorList from "@/components/paper-storage/paper-color/PaperColorList";
 import PaperColorRestoreList from "@/components/paper-storage/paper-color/PaperColorRestoreList";
 import { Box, Stack, Text } from "@chakra-ui/react";
 export default function PaperColorRESTOREHome() {

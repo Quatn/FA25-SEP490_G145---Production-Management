@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
-import { Box, Button, Code, Dialog, Field, Flex, Input, Portal } from "@chakra-ui/react"
+import { Box, Button, Dialog, Field, Flex, Input, Portal } from "@chakra-ui/react"
 import { PaperColor } from "@/types/PaperColor";
 
 interface PaperColorFormDialogProps {
     isOpen: boolean;
     onClose: () => void;
     initialData: PaperColor | undefined;
-    onAdd: (data: PaperColor) => void;
-    onUpdate: (data: PaperColor) => void;
+    onAdd: (data: PaperColor) => Promise<boolean>;
+    onUpdate: (data: PaperColor) => Promise<boolean>;
 }
 
 type ErrorMap = Record<string, string>;
@@ -71,14 +71,23 @@ const PaperColorFormDialog: React.FC<PaperColorFormDialogProps> = ({
         }
     }, [isOpen, initialData]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const isCodeValid = validateField("code", color.code);
         const isNameValid = validateField("title", color.title);
 
         if (isCodeValid && isNameValid) {
-            !!initialData ? onUpdate(color) : onAdd(color);
-        } else return;
-        onClose();
+            let isSuccess = false;
+
+            if (!!initialData) {
+                isSuccess = await onUpdate(color);
+            } else {
+                isSuccess = await onAdd(color);
+            }
+
+            if (isSuccess) {
+                onClose();
+            }
+        }
     };
 
     const hasError = Object.values(errors).some((msg) => msg);
@@ -142,7 +151,7 @@ const PaperColorFormDialog: React.FC<PaperColorFormDialogProps> = ({
                                 <Button onClick={onClose} colorPalette={"red"}>Thoát</Button>
                             </Dialog.ActionTrigger>
                             <Button
-                                colorPalette={!!!initialData ? "green" : "yellow"}
+                                colorPalette={!initialData ? "green" : "yellow"}
                                 onClick={handleSubmit}
                                 disabled={hasError || isEmpty}>
                                 {!initialData ? "Thêm" : "Lưu thay đổi"}

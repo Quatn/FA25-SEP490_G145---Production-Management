@@ -1,7 +1,7 @@
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PaperColor, PaperColorDocument } from '../schemas/paper-color.schema';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreatePaperColorRequestDto } from './dto/create-paper-color-request.dto';
 import { UpdatePaperColorRequestDto } from './dto/update-paper-color-request.dto';
@@ -22,26 +22,36 @@ export class PaperColorService {
         const code = dto.code?.trim();
         const title = dto.title?.trim();
 
-        const query: any = {
-            $or: [{ code }, { title }],
-        };
+        const orConditions: FilterQuery<PaperColorDocument>[] = [];
+        if (code) orConditions.push({ code });
+        if (title) orConditions.push({ title });
+
+        if (orConditions.length === 0) return;
+
+        const query: FilterQuery<PaperColorDocument> = { $or: orConditions };
 
         if (excludeId) {
             query._id = { $ne: excludeId };
         }
 
-        const duplicates = await this.paperColorModel.find(query).lean();
+        const duplicates = await this.paperColorModel
+            .find(query)
+            .select('code title')
+            .lean();
 
         if (duplicates.length > 0) {
-            const duplicateFields: string[] = [];
-            duplicates.forEach((item) => {
-                if (item.code === code) duplicateFields.push('Mã màu giấy');
-                if (item.title === title) duplicateFields.push('Tiêu đề màu giấy');
+            const duplicateFields = new Set<string>();
+
+            duplicates.forEach((doc) => {
+                if (code && doc.code === code) duplicateFields.add('Mã màu giấy');
+                if (title && doc.title === title) duplicateFields.add('Tiêu đề màu giấy');
             });
 
-            throw new BadRequestException(
-                `Trùng lặp giá trị ở các trường: ${duplicateFields.join(', ')}`,
-            );
+            if (duplicateFields.size > 0) {
+                throw new BadRequestException(
+                    `Trùng lặp giá trị ở các trường: ${Array.from(duplicateFields).join(', ')}`,
+                );
+            }
         }
     }
 

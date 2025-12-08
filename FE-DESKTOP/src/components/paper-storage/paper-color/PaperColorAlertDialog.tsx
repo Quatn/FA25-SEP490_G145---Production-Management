@@ -5,7 +5,7 @@ interface PaperColorAlertDialogProps {
     isOpen: boolean;
     onClose: () => void;
     initialData: PaperColor | undefined;
-    onDelete: (data: PaperColor) => void;
+    onDelete: (data: PaperColor) => Promise<boolean>;
 }
 
 const PaperColorAlertDialog: React.FC<PaperColorAlertDialogProps> = ({
@@ -15,9 +15,15 @@ const PaperColorAlertDialog: React.FC<PaperColorAlertDialogProps> = ({
     onDelete,
 }) => {
 
-    const handleSubmit = () => {
-        if (initialData) onDelete(initialData);
-        onClose();
+    const handleSubmit = async () => {
+        let isSuccess = false;
+        if (!!initialData) {
+            isSuccess = await onDelete(initialData);
+        }
+
+        if (isSuccess) {
+            onClose();
+        }
     };
 
     return (
@@ -31,7 +37,7 @@ const PaperColorAlertDialog: React.FC<PaperColorAlertDialogProps> = ({
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
-                                Xóa Màu Giấy {initialData?.code ?? '-'} - {initialData?.title ?? '-'}?
+                                Xóa Màu Giấy {initialData?.code} - {initialData?.title}?
                             </p>
                         </Dialog.Body>
                         <Dialog.Footer>

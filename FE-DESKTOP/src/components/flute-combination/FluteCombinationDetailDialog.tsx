@@ -42,7 +42,7 @@ const FluteCombinationDetailDialog: React.FC<Props> = ({ isOpen, onClose, initia
                             <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Mã tổ hợp sóng</DataList.ItemLabel>
-                                    <DataList.ItemValue>{initialData?.code ?? '-'}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.code}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Tổ hợp sóng</DataList.ItemLabel>
@@ -59,11 +59,11 @@ const FluteCombinationDetailDialog: React.FC<Props> = ({ isOpen, onClose, initia
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Mô tả</DataList.ItemLabel>
-                                    <DataList.ItemValue>{initialData?.description ?? '-'}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.description}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Ghi chú</DataList.ItemLabel>
-                                    <DataList.ItemValue>{initialData?.note ?? '-'}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.note}</DataList.ItemValue>
                                 </DataList.Item>
                             </DataList.Root>
                         </Dialog.Body>

@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
-import { Box, Button, CloseButton, Dialog, Field, Flex, Input, Portal } from "@chakra-ui/react"
+import { Button, CloseButton, Dialog, Portal } from "@chakra-ui/react"
 import { PaperSupplier } from "@/types/PaperSupplier";
 
 interface PaperSupplierAlertDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: PaperSupplier;
-    onDelete: (data: PaperSupplier) => void;
+    initialData: PaperSupplier | undefined;
+    onDelete: (data: PaperSupplier) => Promise<boolean>;
 }
 
 const PaperSupplierAlertDialog: React.FC<PaperSupplierAlertDialogProps> = ({
@@ -16,21 +15,16 @@ const PaperSupplierAlertDialog: React.FC<PaperSupplierAlertDialogProps> = ({
     onDelete,
 }) => {
 
-    const [supplier, setSupplier] = useState<PaperSupplier>({
-        code: "",
-        name: "",
-    });
-
-    const handleSubmit = () => {
-        onDelete(supplier);
-        onClose();
-    };
-
-    useEffect(() => {
-        if (isOpen) {
-            setSupplier(initialData ?? { code: "", name: "" });
+    const handleSubmit = async () => {
+        let isSuccess = false;
+        if (!!initialData) {
+            isSuccess = await onDelete(initialData);
         }
-    }, [isOpen, initialData]);
+
+        if (isSuccess) {
+            onClose();
+        }
+    };
 
     return (
         <Dialog.Root role="alertdialog" open={isOpen} onOpenChange={onClose}>
@@ -43,7 +37,7 @@ const PaperSupplierAlertDialog: React.FC<PaperSupplierAlertDialogProps> = ({
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
-                                Xóa nhà giấy {supplier.code} - {supplier.name}?
+                                Xóa nhà giấy {initialData?.code} - {initialData?.name}?
                             </p>
                         </Dialog.Body>
                         <Dialog.Footer>
