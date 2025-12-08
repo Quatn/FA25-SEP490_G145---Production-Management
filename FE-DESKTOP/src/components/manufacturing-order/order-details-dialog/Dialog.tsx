@@ -11,25 +11,17 @@ import {
   SimpleGrid,
 } from "@chakra-ui/react";
 import check from "check-types";
-import { useMemo } from "react";
 import ManufacturingOrderDetailsDialogOrderDetailsCard from "./OrderDetailsCard";
 import ManufacturingOrderDetailsDialogWareDetailsCard from "./WareDetailsCard";
 import ManufacturingOrderDetailsDialogManufacturingDetailsCard from "./ManufacturingDetailsCard";
+import ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCard from "./CorrugatorProcessDetailsCard";
 
 export default function ManufacturingOrderDetailsDialog() {
   const { useDispatch, useSelector } = ManufacturingOrderDetailsDialogReducerStore;
   const dispatch = useDispatch();
   const open = useSelector(s => s.open)
   const order = useSelector(s => s.order)
-
-  const stats: { label: string, value: string }[] = useMemo(() => {
-    if (check.null(order)) return []
-    return [
-      { label: "New Users", value: "234" },
-      { label: "Sales", value: "£12,340" },
-      { label: "Revenue", value: "3,450" },
-    ]
-  }, [order])
+  const processes = useSelector(s => s.processes)
 
   return (
     <Dialog.Root
@@ -61,8 +53,13 @@ export default function ManufacturingOrderDetailsDialog() {
                     <ManufacturingOrderDetailsDialogWareDetailsCard order={order} />
                   </GridItem>
                   <GridItem colSpan={{ base: 1, md: 2 }}>
-                    <ManufacturingOrderDetailsDialogManufacturingDetailsCard order={order} />
+                    <ManufacturingOrderDetailsDialogManufacturingDetailsCard order={order} processes={processes} />
                   </GridItem>
+
+                  <GridItem colSpan={{ base: 1, md: 2 }}>
+                    <ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCard order={order} />
+                  </GridItem>
+
                 </SimpleGrid>
               )}
             </Dialog.Body>

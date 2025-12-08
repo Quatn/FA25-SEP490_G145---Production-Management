@@ -221,7 +221,7 @@ const WareEditModal: React.FC<Props> = ({
                   </Label>
 
                   {/* New adjustment fields in edit modal (required) */}
-                  <Label label="warePerBlankAdjustment" required>
+                  <Label label="Điều chỉnh số SP" required>
                     <input
                       className="form-control"
                       type="number"
@@ -235,7 +235,7 @@ const WareEditModal: React.FC<Props> = ({
                     />
                   </Label>
 
-                  <Label label="flapAdjustment" required>
+                  <Label label="Điều chỉnh tai" required>
                     <input
                       className="form-control"
                       type="number"
@@ -314,7 +314,7 @@ const WareEditModal: React.FC<Props> = ({
                   </Label>
 
                   {/* New adjustment fields in edit modal (required) */}
-                  <Label label="flapOverlapAdjustment" required>
+                  <Label label="Điều chỉnh cộng cánh" required>
                     <input
                       className="form-control"
                       type="number"
@@ -328,7 +328,7 @@ const WareEditModal: React.FC<Props> = ({
                     />
                   </Label>
 
-                  <Label label="crossCutCountAdjustment" required>
+                  <Label label="Điều chỉnh part SX" required>
                     <input
                       className="form-control"
                       type="number"

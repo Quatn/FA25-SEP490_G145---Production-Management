@@ -5,12 +5,10 @@ import {
   Row,
   Col,
   Card,
-  Badge,
   Collapse,
   Button,
   Form,
   InputGroup,
-  Modal,
 } from "react-bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import {
@@ -22,6 +20,9 @@ import {
 import { useGetWaresQuery } from "@/service/api/wareApiSlice";
 import { useGetAllCustomersQuery } from "@/service/api/customerApiSlice";
 import { useGetAllProductTypeQuery } from "@/service/api/productTypeApiSlice";
+
+import ProductModal from "./ProductModal";
+import ProductAddItemCodeModal from "./ProductAddItemCodeModal";
 
 export default function ProductList() {
   // Load wares from API instead of mock data
@@ -51,16 +52,16 @@ export default function ProductList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [productTypeFilter, setProductTypeFilter] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("all");
-  const [openIds, setOpenIds] = useState([]);
+  const [openIds, setOpenIds] = useState<any[]>([]);
   const [modalSearchTerm, setModalSearchTerm] = useState("");
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [containerEl, setContainerEl] = useState(null);
+  const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [containerEl, setContainerEl] = useState<Element | null>(null);
 
   // State mới cho Modal thêm mã hàng
   const [showAddItemCodeModal, setShowAddItemCodeModal] = useState(false);
-  const [productToUpdateWareCodes, setProductToUpdateWareCodes] =
-    useState(null);
-  const [selectedItemCodeId, setSelectedItemCodeId] = useState(null);
+  const [productToUpdateWareCodes, setProductToUpdateWareCodes] = useState<
+    any | null
+  >(null);
 
   const queryArgs = useMemo(
     () => ({
@@ -84,47 +85,19 @@ export default function ProductList() {
 
   const products = productList?.data ?? [];
 
-  console.log(productList);
-
-  // Logic lọc cho Modal Thêm/Sửa Sản phẩm (Modal chính)
-  const filteredModalItems = useMemo(
-    () =>
-      availableItemCodes.filter((item) => {
-        const wareCode = item.code || "";
-        return wareCode.toLowerCase().includes(modalSearchTerm.toLowerCase());
-      }),
-    [availableItemCodes, modalSearchTerm]
-  );
-
-  // Logic lọc cho Modal Thêm Mã Hàng (Modal phụ)
-  const filteredAddItemCodeModalItems = useMemo(() => {
-    if (!productToUpdateWareCodes) return [];
-
-    // Get existing wares IDs
-    const existingIds = (productToUpdateWareCodes.wares || [])
-      .map((item) => {
-        if (typeof item === "string") {
-          return item;
-        }
-        if (item && typeof item === "object") {
-          return item._id || item.id;
-        }
-        return item;
-      })
-      .map((id) => String(id)); // Convert to strings for comparison
-
-    return availableItemCodes
-      .filter((item) => {
-        const itemId = String(item._id || item.id);
-        return !existingIds.includes(itemId);
-      })
-      .filter((item) => {
-        const wareCode = item.code || "";
-        return wareCode.toLowerCase().includes(modalSearchTerm.toLowerCase());
-      });
-  }, [availableItemCodes, modalSearchTerm, productToUpdateWareCodes]);
-
-  // Không cần customerOptions từ products nữa, sử dụng trực tiếp từ API
+  // Helper: check duplicate code among currently-loaded products
+  const isDuplicateCode = (code: string, excludeId?: string | null) => {
+    if (!code) return false;
+    const normalized = code.trim().toLowerCase();
+    return products.some((p: any) => {
+      const pCode = (p.code || "").trim().toLowerCase();
+      if (!pCode) return false;
+      // exclude the current product when editing
+      if (excludeId && (p._id === excludeId || p.id === excludeId))
+        return false;
+      return pCode === normalized;
+    });
+  };
 
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
@@ -150,7 +123,7 @@ export default function ProductList() {
   };
 
   // 🔹 Hàm mở modal chính (Thêm/Sửa Sản phẩm)
-  const handleOpenProductModal = (product = null) => {
+  const handleOpenProductModal = (product: any = null) => {
     if (product) {
       setEditingProduct({
         ...product,
@@ -166,10 +139,9 @@ export default function ProductList() {
   const handleCloseProductModal = () => setEditingProduct(null);
 
   // 🆕 Hàm mở modal thêm mã hàng
-  const handleShowAddItemCodeModal = (product) => {
+  const handleShowAddItemCodeModal = (product: any) => {
     setProductToUpdateWareCodes(product); // Lưu sản phẩm cần cập nhật
     setModalSearchTerm(""); // Reset thanh tìm kiếm
-    setSelectedItemCodeId(null); // Reset mã hàng đã chọn
     setShowAddItemCodeModal(true);
   };
 
@@ -177,21 +149,15 @@ export default function ProductList() {
   const handleCloseAddItemCodeModal = () => {
     setShowAddItemCodeModal(false);
     setProductToUpdateWareCodes(null);
-    setSelectedItemCodeId(null);
   };
 
-  // 🆕 Hàm chọn mã hàng trong modal phụ
-  const handleSelectItemCode = (itemId) => {
-    setSelectedItemCodeId(itemId);
-  };
-
-  // 🆕 Hàm thêm mã hàng vào sản phẩm và gọi API cập nhật
-  const handleAddItemCodeToProduct = async () => {
-    if (!productToUpdateWareCodes || !selectedItemCodeId) return;
+  // 🆕 Hàm thêm mã hàng vào sản phẩm (nhận itemId từ child modal)
+  const handleAddItemCodeToProduct = async (selectedItemId: string) => {
+    if (!productToUpdateWareCodes || !selectedItemId) return;
 
     // Get existing wares IDs
     const existingWaresIds = (productToUpdateWareCodes.wares || []).map(
-      (item) => {
+      (item: any) => {
         if (typeof item === "string") {
           return item;
         }
@@ -202,8 +168,8 @@ export default function ProductList() {
       }
     );
 
-    // Add the new selected item ID (assuming selectedItemCodeId is a Ware _id)
-    const updatedWaresIds = [...existingWaresIds, selectedItemCodeId];
+    // Add the new selected item ID (selectedItemId)
+    const updatedWaresIds = [...existingWaresIds, selectedItemId];
 
     // Extract customer ID (can be ObjectId string or Customer object)
     const customerId =
@@ -228,9 +194,8 @@ export default function ProductList() {
     };
 
     try {
-      // 🚨 Gọi API cập nhật sản phẩm
       await updateProduct({
-        productId: productToUpdateWareCodes._id, // Sử dụng _id của MongoDB để update
+        productId: productToUpdateWareCodes._id,
         body: payload,
       }).unwrap();
 
@@ -243,8 +208,12 @@ export default function ProductList() {
   };
 
   // 🆕 Hàm xóa mã hàng khỏi sản phẩm
-  const handleRemoveItemCode = async (productId, itemCodeId, itemCode) => {
-    const product = products.find((p) => p._id === productId);
+  const handleRemoveItemCode = async (
+    productId: string,
+    itemCodeId: string,
+    itemCode?: string
+  ) => {
+    const product = products.find((p: any) => p._id === productId);
     if (!product) return;
 
     if (
@@ -259,7 +228,7 @@ export default function ProductList() {
 
     // Filter out the removed ware code by comparing IDs
     const updatedWaresIds = (product.wares || [])
-      .map((item) => {
+      .map((item: any) => {
         if (typeof item === "string") {
           return item;
         }
@@ -268,8 +237,7 @@ export default function ProductList() {
         }
         return item;
       })
-      .filter((id) => {
-        // Compare as strings to handle both ObjectId and string comparisons
+      .filter((id: any) => {
         return String(id) !== String(itemCodeId);
       });
 
@@ -302,13 +270,13 @@ export default function ProductList() {
     }
   };
 
-  const toggleCollapse = (id) => {
+  const toggleCollapse = (id: any) => {
     setOpenIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
-  const getBadgeColor = (type) => {
+  const getBadgeColor = (type: any) => {
     switch (type) {
       case "Bộ":
         return "danger";
@@ -326,7 +294,7 @@ export default function ProductList() {
     if (!editingProduct) return;
 
     // Convert wares to array of ObjectId strings
-    const waresIds = (editingProduct.wares || []).map((item) => {
+    const waresIds = (editingProduct.wares || []).map((item: any) => {
       if (typeof item === "string") {
         return item; // Already an ID string
       }
@@ -343,18 +311,17 @@ export default function ProductList() {
         : editingProduct.customer?._id || editingProduct.customer?.id || "";
 
     // Extract productType ID (can be ObjectId string or ProductType object)
-    // When from select, it's already a string (ObjectId)
     const productTypeId =
       typeof editingProduct.productType === "string"
         ? editingProduct.productType
         : editingProduct.productType?._id ||
           editingProduct.productType?.id ||
           "";
-    // editingProduct.productType || "";
+
     const payload = {
       code: editingProduct.code?.trim() ?? "",
       name: editingProduct.name?.trim() ?? "",
-      productName: editingProduct.name?.trim() ?? "", // Backend requires productName
+      productName: editingProduct.name?.trim() ?? "",
       customer: customerId,
       description: editingProduct.description ?? "",
       productLength: Number(editingProduct.productLength) || 0,
@@ -386,6 +353,16 @@ export default function ProductList() {
       return;
     }
 
+    // NEW: client-side duplicate check (case-insensitive)
+    // When editing, exclude the current product id to allow not changing the code.
+    const excludeId = editingProduct._id ? editingProduct._id : null;
+    if (isDuplicateCode(payload.code, excludeId)) {
+      window.alert(
+        `Mã sản phẩm "${payload.code}" đã tồn tại. Vui lòng chọn mã khác.`
+      );
+      return;
+    }
+
     try {
       if (editingProduct._id) {
         await updateProduct({
@@ -396,9 +373,8 @@ export default function ProductList() {
         await createProduct(payload).unwrap();
       }
       handleCloseProductModal();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Không thể lưu sản phẩm:", error);
-      // Hiển thị thông báo lỗi chi tiết hơn
       const errorMessage =
         error?.data?.message ||
         error?.message ||
@@ -408,7 +384,10 @@ export default function ProductList() {
   };
 
   // 2. Xóa Sản phẩm (Delete)
-  const handleDeleteProduct = async (productId, productCode) => {
+  const handleDeleteProduct = async (
+    productId: string,
+    productCode?: string
+  ) => {
     if (
       !productId ||
       !window.confirm(
@@ -430,7 +409,7 @@ export default function ProductList() {
   // ----------------------------------------
   // 💡 LOGIC PHÂN TRANG MỚI
   // ----------------------------------------
-  const handlePageChange = (newPage) => {
+  const handlePageChange = (newPage: number) => {
     const totalPages = productList?.totalPages || 1;
     let finalPage = newPage;
     if (newPage < 1) finalPage = 1;
@@ -438,7 +417,7 @@ export default function ProductList() {
     setPage(finalPage);
   };
 
-  const handleLimitChange = (newLimit) => {
+  const handleLimitChange = (newLimit: number) => {
     setLimit(newLimit);
     setPage(1); // Reset về trang 1 khi đổi limit
   };
@@ -453,9 +432,7 @@ export default function ProductList() {
   const endItem = Math.min(currentPage * limit, totalItems);
   const rangeDisplay = `${startItem} - ${endItem} of ${totalItems}`;
 
-  const limitOptions = [2, 4, 6, 10]; // Thêm 5 để dễ test với DB ít sản phẩm
-
-  // ----------------------------------------
+  const limitOptions = [2, 4, 6, 10];
 
   return (
     <Container style={{ paddingTop: "1.5rem", paddingBottom: "1.5rem" }}>
@@ -495,7 +472,7 @@ export default function ProductList() {
             disabled={isLoadingProductTypes}
           >
             <option value="all">--Chọn Loại--</option>
-            {productTypes.map((productType) => {
+            {productTypes.map((productType: any) => {
               const productTypeId = productType._id || productType.id;
               const productTypeName =
                 productType.name || productType.code || "";
@@ -517,7 +494,7 @@ export default function ProductList() {
             disabled={isLoadingCustomer}
           >
             <option value="all">--Khách Hàng--</option>
-            {customers.map((customer) => {
+            {customers.map((customer: any) => {
               const customerId = customer._id || customer.id;
               const customerCode = customer.code || customer.name || customerId;
               return (
@@ -540,8 +517,8 @@ export default function ProductList() {
         <div className="text-muted mb-3">Đang tải dữ liệu...</div>
       )}
 
-      {/* Product List (Giữ nguyên) */}
-      {products.map((product) => (
+      {/* Product List */}
+      {products.map((product: any) => (
         <Card
           className="col-md-10"
           key={product._id}
@@ -646,27 +623,6 @@ export default function ProductList() {
 
                 {/* Basic Info */}
                 <Row style={{ marginTop: "1rem" }}>
-                  {/* <Col xs={12} sm={4} style={{ marginBottom: "0.5rem" }}>
-                    <div
-                      style={{
-                        background: "#f9fafb",
-                        padding: "12px",
-                        borderRadius: "8px",
-                      }}
-                    >
-                      <i className="bi bi-arrows-angle-expand me-2"></i>
-                      <small style={{ color: "#6b7280" }}>
-                        Box size: <br />
-                      </small>{" "}
-                      <strong>
-                        {product.productLength}×{product.productWidth}
-                        {product.productHeight == 0
-                          ? ""
-                          : `×${product.productHeight}`}{" "}
-                        cm
-                      </strong>
-                    </div>
-                  </Col> */}
                   <Col xs={12} sm={6} style={{ marginBottom: "0.5rem" }}>
                     <div
                       style={{
@@ -734,7 +690,7 @@ export default function ProductList() {
 
                   <Collapse in={openIds.includes(product._id)}>
                     <div style={{ marginTop: "10px" }}>
-                      {(product.wares ?? []).map((item) => {
+                      {(product.wares ?? []).map((item: any) => {
                         // Handle both Ware objects (populated) and string IDs
                         const ware =
                           typeof item === "object" && item !== null
@@ -748,7 +704,6 @@ export default function ProductList() {
                         const wareLength = ware?.wareLength || 0;
                         const wareWidth = ware?.wareWidth || 0;
                         const wareHeight = ware?.wareHeight || null;
-                        // Handle fluteCombination as ObjectId string or populated FluteCombination object
                         const fluteCombination =
                           typeof ware?.fluteCombination === "object" &&
                           ware?.fluteCombination?.code
@@ -759,7 +714,6 @@ export default function ProductList() {
                         const paperSize = ware?.paperWidth || 0;
 
                         if (!ware && typeof item === "string") {
-                          // If it's just an ID string, show placeholder
                           return (
                             <div
                               key={wareId}
@@ -894,21 +848,17 @@ export default function ProductList() {
         </div>
       )}
 
-      {/* ---------------------------------------- */}
-      {/* 💡 PHÂN TRANG THEO MẪU CỦA BẠN */}
-      {/* ---------------------------------------- */}
+      {/* Pagination UI (same as before) */}
       {totalItems > 0 && (
         <div
           className="d-flex justify-content-start align-items-center mt-4"
           style={{
-            // Đảm bảo nó không bị quá to khi màn hình nhỏ
             width: "100%",
             maxWidth: "800px",
             margin: "0 auto",
           }}
         >
           <div className="d-flex align-items-center gap-4">
-            {/* 1. Rows per page */}
             <div className="d-flex align-items-center gap-2">
               <Form.Label
                 className="mb-0 text-muted"
@@ -937,7 +887,6 @@ export default function ProductList() {
               </Form.Select>
             </div>
 
-            {/* 2. Range Display */}
             <span
               className="text-muted"
               style={{
@@ -950,9 +899,7 @@ export default function ProductList() {
             </span>
           </div>
 
-          {/* 3. Buttons */}
           <div className="d-flex gap-2 ms-4">
-            {/* First Page button (|<) */}
             <Button
               variant="light"
               disabled={!hasPrevPage || isFetching}
@@ -962,7 +909,7 @@ export default function ProductList() {
                 width: "40px",
                 height: "40px",
                 padding: 0,
-                backgroundColor: "#f1f1f1", // Màu xám nhạt
+                backgroundColor: "#f1f1f1",
                 border: "none",
                 boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
               }}
@@ -970,7 +917,6 @@ export default function ProductList() {
               <i className="bi bi-chevron-bar-left"></i>
             </Button>
 
-            {/* Previous Page button (<) */}
             <Button
               variant="light"
               disabled={!hasPrevPage || isFetching}
@@ -988,7 +934,6 @@ export default function ProductList() {
               <i className="bi bi-chevron-left"></i>
             </Button>
 
-            {/* Next Page button (>) */}
             <Button
               variant="light"
               disabled={!hasNextPage || isFetching}
@@ -1006,7 +951,6 @@ export default function ProductList() {
               <i className="bi bi-chevron-right"></i>
             </Button>
 
-            {/* Last Page button (>|) */}
             <Button
               variant="light"
               disabled={!hasNextPage || isFetching}
@@ -1026,503 +970,38 @@ export default function ProductList() {
           </div>
         </div>
       )}
-      {/* ---------------------------------------- */}
 
-      {/* Modal thêm sản phẩm (Modal chính) và Modal Thêm Mã Hàng (Modal phụ) (Giữ nguyên) */}
-      {/* ... */}
-      <Modal
+      {/* Modals (moved to components) */}
+      <ProductModal
         show={!!editingProduct}
         onHide={handleCloseProductModal}
-        size="lg"
-        centered
-        container={containerEl}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {editingProduct?._id ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}
-          </Modal.Title>
-        </Modal.Header>
+        editingProduct={editingProduct}
+        setEditingProduct={setEditingProduct}
+        customers={customers}
+        productTypes={productTypes}
+        availableItemCodes={availableItemCodes}
+        modalSearchTerm={modalSearchTerm}
+        setModalSearchTerm={setModalSearchTerm}
+        isLoadingWares={isLoadingWares}
+        isLoadingCustomer={isLoadingCustomer}
+        isLoadingProductTypes={isLoadingProductTypes}
+        onSave={handleSaveProduct}
+        isMutating={isMutating}
+        containerEl={containerEl}
+      />
 
-        <Modal.Body>
-          {editingProduct && (
-            <Form>
-              {/* --- Thông tin cơ bản --- */}
-              <Row className="mb-3">
-                <Col md={4}>
-                  <Form.Group>
-                    <Form.Label>Mã sản phẩm</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={editingProduct.code || ""}
-                      onChange={(e) =>
-                        setEditingProduct({
-                          ...editingProduct,
-                          code: e.target.value,
-                        })
-                      }
-                      placeholder="VD: VN-BOX-999"
-                    />
-                  </Form.Group>
-                </Col>
-
-                <Col md={4}>
-                  <Form.Group>
-                    <Form.Label>Khách hàng</Form.Label>
-                    <Form.Select
-                      value={
-                        typeof editingProduct.customer === "string"
-                          ? editingProduct.customer
-                          : editingProduct.customer?._id ||
-                            editingProduct.customer?.id ||
-                            ""
-                      }
-                      onChange={(e) =>
-                        setEditingProduct({
-                          ...editingProduct,
-                          customer: e.target.value,
-                        })
-                      }
-                      disabled={isLoadingCustomer}
-                    >
-                      <option value="">--Chọn khách hàng--</option>
-                      {customers.map((customer) => {
-                        const customerId = customer._id || customer.id;
-                        const customerCode =
-                          customer.code || customer.name || customerId;
-                        return (
-                          <option key={customerId} value={customerId}>
-                            {customerCode}
-                          </option>
-                        );
-                      })}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={4}>
-                  <Form.Group>
-                    <Form.Label>Loại sản phẩm</Form.Label>
-                    <Form.Select
-                      value={editingProduct?.productType?._id}
-                      onChange={(e) =>
-                        setEditingProduct({
-                          ...editingProduct,
-                          productType: e.target.value,
-                        })
-                      }
-                      disabled={isLoadingProductTypes}
-                    >
-                      <option value="">--Chọn loại sản phẩm--</option>
-                      {productTypes.map((productType) => {
-                        const productTypeId = productType._id || productType.id;
-                        const productTypeName =
-                          productType.name || productType.code || "";
-                        return (
-                          <option key={productTypeId} value={productTypeId}>
-                            {productTypeName}
-                          </option>
-                        );
-                      })}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-              </Row>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Tên sản phẩm </Form.Label>
-                <Form.Control
-                  type="text"
-                  value={editingProduct.name}
-                  onChange={(e) =>
-                    setEditingProduct({
-                      ...editingProduct,
-                      name: e.target.value,
-                    })
-                  }
-                  placeholder="VD: Thùng carton 5 lớp Aroma"
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Mô tả</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  value={editingProduct.description}
-                  onChange={(e) =>
-                    setEditingProduct({
-                      ...editingProduct,
-                      description: e.target.value,
-                    })
-                  }
-                  placeholder="Mô tả chi tiết sản phẩm..."
-                />
-              </Form.Group>
-
-              {/* --- Kích thước & loại sản phẩm --- */}
-              {/* <Row className="mb-3">
-                {["productLength", "productWidth", "productHeight"].map(
-                  (field, idx) => (
-                    <Col md={4} key={idx}>
-                      <Form.Group>
-                        <Form.Label>
-                          {field === "productLength"
-                            ? "Chiều dài (cm)"
-                            : field === "productWidth"
-                            ? "Chiều rộng (mm)"
-                            : "Chiều cao (mm)"}
-                        </Form.Label>
-                        <Form.Control
-                          type="number"
-                          value={editingProduct[field]}
-                          onChange={(e) =>
-                            setEditingProduct({
-                              ...editingProduct,
-                              [field]: e.target.value,
-                            })
-                          }
-                        />
-                      </Form.Group>
-                    </Col>
-                  )
-                )}
-              </Row> */}
-
-              {/* --- Chọn mã hàng (card style) - Đã khôi phục logic ban đầu --- */}
-              <hr />
-              <Form.Group className="mb-3">
-                <Form.Label className="fw-bold fs-6">Chọn mã hàng</Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="🔍 Tìm kiếm mã hàng..."
-                  value={modalSearchTerm}
-                  onChange={(e) => setModalSearchTerm(e.target.value)}
-                />
-              </Form.Group>
-
-              <div
-                style={{
-                  maxHeight: "400px",
-                  overflowY: "auto",
-                  padding: "6px 4px",
-                }}
-              >
-                {isLoadingWares ? (
-                  <div
-                    style={{
-                      textAlign: "center",
-                      padding: "20px",
-                      color: "#6b7280",
-                    }}
-                  >
-                    <i
-                      className="bi bi-arrow-repeat"
-                      style={{ animation: "spin 1s linear infinite" }}
-                    ></i>
-                    <div style={{ marginTop: "10px" }}>
-                      Đang tải danh sách mã hàng...
-                    </div>
-                  </div>
-                ) : filteredModalItems.length === 0 ? (
-                  <div
-                    style={{
-                      textAlign: "center",
-                      padding: "20px",
-                      color: "#6b7280",
-                    }}
-                  >
-                    <i className="bi bi-inbox" style={{ fontSize: "32px" }}></i>
-                    <div style={{ marginTop: "10px" }}>
-                      Không tìm thấy mã hàng phù hợp
-                    </div>
-                  </div>
-                ) : (
-                  /* 🚨 Logic đã khôi phục */
-                  filteredModalItems.map((item) => {
-                    const itemId = item._id || item.id;
-                    // Check if item is already selected by comparing IDs
-                    const isSelected = (editingProduct.wares || []).some(
-                      (i) => {
-                        const existingId =
-                          typeof i === "string" ? i : i?._id || i?.id;
-                        return String(existingId) === String(itemId);
-                      }
-                    );
-                    return (
-                      <Card
-                        key={itemId}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = "translateY(-2px)";
-                          e.currentTarget.style.zIndex = "10";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = "#e5e7eb";
-                          e.currentTarget.style.boxShadow = "";
-                          e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.zIndex = "1";
-                        }}
-                        style={{
-                          background: isSelected ? "#e6f7ff" : "#f9fafb",
-                          padding: "8px",
-                          borderRadius: "8px",
-                          marginBottom: "10px",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          boxShadow: isSelected
-                            ? "0 4px 8px rgba(0, 0, 0, 0.1)"
-                            : "none",
-                        }}
-                        onClick={() => {
-                          let updated = editingProduct.wares || [];
-                          if (isSelected) {
-                            // Remove by filtering out the matching ID
-                            updated = updated.filter((i) => {
-                              const existingId =
-                                typeof i === "string" ? i : i?._id || i?.id;
-                              return String(existingId) !== String(itemId);
-                            });
-                          } else {
-                            // Add the item _id
-                            updated = [...updated, item._id];
-                          }
-                          setEditingProduct({
-                            ...editingProduct,
-                            wares: updated,
-                          });
-                        }}
-                      >
-                        <Card.Body className="py-2 px-3">
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                            }}
-                          >
-                            <div
-                              style={{
-                                fontSize: "14px",
-                                fontWeight: 600,
-                                color: "#1f2937",
-                              }}
-                            >
-                              {item.code}
-                            </div>
-                          </div>
-                          <div style={{ fontSize: "13px", color: "#6c757d" }}>
-                            Kích thước: {item.wareLength}×{item.wareWidth}
-                            {item.wareHeight ? `×${item.wareHeight}` : ""} cm |
-                            Sóng:{" "}
-                            <span className="text-primary fw-semibold">
-                              {typeof item.fluteCombination === "object" &&
-                              item.fluteCombination?.code
-                                ? item.fluteCombination.code
-                                : typeof item.fluteCombination === "string"
-                                ? "N/A"
-                                : "N/A"}
-                            </span>{" "}
-                            | Khổ giấy:{" "}
-                            <span className="text-danger fw-semibold">
-                              {item.paperWidth || "N/A"}
-                            </span>
-                          </div>
-                        </Card.Body>
-                      </Card>
-                    );
-                  })
-                )}
-              </div>
-            </Form>
-          )}
-        </Modal.Body>
-
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseProductModal}>
-            Hủy
-          </Button>
-          <Button
-            variant="dark"
-            onClick={handleSaveProduct}
-            disabled={isMutating}
-          >
-            {editingProduct?._id ? "Cập nhật" : "Lưu sản phẩm"}
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Modal Thêm Mã Hàng (Modal phụ - giữ nguyên logic) */}
-      <Modal
+      <ProductAddItemCodeModal
         show={showAddItemCodeModal}
         onHide={handleCloseAddItemCodeModal}
-        size="lg"
-        centered
-        container={containerEl}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Thêm Mã Hàng</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {/* Search Input */}
-          <Form.Group className="mb-3">
-            {/* <Form.Label>Mã Hàng (Mã đã có sẽ không hiển thị)</Form.Label> */}
-            <Form.Label>Mã Hàng (Mã đã có sẽ không hiển thị)</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="Nhập mã hàng để tìm kiếm..."
-              value={modalSearchTerm}
-              onChange={(e) => setModalSearchTerm(e.target.value)}
-            />
-          </Form.Group>
-
-          {/* Results List */}
-          <div
-            style={{
-              maxHeight: "400px",
-              overflowY: "auto",
-              border: "1px solid #e5e7eb",
-              borderRadius: "8px",
-              padding: "10px",
-            }}
-          >
-            {isLoadingWares ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "40px",
-                  color: "#6b7280",
-                }}
-              >
-                <i
-                  className="bi bi-arrow-repeat"
-                  style={{
-                    animation: "spin 1s linear infinite",
-                    fontSize: "32px",
-                  }}
-                ></i>
-                <div style={{ marginTop: "10px" }}>
-                  Đang tải danh sách mã hàng...
-                </div>
-              </div>
-            ) : filteredAddItemCodeModalItems.length > 0 ? (
-              filteredAddItemCodeModalItems.map((item) => {
-                const itemId = item._id || item.id;
-                const isSelected =
-                  String(itemId) === String(selectedItemCodeId);
-                return (
-                  <div
-                    key={itemId}
-                    onClick={() => handleSelectItemCode(itemId)}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.zIndex = "10";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = "#e5e7eb";
-                      e.currentTarget.style.boxShadow = "";
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.zIndex = "1";
-                    }}
-                    style={{
-                      background: isSelected ? "#e6f7ff" : "#f9fafb",
-                      padding: "15px",
-                      borderRadius: "8px",
-                      marginBottom: "10px",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                      boxShadow: isSelected
-                        ? "0 4px 8px rgba(0, 0, 0, 0.1)"
-                        : "none",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: "#1f2937",
-                        }}
-                      >
-                        {item.code}
-                      </div>
-                    </div>
-                    <Row style={{ fontSize: "13px", color: "#4b5563" }}>
-                      <Col xs={12} md={6}>
-                        <div className="mb-2">
-                          <strong>Kích Thước (DxRxC):</strong> {item.wareLength}
-                          ×{item.wareWidth}
-                          {item.wareHeight ? `×${item.wareHeight}` : ""} mm
-                        </div>
-                      </Col>
-                      <Col xs={12} md={6}>
-                        <div className="mb-2">
-                          <strong>Sóng:</strong>{" "}
-                          <span style={{ color: "blue", fontWeight: 500 }}>
-                            {typeof item.fluteCombination === "object" &&
-                            item.fluteCombination?.code
-                              ? item.fluteCombination.code
-                              : typeof item.fluteCombination === "string"
-                              ? "N/A"
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div className="mb-2">
-                          <strong>Khổ Giấy:</strong>{" "}
-                          <span style={{ color: "red", fontWeight: 500 }}>
-                            {item.paperWidth || "N/A"}
-                          </span>
-                        </div>
-                        <div className="mb-2">
-                          <strong>Loại Chế Biến:</strong>{" "}
-                          {typeof item.wareManufacturingProcessType === "object"
-                            ? item.wareManufacturingProcessType?.name || "N/A"
-                            : typeof item.wareManufacturingProcessType ===
-                              "string"
-                            ? "N/A"
-                            : "N/A"}
-                        </div>
-                      </Col>
-                    </Row>
-                  </div>
-                );
-              })
-            ) : (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "40px",
-                  color: "#9ca3af",
-                }}
-              >
-                <i
-                  className="bi bi-inbox"
-                  style={{ fontSize: "48px", marginBottom: "10px" }}
-                ></i>
-                <div>
-                  Không tìm thấy mã hàng phù hợp hoặc tất cả đã được thêm.
-                </div>
-              </div>
-            )}
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseAddItemCodeModal}>
-            Hủy bỏ
-          </Button>
-          <Button
-            variant="dark"
-            disabled={!selectedItemCodeId || isUpdating}
-            onClick={handleAddItemCodeToProduct}
-          >
-            {isUpdating ? "Đang thêm..." : "Thêm"}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        productToUpdateWareCodes={productToUpdateWareCodes}
+        availableItemCodes={availableItemCodes}
+        isLoadingWares={isLoadingWares}
+        modalSearchTerm={modalSearchTerm}
+        setModalSearchTerm={setModalSearchTerm}
+        onAdd={handleAddItemCodeToProduct}
+        isUpdating={isUpdating}
+        containerEl={containerEl}
+      />
     </Container>
   );
 }

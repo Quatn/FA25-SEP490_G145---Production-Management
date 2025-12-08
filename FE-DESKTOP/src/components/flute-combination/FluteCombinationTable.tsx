@@ -1,8 +1,7 @@
-import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
-import { FaEdit } from "react-icons/fa";
+import { Table, Group, Button, Icon } from "@chakra-ui/react";
+import { FaEdit, FaEye } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
 import { FluteCombination } from "@/types/FluteCombination";
-import FluteCombinationDetailDialog from "./FluteCombinationDetailDialog";
 
 interface Props {
     page: number;
@@ -10,9 +9,10 @@ interface Props {
     items: FluteCombination[];
     onEdit: (item: FluteCombination) => void;
     onDelete: (item: FluteCombination) => void;
+    onDetail: (item: FluteCombination) => void;
 }
 
-const FluteCombinationTable = ({ page, limit, items, onEdit, onDelete }: Props) => {
+const FluteCombinationTable: React.FC<Props> = ({ page, limit, items, onEdit, onDelete, onDetail }) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
@@ -34,7 +34,7 @@ const FluteCombinationTable = ({ page, limit, items, onEdit, onDelete }: Props) 
                             STT
                         </Table.ColumnHeader>
                         <Table.ColumnHeader>Mã</Table.ColumnHeader>
-                         <Table.ColumnHeader>Chi tiết</Table.ColumnHeader>
+                        <Table.ColumnHeader>Mô tả</Table.ColumnHeader>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             Thao tác
                         </Table.ColumnHeader>
@@ -49,9 +49,16 @@ const FluteCombinationTable = ({ page, limit, items, onEdit, onDelete }: Props) 
                             <Table.Cell>{item.description}</Table.Cell>
                             <Table.Cell>
                                 <Group gap={5}>
-                                    <FluteCombinationDetailDialog
-                                        item={item}
-                                    />
+                                    <Button
+                                        variant="surface"
+                                        colorPalette="blue"
+                                        onClick={() => onDetail(item)}
+                                    >
+                                        <Icon>
+                                            <FaEye />
+                                        </Icon>
+                                        Chi tiết
+                                    </Button>
                                     <Button
                                         variant="surface"
                                         colorPalette="yellow"

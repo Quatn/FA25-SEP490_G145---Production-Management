@@ -70,9 +70,15 @@ const initialCollection = createTreeCollection<Node>({
         name: "Manufacturing Order",
         children: [
           {
+            id: "manufacturing-order-dashboard",
+            name: "Manufacturing Order Dashboard",
+            href: "/manufacturing-order",
+            children: [],
+          },
+          {
             id: "manufacturing-order-list",
             name: "Manufacturing Order List",
-            href: "/manufacturing-order",
+            href: "/manufacturing-order/list",
             children: [],
           },
           {
@@ -82,15 +88,9 @@ const initialCollection = createTreeCollection<Node>({
             children: [],
           },
           {
-            id: "manufacturing-order-tracking",
-            name: "Manufacturing Order Tracking",
-            href: "/manufacturing-order/tracking",
-            children: [],
-          },
-          {
-            id: "manufacturing-order-operate",
-            name: "Manufacturing Order Operate",
-            href: "/manufacturing-order/operate",
+            id: "manufacturing-order-corrugator-process-operate",
+            name: "Manufacturing Order Corrugator Process Operate",
+            href: "/manufacturing-order/corrugator-process-operate",
             children: [],
           },
         ],
@@ -216,7 +216,13 @@ const initialCollection = createTreeCollection<Node>({
           {
             id: "flute-combination-list",
             name: "Flute Combination List",
-            href: "/flute-combination",
+            href: "/flute-combination/list",
+            children: [],
+          },
+          {
+            id: "flute-combination-restore-list",
+            name: "Flute Combination Restore List",
+            href: "/flute-combination/restore-list",
             children: [],
           },
         ],

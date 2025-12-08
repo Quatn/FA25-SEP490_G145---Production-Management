@@ -11,7 +11,7 @@ export default function FluteCombinationHome() {
     >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"bold"} color={"black"}>
-          DANH SÁCH LOẠI SÓNG
+          DANH SÁCH TỔ HỢP SÓNG
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>

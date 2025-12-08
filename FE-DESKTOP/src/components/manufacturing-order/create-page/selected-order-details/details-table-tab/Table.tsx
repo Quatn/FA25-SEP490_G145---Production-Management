@@ -72,6 +72,7 @@ export default function CreatePageManufacturingOrderTable(
         return {
           ...mo,
           purchaseOrderItem: calculatedPOI,
+          finishingProcesses: [],
         }
       })
       return {
@@ -83,7 +84,7 @@ export default function CreatePageManufacturingOrderTable(
     }
   }, [fullDetailMOsResponse?.data])
 
-  const rawTableData: Serialized<ManufacturingOrder>[] = moPaginatedList?.data ?? []
+  const rawTableData: (Omit<ManufacturingOrderTableDataType, "isEdited">)[] = moPaginatedList?.data ?? []
 
   const { table, tableComponent, tableData, resetTable } = useDataTable({
     data: rawTableData,

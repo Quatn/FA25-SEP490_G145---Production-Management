@@ -10,14 +10,15 @@ import FluteCombinationAlertDialog from "./FluteCombinationAlertDialog";
 import FluteCombinationTable from "./FluteCombinationTable";
 import FluteCombinationFormDialog from "./FluteCombinationFormDialog";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
-import { useAddFluteCombinationMutation, useDeleteFluteCombinationMutation, useGetFluteCombinationQuery, useUpdateFluteCombinationMutation } from "@/service/api/fluteCombinationApiSlice";
+import { useAddFluteCombinationMutation, useDeleteSoftFluteCombinationMutation, useGetFluteCombinationQuery, useUpdateFluteCombinationMutation } from "@/service/api/fluteCombinationApiSlice";
+import FluteCombinationDetailDialog from "./FluteCombinationDetailDialog";
 
 
 const FluteCombinationList: React.FC = () => {
 
     const [addItem] = useAddFluteCombinationMutation();
     const [updateItem] = useUpdateFluteCombinationMutation();
-    const [deleteItem] = useDeleteFluteCombinationMutation();
+    const [deleteItem] = useDeleteSoftFluteCombinationMutation();
 
     const [page, setPage] = useState(1);
     const limit = 10;
@@ -35,6 +36,7 @@ const FluteCombinationList: React.FC = () => {
     const totalPages = dataResp?.data?.totalPages ?? 1;
 
     const [formOpen, setFormOpen] = useState(false);
+    const [detailOpen, setDetailOpen] = useState(false);
     const [alertOpen, setAlertOpen] = useState(false);
     const [selected, setSelected] = useState<FluteCombination | undefined>(undefined);
 
@@ -45,12 +47,25 @@ const FluteCombinationList: React.FC = () => {
         setFormOpen(true);
     };
 
+    const handleOpenDetail = (item?: FluteCombination) => {
+        setSelected(item);
+        setDetailOpen(true);
+    };
+
     const handleOpenAlert = (item: FluteCombination) => {
         setSelected(item);
         setAlertOpen(true);
     }
 
-    const handleCloseForm = () => setFormOpen(false);
+    const handleCloseForm = () => {
+        setFormOpen(false);
+        setSelected(undefined);
+    }
+
+    const handleCloseDetail = () => {
+        setDetailOpen(false);
+        setSelected(undefined);
+    }
     const handleCloseAlert = () => setAlertOpen(false);
 
     const handleMutation = async (
@@ -80,7 +95,7 @@ const FluteCombinationList: React.FC = () => {
     const handleAdd = async (data: FluteCombination) => {
         handleMutation(
             () => addItem(data).unwrap(),
-            `Đã lưu loại sóng ${data.code}`,
+            `Đã lưu tổ hợp sóng ${data.code}`,
             'Lưu thất bại',
         );
     }
@@ -88,7 +103,7 @@ const FluteCombinationList: React.FC = () => {
     const handleUpdate = async (data: FluteCombination) => {
         handleMutation(
             () => updateItem(data).unwrap(),
-            `Đã cập nhật loại sóng ${data.code}}`,
+            `Đã cập nhật tổ hợp sóng ${data.code}}`,
             'Cập nhật thất bại',
         );
     }
@@ -96,7 +111,7 @@ const FluteCombinationList: React.FC = () => {
     const handleDelete = async (data: FluteCombination) => {
         handleMutation(
             () => deleteItem(data).unwrap(),
-            `Xóa loại sóng ${data.code}`,
+            `Xóa tổ hợp sóng ${data.code}`,
             'Xóa thất bại',
         );
     }
@@ -137,6 +152,11 @@ const FluteCombinationList: React.FC = () => {
                 initialData={selected}
                 onDelete={(d) => handleDelete(d)} />
 
+            <FluteCombinationDetailDialog
+                isOpen={detailOpen}
+                onClose={handleCloseDetail}
+                initialData={selected} />
+
             <Flex direction={"row-reverse"}>
                 <InputGroup endElement={endElement} w={"full"} maxW={"sm"}>
                     <Input
@@ -148,7 +168,12 @@ const FluteCombinationList: React.FC = () => {
                         onChange={(e) => { setPage(1); setSearch(e.target.value) }} />
                 </InputGroup>
                 <Spacer />
-                <Button colorPalette={"green"} onClick={() => handleOpenForm()}><Icon><FaPlus /></Icon>Thêm loại sóng</Button>
+                <Button colorPalette={"green"} onClick={() => handleOpenForm()}>
+                    <Icon>
+                        <FaPlus />
+                    </Icon>
+                    Thêm tổ hợp sóng
+                </Button>
             </Flex>
 
             {isLoading ? (<Spinner />) : (
@@ -159,6 +184,7 @@ const FluteCombinationList: React.FC = () => {
                         items={items}
                         onEdit={handleOpenForm}
                         onDelete={handleOpenAlert}
+                        onDetail={handleOpenDetail}
                     />
 
                     <Pagination.Root

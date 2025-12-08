@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useQueryPurchaseOrderItemsQuery } from "@/service/api/purchaseOrderItemApiSlice";
 import { useCreateDeliveryNoteMutation } from "@/service/api/deliveryNoteApiSlice";
 import { useGetAllCustomersQuery } from "@/service/api/customerApiSlice";
+import { useGetPoitemsRemainingQuery } from "@/service/api/deliveryNoteApiSlice";
 
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
@@ -136,7 +137,11 @@ export default function DeliveryNoteCreator() {
     limit,
   ]);
 
-  const visibleIds = pageItems.map((it) => resolveId(it) || "");
+  // MEMOIZE visibleIds so its reference stays stable between renders unless pageItems changes
+  const visibleIds = useMemo(
+    () => pageItems.map((it) => resolveId(it) || ""),
+    [pageItems]
+  );
   const allVisibleSelected =
     visibleIds.length > 0 && visibleIds.every((id) => id && selectedMap[id]);
 
@@ -172,12 +177,82 @@ export default function DeliveryNoteCreator() {
 
   const selectedIdsArr = Object.keys(selectedMap).filter((k) => selectedMap[k]);
 
+  // delivered amounts (string so we can show empty string)
+  const [deliveredMap, setDeliveredMap] = useState<Record<string, string>>({});
+  // inline validation errors
+  const [errorsMap, setErrorsMap] = useState<Record<string, string>>({});
+
+  // memoize non-empty ids to pass to the query (avoid passing a freshly created array every render)
+  const visibleIdsNonEmpty = useMemo(
+    () => visibleIds.filter(Boolean),
+    [visibleIds]
+  );
+
+  // fetch remaining for visible ids from the backend
+  const {
+    data: remainingResp,
+    isLoading: remainingLoading,
+    refetch: refetchRemaining,
+  } = useGetPoitemsRemainingQuery(
+    { ids: visibleIdsNonEmpty },
+    { skip: visibleIdsNonEmpty.length === 0 }
+  );
+  const remainingMap: Record<string, number> = remainingResp?.data ?? {};
+
+  // IMPORTANT: only run this effect when the memoized visibleIds changes (not every render).
+  useEffect(() => {
+    // clear errors for rows not visible
+    setErrorsMap((prev) => {
+      const next: Record<string, string> = {};
+      // keep only keys that are still visible
+      if (!visibleIds || visibleIds.length === 0) return {};
+      const visibleSet = new Set(visibleIds);
+      for (const k of Object.keys(prev)) {
+        if (visibleSet.has(k)) next[k] = prev[k];
+      }
+      return next;
+    });
+
+    // Also clear deliveredMap keys that are not visible (optional, keeps state smaller)
+    setDeliveredMap((prev) => {
+      const next: Record<string, string> = {};
+      if (!visibleIds || visibleIds.length === 0) return {};
+      const visibleSet = new Set(visibleIds);
+      for (const k of Object.keys(prev)) {
+        if (visibleSet.has(k)) next[k] = prev[k];
+      }
+      return next;
+    });
+  }, [visibleIds]);
+
   const handleCreateDeliveryNote = async () => {
     if (selectedIdsArr.length === 0) {
       alert("Vui lòng chọn ít nhất 1 mã để xuất kho.");
       return;
     }
-    const payload: any = { poitems: selectedIdsArr };
+
+    // validate selected entries against remaining
+    for (const id of selectedIdsArr) {
+      const valStr = deliveredMap[id] ?? "";
+      const val = valStr === "" ? 0 : Number(valStr);
+      const rem = Number(remainingMap[id] ?? 0);
+      if (Number.isNaN(val) || val < 0) {
+        alert("Số lượng xuất không hợp lệ.");
+        return;
+      }
+      if (val > rem) {
+        alert(`Số lượng xuất (${val}) vượt quá còn lại (${rem}) cho mã ${id}.`);
+        return;
+      }
+    }
+
+    // build payload: send objects with deliveredAmount
+    const poitemsPayload = selectedIdsArr.map((id) => ({
+      poitem: String(id),
+      deliveredAmount: Number(deliveredMap[id] ?? 0),
+    }));
+
+    const payload: any = { poitems: poitemsPayload };
     if (selectedCustomer) payload.customer = selectedCustomer;
     if (!payload.status) payload.status = "PENDINGAPPROVAL";
     if (!confirm("Xác nhận tạo phiếu xuất kho cho các mã đã chọn?")) return;
@@ -186,8 +261,11 @@ export default function DeliveryNoteCreator() {
       if (res?.success) {
         alert("Tạo phiếu xuất kho thành công.");
         setSelectedMap({});
+        setDeliveredMap({});
+        setErrorsMap({});
         try {
           refetch();
+          refetchRemaining();
         } catch {}
       } else {
         alert("Tạo thất bại: " + (res?.message ?? "unknown"));
@@ -223,6 +301,37 @@ export default function DeliveryNoteCreator() {
     const label = c.name ?? c.code ?? id;
     return { id: String(id), label };
   });
+
+  // handle input change with validation/clamping
+  const onDeliveredChange = (id: string, raw: string) => {
+    // accept only digits and dot
+    const cleaned = raw.replace(/[^\d.]/g, "");
+    // keep simple numeric string
+    let num = cleaned === "" ? "" : cleaned;
+    const parsed = num === "" ? 0 : Number(num);
+    const rem = Number(remainingMap[id] ?? 0);
+
+    setErrorsMap((prev) => {
+      const errs = { ...prev };
+      if (num !== "" && (Number.isNaN(parsed) || parsed < 0)) {
+        errs[id] = "Số không hợp lệ";
+        // still set delivered value below
+        setDeliveredMap((prevD) => ({ ...prevD, [id]: num }));
+        return errs;
+      }
+
+      if (num !== "" && parsed > rem) {
+        // clamp to remaining
+        num = String(rem);
+        errs[id] = `Không được vượt quá còn lại (${rem})`;
+      } else {
+        delete errs[id];
+      }
+
+      setDeliveredMap((prevD) => ({ ...prevD, [id]: num }));
+      return errs;
+    });
+  };
 
   return (
     <div style={{ padding: 16 }}>
@@ -286,7 +395,7 @@ export default function DeliveryNoteCreator() {
       <div style={{ overflowX: "auto" }}>
         <table
           className="table table-sm table-bordered"
-          style={{ minWidth: 960, tableLayout: "fixed" }}
+          style={{ minWidth: 1120, tableLayout: "fixed" }}
         >
           <colgroup>
             <col style={{ width: 40 }} />
@@ -295,9 +404,11 @@ export default function DeliveryNoteCreator() {
             <col style={{ width: 60 }} />
             <col style={{ width: 60 }} />
             <col style={{ width: 60 }} />
-            <col style={{ width: 140 }} />
+            {/* <col style={{ width: 140 }} /> */}
             <col style={{ width: 120 }} />
             <col style={{ width: 100 }} />
+            <col style={{ width: 120 }} />
+            <col style={{ width: 120 }} />
           </colgroup>
 
           <thead>
@@ -318,11 +429,17 @@ export default function DeliveryNoteCreator() {
                 Kích thước
               </th>
               <th rowSpan={2}>PO</th>
-              <th rowSpan={2} style={{ textAlign: "right" }}>
+              {/* <th rowSpan={2} style={{ textAlign: "right" }}>
                 Đơn giá
-              </th>
+              </th> */}
               <th rowSpan={2} style={{ textAlign: "right" }}>
                 Số lượng yêu cầu
+              </th>
+              <th rowSpan={2} style={{ textAlign: "right" }}>
+                Số lượng xuất
+              </th>
+              <th rowSpan={2} style={{ textAlign: "right" }}>
+                Còn lại
               </th>
             </tr>
             <tr>
@@ -335,7 +452,7 @@ export default function DeliveryNoteCreator() {
           <tbody>
             {pageItems.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-muted p-4">
+                <td colSpan={11} className="text-muted p-4">
                   Không có bản ghi
                 </td>
               </tr>
@@ -343,6 +460,10 @@ export default function DeliveryNoteCreator() {
               pageItems.map((it: any, idx: number) => {
                 const id = resolveId(it) || `noid-${idx}`;
                 const checked = !!selectedMap[id];
+                const remaining = Number(remainingMap[id] ?? 0);
+                const deliveredVal = deliveredMap[id] ?? "";
+                const err = errorsMap[id] ?? "";
+
                 return (
                   <tr key={id}>
                     <td style={{ textAlign: "center" }}>
@@ -358,10 +479,35 @@ export default function DeliveryNoteCreator() {
                     <td style={{ textAlign: "right" }}>{getWareWidth(it)}</td>
                     <td style={{ textAlign: "right" }}>{getWareHeight(it)}</td>
                     <td>{getPoCode(it)}</td>
-                    <td style={{ textAlign: "right" }}>
+                    {/* <td style={{ textAlign: "right" }}>
                       {Number(getUnitPrice(it)).toLocaleString()}
-                    </td>
+                    </td> */}
                     <td style={{ textAlign: "right" }}>{getAmount(it)}</td>
+
+                    <td style={{ textAlign: "right", verticalAlign: "top" }}>
+                      <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={deliveredVal}
+                        placeholder={deliveredVal === "" ? "" : deliveredVal}
+                        onChange={(e) => onDeliveredChange(id, e.target.value)}
+                        className="form-control form-control-sm"
+                        style={{ width: 110, marginLeft: "auto" }}
+                      />
+                      {err ? (
+                        <div
+                          className="small text-danger"
+                          style={{ marginTop: 2 }}
+                        >
+                          {err}
+                        </div>
+                      ) : null}
+                    </td>
+
+                    <td style={{ textAlign: "right" }}>
+                      {remaining.toLocaleString()}
+                    </td>
                   </tr>
                 );
               })

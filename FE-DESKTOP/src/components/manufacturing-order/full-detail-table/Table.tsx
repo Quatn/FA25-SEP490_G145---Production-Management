@@ -11,7 +11,6 @@ import {
 import {
   ActionBar,
   Box,
-  BoxProps,
   Button,
   Center,
   Kbd,
@@ -19,14 +18,12 @@ import {
   Spinner,
   Stack,
   Table,
-  TableRootProps,
   Tabs,
-  TabsRootProps,
   Text,
 } from "@chakra-ui/react";
 import check from "check-types";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
-import { manufacturingOrderColumnsByTabs, manufacturingOrderMergedHeaders } from "./tableDefinition";
+import { manufacturingOrderColumnsByTabs, manufacturingOrderMergedHeaders, ManufacturingOrderTableDataType } from "./tableDefinition";
 import { useEffect, useMemo } from "react";
 import { getCoreRowModel } from "@tanstack/react-table";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
@@ -34,17 +31,13 @@ import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-da
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import useDataTable from "@/components/ui/data-table/hook";
-import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import DataFetchError from "@/components/common/DataFetchError";
 import { useDataTableSelector } from "@/components/ui/data-table/Provider";
 import { toaster } from "@/components/ui/toaster";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
-
-export type ManufacturingOrderTableProps = {
-  rootProps?: BoxProps;
-  tabsRootProps?: TabsRootProps;
-  tableRootProps?: TableRootProps;
-};
+import { ManufacturingOrderTableProps } from "./TablePicker";
+import { devlog } from "@/utils/devlog";
+import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
 
 export default function ManufacturingOrderTable(
   props: ManufacturingOrderTableProps,
@@ -61,7 +54,16 @@ export default function ManufacturingOrderTable(
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
+    refetch: refetchTable,
   } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query });
+
+  const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
+
+  const {
+    data: orderFinishingProcessesResponse,
+    error: orderFinishingProcessFetchError,
+    isLoading: isOrderFinishingProcessFetchingList,
+  } = useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery({ orders: ids ?? [] });
 
   const moPaginatedList = useMemo(() => {
     if (fullDetailMOPaginatedResponse?.data) {
@@ -76,9 +78,12 @@ export default function ManufacturingOrderTable(
           ware: calculatedWare
         })
 
+        const process = orderFinishingProcessesResponse?.data.filter(p => (p.manufacturingOrder as unknown as string) === mo._id)
+
         return {
           ...mo,
           purchaseOrderItem: calculatedPOI,
+          finishingProcesses: process ?? [],
         }
       })
       return {
@@ -89,9 +94,9 @@ export default function ManufacturingOrderTable(
     else {
       return undefined
     }
-  }, [fullDetailMOPaginatedResponse?.data])
+  }, [fullDetailMOPaginatedResponse?.data, orderFinishingProcessesResponse?.data])
 
-  const rawTableData: Serialized<ManufacturingOrder>[] = moPaginatedList?.data ?? []
+  const rawTableData: (Omit<ManufacturingOrderTableDataType, "isEdited">)[] = moPaginatedList?.data ?? []
 
   const { table, tableComponent, tableData, resetTable } = useDataTable({
     data: rawTableData,
@@ -124,18 +129,18 @@ export default function ManufacturingOrderTable(
   });
 
   useEffect(() => {
-    console.log("Table hook re-calculated")
+    devlog("Table hook re-calculated")
   }, [table, tableComponent, tableData]);
 
   useEffect(() => {
-    console.log("SET_TOTAL_ITEMS effect Triggered")
+    devlog("SET_TOTAL_ITEMS effect Triggered")
     dispatch({
       type: "SET_TOTAL_ITEMS",
       payload: moPaginatedList ? moPaginatedList.totalItems : 0,
     });
   }, [dispatch, moPaginatedList, moPaginatedList?.totalItems]);
 
-  if (isFetchingList) {
+  if (isFetchingList || isOrderFinishingProcessFetchingList) {
     return (
       <Center h={"full"} flex={1} flexGrow={1}>
         <Stack alignItems={"center"}>
@@ -146,8 +151,8 @@ export default function ManufacturingOrderTable(
     );
   }
 
-  if (fetchError) {
-    return <DataFetchError h={"full"} flexGrow={1} />;
+  if (fetchError || orderFinishingProcessFetchError) {
+    return <DataFetchError h={"full"} flexGrow={1} refetch={refetchTable} />;
   }
 
   if (check.undefined(moPaginatedList)) {

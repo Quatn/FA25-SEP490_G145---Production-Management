@@ -1,11 +1,15 @@
 "use client";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
 import { UseDisclosureProps } from "@chakra-ui/react";
 import { Store, useStore } from "@tanstack/react-store";
 import React, { createContext, useContext } from "react";
 
 interface StoreState extends UseDisclosureProps {
   order: Serialized<ManufacturingOrder> | null;
+  processes: Serialized<OrderFinishingProcess>[];
+  preparedSubmitFunction?: () => void;
+  preparedSubmitAskText: string;
 }
 
 type StoreAction =
@@ -14,14 +18,18 @@ type StoreAction =
   | { type: "CLOSE_DIALOG" }
   | {
     type: "OPEN_DIALOG_WITH_ORDER";
-    payload: Serialized<ManufacturingOrder>;
+    payload: { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] };
   }
-  | { type: "SET_ORDER"; payload: Serialized<ManufacturingOrder> }
+  | { type: "SET_ORDER"; payload: { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } }
+  | { type: "SET_PREPARED_SUBMIT_FUNCTION"; payload: (() => void) | undefined }
+  | { type: "SET_PREPARED_SUBMIT_ASK_TEXT"; payload: string }
   | { type: "RESET" };
 
 const initialState: StoreState = {
   open: false,
   order: null,
+  processes: [],
+  preparedSubmitAskText: "",
 };
 
 function reducer(state: StoreState, action: StoreAction): StoreState {
@@ -31,11 +39,15 @@ function reducer(state: StoreState, action: StoreAction): StoreState {
     case "OPEN_DIALOG":
       return { ...state, open: true };
     case "OPEN_DIALOG_WITH_ORDER":
-      return { ...state, open: true, order: action.payload };
+      return { ...state, open: true, order: action.payload.order, processes: action.payload.processes };
     case "SET_ORDER":
-      return { ...state, order: action.payload };
+      return { ...state, order: action.payload.order, processes: action.payload.processes };
     case "CLOSE_DIALOG":
       return { ...state, open: false };
+    case "SET_PREPARED_SUBMIT_FUNCTION":
+      return { ...state, preparedSubmitFunction: action.payload }
+    case "SET_PREPARED_SUBMIT_ASK_TEXT":
+      return { ...state, preparedSubmitAskText: action.payload }
     case "RESET":
       return initialState;
     default:

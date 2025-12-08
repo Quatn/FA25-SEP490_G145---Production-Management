@@ -26,6 +26,17 @@ export const FluteCombinationApiSlice = apiSlice.injectEndpoints({
                 providesTags: ["FluteCombination"],
             }),
 
+        getDeletedFluteCombination: builder.query<BaseResponse<PaginatedList<FluteCombination>>, { page?: number; limit?: number }>(
+            {
+                query: ({ page = 1, limit = 10 }) => ({
+                    url: `${FLUTE_COMBINATION_URL}/list-deleted`,
+                    method: "GET",
+                    params: { page, limit },
+                    credentials: "include",
+                }),
+                providesTags: ["FluteCombination"],
+            }),
+
         addFluteCombination: builder.mutation<{ success: boolean; message: string }, FluteCombination>({
             query: (body) => ({
                 url: `${FLUTE_COMBINATION_URL}/create`,
@@ -49,12 +60,36 @@ export const FluteCombinationApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: ["FluteCombination"],
         }),
 
-        deleteFluteCombination: builder.mutation<{ success: boolean; message: string }, FluteCombination>({
+        deleteSoftFluteCombination: builder.mutation<{ success: boolean; message: string }, FluteCombination>({
             query: (body) => {
                 const id = body._id;
                 return {
                     url: `${FLUTE_COMBINATION_URL}/delete-soft/${id}`,
                     method: "DELETE",
+                    credentials: "include",
+                };
+            },
+            invalidatesTags: ["FluteCombination"],
+        }),
+
+        deleteHardFluteCombination: builder.mutation<{ success: boolean; message: string }, FluteCombination>({
+            query: (body) => {
+                const id = body._id;
+                return {
+                    url: `${FLUTE_COMBINATION_URL}/delete-hard/${id}`,
+                    method: "DELETE",
+                    credentials: "include",
+                };
+            },
+            invalidatesTags: ["FluteCombination"],
+        }),
+
+        restoreFluteCombination: builder.mutation<{ success: boolean; message: string }, FluteCombination>({
+            query: (body) => {
+                const id = body._id;
+                return {
+                    url: `${FLUTE_COMBINATION_URL}/restore/${id}`,
+                    method: "PATCH",
                     credentials: "include",
                 };
             },
@@ -68,5 +103,8 @@ export const {
     useAddFluteCombinationMutation,
     useGetFluteCombinationQuery,
     useUpdateFluteCombinationMutation,
-    useDeleteFluteCombinationMutation,
+    useGetDeletedFluteCombinationQuery,
+    useDeleteSoftFluteCombinationMutation,
+    useDeleteHardFluteCombinationMutation,
+    useRestoreFluteCombinationMutation,
 } = FluteCombinationApiSlice;

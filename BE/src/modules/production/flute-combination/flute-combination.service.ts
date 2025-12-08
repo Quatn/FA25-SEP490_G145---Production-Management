@@ -78,6 +78,31 @@ export class FluteCombinationService {
     return await this.fcModel.find();
   }
 
+  async findDeleted(page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const filter = { isDeleted: true };
+
+    const [data, totalItems] = await Promise.all([
+      this.fcModel
+        .find(filter)
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.fcModel.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil((totalItems || 0) / limit);
+    return {
+      data,
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
+
   async findOne(id: string) {
     const doc = await this.fcModel.findById(id) as FluteCombinationDocument;
     if (!doc) throw new NotFoundException('Flute combination not found');
@@ -137,15 +162,25 @@ export class FluteCombinationService {
   }
 
   async restore(id: string) {
-    const doc = await this.fcModel.findById(id) as SoftFluteCombination;
+    const doc = await this.fcModel.findOne({
+      _id: id,
+      isDeleted: true
+    }) as SoftFluteCombination;
     if (!doc) throw new NotFoundException('Flute combination not found');
     await doc.restore();
     return { success: true };
   }
 
   async removeHard(id: string) {
-    const result = await this.fcModel.findByIdAndDelete(id);
-    if (!result) throw new NotFoundException('Flute combination not found');
+    const result = await this.fcModel.findOneAndDelete({
+      _id: id,
+      isDeleted: true
+    });
+
+    if (!result) {
+      throw new NotFoundException('Flute combination not found or not in trash');
+    }
+
     return { success: true };
   }
 }

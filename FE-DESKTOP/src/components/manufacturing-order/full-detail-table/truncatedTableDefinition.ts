@@ -1,8 +1,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 import type { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import check from "check-types";
-import type { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
-import { PrintColor } from "@/types/PrintColor";
 import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";
 import { getDataTableColumnHelper } from "@/components/ui/data-table/utils/getDataTableColumnHelper";
 import { DataTableCellType } from "@/components/ui/data-table/Cell";
@@ -11,50 +9,16 @@ import { createListCollection } from "@chakra-ui/react";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import ManufacturingOrderTableActionColumn from "./ActionColumn";
-import { FluteCombination } from "@/types/FluteCombination";
-import { LEGACY_OrderStatus } from "@/types/enums/LEGACY_OrderStatus";
+import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
+import { manufacturingOrderComponentUtils as utils } from "../utils"
 
-const getPopulatedPoi = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem)) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated")
-  return mo.purchaseOrderItem
-}
-
-const getPopulatedSubPo = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem) || check.string(mo.purchaseOrderItem.subPurchaseOrder)
-  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder");
-  return mo.purchaseOrderItem.subPurchaseOrder
-}
-
-const getPopulatedPo = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder)
-  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder -> purchaseOrder");
-  return mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder
-}
-
-const getPopulatedCustomer = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder)
-    || check.string(mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder?.customer)
-  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder -> purchaseOrder -> customer");
-  return mo.purchaseOrderItem.subPurchaseOrder?.purchaseOrder?.customer
-}
-
-const getPopulatedWare = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem)
-    || check.string(mo.purchaseOrderItem.ware)
-  ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> ware");
-  return mo.purchaseOrderItem.ware
-}
+const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, getOrderStatus, OrderStatusNameMap } = utils
 
 export type TruncatedManufacturingOrderTableData = {
   _id: string,
   code: string,
   manufacturingDirective: ManufacturingOrderDirectives | null,
   customerCode: string,
-  overallStatus: LEGACY_OrderStatus,
   wareCode: string,
   purchaseOrderCode: string,
   fluteCombinationCode: string,
@@ -71,14 +35,19 @@ export type TruncatedManufacturingOrderTableData = {
   corrugatorLine: CorrugatorLine,
   corrugatorLineAdjustment: CorrugatorLine | null,
   wareManufacturingProcessType: Omit<WareFinishingProcessType, "createdAt" | "updatedAt">,
+  // Refers to ware finishing processes, this is to display the processes listed on the ware, not the actual created order manufacturing processes. Use `processes` provided by getOrder() for that.
   finishingProcesses: Omit<WareFinishingProcessType, "createdAt" | "updatedAt">[],
   wareNote: string,
   note: string,
-  getOrder: (id: string) => Serialized<ManufacturingOrder> | undefined,
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined,
   purchaseOrderItemId: string,
+  orderStatusDisplay: string,
 }
 
-export const convertSerializedMOToTruncatedManufacturingOrderTableData = (mo: Serialized<ManufacturingOrder>, getOrder: (id: string) => Serialized<ManufacturingOrder> | undefined): TruncatedManufacturingOrderTableData => {
+export const convertSerializedMOToTruncatedManufacturingOrderTableData = (
+  mo: Serialized<ManufacturingOrder>,
+  processes: Serialized<OrderFinishingProcess>[],
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined): TruncatedManufacturingOrderTableData => {
   const customer = getPopulatedCustomer(mo)
   const ware = getPopulatedWare(mo)
   const subPo = getPopulatedSubPo(mo)
@@ -103,12 +72,13 @@ export const convertSerializedMOToTruncatedManufacturingOrderTableData = (mo: Se
     )
   }
 
+  const orderStatus = getOrderStatus(mo, processes)
+
   return {
     _id: mo._id,
     code: mo.code,
     manufacturingDirective: mo.manufacturingDirective ?? null,
     customerCode: customer?.code ?? "",
-    overallStatus: mo.overallStatus,
     wareCode: ware?.code ?? "",
     purchaseOrderCode: po?.code ?? "",
     fluteCombinationCode: check.string(ware?.fluteCombination) ? ware.fluteCombination : ware?.fluteCombination.code ?? "",
@@ -130,19 +100,11 @@ export const convertSerializedMOToTruncatedManufacturingOrderTableData = (mo: Se
     note: mo.note,
     getOrder,
     purchaseOrderItemId: poi._id,
+    orderStatusDisplay: orderStatus ? OrderStatusNameMap[orderStatus] : ""
   }
 }
 
 const columnHelper = getDataTableColumnHelper<TruncatedManufacturingOrderTableData>()
-
-const orderStatusNameMap: Record<LEGACY_OrderStatus, string> = {
-  NOTSTARTED: "Chưa bắt đầu",
-  RUNNING: "Đang chạy",
-  COMPLETED: "Đã hoàn thành",
-  OVERCOMPLETED: "Đã hoàn thành",
-  PAUSED: "Tạm dừng",
-  CANCELLED: "Đã hủy",
-}
 
 const manufacturingDirectives: { label: string, value: string }[] = [
   { label: "Hủy", value: ManufacturingOrderDirectives.Cancel },
@@ -188,7 +150,7 @@ export const truncatedManufacturingOrderTableMergedHeaders = [
   ["customerCode", "1_customerCode_customerCode"],
   ["wareCode", "1_wareCode_wareCode"],
   ["purchaseOrderCode", "1_purchaseOrderCode_purchaseOrderCode"],
-  ["overallStatus", "1_overallStatus_overallStatus"],
+  ["orderStatusDisplay", "1_orderStatusDisplay_orderStatusDisplay"],
   ["fluteCombinationCode", "1_fluteCombination_fluteCombination"],
   ["wareManufacturingProcessType", "1_wareManufacturingProcessType_wareManufacturingProcessType"],
   ["fluteCombinationCode", "1_fluteCombinationCode_fluteCombinationCode"],
@@ -237,7 +199,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     accessorKey: "purchaseOrderCode",
     header: "Đơn hàng",
     enablePinning: true,
-    cellType: DataTableCellType.Readonly,
+    cellType: DataTableCellType.Highlight,
     ...colSize.md,
   }),
 
@@ -251,10 +213,8 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
   }),
 
   columnHelper.defineDataTableAccessorColumn({
-    id: "overallStatus",
-    accessorFn: (tmo) => {
-      return orderStatusNameMap[tmo.overallStatus]
-    },
+    id: "orderStatusDisplay",
+    accessorKey: "orderStatusDisplay",
     header: "Trạng thái chạy",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
@@ -342,7 +302,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
         accessorKey: "orderDate",
         header: "Nhận đơn",
         enablePinning: true,
-        cellType: DataTableCellType.Date,
+        cellType: DataTableCellType.Readonly,
         ...colSize.md,
       }),
       columnHelper.defineDataTableAccessorColumn({
@@ -350,17 +310,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
         accessorKey: "deliveryDate",
         header: "Giao đơn",
         enablePinning: true,
-        cellType: DataTableCellType.Date,
-        ...colSize.md,
-      }),
-      columnHelper.defineDataTableAccessorColumn({
-        id: "manufacturingDate",
-        accessorFn: (tmo) => {
-          return tmo.manufacturingDateAdjustment ?? tmo.manufacturingDate
-        },
-        header: "Ngày SX",
-        enablePinning: true,
-        cellType: DataTableCellType.Date,
+        cellType: DataTableCellType.Readonly,
         ...colSize.md,
       }),
     ]
@@ -372,7 +322,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     header: "Ghi chú cố định",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
-    ...colSize.md,
+    ...colSize.lg,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
@@ -381,7 +331,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     header: "Ghi chú tạm thời",
     enablePinning: true,
     cellType: DataTableCellType.Text,
-    ...colSize.md,
+    ...colSize.lg,
   }),
 
   columnHelper.defineDataTableAccessorColumn({
