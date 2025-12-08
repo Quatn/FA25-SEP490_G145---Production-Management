@@ -1,20 +1,11 @@
-// SubPOSelectorModal.tsx (modified to use API)
+// SubPOSelectorModal.tsx
 "use client";
 
 import React, { useMemo, useState } from "react";
 import { Button, Card, Row, Col, Badge, Collapse, Form } from "react-bootstrap";
 import { useGetProductsQuery } from "@/service/api/productApiSlice";
 
-type ItemCode = {
-  id?: string | number;
-  product_code?: string;
-  wave_type?: string;
-  length?: number;
-  width_panel_flap?: number;
-  height?: number;
-  paper_size?: number;
-  [k: string]: any;
-};
+type ItemCode = { [k: string]: any };
 
 type ProductCard = {
   _id?: string;
@@ -27,7 +18,7 @@ type ProductCard = {
   quantity?: number;
   product_type?: string;
   customer?: any;
-  wares?: any[]; // populated ware objects
+  wares?: any[];
 };
 
 type Props = {
@@ -44,16 +35,9 @@ type Props = {
 };
 
 const SUBPO_STATUSES = [
+  { value: "DRAFT", label: "Draft" },
   { value: "PENDINGAPPROVAL", label: "Pending approval" },
   { value: "APPROVED", label: "Approved" },
-  { value: "SCHEDULED", label: "Scheduled" },
-  { value: "CANCELLED", label: "Cancelled" },
-  { value: "INPRODUCTION", label: "In production" },
-  { value: "PAUSED", label: "Paused" },
-  { value: "PARTIALLYCOMPLETED", label: "Partially completed" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "INDELIVERY", label: "In delivery" },
-  { value: "DELIVERED", label: "Delivered" },
 ];
 
 const todayIso = () => {
@@ -90,7 +74,6 @@ const SubPOSelectorModal: React.FC<Props> = ({
     limit: 100,
     search: "",
   });
-  // product service returns { data, total, page, limit }
   const products: ProductCard[] =
     (productsResp?.data ?? productsResp?.data?.data ?? productsResp?.data) ||
     [];
@@ -130,7 +113,7 @@ const SubPOSelectorModal: React.FC<Props> = ({
       if (next[id] && !meta[id]) {
         setMeta((m) => ({
           ...m,
-          [id]: { deliveryDate: todayIso(), status: "PENDINGAPPROVAL" },
+          [id]: { deliveryDate: todayIso(), status: "DRAFT" },
         }));
       }
       return next;
@@ -144,7 +127,7 @@ const SubPOSelectorModal: React.FC<Props> = ({
     setMeta((m) => ({
       ...m,
       [id]: {
-        ...(m[id] ?? { deliveryDate: todayIso(), status: "PENDINGAPPROVAL" }),
+        ...(m[id] ?? { deliveryDate: todayIso(), status: "DRAFT" }),
         ...(patch ?? {}),
       },
     }));
@@ -156,7 +139,7 @@ const SubPOSelectorModal: React.FC<Props> = ({
       .map((p) => ({
         productId: p._id ?? (p as any).id,
         deliveryDate: meta[p._id ?? (p as any).id]?.deliveryDate ?? todayIso(),
-        status: meta[p._id ?? (p as any).id]?.status ?? "PENDINGAPPROVAL",
+        status: meta[p._id ?? (p as any).id]?.status ?? "DRAFT",
       }));
     onConfirm(selected);
     onHide();
@@ -208,7 +191,7 @@ const SubPOSelectorModal: React.FC<Props> = ({
                   const isSelected = !!selectedIds[id];
                   const m = meta[id] ?? {
                     deliveryDate: todayIso(),
-                    status: "PENDINGAPPROVAL",
+                    status: "DRAFT",
                   };
                   return (
                     <Card
@@ -264,7 +247,13 @@ const SubPOSelectorModal: React.FC<Props> = ({
                               <Button
                                 variant="outline-secondary"
                                 size="sm"
-                                onClick={() => toggleCollapse(id)}
+                                onClick={() =>
+                                  setOpenIds((prev) =>
+                                    prev.includes(id)
+                                      ? prev.filter((x) => x !== id)
+                                      : [...prev, id]
+                                  )
+                                }
                               >
                                 Hiển thị mã hàng ({(product.wares || []).length}
                                 ){" "}
