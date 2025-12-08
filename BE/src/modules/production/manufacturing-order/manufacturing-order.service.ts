@@ -357,7 +357,7 @@ export class ManufacturingOrderService {
         const processes: OrderFinishingProcess[] = ware.finishingProcesses.map(
           (type, index) => {
             return {
-              code: `${mo.code}-${mo._id.toString()}-${index + 1}`,
+              code: `${mo.code}-${index + 1}`,
               manufacturingOrder: mo._id,
               wareFinishingProcessType: type,
               sequenceNumber: index + 1,
@@ -567,9 +567,12 @@ export class ManufacturingOrderService {
     };
   }
 
-  async deleteOne(
-    id: mongoose.Types.ObjectId,
-  ): Promise<DeleteResult<{ code: string }>> {
+  async deleteOne(id: mongoose.Types.ObjectId): Promise<
+    DeleteResult<{
+      code: string;
+      orderProcessDeleteResult: DeleteResult;
+    }>
+  > {
     const doc = (await this.manufacturingOrderModel.findById(
       id,
     )) as DocWithSoftDelete;
@@ -577,14 +580,25 @@ export class ManufacturingOrderService {
     const code = doc.code;
     await doc.softDelete();
 
-    const res = await this.orderFinishingProcessModel.updateMany(
+    const processDeleteCount =
+      await this.orderFinishingProcessModel.countDocuments({
+        manufacturingOrder: id,
+      });
+    const processDeleteRes = await this.orderFinishingProcessModel.updateMany(
       { manufacturingOrder: id },
       { $set: { isDeleted: true } },
     );
+
     return {
       deletedAmount: 1,
       requestedAmount: 1,
-      echo: { code },
+      echo: {
+        code,
+        orderProcessDeleteResult: {
+          requestedAmount: processDeleteCount,
+          deletedAmount: processDeleteRes.upsertedCount,
+        },
+      },
     };
   }
 

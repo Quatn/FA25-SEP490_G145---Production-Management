@@ -5,11 +5,7 @@ import { Input, InputGroup } from "@chakra-ui/react";
 import { ChangeEvent, useEffect, useState } from "react";
 import { LuSearch } from "react-icons/lu";
 
-export default function ManufacturingOrderSearchBar() {
-  // const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
-  // const dispatch = useDispatch();
-  // const search = useSelector(s => s.search);
-
+export default function ManufacturingOrderCorrugatorOperatePageSearchBar() {
   const dispatch = useDataTableDispatch()
   const search = useDataTableSelector(s => s.query)
   const [localSearch, setLocalSearch] = useState(search);
