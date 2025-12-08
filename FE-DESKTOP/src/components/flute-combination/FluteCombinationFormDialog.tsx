@@ -39,6 +39,7 @@ const FluteCombinationFormDialog: React.FC<Props> = ({ isOpen, onClose, initialD
         switch (field) {
             case "code":
                 if (!value.trim()) errorMsg = "Mã không được để trống";
+                if (!value.trim().match("^[A-Z0-9-]{1,10}$")) errorMsg = "Mã tổ hợp sóng chỉ cho phép chứa từ 1 đến 10 chữ cái in hoa và số"
                 break;
         }
 
@@ -86,7 +87,9 @@ const FluteCombinationFormDialog: React.FC<Props> = ({ isOpen, onClose, initialD
                 <Dialog.Positioner>
                     <Dialog.Content>
                         <Dialog.Header>
-                            <Dialog.Title>{!initialData ? "Thêm Loại Sóng" : "Sửa Loại Sóng"}</Dialog.Title>
+                            <Dialog.Title>
+                                {!initialData ? "Thêm Loại Sóng" : "Sửa Loại Sóng"}
+                            </Dialog.Title>
                         </Dialog.Header>
 
                         <Dialog.Body>
@@ -103,7 +106,12 @@ const FluteCombinationFormDialog: React.FC<Props> = ({ isOpen, onClose, initialD
                                         required
                                         disabled={!!initialData}
                                         onChange={(e) => handleChange("code", e.target.value.toUpperCase())} />
-                                    <Box minH="20px" mt="1">{errors.code && <Field.ErrorText>{errors.code}</Field.ErrorText>}</Box>
+                                    <Box minH="20px" mt="1">
+                                        {errors.code &&
+                                            <Field.ErrorText>
+                                                {errors.code}
+                                            </Field.ErrorText>}
+                                    </Box>
                                 </Field.Root>
 
                                 <Field.Root invalid={item.flutes.length < 1}>
@@ -145,12 +153,18 @@ const FluteCombinationFormDialog: React.FC<Props> = ({ isOpen, onClose, initialD
 
                                 <Field.Root orientation="vertical">
                                     <Field.Label fontSize="lg">Mô tả</Field.Label>
-                                    <Input size="lg" value={item.description} onChange={(e) => handleChange("description", e.target.value)} />
+                                    <Input
+                                        size="lg"
+                                        value={item.description}
+                                        onChange={(e) => handleChange("description", e.target.value)} />
                                 </Field.Root>
 
                                 <Field.Root orientation="vertical">
                                     <Field.Label fontSize="lg">Ghi chú</Field.Label>
-                                    <Input size="lg" value={item.note} onChange={(e) => handleChange("note", e.target.value)} />
+                                    <Input
+                                        size="lg"
+                                        value={item.note}
+                                        onChange={(e) => handleChange("note", e.target.value)} />
                                 </Field.Root>
 
                             </Flex>

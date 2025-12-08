@@ -10,7 +10,13 @@ interface Props {
 }
 
 const FluteCombinationAlertDialog: React.FC<Props> = ({ isOpen, onClose, initialData, onDelete }) => {
-    const [item, setItem] = useState<FluteCombination>({ _id: "", code: "", flutes: [], description: "", note: "", });
+    const [item, setItem] = useState<FluteCombination>({
+        _id: "",
+        code: "",
+        flutes: [],
+        description: "",
+        note: "",
+    });
 
     const handleSubmit = () => {
         onDelete(item);

@@ -1,4 +1,4 @@
-import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
+import { Table, Group, Button, Icon } from "@chakra-ui/react";
 import { FaEdit, FaEye } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
 import { FluteCombination } from "@/types/FluteCombination";

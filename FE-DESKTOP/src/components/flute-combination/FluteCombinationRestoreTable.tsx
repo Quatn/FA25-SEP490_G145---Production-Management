@@ -1,6 +1,5 @@
-import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
-import { FaEdit, FaEye, FaTrashRestore } from "react-icons/fa";
-import { FaTrashCan } from "react-icons/fa6";
+import { Table, Group, Button, Icon } from "@chakra-ui/react";
+import { FaEye } from "react-icons/fa";
 import { FluteCombination } from "@/types/FluteCombination";
 import { TbRestore } from "react-icons/tb";
 import React from "react";
@@ -10,11 +9,10 @@ interface Props {
     limit: number;
     items: FluteCombination[];
     onRestore: (item: FluteCombination) => void;
-    onDelete: (item: FluteCombination) => void;
     onDetail: (item: FluteCombination) => void;
 }
 
-const FluteCombinationRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, onDelete, onDetail }) => {
+const FluteCombinationRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, onDetail }) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
@@ -70,16 +68,6 @@ const FluteCombinationRestoreTable: React.FC<Props> = ({ page, limit, items, onR
                                             <TbRestore />
                                         </Icon>
                                         Khôi phục
-                                    </Button>
-                                    <Button
-                                        variant="surface"
-                                        colorPalette="red"
-                                        onClick={() => onDelete(item)}
-                                    >
-                                        <Icon>
-                                            <FaTrashCan />
-                                        </Icon>
-                                        Xóa vĩnh viễn
                                     </Button>
                                 </Group>
                             </Table.Cell>

@@ -1,8 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsOptional, IsString, Length } from 'class-validator';
+import { IsArray, IsOptional, IsString, Length, Matches } from 'class-validator';
 export class CreateFluteCombinationDto {
     @ApiProperty({ example: '3B', description: 'Unique code of the flute combination' })
     @IsString()
+    @Matches(/^[A-Z0-9-]+$/, {
+        message: 'Code can only contain letters, numbers and hyphens'
+    })
     @Length(1, 10, { message: 'Code must be between 1 and 10 characters' })
     code: string;
 

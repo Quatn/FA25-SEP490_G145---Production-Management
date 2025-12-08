@@ -9,7 +9,13 @@ interface Props {
 }
 
 const FluteCombinationDetailDialog: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
-    const [item, setItem] = useState<FluteCombination>({ _id: "", code: "", flutes: [], description: "", note: "", });
+    const [item, setItem] = useState<FluteCombination>({
+        _id: "",
+        code: "",
+        flutes: [],
+        description: "",
+        note: "",
+    });
 
     useEffect(() => {
         if (isOpen) {
