@@ -1,4 +1,5 @@
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
+import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 import { ManufacturingOrderOperativeStatus } from "@/types/enums/ManufacturingOrderOperativeStatus";
@@ -96,6 +97,11 @@ const corrugatorProcessStatusNameMap: Record<CorrugatorProcessStatus, string> = 
   OVERCOMPLETED: "Hoàn thành",
 }
 
+const corrugatorLineNameMap: Record<CorrugatorLine, string> = {
+  LINE5: "Dàn 5",
+  LINE7: "Dàn 7",
+}
+
 export const manufacturingOrderComponentUtils = {
   getPopulatedPoi,
   getPopulatedSubPo,
@@ -106,4 +112,5 @@ export const manufacturingOrderComponentUtils = {
   getOrderStatus,
   OrderApprovalStatusNameMap,
   corrugatorProcessStatusNameMap,
+  corrugatorLineNameMap,
 }

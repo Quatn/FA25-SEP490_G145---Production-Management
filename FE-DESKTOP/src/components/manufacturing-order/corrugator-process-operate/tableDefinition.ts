@@ -34,6 +34,8 @@ export type ManufacturingOrderCorrugatorOperatePageTableData = {
   manufacturingDateAdjustment: Date | null,
   getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined,
   purchaseOrderItemId: string,
+  initialManufacturedAmount: number,
+  numberOfBlanks: number,
 }
 
 export const convertSerializedMOToManufacturingOrderCorrugatorOperatePageTableData = (
@@ -77,6 +79,8 @@ export const convertSerializedMOToManufacturingOrderCorrugatorOperatePageTableDa
     manufacturingDateAdjustment: (!check.null(mo.manufacturingDateAdjustment) && check.date(new Date(mo.manufacturingDateAdjustment ?? ""))) ? new Date(mo.manufacturingDateAdjustment) : null,
     getOrder,
     purchaseOrderItemId: poi._id,
+    initialManufacturedAmount: mo.corrugatorProcess.manufacturedAmount,
+    numberOfBlanks: mo.numberOfBlanks,
   }
 }
 
@@ -123,8 +127,8 @@ const colSize = {
 
 export const manufacturingOrderCorrugatorOperatePageTableMergedHeaders = [
   ["manufacturingDirective", "1_manufacturingDirective_manufacturingDirective"],
-  ["code", "1_code_code"],
   ["corrugatorProcessStatus", "1_corrugatorProcessStatus_corrugatorProcessStatus"],
+  ["code", "1_code_code"],
   ["customerCode", "1_customerCode_customerCode"],
   ["wareCode", "1_wareCode_wareCode"],
   ["purchaseOrderCode", "1_purchaseOrderCode_purchaseOrderCode"],
@@ -133,7 +137,7 @@ export const manufacturingOrderCorrugatorOperatePageTableMergedHeaders = [
   ["wareManufacturingProcessType", "1_wareManufacturingProcessType_wareManufacturingProcessType"],
   ["fluteCombinationCode", "1_fluteCombinationCode_fluteCombinationCode"],
   ["inventory", "1_inventory_inventory"],
-  ["amount", "1_amount_amount"],
+  ["numberOfBlanks", "1_numberOfBlanks_numberOfBlanks"],
   ["manufacturedAmount", "1_manufacturedAmount_manufacturedAmount"],
   ["wareNote", "1_wareNote_wareNote"],
   ["note", "1_note_note"],
@@ -205,9 +209,9 @@ export const manufacturingOrderCorrugatorOperatePageTableColumns: (ColumnDef<Man
   }),
 
   columnHelper.defineDataTableAccessorColumn({
-    id: "amount",
-    accessorKey: "amount",
-    header: "Số lượng",
+    id: "numberOfBlanks",
+    accessorKey: "numberOfBlanks",
+    header: "Số lượng phôi",
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
     ...colSize.md,

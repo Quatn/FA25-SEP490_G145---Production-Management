@@ -7,7 +7,7 @@ import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { useGetFullDetailManufacturingOrdersQuery, useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice";
 import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
-import { ActionBar, Box, BoxProps, Button, Center, Kbd, Portal, Spinner, Stack, Table, TableRootProps, Text } from "@chakra-ui/react";
+import { ActionBar, Box, BoxProps, Button, Center, HStack, Kbd, Portal, Spinner, Stack, Table, TableRootProps, Text } from "@chakra-ui/react";
 import check from "check-types";
 import { useCallback, useEffect, useMemo } from "react";
 import { convertSerializedMOToManufacturingOrderCorrugatorOperatePageTableData, manufacturingOrderCorrugatorOperatePageTableColumns, ManufacturingOrderCorrugatorOperatePageTableData, manufacturingOrderCorrugatorOperatePageTableMergedHeaders } from "./tableDefinition";
@@ -17,6 +17,7 @@ import { devlog } from "@/utils/devlog";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
 import { toaster } from "@/components/ui/toaster";
 import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
+import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 
 export type ManufacturingOrderCorrugatorOperatePageTableProps = {
   rootProps?: BoxProps;
@@ -33,13 +34,21 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
   const page = useSelector(s => s.page)
   const limit = useSelector(s => s.limit)
   const query = useDataTableSelector(s => s.query)
+  const corrugatorLine = useSelector(s => s.corrugatorLine)
 
   const {
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
     refetch: refetchTable,
-  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query, corrugatorProcessStatuses: props.corrugatorProcessStatuses });
+  } = useGetFullDetailManufacturingOrdersQuery({
+    page,
+    limit,
+    query: query,
+    approvalStatuses: [ManufacturingOrderApprovalStatus.Approved],
+    corrugatorLines: [corrugatorLine],
+    corrugatorProcessStatuses: props.corrugatorProcessStatuses,
+  });
 
   const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
 
@@ -112,7 +121,7 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
     mergedHeadersIds: manufacturingOrderCorrugatorOperatePageTableMergedHeaders,
     initialState: {
       columnPinning: {
-        left: ['manufacturingDirective', "code"],
+        left: ['manufacturingDirective', "corrugatorProcessStatus", "code"],
         right: ['actions-column'],
       },
     },
@@ -148,40 +157,66 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
   const editedItemsNum = tableData.filter(row => row.isEdited).length
 
   const handleUpdateOrders = () => {
+    // TODO: Handle parse error
+    const ordersToUpdate = tableData.filter((row) => row.isEdited).map(o => ({ ...o, manufacturedAmount: parseInt(o.manufacturedAmount + "") }))
     const dto: UpdateManyManufacturingOrdersRequestDto = {
-      orders: tableData.filter((row) => row.isEdited).map((order) => ({
+      orders: ordersToUpdate.map((order) => ({
         id: order._id,
         purchaseOrderItemId: order.purchaseOrderItemId,
         corrugatorProcess: {
           manufacturedAmount: order.manufacturedAmount,
           note: order.corrugatorProcess.note,
-          status: order.corrugatorProcess.status,
+          status: order.corrugatorProcessStatus,
         },
       }))
     }
 
-    updateOrders(dto).unwrap().then((res) => {
-      if (check.greaterOrEqual(res.data?.patchedAmount as number, res.data?.patchedAmount as number)) {
-        toaster.success({
-          title: "Success",
-          description: "All orders updated successfully",
+    const ordersToSetStatusToRunning = ordersToUpdate
+      .filter(o => check.in(o.corrugatorProcess?.status, [CorrugatorProcessStatus.NOTSTARTED, CorrugatorProcessStatus.PAUSED])
+        && check.greater(o.manufacturedAmount, o.initialManufacturedAmount))
+      .map(o => o.code)
+
+    const ordersToSetStatusToCompleted = ordersToUpdate
+      .filter(o => !check.in(o.corrugatorProcess?.status, [CorrugatorProcessStatus.COMPLETED, CorrugatorProcessStatus.CANCELLED, CorrugatorProcessStatus.OVERCOMPLETED])
+        && check.greaterOrEqual(o.manufacturedAmount, o.numberOfBlanks))
+      .map(o => o.code)
+
+    let askText = `Lưu tất cả ${editedItemsNum} lệnh?`
+
+    if (ordersToSetStatusToRunning.length) {
+      askText = askText.concat(` Công đoạn sóng của lệnh ${ordersToSetStatusToRunning.join(", ")} sẽ được chuyển sang trạng thái chạy.`)
+    }
+
+    if (ordersToSetStatusToCompleted.length) {
+      askText = askText.concat(` Công đoạn sóng của lệnh ${ordersToSetStatusToCompleted.join(", ")} sẽ được chuyển sang trạng thái hoàn thành.`)
+    }
+
+    dispatch({ type: "SET_PREPARED_SUBMIT_ASK_TEXT", payload: askText })
+    dispatch({
+      type: "SET_PREPARED_SUBMIT_FUNCTION", payload: () =>
+        updateOrders(dto).unwrap().then((res) => {
+          if (check.greaterOrEqual(res.data?.patchedAmount as number, res.data?.patchedAmount as number)) {
+            toaster.success({
+              title: "Success",
+              description: "All orders updated successfully",
+            })
+          }
+          else if (check.greaterOrEqual(res.data?.patchedAmount as number, 1)) {
+            toaster.warning({
+              title: "Some orders was not updated",
+            })
+          }
+          else {
+            toaster.warning({
+              title: "No orders updated",
+            })
+          }
+        }).catch(error => {
+          toaster.warning({
+            title: "Error updating order",
+            description: tryGetApiErrorMsg(error),
+          })
         })
-      }
-      else if (check.greaterOrEqual(res.data?.patchedAmount as number, 1)) {
-        toaster.warning({
-          title: "Some orders was not updated",
-        })
-      }
-      else {
-        toaster.warning({
-          title: "No orders updated",
-        })
-      }
-    }).catch(error => {
-      toaster.warning({
-        title: "Error updating order",
-        description: tryGetApiErrorMsg(error),
-      })
     })
   }
 
@@ -196,27 +231,17 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
         {tableComponent}
       </Table.ScrollArea>
 
-      <ActionBar.Root open={editedItemsNum > 0}>
-        <Portal>
-          <ActionBar.Positioner>
-            <ActionBar.Content zIndex={9999}>
-              <ActionBar.SelectionTrigger>
-                Đã sửa {editedItemsNum} lệnh
-              </ActionBar.SelectionTrigger>
-              <ActionBar.Separator />
-              <Button colorPalette={"blue"} size="sm" onClick={() => {
-                dispatch({ type: "SET_PREPARED_SUBMIT_ASK_TEXT", payload: `Lưu tất cả ${editedItemsNum} lệnh?` })
-                dispatch({ type: "SET_PREPARED_SUBMIT_FUNCTION", payload: handleUpdateOrders })
-              }}>
-                Lưu tất cả
-              </Button>
-              <Button colorPalette={"yellow"} size="sm" onClick={handleResetTable}>
-                Hoàn tác <Kbd>⌫</Kbd>
-              </Button>
-            </ActionBar.Content>
-          </ActionBar.Positioner>
-        </Portal>
-      </ActionBar.Root>
+      {editedItemsNum > 0 && <Stack>
+        <Text>Đã sửa {editedItemsNum} lệnh</Text>
+        <HStack>
+          <Button colorPalette={"blue"} size="sm" onClick={handleUpdateOrders}>
+            Lưu tất cả
+          </Button>
+          <Button colorPalette={"yellow"} size="sm" onClick={handleResetTable}>
+            Hoàn tác
+          </Button>
+        </HStack>
+      </Stack>}
     </Box >
   );
 }

@@ -47,6 +47,20 @@ export const buildFullDetailsMOFilterFromDto = (
       ],
     });
 
+  if (check.array(query.approvalStatuses))
+    filter.$and.push({
+      approvalStatus: {
+        $in: query.approvalStatuses,
+      },
+    });
+
+  if (check.array(query.corrugatorLines))
+    filter.$and.push({
+      corrugatorLine: {
+        $in: query.corrugatorLines,
+      },
+    });
+
   if (check.array(query.corrugatorProcessStatuses))
     filter.$and.push({
       "corrugatorProcess.status": {

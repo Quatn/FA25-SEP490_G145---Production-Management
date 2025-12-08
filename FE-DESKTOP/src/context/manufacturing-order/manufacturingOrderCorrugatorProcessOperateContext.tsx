@@ -1,4 +1,5 @@
 "use client";
+import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import { Store, useStore } from "@tanstack/react-store";
 import React, { createContext, useContext } from "react";
 
@@ -9,6 +10,7 @@ interface StoreState {
   search: string;
   hoveredRowId: string | null;
   selectedOrderId: string | null;
+  corrugatorLine: CorrugatorLine;
   preparedSubmitFunction?: () => void;
   preparedSubmitAskText: string;
 }
@@ -20,6 +22,7 @@ type StoreAction =
   | { type: "SET_SEARCH"; payload: string }
   | { type: "SET_HOVERED_ROW_ID"; payload: string | null }
   | { type: "SET_SELECTED_ORDER_ID"; payload: string | null }
+  | { type: "SET_SELECTED_CORRUGATOR_LINE"; payload: CorrugatorLine }
   | { type: "SET_PREPARED_SUBMIT_FUNCTION"; payload: (() => void) | undefined }
   | { type: "SET_PREPARED_SUBMIT_ASK_TEXT"; payload: string }
   | { type: "RESET" };
@@ -31,6 +34,7 @@ const initialState: StoreState = {
   search: "",
   hoveredRowId: null,
   selectedOrderId: null,
+  corrugatorLine: CorrugatorLine.L5,
   preparedSubmitAskText: "",
 };
 
@@ -48,6 +52,8 @@ function reducer(state: StoreState, action: StoreAction): StoreState {
       return { ...state, hoveredRowId: action.payload };
     case "SET_SELECTED_ORDER_ID":
       return { ...state, selectedOrderId: action.payload };
+    case "SET_SELECTED_CORRUGATOR_LINE":
+      return { ...state, corrugatorLine: action.payload };
     case "SET_PREPARED_SUBMIT_FUNCTION":
       return { ...state, preparedSubmitFunction: action.payload }
     case "SET_PREPARED_SUBMIT_ASK_TEXT":

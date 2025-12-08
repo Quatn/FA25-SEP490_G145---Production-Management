@@ -1,6 +1,5 @@
 import { ManufacturingOrderCorrugatorOperatePageComponents } from "@/components/manufacturing-order/corrugator-process-operate/components";
 import ManufacturingOrderOrderDetailsConfirmDialog from "@/components/manufacturing-order/order-details-dialog/ConfirmDialog";
-import ManufacturingOrderDetailsDialog from "@/components/manufacturing-order/order-details-dialog/Dialog";
 import { DataTableProvider } from "@/components/ui/data-table/Provider";
 import { ManufacturingOrderCorrugatorProcessOperateProvider } from "@/context/manufacturing-order/manufacturingOrderCorrugatorProcessOperateContext";
 import { ManufacturingOrderDialogProvider } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
@@ -14,6 +13,8 @@ export default function ManufacturingOrderCorrugatorProcessOperate() {
         <Box mt={5}>
           <Heading size="2xl">Chi tiết quy trình sóng</Heading>
         </Box>
+
+        <ManufacturingOrderCorrugatorOperatePageComponents.CorrugatorLineSwitcher />
 
         <Box mt={5}>
           <Box mt={5}>
@@ -38,7 +39,7 @@ export default function ManufacturingOrderCorrugatorProcessOperate() {
           </Box>
         </Box>
 
-        <ManufacturingOrderDetailsDialog />
+        <ManufacturingOrderCorrugatorOperatePageComponents.ConfirmDialog />
         <ManufacturingOrderOrderDetailsConfirmDialog />
       </ManufacturingOrderDialogProvider>
     </ManufacturingOrderCorrugatorProcessOperateProvider>
