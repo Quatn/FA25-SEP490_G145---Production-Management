@@ -1,6 +1,7 @@
 import PaperTypeList from "@/components/paper-storage/paper-type/PaperTypeList";
-import { Box, Button, Stack, Text } from "@chakra-ui/react";
-export default function PaperSupplierHome() {
+import PaperTypeRestoreList from "@/components/paper-storage/paper-type/PaperTypeRestoreList";
+import { Box, Stack, Text } from "@chakra-ui/react";
+export default function PaperTypeRestoreHome() {
   return (
     <Box
       m={5}
@@ -11,11 +12,11 @@ export default function PaperSupplierHome() {
     >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"bold"} color={"black"}>
-          DANH SÁCH LOẠI GIẤY
+          KHÔI PHỤC LOẠI GIẤY
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>
-        <PaperTypeList/>
+        <PaperTypeRestoreList/>
       </Stack>
     </Box>
   );

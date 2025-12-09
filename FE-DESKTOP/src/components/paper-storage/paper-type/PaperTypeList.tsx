@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Text } from "@chakra-ui/react"
 import { useAddPaperTypeMutation, useGetPaperTypeQuery, useDeletePaperTypeMutation, useUpdatePaperTypeMutation } from "@/service/api/paperTypeApiSlice";
 import { useGetAllPaperColorsQuery } from "@/service/api/paperColorApiSlice";
-import { PaperColorResponse } from "@/types/PaperColor";
+import { PaperColor, PaperColorResponse } from "@/types/PaperColor";
 import { PaperType } from "@/types/PaperType";
 import { toaster } from "@/components/ui/toaster";
 import { Icon } from "@chakra-ui/react";
@@ -14,6 +14,7 @@ import PaperTypeAlertDialog from "./PaperTypeAlertDialog";
 import PaperTypeTable from "./PaperTypeTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import PaperTypeFormDialog from "./PaperTypeFormDialog";
+import PaperTypeDetailDialog from "./PaperTypeDetailDialog";
 
 const PaperTypeList: React.FC = () => {
 
@@ -40,6 +41,7 @@ const PaperTypeList: React.FC = () => {
     const totalPages = typesData?.data?.totalPages ?? 1;
 
     const [formDialogOpen, setFormDialogOpen] = useState(false);
+    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [alertDialogOpen, setAlertDialogOpen] = useState(false);
     const [selectedType, setSelectedType] = useState<PaperType | undefined>(undefined);
 
@@ -51,6 +53,12 @@ const PaperTypeList: React.FC = () => {
         setFormDialogOpen(true);
     };
 
+    const handleOpenDetailDialog = (type?: PaperType) => {
+        setSelectedType(type);
+        setDetailDialogOpen(true);
+    };
+
+
     const handleOpenAlertDialog = (type: PaperType) => {
         setSelectedType(type);
         setAlertDialogOpen(true);
@@ -58,17 +66,24 @@ const PaperTypeList: React.FC = () => {
 
     const handleCloseFormDialog = () => {
         setFormDialogOpen(false);
+        setSelectedType(undefined);
+    };
+
+    const handleCloseDetailDialog = () => {
+        setDetailDialogOpen(false);
+        setSelectedType(undefined);
     };
 
     const handleCloseAlertDialog = () => {
         setAlertDialogOpen(false);
+        setSelectedType(undefined);
     };
 
     const handleMutation = async (
         fn: Function,
         successMessage: string,
         errorMessage: string
-    ) => {
+    ): Promise<boolean> => {
         try {
             await fn();
             toaster.create({
@@ -77,6 +92,7 @@ const PaperTypeList: React.FC = () => {
                 type: "success",
                 closable: true,
             });
+            return true;
         } catch (error: any) {
 
             const msg =
@@ -87,33 +103,46 @@ const PaperTypeList: React.FC = () => {
                 type: "error",
                 closable: true,
             });
+            return false;
         }
     };
 
 
 
     const handleAddType = async (data: PaperType) => {
-        handleMutation(
-            () => addPaperType(data).unwrap(),
-            `Đã lưu loại giấy ${data.paperColor?.code}/${data.width}/${data.grammage}`,
+        const color = data.paperColor as PaperColor;
+        const payload: PaperType = {
+            paperColor: color._id as string,
+            width: data.width,
+            grammage: data.grammage,
+        }
+        return await handleMutation(
+            () => addPaperType(payload).unwrap(),
+            `Đã lưu loại giấy ${color.code}/${data.width}/${data.grammage}`,
             'Lưu thất bại',
         )
     }
 
     const handleUpdateType = async (data: PaperType) => {
-        handleMutation(
-            () => updatePaperType(data).unwrap(),
-            `Đã cập nhật loại giấy ${data.paperColor?.code}/${data.width}/${data.grammage}`,
+        const color = data.paperColor as PaperColor;
+        const payload: PaperType = {
+            paperColor: color._id as string,
+            width: data.width,
+            grammage: data.grammage,
+        }
+        return await handleMutation(
+            () => updatePaperType(payload).unwrap(),
+            `Đã cập nhật loại giấy ${color.code}/${data.width}/${data.grammage}`,
             'Cập nhật thất bại',
         )
 
     }
 
     const handleDeleteType = async (data: PaperType) => {
-
-        handleMutation(
+        const color = data.paperColor as PaperColor;
+        return await handleMutation(
             () => deletePaperType(data).unwrap(),
-            `Xóa loại giấy ${data.paperColor?.code}/${data.width}/${data.grammage}`,
+            `Xóa loại giấy ${color.code}/${data.width}/${data.grammage}`,
             'Xóa thất bại',
         )
 
@@ -151,6 +180,12 @@ const PaperTypeList: React.FC = () => {
                 onAdd={(data) => handleAddType(data)}
                 onUpdate={(data) => handleUpdateType(data)} />
 
+            <PaperTypeDetailDialog
+                isOpen={detailDialogOpen}
+                onClose={handleCloseDetailDialog}
+                initialData={selectedType}
+            />
+
             <PaperTypeAlertDialog
                 isOpen={alertDialogOpen}
                 onClose={handleCloseAlertDialog}
@@ -180,6 +215,7 @@ const PaperTypeList: React.FC = () => {
                         limit={limit}
                         types={types}
                         onEdit={handleOpenFormDialog}
+                        onDetail={handleOpenDetailDialog}
                         onDelete={handleOpenAlertDialog}
                     />
 
