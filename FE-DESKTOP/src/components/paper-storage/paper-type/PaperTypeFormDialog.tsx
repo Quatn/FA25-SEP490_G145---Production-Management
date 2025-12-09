@@ -8,8 +8,8 @@ import {
     Field,
     Flex,
     Input,
+    NumberInput,
     Portal,
-    Text,
 } from "@chakra-ui/react";
 import {
     Combobox,
@@ -22,10 +22,10 @@ import { PaperColor, PaperColorResponse } from "@/types/PaperColor";
 interface PaperTypeFormDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: PaperType;
+    initialData: PaperType | undefined;
     colorsData: PaperColorResponse[];
-    onAdd: (data: PaperType) => void;
-    onUpdate: (data: PaperType) => void;
+    onAdd: (data: PaperType) => Promise<boolean>;
+    onUpdate: (data: PaperType) => Promise<boolean>;
 }
 
 type ErrorMap = Record<string, string>;
@@ -39,8 +39,11 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
     onUpdate,
 }) => {
     const [type, setType] = useState<PaperType>({
-        paperColorId: '',
-        paperColor: { _id: '', code: '', title: '' },
+        paperColor: {
+            _id: '',
+            code: '',
+            title: '',
+        },
         width: 0,
         grammage: 0,
     });
@@ -61,8 +64,7 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
     useEffect(() => {
         if (isOpen) {
             setType({
-                _id: initialData?._id ?? undefined,
-                paperColorId: initialData?.paperColorId ?? '',
+                _id: initialData?._id,
                 paperColor: initialData?.paperColor ?? { _id: '', code: '', title: '' },
                 width: initialData?.width ?? 0,
                 grammage: initialData?.grammage ?? 0,
@@ -77,15 +79,14 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
     }, [isOpen, initialData]);
 
     const handleChange = (field: keyof PaperType, value: any) => {
-        if (field === 'paperColor' && value?.["_id"]) {
+        if (field === 'paperColor') {
             const input: PaperColor = {
                 _id: value._id,
                 code: value.code,
                 title: value.title,
             }
-            setType((prev) => ({ ...prev, paperColorId: value._id, paperColor: input }));
+            setType((prev) => ({ ...prev, paperColor: input }));
         } else setType((prev) => ({ ...prev, [field]: value }));
-
 
         let errorMsg = "";
         if (field === "paperColor" && !value) errorMsg = "Màu giấy không được để trống";
@@ -95,9 +96,18 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
         setErrors((prev) => ({ ...prev, [field]: errorMsg }));
     };
 
-    const handleSubmit = () => {
-        !!initialData ? onUpdate(type) : onAdd(type);
-        onClose();
+    const handleSubmit = async () => {
+        let isSuccess = false;
+
+        if (!!initialData) {
+            isSuccess = await onUpdate(type);
+        } else {
+            isSuccess = await onAdd(type);
+        }
+
+        if (isSuccess) {
+            onClose();
+        }
     };
 
     const initInputPaperColor = (id: string) => {
@@ -126,7 +136,7 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Màu giấy</Field.Label>
                                     <Combobox.Root
                                         collection={collection}
-                                        defaultInputValue={initInputPaperColor(type.paperColorId ?? "")}
+                                        defaultInputValue={initInputPaperColor((type.paperColor as PaperColor)._id ?? "")}
                                         onInputValueChange={(e) => filter(e.inputValue)}
                                         onValueChange={(details) => {
                                             const selectedValue = details.value[0] as string;
@@ -161,13 +171,37 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
 
                                 <Field.Root invalid={errors.width !== ""} orientation="vertical">
                                     <Field.Label fontSize="lg">Khổ giấy</Field.Label>
-                                    <Input
+                                    <NumberInput.Root
                                         size="lg"
-                                        type="number"
-                                        value={type.width}
-                                        placeholder="Nhập khổ giấy"
-                                        onChange={(e) => handleChange("width", Number(e.target.value))}
-                                    />
+                                        width="200px"
+                                        min={0}
+                                        value={String(type.width ?? 0)}
+                                        onValueChange={(details) => {
+                                            let value = details.valueAsNumber;
+
+                                            if (value == null || isNaN(value) || value < 0) {
+                                                value = 0;
+                                            }
+
+                                            handleChange("width", value);
+                                        }}
+                                    >
+                                        <NumberInput.Input
+                                            onKeyDown={(e) => {
+                                                if (e.key === "-" || e.key === "e") {
+                                                    e.preventDefault();
+                                                }
+                                            }}
+                                            onPaste={(e) => {
+                                                const text = e.clipboardData.getData("text");
+                                                if (text.includes("-")) {
+                                                    e.preventDefault();
+                                                }
+                                            }}
+                                        />
+
+                                        <NumberInput.Control />
+                                    </NumberInput.Root>
                                     <Box minH="20px" mt="1">
                                         {errors.width && <Field.ErrorText>{errors.width}</Field.ErrorText>}
                                     </Box>
@@ -175,13 +209,37 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
 
                                 <Field.Root invalid={errors.grammage !== ""} orientation="vertical">
                                     <Field.Label fontSize="lg">Định lượng</Field.Label>
-                                    <Input
+                                    <NumberInput.Root
                                         size="lg"
-                                        type="number"
-                                        value={type.grammage}
-                                        placeholder="Nhập định lượng"
-                                        onChange={(e) => handleChange("grammage", Number(e.target.value))}
-                                    />
+                                        width="200px"
+                                        min={0}
+                                        value={String(type.grammage ?? 0)}
+                                        onValueChange={(details) => {
+                                            let value = details.valueAsNumber;
+
+                                            if (value == null || isNaN(value) || value < 0) {
+                                                value = 0;
+                                            }
+
+                                            handleChange("grammage", value);
+                                        }}
+                                    >
+                                        <NumberInput.Input
+                                            onKeyDown={(e) => {
+                                                if (e.key === "-" || e.key === "e") {
+                                                    e.preventDefault();
+                                                }
+                                            }}
+                                            onPaste={(e) => {
+                                                const text = e.clipboardData.getData("text");
+                                                if (text.includes("-")) {
+                                                    e.preventDefault();
+                                                }
+                                            }}
+                                        />
+
+                                        <NumberInput.Control />
+                                    </NumberInput.Root>
                                     <Box minH="20px" mt="1">
                                         {errors.grammage && <Field.ErrorText>{errors.grammage}</Field.ErrorText>}
                                     </Box>

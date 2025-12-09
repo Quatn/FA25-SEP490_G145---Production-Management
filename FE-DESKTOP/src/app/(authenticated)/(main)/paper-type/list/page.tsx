@@ -1,6 +1,6 @@
-import PaperColorRestoreList from "@/components/paper-storage/paper-color/PaperColorRestoreList";
+import PaperTypeList from "@/components/paper-storage/paper-type/PaperTypeList";
 import { Box, Stack, Text } from "@chakra-ui/react";
-export default function PaperColorRestoreHome() {
+export default function PaperTypeHome() {
   return (
     <Box
       m={5}
@@ -11,11 +11,11 @@ export default function PaperColorRestoreHome() {
     >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"bold"} color={"black"}>
-          KHÔI PHỤC MÀU GIẤY
+          DANH SÁCH LOẠI GIẤY
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>
-        <PaperColorRestoreList/>
+        <PaperTypeList />
       </Stack>
     </Box>
   );

@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-import { Box, Button, CloseButton, Dialog, Field, Flex, Input, Portal } from "@chakra-ui/react"
+import { Button, CloseButton, Dialog, Portal } from "@chakra-ui/react"
 import { PaperType } from "@/types/PaperType";
+import { PaperColor } from "@/types/PaperColor";
 
 interface PaperTypeAlertDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: PaperType;
-    onDelete: (data: PaperType) => void;
+    initialData: PaperType | undefined;
+    onDelete: (data: PaperType) => Promise<boolean>;
 }
 
 const PaperTypeAlertDialog: React.FC<PaperTypeAlertDialogProps> = ({
@@ -16,26 +16,17 @@ const PaperTypeAlertDialog: React.FC<PaperTypeAlertDialogProps> = ({
     onDelete,
 }) => {
 
-    const [type, setType] = useState<PaperType>({
-        paperColor: { _id: '' , code: '', title: '' },
-        width: 0,
-        grammage: 0,
-    });
+    const handleSubmit = async () => {
+        let isSuccess = false;
+        if (!!initialData) {
+            isSuccess = await onDelete(initialData);
+        }
 
-    const handleSubmit = () => {
-        onDelete(type);
-        onClose();
+        if (isSuccess) {
+            onClose();
+        }
     };
 
-    useEffect(() => {
-        if (isOpen) {
-            setType(initialData ?? {
-                paperColor: { _id:'' , code: '', title: '' },
-                width: 0,
-                grammage: 0,
-            });
-        }
-    }, [isOpen, initialData]);
 
     return (
         <Dialog.Root role="alertdialog" open={isOpen} onOpenChange={onClose}>
@@ -48,7 +39,7 @@ const PaperTypeAlertDialog: React.FC<PaperTypeAlertDialogProps> = ({
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
-                                Xóa Loại Giấy {type.paperColor?.code}/{type.width}/{type.grammage}?
+                                Xóa Loại Giấy {(initialData?.paperColor as PaperColor)?.code}/{initialData?.width}/{initialData?.grammage}?
                             </p>
                         </Dialog.Body>
                         <Dialog.Footer>

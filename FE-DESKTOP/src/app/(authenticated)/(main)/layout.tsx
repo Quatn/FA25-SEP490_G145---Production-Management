@@ -150,7 +150,13 @@ const initialCollection = createTreeCollection<Node>({
           {
             id: "paper-type-list",
             name: "Paper Type List",
-            href: "/paper-type",
+            href: "/paper-type/list",
+            children: [],
+          },
+          {
+            id: "paper-type-restore-list",
+            name: "Paper Type Restore List",
+            href: "/paper-type/restore-list",
             children: [],
           },
         ],
