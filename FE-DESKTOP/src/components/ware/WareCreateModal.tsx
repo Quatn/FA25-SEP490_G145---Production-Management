@@ -1,3 +1,4 @@
+// src/components/ware/WareCreateModal.tsx
 "use client";
 
 import React from "react";
@@ -24,6 +25,7 @@ type Props = {
   manufList: any[];
   printColorList: any[];
   finishingList: any[];
+  // PAPER_LAYER_OPTIONS is now derived in parent and passed down
   PAPER_LAYER_OPTIONS: string[];
   TYPE_OF_PRINTER_OPTIONS: string[];
   addToCreateList: (
@@ -38,9 +40,11 @@ type Props = {
   creating?: boolean;
   getIdFromDoc: (doc: any) => string | undefined;
   MultiSelectInline: React.ComponentType<MultiSelectInlineProps>;
+  // new: raw data lists for more accurate labels / supplier choices
+  paperTypeList?: any[]; // raw paper type objects
+  paperSupplierList?: any[]; // raw supplier objects
 };
 
-/* TOP-LEVEL stable Label component */
 const Label: React.FC<{
   label: string;
   required?: boolean;
@@ -76,18 +80,346 @@ const WareCreateModal: React.FC<Props> = ({
   creating,
   getIdFromDoc,
   MultiSelectInline,
+  paperTypeList = [],
+  paperSupplierList = [],
 }) => {
-  // lightweight debug to help verify the parent state actually changes
+  // helper factories to keep numeric behavior consistent
+  const makeOnKeyDown =
+    (allowDecimal = false) =>
+    (e: React.KeyboardEvent) => {
+      if (e.key === "-" || e.key === "e" || e.key === "+") {
+        e.preventDefault();
+      }
+      if (!allowDecimal && e.key === ".") {
+        e.preventDefault();
+      }
+    };
+
+  const makeOnPaste =
+    (allowDecimal = false, integerOnly = false) =>
+    (e: React.ClipboardEvent<HTMLInputElement>) => {
+      const paste = e.clipboardData.getData("text");
+      const regex = allowDecimal ? /[^0-9.]/g : /[^0-9]/g;
+      if (regex.test(paste)) {
+        e.preventDefault();
+        const cleaned = paste.replace(regex, "");
+        if (!cleaned) return;
+        const el = e.currentTarget;
+        const start = el.selectionStart ?? 0;
+        const end = el.selectionEnd ?? 0;
+        const newVal = el.value.slice(0, start) + cleaned + el.value.slice(end);
+        if (integerOnly) {
+          const num = Math.floor(Number(newVal) || 0);
+          setCreateForm((p: any) => ({
+            ...(p ?? {}),
+            [el.name]: Math.max(0, num),
+          }));
+        } else {
+          const num = Number(newVal);
+          if (!Number.isNaN(num)) {
+            setCreateForm((p: any) => ({
+              ...(p ?? {}),
+              [el.name]: Math.max(0, num),
+            }));
+          }
+        }
+      }
+    };
+
+  const onWheelPreventChange = (e: React.WheelEvent<HTMLInputElement>) => {
+    (e.currentTarget as HTMLInputElement).blur();
+  };
+
+  const handleNumberChange =
+    (field: string, integerOnly = false) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = e.target.value;
+      if (raw === "") {
+        setCreateForm((p: any) => ({ ...(p ?? {}), [field]: "" }));
+        return;
+      }
+      if (integerOnly) {
+        let num = Math.floor(Number(raw) || 0);
+        if (num < 0) num = 0;
+        setCreateForm((p: any) => ({ ...(p ?? {}), [field]: num }));
+      } else {
+        const num = Number(raw);
+        if (Number.isNaN(num)) {
+          return;
+        }
+        setCreateForm((p: any) => ({
+          ...(p ?? {}),
+          [field]: num < 0 ? 0 : num,
+        }));
+      }
+    };
+
+  // helper to build friendly labels for paper-type select options
+  const labelForPaperOption = (optString: string) => {
+    // optString is like "T/1000/1000"
+    const parts = optString.split("/");
+    if (parts.length === 3) {
+      const [colorCode, width, grammage] = parts;
+      const found = (paperTypeList || []).find((pt) => {
+        const code = pt?.paperColor?.code ?? pt?.paperColor;
+        const w = String(pt?.width ?? pt?.w ?? "");
+        const g = String(pt?.grammage ?? pt?.gsm ?? "");
+        return (
+          String(code) === String(colorCode) &&
+          String(w) === String(width) &&
+          String(g) === String(grammage)
+        );
+      });
+      if (found) {
+        const title =
+          found?.paperColor?.title ?? found?.paperColor ?? colorCode;
+        return `${title} - ${width} / ${grammage}`;
+      }
+      return `${colorCode} — ${width} / ${grammage}`;
+    } else if (parts.length === 4) {
+      const [colorCode, supplierCode, width, grammage] = parts;
+      return `${colorCode}/${supplierCode} - ${width}/${grammage}`;
+    }
+    return optString;
+  };
+
+  // mapping flute key -> createForm field name
+  const fluteToField: Record<string, string> = {
+    faceLayer: "faceLayerPaperType",
+    EFlute: "EFlutePaperType",
+    EBLiner: "EBLinerLayerPaperType",
+    BFlute: "BFlutePaperType",
+    BACLiner: "BACLinerLayerPaperType",
+    ACFlute: "ACFlutePaperType",
+    backLayer: "backLayerPaperType",
+  };
+
+  // labels for flute keys
+  const fluteKeyLabel: Record<string, string> = {
+    faceLayer: "Mặt",
+    EFlute: "Sóng E",
+    EBLiner: "Lớp giữa E/B",
+    BFlute: "Sóng B",
+    BACLiner: "Lớp giữa B/A C",
+    ACFlute: "Sóng AC",
+    backLayer: "Đáy",
+  };
+
+  // helper: return selected flute definition object
+  const selectedFluteDef = React.useMemo(() => {
+    const sel = createForm?.fluteCombination ?? "";
+    if (!sel) return undefined;
+    // find by id in fluteList
+    return (fluteList || []).find((f) => {
+      try {
+        const id = getIdFromDoc(f);
+        return String(id) === String(sel) || f._id === sel || f.code === sel;
+      } catch {
+        return false;
+      }
+    });
+  }, [createForm?.fluteCombination, fluteList]);
+
+  const displayedFlutes: string[] = (
+    selectedFluteDef?.flutes && Array.isArray(selectedFluteDef.flutes)
+      ? selectedFluteDef.flutes
+      : []
+  ) as string[];
+
+  // helper to produce the base shown paper for selects when stored string may contain supplier
+  const shownBasePaper = (val: string) => {
+    if (!val) return "";
+    if (!val.includes("/")) return val;
+    const parts = val.split("/");
+    if (parts.length === 4) {
+      return `${parts[0]}/${parts[2]}/${parts[3]}`;
+    }
+    return val;
+  };
+
+  // handle flute combination change: update fluteCombination and clear/keep layer fields
+  const handleFluteChange = (newId: string) => {
+    const def = (fluteList || []).find((f) => {
+      try {
+        const id = getIdFromDoc(f);
+        return (
+          String(id) === String(newId) || f._id === newId || f.code === newId
+        );
+      } catch {
+        return false;
+      }
+    });
+
+    const newFlutes = def?.flutes ?? [];
+
+    setCreateForm((prev: any) => {
+      const next = { ...(prev ?? {}), fluteCombination: newId };
+      // for each known flute field, keep if it still exists, otherwise clear
+      Object.entries(fluteToField).forEach(([fluteKey, fieldName]) => {
+        if (!newFlutes.includes(fluteKey)) {
+          next[fieldName] = "";
+          // clear suppliers for face/back when they're removed
+          if (fluteKey === "faceLayer") next["faceLayerPaperSupplier"] = "";
+          if (fluteKey === "backLayer") next["backLayerPaperSupplier"] = "";
+        } else {
+          // keep existing value (do nothing)
+        }
+      });
+      return next;
+    });
+  };
+
+  // set face/back paper (paperOpt is base 3-part string); use functional update to avoid stale state
+  const onFacePaperChange = (paperOpt: string) => {
+    setCreateForm((prev: any) => {
+      const supplierCode = prev?.faceLayerPaperSupplier ?? "";
+      let finalVal = paperOpt;
+      if (supplierCode && supplierCode !== "") {
+        const parts = paperOpt.split("/");
+        if (parts.length === 3) {
+          finalVal = `${parts[0]}/${supplierCode}/${parts[1]}/${parts[2]}`;
+        }
+      }
+      return { ...(prev ?? {}), faceLayerPaperType: finalVal };
+    });
+  };
+
+  const onBackPaperChange = (paperOpt: string) => {
+    setCreateForm((prev: any) => {
+      const supplierCode = prev?.backLayerPaperSupplier ?? "";
+      let finalVal = paperOpt;
+      if (supplierCode && supplierCode !== "") {
+        const parts = paperOpt.split("/");
+        if (parts.length === 3) {
+          finalVal = `${parts[0]}/${supplierCode}/${parts[1]}/${parts[2]}`;
+        }
+      }
+      return { ...(prev ?? {}), backLayerPaperType: finalVal };
+    });
+  };
+
+  // supplier change: update supplier code and recompute final stored paper string from previous base
+  const onFaceSupplierChange = (supplierCode: string) => {
+    setCreateForm((prev: any) => {
+      const currentPaper = prev?.faceLayerPaperType ?? "";
+      let basePaper = currentPaper;
+      if (currentPaper && currentPaper.includes("/")) {
+        const parts = currentPaper.split("/");
+        if (parts.length === 4) {
+          basePaper = `${parts[0]}/${parts[2]}/${parts[3]}`;
+        }
+      }
+      let newFacePaper = "";
+      if (basePaper) {
+        const parts = basePaper.split("/");
+        if (parts.length === 3 && supplierCode) {
+          newFacePaper = `${parts[0]}/${supplierCode}/${parts[1]}/${parts[2]}`;
+        } else {
+          newFacePaper = basePaper;
+        }
+      } else {
+        newFacePaper = "";
+      }
+      return {
+        ...(prev ?? {}),
+        faceLayerPaperSupplier: supplierCode,
+        faceLayerPaperType: newFacePaper,
+      };
+    });
+  };
+
+  const onBackSupplierChange = (supplierCode: string) => {
+    setCreateForm((prev: any) => {
+      const currentPaper = prev?.backLayerPaperType ?? "";
+      let basePaper = currentPaper;
+      if (currentPaper && currentPaper.includes("/")) {
+        const parts = currentPaper.split("/");
+        if (parts.length === 4) {
+          basePaper = `${parts[0]}/${parts[2]}/${parts[3]}`;
+        }
+      }
+      let newBackPaper = "";
+      if (basePaper) {
+        const parts = basePaper.split("/");
+        if (parts.length === 3 && supplierCode) {
+          newBackPaper = `${parts[0]}/${supplierCode}/${parts[1]}/${parts[2]}`;
+        } else {
+          newBackPaper = basePaper;
+        }
+      } else {
+        newBackPaper = "";
+      }
+      return {
+        ...(prev ?? {}),
+        backLayerPaperSupplier: supplierCode,
+        backLayerPaperType: newBackPaper,
+      };
+    });
+  };
+
+  // submit wrapper: require that all displayed layers have value (face/back also need supplier)
+  const onSubmitWrapper = async () => {
+    const missing: string[] = [];
+
+    displayedFlutes.forEach((fluteKey) => {
+      const fieldName = fluteToField[fluteKey];
+      const label = fluteKeyLabel[fluteKey] ?? fluteKey;
+      const val = (createForm && createForm[fieldName]) || "";
+      if (!val || String(val).trim() === "") {
+        missing.push(label);
+      } else if (fluteKey === "faceLayer") {
+        const supp = createForm?.faceLayerPaperSupplier ?? "";
+        if (!supp || String(supp).trim() === "") {
+          missing.push(`${label} - nhà cung cấp`);
+        }
+      } else if (fluteKey === "backLayer") {
+        const supp = createForm?.backLayerPaperSupplier ?? "";
+        if (!supp || String(supp).trim() === "") {
+          missing.push(`${label} - nhà cung cấp`);
+        }
+      }
+    });
+
+    if (missing.length > 0) {
+      alert(`Vui lòng chọn giá trị cho: ${missing.map((m) => m).join(", ")}`);
+      return;
+    }
+
+    try {
+      await handleCreateSubmit();
+    } catch (err) {
+      // parent's handler will handle error messages
+      console.error(err);
+    }
+  };
+
+  // debug
   React.useEffect(() => {
     try {
       console.debug(
-        "WareCreateModal createForm.printColors:",
-        createForm?.printColors
+        "Displayed flutes:",
+        displayedFlutes,
+        "face/back stored:",
+        createForm?.faceLayerPaperType,
+        createForm?.faceLayerPaperSupplier,
+        createForm?.backLayerPaperType,
+        createForm?.backLayerPaperSupplier
       );
     } catch {}
-  }, [createForm?.printColors]);
+  }, [
+    JSON.stringify(displayedFlutes),
+    createForm?.faceLayerPaperType,
+    createForm?.faceLayerPaperSupplier,
+    createForm?.backLayerPaperType,
+    createForm?.backLayerPaperSupplier,
+  ]);
 
   if (!show) return null;
+
+  // middle layers are displayedFlutes excluding faceLayer/backLayer
+  const middleFlutes = displayedFlutes.filter(
+    (k) => k !== "faceLayer" && k !== "backLayer"
+  );
 
   return (
     <div className="modal-backdrop" style={{ display: "block" }}>
@@ -122,13 +454,15 @@ const WareCreateModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
+                      name="unitPrice"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
                       value={createForm?.unitPrice ?? ""}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...(p ?? {}),
-                          unitPrice: e.target.value,
-                        }))
-                      }
+                      onChange={handleNumberChange("unitPrice", true)}
+                      onKeyDown={makeOnKeyDown(false)}
+                      onPaste={makeOnPaste(false, true)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
@@ -136,12 +470,7 @@ const WareCreateModal: React.FC<Props> = ({
                     <select
                       className="form-control"
                       value={createForm?.fluteCombination ?? ""}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...(p ?? {}),
-                          fluteCombination: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => handleFluteChange(e.target.value)}
                     >
                       <option value="">-- chọn --</option>
                       {(fluteList || []).map((f) => (
@@ -183,13 +512,15 @@ const WareCreateModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
+                      name="wareWidth"
+                      min={0}
+                      step="any"
+                      inputMode="numeric"
                       value={createForm?.wareWidth ?? ""}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...(p ?? {}),
-                          wareWidth: e.target.value,
-                        }))
-                      }
+                      onChange={handleNumberChange("wareWidth", false)}
+                      onKeyDown={makeOnKeyDown(true)}
+                      onPaste={makeOnPaste(true, false)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
@@ -197,13 +528,15 @@ const WareCreateModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
+                      name="wareLength"
+                      min={0}
+                      step="any"
+                      inputMode="numeric"
                       value={createForm?.wareLength ?? ""}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...(p ?? {}),
-                          wareLength: e.target.value,
-                        }))
-                      }
+                      onChange={handleNumberChange("wareLength", false)}
+                      onKeyDown={makeOnKeyDown(true)}
+                      onPaste={makeOnPaste(true, false)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
@@ -211,135 +544,106 @@ const WareCreateModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
+                      name="wareHeight"
+                      min={0}
+                      step="any"
+                      inputMode="numeric"
                       value={createForm?.wareHeight ?? ""}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...(p ?? {}),
-                          wareHeight: e.target.value,
-                        }))
-                      }
+                      onChange={handleNumberChange("wareHeight", false)}
+                      onKeyDown={makeOnKeyDown(true)}
+                      onPaste={makeOnPaste(true, false)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
-                  {/* New adjustment fields placed in left column (required) */}
-                  <Label label="Điều chỉnh số SP" required>
+                  <Label label="Thể tích" required>
                     <input
                       className="form-control"
                       type="number"
-                      value={createForm?.warePerBlankAdjustment ?? ""}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...(p ?? {}),
-                          warePerBlankAdjustment: e.target.value,
-                        }))
-                      }
-                    />
-                  </Label>
-
-                  <Label label="Điều chỉnh tai" required>
-                    <input
-                      className="form-control"
-                      type="number"
-                      value={createForm?.flapAdjustment ?? ""}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...(p ?? {}),
-                          flapAdjustment: e.target.value,
-                        }))
-                      }
+                      name="volume"
+                      min={0}
+                      step="any"
+                      inputMode="numeric"
+                      value={createForm?.volume ?? ""}
+                      onChange={handleNumberChange("volume", false)}
+                      onKeyDown={makeOnKeyDown(true)}
+                      onPaste={makeOnPaste(true, false)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
                 </div>
 
                 <div className="col-md-6">
-                  <Label label="Volume" required>
+                  <Label label="Điều chỉnh số SP">
                     <input
                       className="form-control"
                       type="number"
-                      value={createForm?.volume ?? ""}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...(p ?? {}),
-                          volume: e.target.value,
-                        }))
-                      }
+                      name="warePerBlankAdjustment"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
+                      value={createForm?.warePerBlankAdjustment ?? ""}
+                      onChange={handleNumberChange(
+                        "warePerBlankAdjustment",
+                        true
+                      )}
+                      onKeyDown={makeOnKeyDown(false)}
+                      onPaste={makeOnPaste(false, true)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
-                  <div style={{ display: "flex", gap: 12 }}>
-                    <div style={{ flex: 1 }}>
-                      <Label label="Số SP bộ" required>
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm?.warePerSet ?? ""}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...(p ?? {}),
-                              warePerSet: e.target.value,
-                            }))
-                          }
-                        />
-                      </Label>
-                    </div>
-
-                    <div style={{ flex: 1 }}>
-                      <Label label="Số SP ghép bộ" required>
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={createForm?.warePerCombinedSet ?? ""}
-                          onChange={(e) =>
-                            setCreateForm((p: any) => ({
-                              ...(p ?? {}),
-                              warePerCombinedSet: e.target.value,
-                            }))
-                          }
-                        />
-                      </Label>
-                    </div>
-                  </div>
-
-                  <Label label="Dọc chia SP" required>
+                  <Label label="Điều chỉnh tai">
                     <input
                       className="form-control"
                       type="number"
-                      value={createForm?.horizontalWareSplit ?? ""}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...(p ?? {}),
-                          horizontalWareSplit: e.target.value,
-                        }))
-                      }
+                      name="flapAdjustment"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
+                      value={createForm?.flapAdjustment ?? ""}
+                      onChange={handleNumberChange("flapAdjustment", true)}
+                      onKeyDown={makeOnKeyDown(false)}
+                      onPaste={makeOnPaste(false, true)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
-                  {/* New adjustment fields placed in right column (required) */}
-                  <Label label="Điều chỉnh cộng cánh" required>
+                  <Label label="Điều chỉnh cộng cánh">
                     <input
                       className="form-control"
                       type="number"
+                      name="flapOverlapAdjustment"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
                       value={createForm?.flapOverlapAdjustment ?? ""}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...(p ?? {}),
-                          flapOverlapAdjustment: e.target.value,
-                        }))
-                      }
+                      onChange={handleNumberChange(
+                        "flapOverlapAdjustment",
+                        true
+                      )}
+                      onKeyDown={makeOnKeyDown(false)}
+                      onPaste={makeOnPaste(false, true)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
-                  <Label label="Điều chỉnh part SX" required>
+                  <Label label="Điều chỉnh part SX">
                     <input
                       className="form-control"
                       type="number"
+                      name="crossCutCountAdjustment"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
                       value={createForm?.crossCutCountAdjustment ?? ""}
-                      onChange={(e) =>
-                        setCreateForm((p: any) => ({
-                          ...(p ?? {}),
-                          crossCutCountAdjustment: e.target.value,
-                        }))
-                      }
+                      onChange={handleNumberChange(
+                        "crossCutCountAdjustment",
+                        true
+                      )}
+                      onKeyDown={makeOnKeyDown(false)}
+                      onPaste={makeOnPaste(false, true)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
@@ -412,161 +716,147 @@ const WareCreateModal: React.FC<Props> = ({
                   marginBottom: 12,
                 }}
               >
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <Label label="Mặt">
-                      <select
-                        className="form-control"
-                        value={createForm?.faceLayerPaperType ?? ""}
-                        onChange={(e) =>
-                          setCreateForm((p: any) => ({
-                            ...(p ?? {}),
-                            faceLayerPaperType: e.target.value,
-                          }))
-                        }
+                {/* ROW 1: faceLayer if present */}
+                {displayedFlutes.includes("faceLayer") && (
+                  <div style={{ marginBottom: 10 }}>
+                    <Label label="Mặt (Paper type)" required>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "center",
+                        }}
                       >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
-                    </Label>
-                  </div>
+                        <select
+                          className="form-control"
+                          style={{ flex: "1 1 auto" }}
+                          value={shownBasePaper(
+                            createForm?.faceLayerPaperType ?? ""
+                          )}
+                          onChange={(e) => onFacePaperChange(e.target.value)}
+                          required
+                        >
+                          <option value="">-- rỗng --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {labelForPaperOption(o)}
+                            </option>
+                          ))}
+                        </select>
 
-                  <div className="col-md-4">
-                    <Label label="Sóng E">
-                      <select
-                        className="form-control"
-                        value={createForm?.EFlutePaperType ?? ""}
-                        onChange={(e) =>
-                          setCreateForm((p: any) => ({
-                            ...(p ?? {}),
-                            EFlutePaperType: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
+                        <select
+                          className="form-control"
+                          style={{ width: 220 }}
+                          value={createForm?.faceLayerPaperSupplier ?? ""}
+                          onChange={(e) => onFaceSupplierChange(e.target.value)}
+                          required
+                        >
+                          <option value="">-- nhà cung cấp --</option>
+                          {(paperSupplierList || []).map((s) => (
+                            <option
+                              key={getIdFromDoc(s) ?? s.code}
+                              value={s.code ?? getIdFromDoc(s)}
+                            >
+                              {s.code} {s.name ? `- ${s.name}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </Label>
                   </div>
+                )}
 
-                  <div className="col-md-4">
-                    <Label label="Lớp giữa E/B">
-                      <select
-                        className="form-control"
-                        value={createForm?.EBLinerLayerPaperType ?? ""}
-                        onChange={(e) =>
-                          setCreateForm((p: any) => ({
-                            ...(p ?? {}),
-                            EBLinerLayerPaperType: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
-                    </Label>
+                {/* ROW 2: middle layers (compact). Render in provided order */}
+                {middleFlutes.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "flex-start",
+                      marginBottom: 10,
+                      flexWrap: "nowrap",
+                    }}
+                  >
+                    {middleFlutes.map((fl) => {
+                      const fieldName = fluteToField[fl];
+                      const label = fluteKeyLabel[fl] ?? fl;
+                      return (
+                        <div key={fl} style={{ flex: "1 1 18%" }}>
+                          <Label label={label} required>
+                            <select
+                              className="form-control"
+                              value={createForm?.[fieldName] ?? ""}
+                              onChange={(e) =>
+                                setCreateForm((p: any) => ({
+                                  ...(p ?? {}),
+                                  [fieldName]: e.target.value,
+                                }))
+                              }
+                              required
+                            >
+                              <option value="">-- rỗng --</option>
+                              {PAPER_LAYER_OPTIONS.map((o) => (
+                                <option key={o} value={o}>
+                                  {labelForPaperOption(o)}
+                                </option>
+                              ))}
+                            </select>
+                          </Label>
+                        </div>
+                      );
+                    })}
                   </div>
+                )}
 
-                  <div className="col-md-4">
-                    <Label label="Sóng B">
-                      <select
-                        className="form-control"
-                        value={createForm?.BFlutePaperType ?? ""}
-                        onChange={(e) =>
-                          setCreateForm((p: any) => ({
-                            ...(p ?? {}),
-                            BFlutePaperType: e.target.value,
-                          }))
-                        }
+                {/* ROW 3: backLayer if present */}
+                {displayedFlutes.includes("backLayer") && (
+                  <div>
+                    <Label label="Đáy (Paper type)" required>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "center",
+                        }}
                       >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
-                    </Label>
-                  </div>
+                        <select
+                          className="form-control"
+                          style={{ flex: "1 1 auto" }}
+                          value={shownBasePaper(
+                            createForm?.backLayerPaperType ?? ""
+                          )}
+                          onChange={(e) => onBackPaperChange(e.target.value)}
+                          required
+                        >
+                          <option value="">-- rỗng --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {labelForPaperOption(o)}
+                            </option>
+                          ))}
+                        </select>
 
-                  <div className="col-md-4">
-                    <Label label="Lớp giữa B/A C">
-                      <select
-                        className="form-control"
-                        value={createForm?.BACLinerLayerPaperType ?? ""}
-                        onChange={(e) =>
-                          setCreateForm((p: any) => ({
-                            ...(p ?? {}),
-                            BACLinerLayerPaperType: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
+                        <select
+                          className="form-control"
+                          style={{ width: 220 }}
+                          value={createForm?.backLayerPaperSupplier ?? ""}
+                          onChange={(e) => onBackSupplierChange(e.target.value)}
+                          required
+                        >
+                          <option value="">-- nhà cung cấp --</option>
+                          {(paperSupplierList || []).map((s) => (
+                            <option
+                              key={getIdFromDoc(s) ?? s.code}
+                              value={s.code ?? getIdFromDoc(s)}
+                            >
+                              {s.code} {s.name ? `- ${s.name}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </Label>
                   </div>
-
-                  <div className="col-md-4">
-                    <Label label="Sóng AC">
-                      <select
-                        className="form-control"
-                        value={createForm?.ACFlutePaperType ?? ""}
-                        onChange={(e) =>
-                          setCreateForm((p: any) => ({
-                            ...(p ?? {}),
-                            ACFlutePaperType: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
-                    </Label>
-                  </div>
-
-                  <div className="col-md-4">
-                    <Label label="Đáy">
-                      <select
-                        className="form-control"
-                        value={createForm?.backLayerPaperType ?? ""}
-                        onChange={(e) =>
-                          setCreateForm((p: any) => ({
-                            ...(p ?? {}),
-                            backLayerPaperType: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
-                    </Label>
-                  </div>
-                </div>
+                )}
               </div>
 
               <hr />
@@ -603,7 +893,7 @@ const WareCreateModal: React.FC<Props> = ({
               </button>
               <button
                 className="btn btn-primary"
-                onClick={handleCreateSubmit}
+                onClick={onSubmitWrapper}
                 disabled={creating}
               >
                 {creating ? "Đang tạo..." : "Tạo"}
