@@ -1,3 +1,4 @@
+// src/components/ware/WareEditModal.tsx
 "use client";
 
 import React from "react";
@@ -76,6 +77,74 @@ const WareEditModal: React.FC<Props> = ({
   getIdFromDoc,
   MultiSelectInline,
 }) => {
+  // helper factories to keep numeric behavior consistent
+  const makeOnKeyDown =
+    (allowDecimal = false) =>
+    (e: React.KeyboardEvent) => {
+      if (e.key === "-" || e.key === "e" || e.key === "+") {
+        e.preventDefault();
+      }
+      if (!allowDecimal && e.key === ".") {
+        e.preventDefault();
+      }
+    };
+
+  const makeOnPaste =
+    (allowDecimal = false, integerOnly = false) =>
+    (e: React.ClipboardEvent<HTMLInputElement>) => {
+      const paste = e.clipboardData.getData("text");
+      const regex = allowDecimal ? /[^0-9.]/g : /[^0-9]/g;
+      if (regex.test(paste)) {
+        e.preventDefault();
+        const cleaned = paste.replace(regex, "");
+        if (!cleaned) return;
+        const el = e.currentTarget;
+        const start = el.selectionStart ?? 0;
+        const end = el.selectionEnd ?? 0;
+        const newVal = el.value.slice(0, start) + cleaned + el.value.slice(end);
+        if (integerOnly) {
+          const num = Math.floor(Number(newVal) || 0);
+          setEditForm((p: any) => ({
+            ...(p ?? {}),
+            [el.name]: Math.max(0, num),
+          }));
+        } else {
+          const num = Number(newVal);
+          if (!Number.isNaN(num)) {
+            setEditForm((p: any) => ({
+              ...(p ?? {}),
+              [el.name]: Math.max(0, num),
+            }));
+          }
+        }
+      }
+    };
+
+  const onWheelPreventChange = (e: React.WheelEvent<HTMLInputElement>) => {
+    (e.currentTarget as HTMLInputElement).blur();
+  };
+
+  const handleNumberChange =
+    (field: string, integerOnly = false) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = e.target.value;
+      if (raw === "") {
+        setEditForm((p: any) => ({ ...(p ?? {}), [field]: "" }));
+        return;
+      }
+      if (integerOnly) {
+        let num = Math.floor(Number(raw) || 0);
+        if (num < 0) num = 0;
+        setEditForm((p: any) => ({ ...(p ?? {}), [field]: num }));
+      } else {
+        const num = Number(raw);
+        if (Number.isNaN(num)) {
+          return;
+        }
+        setEditForm((p: any) => ({ ...(p ?? {}), [field]: num < 0 ? 0 : num }));
+      }
+    };
+
   // debug: observe selected printColors in edit form
   React.useEffect(() => {
     try {
@@ -121,13 +190,15 @@ const WareEditModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
+                      name="unitPrice"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
                       value={editForm?.unitPrice ?? ""}
-                      onChange={(e) =>
-                        setEditForm((p: any) => ({
-                          ...(p ?? {}),
-                          unitPrice: e.target.value,
-                        }))
-                      }
+                      onChange={handleNumberChange("unitPrice", true)}
+                      onKeyDown={makeOnKeyDown(false)}
+                      onPaste={makeOnPaste(false, true)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
@@ -182,13 +253,15 @@ const WareEditModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
+                      name="wareWidth"
+                      min={0}
+                      step="any"
+                      inputMode="numeric"
                       value={editForm?.wareWidth ?? ""}
-                      onChange={(e) =>
-                        setEditForm((p: any) => ({
-                          ...(p ?? {}),
-                          wareWidth: e.target.value,
-                        }))
-                      }
+                      onChange={handleNumberChange("wareWidth", false)}
+                      onKeyDown={makeOnKeyDown(true)}
+                      onPaste={makeOnPaste(true, false)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
@@ -196,13 +269,15 @@ const WareEditModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
+                      name="wareLength"
+                      min={0}
+                      step="any"
+                      inputMode="numeric"
                       value={editForm?.wareLength ?? ""}
-                      onChange={(e) =>
-                        setEditForm((p: any) => ({
-                          ...(p ?? {}),
-                          wareLength: e.target.value,
-                        }))
-                      }
+                      onChange={handleNumberChange("wareLength", false)}
+                      onKeyDown={makeOnKeyDown(true)}
+                      onPaste={makeOnPaste(true, false)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
@@ -210,135 +285,106 @@ const WareEditModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       type="number"
+                      name="wareHeight"
+                      min={0}
+                      step="any"
+                      inputMode="numeric"
                       value={editForm?.wareHeight ?? ""}
-                      onChange={(e) =>
-                        setEditForm((p: any) => ({
-                          ...(p ?? {}),
-                          wareHeight: e.target.value,
-                        }))
-                      }
+                      onChange={handleNumberChange("wareHeight", false)}
+                      onKeyDown={makeOnKeyDown(true)}
+                      onPaste={makeOnPaste(true, false)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
-                  {/* New adjustment fields in edit modal (required) */}
-                  <Label label="Điều chỉnh số SP" required>
+                  <Label label="Thể tích" required>
                     <input
                       className="form-control"
                       type="number"
-                      value={editForm?.warePerBlankAdjustment ?? ""}
-                      onChange={(e) =>
-                        setEditForm((p: any) => ({
-                          ...(p ?? {}),
-                          warePerBlankAdjustment: e.target.value,
-                        }))
-                      }
-                    />
-                  </Label>
-
-                  <Label label="Điều chỉnh tai" required>
-                    <input
-                      className="form-control"
-                      type="number"
-                      value={editForm?.flapAdjustment ?? ""}
-                      onChange={(e) =>
-                        setEditForm((p: any) => ({
-                          ...(p ?? {}),
-                          flapAdjustment: e.target.value,
-                        }))
-                      }
+                      name="volume"
+                      min={0}
+                      step="any"
+                      inputMode="numeric"
+                      value={editForm?.volume ?? ""}
+                      onChange={handleNumberChange("volume", false)}
+                      onKeyDown={makeOnKeyDown(true)}
+                      onPaste={makeOnPaste(true, false)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
                 </div>
 
                 <div className="col-md-6">
-                  <Label label="Volume" required>
+                  <Label label="Điều chỉnh số SP">
                     <input
                       className="form-control"
                       type="number"
-                      value={editForm?.volume ?? ""}
-                      onChange={(e) =>
-                        setEditForm((p: any) => ({
-                          ...(p ?? {}),
-                          volume: e.target.value,
-                        }))
-                      }
+                      name="warePerBlankAdjustment"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
+                      value={editForm?.warePerBlankAdjustment ?? ""}
+                      onChange={handleNumberChange(
+                        "warePerBlankAdjustment",
+                        true
+                      )}
+                      onKeyDown={makeOnKeyDown(false)}
+                      onPaste={makeOnPaste(false, true)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
-                  <div style={{ display: "flex", gap: 12 }}>
-                    <div style={{ flex: 1 }}>
-                      <Label label="Số SP bộ" required>
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={editForm?.warePerSet ?? ""}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...(p ?? {}),
-                              warePerSet: e.target.value,
-                            }))
-                          }
-                        />
-                      </Label>
-                    </div>
-
-                    <div style={{ flex: 1 }}>
-                      <Label label="Số SP ghép bộ" required>
-                        <input
-                          className="form-control"
-                          type="number"
-                          value={editForm?.warePerCombinedSet ?? ""}
-                          onChange={(e) =>
-                            setEditForm((p: any) => ({
-                              ...(p ?? {}),
-                              warePerCombinedSet: e.target.value,
-                            }))
-                          }
-                        />
-                      </Label>
-                    </div>
-                  </div>
-
-                  <Label label="Dọc chia SP" required>
+                  <Label label="Điều chỉnh tai">
                     <input
                       className="form-control"
                       type="number"
-                      value={editForm?.horizontalWareSplit ?? ""}
-                      onChange={(e) =>
-                        setEditForm((p: any) => ({
-                          ...(p ?? {}),
-                          horizontalWareSplit: e.target.value,
-                        }))
-                      }
+                      name="flapAdjustment"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
+                      value={editForm?.flapAdjustment ?? ""}
+                      onChange={handleNumberChange("flapAdjustment", true)}
+                      onKeyDown={makeOnKeyDown(false)}
+                      onPaste={makeOnPaste(false, true)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
-                  {/* New adjustment fields in edit modal (required) */}
-                  <Label label="Điều chỉnh cộng cánh" required>
+                  <Label label="Điều chỉnh cộng cánh">
                     <input
                       className="form-control"
                       type="number"
+                      name="flapOverlapAdjustment"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
                       value={editForm?.flapOverlapAdjustment ?? ""}
-                      onChange={(e) =>
-                        setEditForm((p: any) => ({
-                          ...(p ?? {}),
-                          flapOverlapAdjustment: e.target.value,
-                        }))
-                      }
+                      onChange={handleNumberChange(
+                        "flapOverlapAdjustment",
+                        true
+                      )}
+                      onKeyDown={makeOnKeyDown(false)}
+                      onPaste={makeOnPaste(false, true)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 
-                  <Label label="Điều chỉnh part SX" required>
+                  <Label label="Điều chỉnh part SX">
                     <input
                       className="form-control"
                       type="number"
+                      name="crossCutCountAdjustment"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
                       value={editForm?.crossCutCountAdjustment ?? ""}
-                      onChange={(e) =>
-                        setEditForm((p: any) => ({
-                          ...(p ?? {}),
-                          crossCutCountAdjustment: e.target.value,
-                        }))
-                      }
+                      onChange={handleNumberChange(
+                        "crossCutCountAdjustment",
+                        true
+                      )}
+                      onKeyDown={makeOnKeyDown(false)}
+                      onPaste={makeOnPaste(false, true)}
+                      onWheel={onWheelPreventChange}
                     />
                   </Label>
 

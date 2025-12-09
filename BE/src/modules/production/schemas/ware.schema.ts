@@ -173,17 +173,17 @@ export class Ware extends BaseDenormalizedSchema {
   volume: number;
 
   @ApiProperty()
-  @Prop({ required: true })
+  @Prop({ required: false })
   @IsNumber()
   warePerSet: number;
 
   @ApiProperty()
-  @Prop({ required: true })
+  @Prop({ required: false })
   @IsNumber()
   warePerCombinedSet: number;
 
   @ApiProperty()
-  @Prop({ required: true })
+  @Prop({ required: false })
   @IsNumber()
   horizontalWareSplit: number;
 
