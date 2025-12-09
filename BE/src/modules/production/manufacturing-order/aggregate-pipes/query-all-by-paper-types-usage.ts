@@ -1,13 +1,26 @@
 import { PipelineStage } from "mongoose";
+import { CorrugatorProcessStatus } from "../../schemas/manufacturing-order.schema";
 
-export function fullDetailsFilterAggregationPipeline({
-  filter = {},
-  skip = 0,
-  limit = 20,
+export function queryAllByPaperTypesUsagePipeline({
+  paperTypes,
+}: {
+  paperTypes: string[];
 }) {
   const pipeline: PipelineStage[] = [];
 
   pipeline.push(
+    {
+      $match: {
+        "corrugatorProcess.status": {
+          $in: [
+            CorrugatorProcessStatus.NOTSTARTED,
+            CorrugatorProcessStatus.RUNNING,
+            CorrugatorProcessStatus.PAUSED,
+          ],
+        },
+      },
+    },
+
     // from mo
     {
       $lookup: {
@@ -48,6 +61,47 @@ export function fullDetailsFilterAggregationPipeline({
         "purchaseOrderItem.ware.isDeleted": {
           $ne: true,
         },
+      },
+    },
+    {
+      $match: {
+        $or: [
+          {
+            "purchaseOrderItem.ware.faceLayerPaperType": {
+              $in: paperTypes,
+            },
+          },
+          {
+            "purchaseOrderItem.ware.EFlutePaperType": {
+              $in: paperTypes,
+            },
+          },
+          {
+            "purchaseOrderItem.ware.EBLinerLayerPaperType": {
+              $in: paperTypes,
+            },
+          },
+          {
+            "purchaseOrderItem.ware.BFlutePaperType": {
+              $in: paperTypes,
+            },
+          },
+          {
+            "purchaseOrderItem.ware.BACLinerLayerPaperType": {
+              $in: paperTypes,
+            },
+          },
+          {
+            "purchaseOrderItem.ware.ACFlutePaperType": {
+              $in: paperTypes,
+            },
+          },
+          {
+            "purchaseOrderItem.ware.backLayerPaperType": {
+              $in: paperTypes,
+            },
+          },
+        ],
       },
     },
 
@@ -240,29 +294,6 @@ export function fullDetailsFilterAggregationPipeline({
       $sort: { m: 1, n: 1 },
     },
   );
-
-  const mainFilters: Record<string, unknown> = {};
-  const nestedFilters: Record<string, unknown> = {};
-
-  for (const key in filter) {
-    if (!key.includes(".")) mainFilters[key] = filter[key] as unknown;
-    else nestedFilters[key] = filter[key] as unknown;
-  }
-
-  if (Object.keys(mainFilters).length > 0) {
-    pipeline.push({ $match: mainFilters });
-  }
-
-  if (Object.keys(nestedFilters).length) {
-    const nestedMatch = {};
-    for (const key in nestedFilters) {
-      nestedMatch[key] = nestedFilters[key];
-    }
-    pipeline.push({ $match: nestedMatch });
-  }
-
-  if (skip) pipeline.push({ $skip: skip });
-  if (limit) pipeline.push({ $limit: limit });
 
   return pipeline;
 }

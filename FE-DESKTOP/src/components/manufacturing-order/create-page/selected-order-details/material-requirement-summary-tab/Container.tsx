@@ -1,7 +1,12 @@
+"use client"
+
 import { Box, Center, Container, GridItem, SimpleGrid, Stack, Text } from "@chakra-ui/react"
-import MaterialRequirementTable, { MaterialRequirementTableProps } from "./MaterialTable"
+import MaterialRequirement, { PaperTypesTableProps } from "./PaperTypesTable"
 import { useSelectedOrdersState } from "../TabbedContainer";
 import check from "check-types";
+import PaperUsageChart from "./PaperUsageChart";
+import { useGetAllByPaperTypesUsageQuery } from "@/service/api/manufacturingOrderApiSlice";
+import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 
 export type MaterialRequirementContainerProps = {
   children?: React.ReactNode;
@@ -27,10 +32,13 @@ export default function MaterialRequirementContainer(props: MaterialRequirementC
       <Box colorPalette={"gray"} bg={"colorPalette.subtle"} p={5} rounded={"md"}>
         <SimpleGrid columns={2} gap="40px">
           <GridItem colSpan={{ base: 1 }}>
-            <MaterialRequirementTable type="FACE" header={"Trọng lượng giấy mặt"} />
+            <MaterialRequirement type="FACE" header={"Trọng lượng giấy mặt"} />
           </GridItem>
           <GridItem colSpan={{ base: 1 }}>
-            <MaterialRequirementTable type="RAW" header={"Trọng lượng giấy mộc"} />
+            <MaterialRequirement type="RAW" header={"Trọng lượng giấy mộc"} />
+          </GridItem>
+          <GridItem colSpan={{ base: 1 }}>
+            <PaperUsageChart />
           </GridItem>
           <Box height="20" />
           <Box height="20" />

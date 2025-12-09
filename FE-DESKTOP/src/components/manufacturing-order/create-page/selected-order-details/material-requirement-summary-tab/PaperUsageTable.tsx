@@ -5,7 +5,7 @@ import { MaterialRequirementDto } from "@/types/DTO/material-requirement-summary
 import { Box, BoxProps, Center, Spinner, Stack, Table, TableRootProps, TabsRootProps, Text } from "@chakra-ui/react";
 import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { useEffect, useMemo, useReducer, useState } from "react";
-import { materialRequirementColumns } from "./materialTableDefinition";
+import { paperTypesTableColumns } from "./paperTypesTableDefinition";
 import check from "check-types";
 import { useSelectedOrdersState } from "../TabbedContainer";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
@@ -16,7 +16,7 @@ import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-da
 import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 
-export type MaterialRequirementTableProps = {
+export type PaperUsageTableProps = {
   rootProps?: BoxProps;
   tabsRootProps?: TabsRootProps;
   tableRootProps?: TableRootProps;
@@ -80,8 +80,8 @@ function accumulateMaterialRequirements(
   return result;
 }
 
-export default function MaterialRequirementTable(
-  props: MaterialRequirementTableProps,
+export default function PaperUsageTable(
+  props: PaperUsageTableProps,
 ) {
   const { useSelector } = ManufacturingOrderCreatePageReducerStore;
   const selectedPOIsIds = useSelector(s => s.selectedPOIsIds);
@@ -126,7 +126,7 @@ export default function MaterialRequirementTable(
 
   const table = useReactTable({
     data: tableData,
-    columns: materialRequirementColumns(props.header),
+    columns: paperTypesTableColumns(props.header),
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.code,
   });

@@ -44,6 +44,7 @@ import check from "check-types";
 import { PrivilegedJwtAuthGuard } from "@/common/guards/privileged-jwt-auth.guard";
 import { manufacturingOrderGetPrivileges } from "./manufacturing-order-module-access-privileges";
 import { buildFullDetailsMOFilterFromDto } from "./utils/buildFullDetailsFilterFromDto";
+import { QueryAllByPaperTypesUsageRequestDto } from "./dto/query-all-by-paper-types-usage.dto";
 
 const ManufacturingOrderGetRequestGuard = PrivilegedJwtAuthGuard({
   requiredPrivileges: manufacturingOrderGetPrivileges,
@@ -203,6 +204,24 @@ export class ManufacturingOrderController {
       success: true,
       message: "Restore successful",
       data: result,
+    };
+  }
+
+  @Get("query/all-by-paper-types-usage")
+  @ApiOperation({ summary: "Query fully populated manufacturing orders" })
+  async queryAllByPaperTypesUsage(
+    @Query() query: QueryAllByPaperTypesUsageRequestDto,
+  ): Promise<BaseResponse<FullDetailManufacturingOrderDto[]>> {
+    const docs = query.paperTypes
+      ? await this.moService.queryAllByPaperTypesUsage({
+        paperTypes: query.paperTypes,
+      })
+      : [];
+
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
     };
   }
 }

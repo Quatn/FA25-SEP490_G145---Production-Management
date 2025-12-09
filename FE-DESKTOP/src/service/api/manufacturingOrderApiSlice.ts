@@ -96,6 +96,19 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: ["ManufacturingOrder"],
     }),
+
+    getAllByPaperTypesUsage: createApiEndpoint<
+      BaseResponse<Serialized<ManufacturingOrder>[]>,
+      { paperTypes: string[] }
+    >(builder, {
+      query: ({ paperTypes }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/query/all-by-paper-types-usage`,
+        method: "GET",
+        params: { paperTypes },
+        credentials: "include",
+      }),
+      providesTags: ["ManufacturingOrder"],
+    }),
   }),
 });
 
@@ -106,4 +119,5 @@ export const {
   useDeleteManufacturingOrderMutation,
   useUpdateManyManufacturingOrdersMutation,
   useGetAllManufacturingOrdersQuery,
+  useGetAllByPaperTypesUsageQuery,
 } = manufacturingOrderApiSlice;

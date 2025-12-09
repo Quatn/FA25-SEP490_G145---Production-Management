@@ -48,7 +48,6 @@ export function recalculatePurchaseOrderItem(
   const longitudinalCutCount = Math.ceil(numberOfBlanks / ware.crossCutCount);
   const runningLength = (longitudinalCutCount * ware.blankLength) / 1000;
 
-  console.log(ware);
   const faceLayerPaperWeight = check.null(ware.faceLayerPaperType)
     ? null
     : paperConsumptionCalculation(

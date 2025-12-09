@@ -52,6 +52,7 @@ import { isRefPopulated } from "@/common/utils/populate-check";
 import { UnpopulatedFieldError } from "@/common/errors/unpopulated-field.error";
 import { ProductionRecalculateService } from "../common/recalculate/recalculate.service";
 import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type.schema";
+import { queryAllByPaperTypesUsagePipeline } from "./aggregate-pipes/query-all-by-paper-types-usage";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -647,5 +648,41 @@ export class ManufacturingOrderService {
         requestedAmount: 1,
       };
     }
+  }
+
+  async queryAllByPaperTypesUsage({
+    paperTypes,
+  }: {
+    paperTypes: string[];
+  }): Promise<FullDetailManufacturingOrderDto[]> {
+    const pipeline = queryAllByPaperTypesUsagePipeline({
+      paperTypes
+    });
+
+    const data = await this.manufacturingOrderModel.aggregate([...pipeline])
+
+    const moDocs = (data as ManufacturingOrderDocument[]).map((mo) =>
+      this.manufacturingOrderModel.hydrate(mo),
+    );
+
+    const recalCheckedOrders = await this.recalCheckDocs(moDocs);
+
+    const ids = recalCheckedOrders.map((mo) => mo._id);
+
+    const finishedGoodRecords = await this.finishedGoodProcessModel.find({
+      manufacturingOrder: { $in: ids },
+    });
+
+    const mappedData: FullDetailManufacturingOrderDto[] =
+      recalCheckedOrders.map((mo) => {
+        return new FullDetailManufacturingOrderDto({
+          ...mo.toJSON(),
+          finishedGoodRecord: finishedGoodRecords.find((record) =>
+            (record.manufacturingOrder as Types.ObjectId).equals(mo._id),
+          ),
+        });
+      });
+
+    return mappedData;
   }
 }
