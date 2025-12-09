@@ -5,9 +5,9 @@ import { PaperColor } from "@/types/PaperColor";
 interface PaperColorFormDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: PaperColor;
-    onAdd: (data: PaperColor) => void;
-    onUpdate: (data: PaperColor) => void;
+    initialData: PaperColor | undefined;
+    onAdd: (data: PaperColor) => Promise<boolean>;
+    onUpdate: (data: PaperColor) => Promise<boolean>;
 }
 
 type ErrorMap = Record<string, string>;
@@ -20,7 +20,6 @@ const PaperColorFormDialog: React.FC<PaperColorFormDialogProps> = ({
     onUpdate,
 }) => {
     const [color, setColor] = useState<PaperColor>({
-        _id: "",
         code: "",
         title: "",
     });
@@ -34,13 +33,13 @@ const PaperColorFormDialog: React.FC<PaperColorFormDialogProps> = ({
             case "code":
                 if (!value.trim()) errorMsg = "Mã màu giấy không được để trống";
                 else if (!/^[A-Z0-9]{1,3}$/.test(value))
-                    errorMsg = "Chỉ được dùng chữ in hoa hoặc số, độ dài từ 1 đến 3 ký tự";
+                    errorMsg = "Mã màu giấy chỉ được dùng chữ in hoa hoặc số, độ dài từ 1 đến 3 ký tự";
                 break;
 
             case "title":
                 if (!value.trim()) errorMsg = "Tiêu đề màu giấy không được để trống";
-                else if (!/^[A-ZÀ-Ỹ0-9 .,&()\-]+$/.test(value))
-                    errorMsg = "Sai cú pháp";
+                else if (!/^(?!.* {2})[A-ZÀ-Ỹ0-9 ]{2,10}$/.test(value))
+                    errorMsg = "Tiêu đề màu giấy chỉ được dùng chữ in hoa hoặc số cách nhau tối đa 1 khoảng trắng, độ dài từ 2 đến 10 ký tự";
                 break;
         }
 
@@ -59,12 +58,11 @@ const PaperColorFormDialog: React.FC<PaperColorFormDialogProps> = ({
 
     useEffect(() => {
         if (isOpen) {
-
             setColor({
-                _id: initialData?._id ?? "",
+                _id: initialData?._id,
                 code: initialData?.code ?? "",
                 title: initialData?.title ?? "",
-            });
+            })
 
             setErrors({
                 code: initialData ? "" : "Mã màu giấy không được để trống",
@@ -73,19 +71,23 @@ const PaperColorFormDialog: React.FC<PaperColorFormDialogProps> = ({
         }
     }, [isOpen, initialData]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const isCodeValid = validateField("code", color.code);
         const isNameValid = validateField("title", color.title);
 
         if (isCodeValid && isNameValid) {
-            !!initialData ? onUpdate(color) : onAdd(color);
-            if (!!!initialData) setColor({
-                _id: "",
-                code: "",
-                title: "",
-            });
-        } else return;
-        onClose();
+            let isSuccess = false;
+
+            if (!!initialData) {
+                isSuccess = await onUpdate(color);
+            } else {
+                isSuccess = await onAdd(color);
+            }
+
+            if (isSuccess) {
+                onClose();
+            }
+        }
     };
 
     const hasError = Object.values(errors).some((msg) => msg);
@@ -99,7 +101,7 @@ const PaperColorFormDialog: React.FC<PaperColorFormDialogProps> = ({
                     <Dialog.Content>
                         <Dialog.Header>
                             <Dialog.Title>
-                                {!!!initialData ? "Thêm Màu Giấy Mới" : "Sửa Thông Tin Màu Giấy"}
+                                {!initialData ? "Thêm Màu Giấy Mới" : "Sửa Thông Tin Màu Giấy"}
                             </Dialog.Title>
                         </Dialog.Header>
 
@@ -116,6 +118,7 @@ const PaperColorFormDialog: React.FC<PaperColorFormDialogProps> = ({
                                         value={color.code}
                                         placeholder="Nhập mã"
                                         required
+                                        disabled={!!initialData}
                                         onChange={(e) => handleChange("code", e.target.value.toUpperCase())}
                                     />
                                     <Box minH="20px" mt="1">
@@ -148,10 +151,10 @@ const PaperColorFormDialog: React.FC<PaperColorFormDialogProps> = ({
                                 <Button onClick={onClose} colorPalette={"red"}>Thoát</Button>
                             </Dialog.ActionTrigger>
                             <Button
-                                colorPalette={!!!initialData ? "green" : "yellow"}
+                                colorPalette={!initialData ? "green" : "yellow"}
                                 onClick={handleSubmit}
                                 disabled={hasError || isEmpty}>
-                                {!!!initialData ? "Thêm" : "Lưu thay đổi"}
+                                {!initialData ? "Thêm" : "Lưu thay đổi"}
                             </Button>
                         </Dialog.Footer>
                     </Dialog.Content>

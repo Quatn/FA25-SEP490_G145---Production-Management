@@ -5,9 +5,9 @@ import { PaperSupplier } from "@/types/PaperSupplier";
 interface PaperSupplierFormDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: PaperSupplier;
-    onAdd: (data: PaperSupplier) => void;
-    onUpdate: (data: PaperSupplier) => void;
+    initialData: PaperSupplier | undefined;
+    onAdd: (data: PaperSupplier) => Promise<boolean>;
+    onUpdate: (data: PaperSupplier) => Promise<boolean>;
 }
 
 type ErrorMap = Record<string, string>;
@@ -22,12 +22,12 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
     const [supplier, setSupplier] = useState<PaperSupplier>({
         code: "",
         name: "",
-        phone: "",
-        address: "",
-        email: "",
-        bank: "",
-        bankAccount: "",
-        note: "",
+        phone: undefined,
+        address: undefined,
+        email: undefined,
+        bank: undefined,
+        bankAccount: undefined,
+        note: undefined,
     });
 
     const [errors, setErrors] = useState<ErrorMap>({});
@@ -44,13 +44,13 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
 
             case "name":
                 if (!value.trim()) errorMsg = "Tên nhà giấy không được để trống";
-                else if (!/^[A-ZÀ-Ỹ0-9 .,&()\-]{2,100}$/.test(value))
-                    errorMsg = "Sai cú pháp";
+                else if (!/^(?!.* {2})[A-ZÀ-Ỹ0-9 ]{2,20}$/.test(value))
+                    errorMsg = "Tên nhà giấy phải từ 2 đến 20 ký tự, không được chứa ký tự đặc biệt, mỗi từ cách nhau không quá 1 khoảng trắng";
                 break;
 
             case "phone":
-                if (value && !/^\d{9,15}$/.test(value)) // allow 9-15 digits
-                    errorMsg = "Số điện thoại không hợp lệ";
+                if (value && !/^[0-9\-\+\s]{9,15}$/.test(value))
+                    errorMsg = "Số điện thoại phải từ 9 đến 15 chữ số";
                 break;
 
             case "email":
@@ -59,17 +59,15 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                 break;
 
             case "bankAccount":
-                if (value && !/^\d{6,20}$/.test(value)) // common length for bank accounts
-                    errorMsg = "Số tài khoản không hợp lệ";
+                if (value && !/^[0-9]{6,20}$/.test(value))
+                    errorMsg = "Số tài khoản phải từ 6 đến 20 chữ số";
                 break;
 
-            // optional: address, bank, note
             case "address":
             case "bank":
             case "note":
-                // you can add max length validation if desired
-                if (value && value.length > 200)
-                    errorMsg = `${field} không được quá 200 ký tự`;
+                if (value && value.length > 100)
+                    errorMsg = `${field} không được quá 100 ký tự`;
                 break;
         }
 
@@ -90,15 +88,15 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
         if (isOpen) {
 
             setSupplier({
-                _id: initialData?._id ?? undefined,
+                _id: initialData?._id,
                 code: initialData?.code ?? "",
                 name: initialData?.name ?? "",
-                phone: initialData?.phone ?? "",
-                address: initialData?.address ?? "",
-                email: initialData?.email ?? "",
-                bank: initialData?.bank ?? "",
-                bankAccount: initialData?.bankAccount ?? "",
-                note: initialData?.note ?? "",
+                phone: initialData?.phone,
+                address: initialData?.address,
+                email: initialData?.email,
+                bank: initialData?.bank,
+                bankAccount: initialData?.bankAccount,
+                note: initialData?.note,
             });
 
             setErrors({
@@ -114,34 +112,23 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
         }
     }, [isOpen, initialData]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const isCodeValid = validateField("code", supplier.code);
         const isNameValid = validateField("name", supplier.name);
 
-        const payload = {
-            ...supplier,
-            phone: supplier.phone?.trim() || undefined,
-            address: supplier.address?.trim() || undefined,
-            email: supplier.email?.trim() || undefined,
-            bank: supplier.bank?.trim() || undefined,
-            bankAccount: supplier.bankAccount?.trim() || undefined,
-            note: supplier.note?.trim() || undefined,
-        };
-
         if (isCodeValid && isNameValid) {
-            !!initialData ? onUpdate(payload) : onAdd(payload);
-            if (!!!initialData) setSupplier({
-                code: "",
-                name: "",
-                phone: "",
-                address: "",
-                email: "",
-                bank: "",
-                bankAccount: "",
-                note: "",
-            });
-        } else return;
-        onClose();
+            let isSuccess = false;
+
+            if (!!initialData) {
+                isSuccess = await onUpdate(supplier);
+            } else {
+                isSuccess = await onAdd(supplier);
+            }
+
+            if (isSuccess) {
+                onClose();
+            }
+        }
     };
 
     const hasError = Object.values(errors).some((msg) => msg);
@@ -172,6 +159,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                         value={supplier.code}
                                         placeholder="Nhập mã"
                                         required
+                                        disabled={!!initialData}
                                         onChange={(e) => handleChange("code", e.target.value.toUpperCase())}
                                     />
                                     <Box minH="20px" mt="1">
@@ -201,7 +189,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Số điện thoại</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={supplier.phone ?? ""}
+                                        value={supplier.phone}
                                         placeholder="Nhập số điện thoại"
                                         required
                                         onChange={(e) => handleChange("phone", e.target.value)}
@@ -216,7 +204,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Địa chỉ</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={supplier.address ?? ""}
+                                        value={supplier.address}
                                         placeholder="Nhập địa chỉ"
                                         onChange={(e) => handleChange("address", e.target.value)}
                                     />
@@ -231,7 +219,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                     <Input
                                         size="lg"
                                         type="email"
-                                        value={supplier.email ?? ""}
+                                        value={supplier.email}
                                         placeholder="Nhập email"
                                         onChange={(e) => handleChange("email", e.target.value)}
                                     />
@@ -245,7 +233,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Ngân hàng</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={supplier.bank ?? ""}
+                                        value={supplier.bank}
                                         placeholder="Nhập ngân hàng"
                                         onChange={(e) => handleChange("bank", e.target.value)}
                                     />
@@ -259,7 +247,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Số tài khoản</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={supplier.bankAccount ?? ""}
+                                        value={supplier.bankAccount}
                                         placeholder="Nhập số tài khoản"
                                         onChange={(e) => handleChange("bankAccount", e.target.value)}
                                     />
@@ -273,7 +261,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Ghi chú</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={supplier.note ?? ""}
+                                        value={supplier.note}
                                         placeholder="Nhập ghi chú"
                                         onChange={(e) => handleChange("note", e.target.value)}
                                     />
@@ -290,10 +278,10 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                 <Button onClick={onClose} colorPalette={"red"}>Thoát</Button>
                             </Dialog.ActionTrigger>
                             <Button
-                                colorPalette={!!!initialData ? "green" : "yellow"}
+                                colorPalette={!initialData ? "green" : "yellow"}
                                 onClick={handleSubmit}
                                 disabled={hasError || isEmpty}>
-                                {!!!initialData ? "Thêm" : "Lưu thay đổi"}
+                                {!initialData ? "Thêm" : "Lưu thay đổi"}
                             </Button>
                         </Dialog.Footer>
                     </Dialog.Content>

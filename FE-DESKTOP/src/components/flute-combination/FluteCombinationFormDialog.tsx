@@ -5,9 +5,9 @@ import { FluteCombination } from "@/types/FluteCombination";
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: FluteCombination;
-    onAdd: (data: FluteCombination) => void;
-    onUpdate: (data: FluteCombination) => void;
+    initialData: FluteCombination | undefined;
+    onAdd: (data: FluteCombination) => Promise<boolean>;
+    onUpdate: (data: FluteCombination) => Promise<boolean>;
 }
 
 type ErrorMap = Record<string, string>;
@@ -23,12 +23,12 @@ const FluteCombinationFormDialog: React.FC<Props> = ({ isOpen, onClose, initialD
 
     const fluteCollection = createListCollection({
         items: [
-            { label: "Sóng E", value: "EFlute" },
-            { label: "Lớp giữa EB", value: "EBLiner" },
-            { label: "Sóng B", value: "BFlute" },
-            { label: "Lớp giữa BAC", value: "BACLiner" },
-            { label: "Sóng AC", value: "ACFlute" },
             { label: "Lớp mặt", value: "faceLayer" },
+            { label: "Sóng AC", value: "ACFlute" },
+            { label: "Lớp giữa BAC", value: "BACLiner" },
+            { label: "Sóng B", value: "BFlute" },
+            { label: "Lớp giữa EB", value: "EBLiner" },
+            { label: "Sóng E", value: "EFlute" },
             { label: "Lớp đáy", value: "backLayer" },
         ],
     })
@@ -38,8 +38,9 @@ const FluteCombinationFormDialog: React.FC<Props> = ({ isOpen, onClose, initialD
 
         switch (field) {
             case "code":
-                if (!value.trim()) errorMsg = "Mã không được để trống";
-                if (!value.trim().match("^[A-Z0-9-]{1,10}$")) errorMsg = "Mã tổ hợp sóng chỉ cho phép chứa từ 1 đến 10 chữ cái in hoa và số"
+                if (!value.trim()) errorMsg = "Mã tổ hợp sóng không được để trống";
+                if (!value.trim().match("^[A-Z0-9-]{1,10}$"))
+                    errorMsg = "Mã tổ hợp sóng chỉ cho phép chứa từ 1 đến 10 chữ cái in hoa và số"
                 break;
         }
 
@@ -60,22 +61,31 @@ const FluteCombinationFormDialog: React.FC<Props> = ({ isOpen, onClose, initialD
         if (isOpen) {
             setItem({
                 _id: initialData?._id,
-                code: initialData?.code ?? '',
+                code: initialData?.code ?? "",
                 flutes: initialData?.flutes ?? [],
-                description: initialData?.description ?? '',
-                note: initialData?.note ?? '',
-            });
-            setErrors({ code: initialData ? "" : "Mã không được để trống" });
+                description: initialData?.description ?? "",
+                note: initialData?.note ?? "",
+            })
+            setErrors({ code: initialData ? "" : "Mã tổ hợp sóng không được để trống" });
         }
     }, [isOpen, initialData]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const isCodeValid = validateField("code", item.code);
 
         if (isCodeValid) {
-            !!initialData ? onUpdate(item) : onAdd(item);
-        } else return;
-        onClose();
+            let isSuccess = false;
+
+            if (!!initialData) {
+                isSuccess = await onUpdate(item);
+            } else {
+                isSuccess = await onAdd(item);
+            }
+
+            if (isSuccess) {
+                onClose();
+            }
+        }
     }
 
     const hasError = Object.values(errors).some((m) => m) || !item.code.trim() || item.flutes.length < 1;
@@ -88,7 +98,7 @@ const FluteCombinationFormDialog: React.FC<Props> = ({ isOpen, onClose, initialD
                     <Dialog.Content>
                         <Dialog.Header>
                             <Dialog.Title>
-                                {!initialData ? "Thêm Loại Sóng" : "Sửa Loại Sóng"}
+                                {!initialData ? "Thêm Tổ Hợp Sóng" : "Sửa Tổ Hợp Sóng"}
                             </Dialog.Title>
                         </Dialog.Header>
 
@@ -96,7 +106,7 @@ const FluteCombinationFormDialog: React.FC<Props> = ({ isOpen, onClose, initialD
                             <Flex gap={3} direction="column">
 
                                 <Field.Root invalid={errors.code !== ""} orientation="vertical">
-                                    <Field.Label fontSize="lg">Mã</Field.Label>
+                                    <Field.Label fontSize="lg">Mã tổ hợp sóng</Field.Label>
                                     <Input
                                         size="lg"
                                         fontSize="lg"
