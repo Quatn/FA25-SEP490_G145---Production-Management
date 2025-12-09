@@ -196,21 +196,12 @@ export class ProductionRecalculateService {
       const recalcWare = mo.purchaseOrderItem.ware.recalculateFlag;
       const recalcPOI = mo.purchaseOrderItem.recalculateFlag;
 
-      // console.log("Check recalc ware", mo.purchaseOrderItem.ware.code);
       if (recalcWare) {
-        // console.log("Need recalc ware", mo.purchaseOrderItem.ware.code);
         const wareDoc = this.wareModel.hydrate(mo.purchaseOrderItem.ware);
-        // console.log("1111111111111111111111111111");
-        // console.log(wareDoc);
         const res = await this.checkAndRecalculateWareDoc(wareDoc);
-        // console.log("f1", mo.purchaseOrderItem.ware.recalculateFlag);
-        // console.log("2222222222222222222222222222");
         mo.purchaseOrderItem.ware = res;
-        // console.log(res);
-        // console.log("f2", mo.purchaseOrderItem.ware.recalculateFlag);
       }
 
-      // console.log("Check recalc poi", mo.purchaseOrderItem.code);
       if (recalcWare || recalcPOI) {
         const poiDoc = this.purchaseOrderItemModel.hydrate(
           mo.purchaseOrderItem,
@@ -228,16 +219,9 @@ export class ProductionRecalculateService {
       );
 
       const recalculatedOrder = recalculateManufacturingOrder(mo);
-      // console.log("1111111111111111111111111111");
-      // console.log(recalculatedOrder);
-
-      // console.log("2222222222222222222222222222");
-      // console.log(mo);
 
       Object.assign(mo, recalculatedOrder);
       await mo.save();
-      // console.log("3333333333333333333333333333");
-      // console.log(mo);
       return mo;
     }
     return mo;

@@ -25,7 +25,10 @@ import {
   PurchaseOrderItemDocument,
   PurchaseOrderItemSchema,
 } from "../schemas/purchase-order-item.schema";
-import { SubPurchaseOrderDocument, SubPurchaseOrderSchema } from "../schemas/sub-purchase-order.schema";
+import {
+  SubPurchaseOrderDocument,
+  SubPurchaseOrderSchema,
+} from "../schemas/sub-purchase-order.schema";
 import { PurchaseOrderSchema } from "../schemas/purchase-order.schema";
 import { Ware, WareDocument, WareSchema } from "../schemas/ware.schema";
 import { MOCodeGenerator } from "./business-logics/mo-code-generator";
@@ -65,16 +68,19 @@ export class ManufacturingOrderService {
   ) { }
 
   async recalCheckDocs(docs: ManufacturingOrderDocument[]) {
-      // Record of resulting docs after the would check and recalc process
+    // Record of resulting docs after the would check and recalc process
     const resultRocs: ManufacturingOrderDocument[] = [];
-      // Record of ids of pois that will be recalculated 
+    // Record of ids of pois that will be recalculated
     const previouslyRecalcPOIs: string[] = [];
 
     for (const moDoc of docs) {
-      const poi = moDoc.purchaseOrderItem as PurchaseOrderItemDocument
-      const ware = poi.ware as WareDocument
-      if (!previouslyRecalcPOIs.includes(poi._id.toString()) && poi.recalculateFlag && ware.recalculateFlag) {
-        previouslyRecalcPOIs.push(poi._id.toString())
+      const poi = moDoc.purchaseOrderItem as PurchaseOrderItemDocument;
+      const ware = poi.ware as WareDocument;
+      if (
+        !previouslyRecalcPOIs.includes(poi._id.toString()) &&
+        (poi.recalculateFlag || ware.recalculateFlag)
+      ) {
+        previouslyRecalcPOIs.push(poi._id.toString());
       }
 
       const alreadyRecalcedPOI = resultRocs.find((co) =>
@@ -87,7 +93,7 @@ export class ManufacturingOrderService {
       if (alreadyRecalcedPOI) {
         moDoc.purchaseOrderItem = alreadyRecalcedPOI.purchaseOrderItem;
       } else {
-      // If not then check the wares to see which can be reused from a previously recalculated MO, similar to the poi check
+        // If not then check the wares to see which can be reused from a previously recalculated MO, similar to the poi check
         const moDocWithSameWare = resultRocs.find((co) => {
           return (
             (co.purchaseOrderItem as PurchaseOrderItemDocument)
@@ -110,9 +116,8 @@ export class ManufacturingOrderService {
       }
 
       // By now all pois or wares should have been recalculated or reused from the resultRocs array, however if the poi or ware recalculated then the mo must also be recalculated, so if the current mo's poi or ware have just been recalculated or was reused from the resultRocs array, set the mo's recalculateFlag to true.
-      // console.log("AHHHHHHHHHHHH", previouslyRecalcPOIs)
       if (previouslyRecalcPOIs.includes(poi._id.toString())) {
-        moDoc.set("recalculateFlag", true)
+        moDoc.set("recalculateFlag", true);
       }
       const recaledMoDoc =
         await this.recalcService.checkAndRecalculateManufacturingOrderDoc(
