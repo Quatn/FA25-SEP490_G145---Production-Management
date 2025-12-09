@@ -200,10 +200,13 @@ export class ProductionRecalculateService {
       if (recalcWare) {
         // console.log("Need recalc ware", mo.purchaseOrderItem.ware.code);
         const wareDoc = this.wareModel.hydrate(mo.purchaseOrderItem.ware);
+        // console.log("1111111111111111111111111111");
+        // console.log(wareDoc);
         const res = await this.checkAndRecalculateWareDoc(wareDoc);
         // console.log("f1", mo.purchaseOrderItem.ware.recalculateFlag);
-        // console.log("res", res.recalculateFlag);
+        // console.log("2222222222222222222222222222");
         mo.purchaseOrderItem.ware = res;
+        // console.log(res);
         // console.log("f2", mo.purchaseOrderItem.ware.recalculateFlag);
       }
 
@@ -212,17 +215,29 @@ export class ProductionRecalculateService {
         const poiDoc = this.purchaseOrderItemModel.hydrate(
           mo.purchaseOrderItem,
         );
-        mo.purchaseOrderItem =
-          await this.checkAndRecalculatePurchaseOrderItemDoc(poiDoc);
+
+        const res = await this.checkAndRecalculatePurchaseOrderItemDoc(poiDoc);
+        mo.purchaseOrderItem = res;
       }
 
-      await this.orderFinishingProcessModel.updateMany({manufacturingOrder: mo._id}, {
-        $set: { requiredAmount: mo.amount },
-      });
+      await this.orderFinishingProcessModel.updateMany(
+        { manufacturingOrder: mo._id },
+        {
+          $set: { requiredAmount: mo.amount },
+        },
+      );
 
       const recalculatedOrder = recalculateManufacturingOrder(mo);
+      // console.log("1111111111111111111111111111");
+      // console.log(recalculatedOrder);
+
+      // console.log("2222222222222222222222222222");
+      // console.log(mo);
+
       Object.assign(mo, recalculatedOrder);
       await mo.save();
+      // console.log("3333333333333333333333333333");
+      // console.log(mo);
       return mo;
     }
     return mo;
