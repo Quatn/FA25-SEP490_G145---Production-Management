@@ -4,6 +4,7 @@ import { manufacturingOrderComponentUtils as moUtils } from "@/components/manufa
 import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { useGetAllByPaperTypesUsageQuery, useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
+import { useGetInventoryByWarePaperTypeCodesQuery } from "@/service/api/paperRollApiSlice";
 import { Chart, useChart } from "@chakra-ui/charts"
 import check from "check-types";
 import { useMemo } from "react";
@@ -32,6 +33,14 @@ export default function PaperUsageChart() {
     const set = new Set(arr?.flat())
     return [...set].filter(p => !check.undefined(p) && !check.null(p))
   }, [fullDetailMOsResponse?.data])
+
+  const {
+    data: paperrollsByTypeListResponse,
+    error: paperrollsByTypeListFetchError,
+    isLoading: paperrollsByTypeListIsFetchingList,
+  } = useGetInventoryByWarePaperTypeCodesQuery({
+    codes: paperTypesList,
+  });
 
   const {
     data: moByTypeListResponse,

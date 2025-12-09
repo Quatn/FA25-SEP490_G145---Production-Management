@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateMultiplePaperRollDto, CreatePaperRollDto } from './dto/create-paper-roll.dto';
 import { UpdatePaperRollDto } from './dto/update-paper-roll.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -6,6 +6,7 @@ import { PaperRoll, PaperRollDocument } from '../schemas/paper-roll.schema';
 import { PaperSequenceNumber, PaperSequenceNumberDocument } from '../schemas/paper-sequence-number.schema';
 import { Model, Types } from 'mongoose';
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
+import check from 'check-types';
 
 type SoftPaperRoll = PaperRoll & SoftDeleteDocument;
 
@@ -366,6 +367,127 @@ export class PaperRollService {
     }
 
     return populatedRoll[0];
+  }
+
+
+  async queryInventoryByWarePaperTypeCodes(codes: string[]): Promise<{code: string, weight: number}[]> {
+    const set = new Set(codes?.flat())
+    const arr = [...set].filter(p => !check.undefined(p) && !check.null(p))
+
+    const splittedCodes = arr.map(c => c.split("/")).filter(cs => check.inRange(cs.length, 3, 4))
+
+    if (splittedCodes.some(s => s.length == 3) && splittedCodes.some(s => s.length == 4)) {
+      throw new BadRequestException("Only send an array of all face and back type codes or all middle layer codes, this is to prevent duplicated rows from showing up in the results")
+    }
+
+    const promAcc: Promise<any>[] = []
+
+    splittedCodes.forEach((cs) => {
+      if (cs.length == 3) {
+        const paperColorCode = cs[0];
+        const paperWidth = parseInt(cs[1]);
+        const paperGrammage = parseInt(cs[2]);
+
+        if (check.string(paperColorCode) && check.number(paperWidth) && check.number(paperGrammage)) {
+          promAcc.push(this.PaperRollModel.aggregate([
+            {
+              $lookup: {
+                from: 'papertypes',
+                localField: 'paperTypeId',
+                foreignField: '_id',
+                as: 'paperType',
+              },
+            },
+            { $unwind: { path: '$paperType', preserveNullAndEmptyArrays: true } },
+            { $match: { "paperType.width": paperWidth, "paperType.grammage": paperGrammage } },
+            {
+              $lookup: {
+                from: 'papercolors',
+                localField: 'paperType.paperColor',
+                foreignField: '_id',
+                as: 'paperType.paperColor',
+              },
+            },
+            { $unwind: { path: '$paperType.paperColor', preserveNullAndEmptyArrays: true } },
+            { $match: { "paperType.paperColor.code": paperColorCode } },
+            {
+              $addFields: {
+                code: {
+                  $convert: {
+                    input: cs.join("/"),
+                    to: "string",
+                    onError: -1, // fallback value for bad format
+                    onNull: -1,
+                  },
+                },
+              },
+            },
+          ]))
+        }
+      }
+      if (cs.length == 4) {
+        const paperColorCode = cs[0];
+        const paperSupplierCode = cs[1];
+        const paperWidth = parseInt(cs[2]);
+        const paperGrammage = parseInt(cs[3]);
+
+        if (check.string(paperColorCode) && check.number(paperWidth) && check.number(paperGrammage)) {
+          promAcc.push(this.PaperRollModel.aggregate([
+            {
+              $lookup: {
+                from: 'papertypes',
+                localField: 'paperTypeId',
+                foreignField: '_id',
+                as: 'paperType',
+              },
+            },
+            { $unwind: { path: '$paperType', preserveNullAndEmptyArrays: true } },
+            { $match: { "paperType.width": paperWidth, "paperType.grammage": paperGrammage } },
+            {
+              $lookup: {
+                from: 'papersuppliers',
+                localField: 'paperSupplierId',
+                foreignField: '_id',
+                as: 'paperSupplier',
+              },
+            },
+            { $unwind: { path: '$paperSupplier', preserveNullAndEmptyArrays: true } },
+            { $match: { "paperSupplier.code": paperSupplierCode } },
+            {
+              $lookup: {
+                from: 'papercolors',
+                localField: 'paperType.paperColor',
+                foreignField: '_id',
+                as: 'paperType.paperColor',
+              },
+            },
+            { $unwind: { path: '$paperType.paperColor', preserveNullAndEmptyArrays: true } },
+            { $match: { "paperType.paperColor.code": paperColorCode } },
+            {
+              $addFields: {
+                code: {
+                  $convert: {
+                    input: cs.join("/"),
+                    to: "string",
+                    onError: -1, // fallback value for bad format
+                    onNull: -1,
+                  },
+                },
+              },
+            },
+          ]))
+        }
+      }
+    })
+
+    const rolls = await Promise.all(promAcc)
+
+    return (rolls as (PaperRoll & { code: string })[][]).map(rolls => {
+      const code = rolls.at(0)?.code
+
+      if (!code) return []
+      return [rolls.reduce((acc, item) => ({ code, weight: acc.weight + item.weight }), { code, weight: 0})]
+    }).flat();
   }
 
 }

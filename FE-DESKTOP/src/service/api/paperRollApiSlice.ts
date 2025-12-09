@@ -85,6 +85,20 @@ export const paperRollApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["PaperRoll"],
     }),
+
+    getInventoryByWarePaperTypeCodes: builder.query<
+      BaseResponse<{code: string, weight: number}[]>, 
+      { codes: string[] }
+    >({
+      query: ({ codes }) => ({
+        url: `${PAPER_ROLL_URL}/query/by-ware-paper-type-codes`,
+        method: "GET",
+        params: { codes },
+        credentials: "include",
+      }),
+      providesTags: ["PaperRoll"],
+    }),
+
   }),
 });
 
@@ -97,4 +111,5 @@ export const {
   useDeletePaperRollMutation,
   useGetDeletedPaperRollsQuery,
   useRestorePaperRollMutation,
+  useGetInventoryByWarePaperTypeCodesQuery,
 } = paperRollApiSlice;
