@@ -6,6 +6,8 @@ import { toaster } from "@/components/ui/toaster";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { CreateSemiFinishedGoodTransactionDTO } from "@/types/SemiFinishedTransaction";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
+import { UserState } from "@/types/UserState";
+import { useAppSelector } from "@/service/hooks";
 
 interface Props {
     isOpen: boolean;
@@ -19,6 +21,9 @@ interface Props {
 const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData, transactionType, manufacturingOrders }) => {
     const [createSemiTransaction] = useCreateSemiFinishedGoodTransactionMutation();
 
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
     const today = new Date();
     const localDate = today.toISOString().split("T")[0];
     const departments = createListCollection({
@@ -36,7 +41,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
         quantity: 0,
         transactionDate: localDate,
         exportedTo: undefined,
-        employee: "691b660f3a472fc27fde0c31",
+        employee: "",
         note: "",
     });
 
@@ -65,7 +70,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                 quantity: 0,
                 transactionDate: localDate,
                 exportedTo: initialData?.exportedTo,
-                employee: "69146dd889bf8e8ca320bcff", //TODO: hardcode employee
+                employee: userState?.id ?? '', // should be employee id
                 note: "",
             });
         }
@@ -73,7 +78,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
 
     const handleSubmit = async () => {
         if (!transaction.manufacturingOrder) {
-            toaster.create({ title: "Lỗi", description: "Chưa chọn bán thành phẩm", type: "error", closable: true });
+            toaster.create({ title: "Lỗi", description: "Chưa chọn phôi", type: "error", closable: true });
             return;
         }
 
@@ -95,7 +100,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
             toaster.create({
                 title: "Thành công",
                 description: `${transaction.transactionType === "IMPORT" ? "Nhập" : "Xuất"} kho 
-                ${transaction.quantity} bán thành phẩm lệnh ${transaction.manufacturingOrderCode}`,
+                ${transaction.quantity} phôi lệnh ${transaction.manufacturingOrderCode}`,
                 type: "success",
                 closable: true
             });
@@ -115,7 +120,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                     <Dialog.Content>
                         <Dialog.Header>
                             <Dialog.Title>
-                                {transaction.transactionType === "IMPORT" ? "Phiếu Nhập" : "Phiếu Xuất"} Kho Bán Thành Phẩm
+                                {transaction.transactionType === "IMPORT" ? "Phiếu Nhập" : "Phiếu Xuất"} Kho Phôi
                             </Dialog.Title>
                         </Dialog.Header>
                         <Dialog.Body>
@@ -158,7 +163,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                                     <Input
                                         size="lg"
                                         type="text"
-                                        value={transaction.transactionType === "IMPORT" ? "Nhập Bán Thành Phẩm" : "Xuất Bán Thành Phẩm"}
+                                        value={transaction.transactionType === "IMPORT" ? "Nhập Phôi" : "Xuất Phôi"}
                                         readOnly
                                     />
                                 </Field.Root>

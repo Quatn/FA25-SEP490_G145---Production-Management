@@ -34,7 +34,7 @@ const PaperTypeDetailDialog: React.FC<PaperTypeDetailDialogProps> = ({ isOpen, o
                                     <DataList.ItemValue>{initialData?.width}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
-                                    <DataList.ItemLabel>Định lượng</DataList.ItemLabel>
+                                    <DataList.ItemLabel>Định Lượng</DataList.ItemLabel>
                                     <DataList.ItemValue>{initialData?.grammage}</DataList.ItemValue>
                                 </DataList.Item>
                             </DataList.Root>

@@ -41,7 +41,7 @@ export class PaperSupplierController {
 
     // @UseGuards(JwtAuthGuard)
     @Get('list-deleted')
-    @ApiOperation({ summary: 'List deleted paper colors' })
+    @ApiOperation({ summary: 'List deleted paper suppliers' })
     async findDeleted(
         @Query("page") page: number = 1,
         @Query("limit") limit: number = 10,
