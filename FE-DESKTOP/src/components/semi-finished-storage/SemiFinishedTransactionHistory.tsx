@@ -59,6 +59,8 @@ const SemiFinishedTransactionHistory: React.FC<Props> = ({ id, poiAmount }) => {
                 </Flex>
 
                 <SemiFinishedTransactionHistoryFilter
+                    startDate={startDate}
+                    endDate={endDate}
                     collapsible={collapsible}
                     setStartDate={setStartDate}
                     setEndDate={setEndDate}

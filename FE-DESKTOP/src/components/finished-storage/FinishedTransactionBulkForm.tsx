@@ -5,6 +5,9 @@ import { toaster } from "@/components/ui/toaster";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { CreateFinishedGoodTransactionDTO } from "@/types/FinishedGoodTransaction";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
+import { formatDateForInput } from "@/utils/dateUtils";
+import { UserState } from "@/types/UserState";
+import { useAppSelector } from "@/service/hooks";
 
 interface Props {
     isOpen: boolean;
@@ -21,8 +24,12 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
 }) => {
     const [createBulkTransactions] = useCreateBulkFinishedGoodTransactionsMutation();
 
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
     const today = new Date();
-    const localDate = today.toISOString().split("T")[0];
+    const localDate = formatDateForInput(today);
 
     const [openConfirm, setOpenConfirm] = useState(false);
 
@@ -32,22 +39,22 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
             transactionType,
             quantity: 0,
             transactionDate: localDate,
-            employee: "691b660f3a472fc27fde0c31",
+            employee: "",
             note: "",
         },
     ]);
 
     const { contains } = useFilter({ sensitivity: "base" });
     const initialMOs = manufacturingOrders.map((mo) => {
-            const poi: PurchaseOrderItem = mo.purchaseOrderItem as PurchaseOrderItem;
-            const subPO = poi.subPurchaseOrder;
-            const po = subPO?.purchaseOrder;
-            const customer = po?.customer;
-            return ({
-                label: `${mo.code} - ${customer?.code} - ${po?.code} `,
-                value: mo._id,
-            });
+        const poi: PurchaseOrderItem = mo.purchaseOrderItem as PurchaseOrderItem;
+        const subPO = poi.subPurchaseOrder;
+        const po = subPO?.purchaseOrder;
+        const customer = po?.customer;
+        return ({
+            label: `${mo.code} - ${customer?.code} - ${po?.code} `,
+            value: mo._id,
         });
+    });
 
     const { collection: moCollection, filter: moFilter } = useListCollection({
         initialItems: initialMOs,
@@ -62,7 +69,7 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
                     transactionType,
                     quantity: 0,
                     transactionDate: localDate,
-                    employee: "691b660f3a472fc27fde0c31",
+                    employee: userState?.employeeId ?? '',
                     note: "",
                 },
             ]);
@@ -77,7 +84,7 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
                 transactionType,
                 quantity: 0,
                 transactionDate: localDate,
-                employee: "691b660f3a472fc27fde0c31",
+                employee: userState?.employeeId ?? '',
                 note: "",
             },
         ]);
@@ -96,7 +103,7 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
 
     const validateManufacturingOrder = (value: string, rowIndex: number) => {
         if (!value.trim()) {
-            setError(rowIndex, "manufacturingOrder", "Không được để trống");
+            setError(rowIndex, "manufacturingOrder", "Mã lệnh không được để trống");
             return;
         }
 
@@ -104,7 +111,7 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
             (r, i) => i !== rowIndex && r.manufacturingOrder === value
         );
         if (duplicate) {
-            setError(rowIndex, "manufacturingOrder", "Manufacturing Order bị lặp");
+            setError(rowIndex, "manufacturingOrder", "Mã lệnh bị lặp");
             return;
         }
 
@@ -116,7 +123,6 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
         updated[index][field] = value;
         setRows(updated);
 
-        // gọi validate tương ứng
         if (field === "manufacturingOrder") {
             validateManufacturingOrder(value, index);
         }
@@ -140,8 +146,8 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
             return;
         }
 
-        for (const r of rows) {
-            if (!r.manufacturingOrder) {
+        for (const row of rows) {
+            if (!row.manufacturingOrder) {
                 toaster.create({
                     title: "Lỗi",
                     description: "Có dòng chưa chọn mã lệnh",
@@ -149,10 +155,25 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
                 });
                 return;
             }
-            if (r.quantity <= 0) {
+            if (row.quantity <= 0) {
                 toaster.create({
                     title: "Lỗi",
                     description: "Số lượng phải lớn hơn 0",
+                    type: "error",
+                });
+                return;
+            }
+
+            if (row.quantity > 10000) {
+                toaster.create({ title: "Lỗi", description: "Mỗi lần nhập không được quá 10000 thành phẩm", type: "error", closable: true });
+                return;
+
+            }
+
+            if (row.transactionDate == "") {
+                toaster.create({
+                    title: "Lỗi",
+                    description: "Vui lòng chọn ngày thao tác",
                     type: "error",
                 });
                 return;
@@ -226,8 +247,8 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
                                                         collection={moCollection}
                                                         fontWeight={'bold'}
                                                         onInputValueChange={(e) => {
-                                                            moFilter(e.inputValue);
-
+                                                            if (row.manufacturingOrder == "") moFilter(e.inputValue);
+                                                            else moFilter('');
                                                         }}
                                                         onValueChange={(details) => {
                                                             const item = initialMOs.find(

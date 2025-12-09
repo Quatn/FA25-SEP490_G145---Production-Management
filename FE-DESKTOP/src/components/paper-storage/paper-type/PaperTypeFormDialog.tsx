@@ -90,8 +90,21 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
 
         let errorMsg = "";
         if (field === "paperColor" && !value) errorMsg = "Màu giấy không được để trống";
-        if (field === "width" && (!value || value <= 0)) errorMsg = "Khổ giấy không được để trống";
-        if (field === "grammage" && (!value || value <= 0)) errorMsg = "Định lượng không được để trống";
+        if (field === "width") {
+            if (!value || value <= 0)
+                errorMsg = "Khổ giấy không được để trống";
+            if (value && value > 2000) {
+                errorMsg = "Khổ giấy không được vượt quá 2000cm";
+            }
+        }
+        if (field === "grammage") {
+            if (!value || value <= 0) {
+                errorMsg = "Định lượng không được để trống";
+            }
+            if (value && value > 2000) {
+                errorMsg = "Định lượng không được vượt quá 2000cm";
+            }
+        }
 
         setErrors((prev) => ({ ...prev, [field]: errorMsg }));
     };
@@ -108,6 +121,8 @@ const PaperTypeFormDialog: React.FC<PaperTypeFormDialogProps> = ({
         if (isSuccess) {
             onClose();
         }
+
+        filter('');
     };
 
     const initInputPaperColor = (id: string) => {

@@ -82,7 +82,24 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
-
+      {
+        id: "print-color",
+        name: "Print Color",
+        children: [
+          {
+            id: "print-color-list",
+            name: "Print Color List",
+            href: "/print-color/list",
+            children: [],
+          },
+          {
+            id: "print-color-restore-list",
+            name: "Print Color Restore List",
+            href: "/print-color/restore-list",
+            children: [],
+          },
+        ],
+      },
       {
         id: "manufacturing-order",
         name: "Manufacturing Order",
