@@ -61,7 +61,7 @@ const FluteCombinationRestoreList: React.FC = () => {
     const handleRestore = async (data: FluteCombination) => {
         handleMutation(
             () => restoreItem(data).unwrap(),
-            `Đã khôi phục tổ hợp sóng ${data.code}}`,
+            `Đã khôi phục tổ hợp sóng ${data.code}`,
             'Khôi phục thất bại',
         );
     }

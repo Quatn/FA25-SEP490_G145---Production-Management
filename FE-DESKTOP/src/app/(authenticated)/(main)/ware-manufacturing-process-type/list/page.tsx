@@ -1,6 +1,6 @@
-import PaperColorRestoreList from "@/components/paper-storage/paper-color/PaperColorRestoreList";
+import WareManufacturingProcessTypeList from "@/components/ware/ware-manufacturing-process-type/WareManufacturingProcessTypeList";
 import { Box, Stack, Text } from "@chakra-ui/react";
-export default function PaperColorRestoreHome() {
+export default function WareManufacturingProcessTypeHome() {
   return (
     <Box
       m={5}
@@ -11,11 +11,11 @@ export default function PaperColorRestoreHome() {
     >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"bold"} color={"black"}>
-          KHÔI PHỤC MÀU GIẤY
+          DANH SÁCH LOẠI GIA CÔNG MÃ HÀNG
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>
-        <PaperColorRestoreList/>
+        <WareManufacturingProcessTypeList/>
       </Stack>
     </Box>
   );

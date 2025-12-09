@@ -1,30 +1,30 @@
 "use client";
 
-import { PaperColor } from "@/types/PaperColor";
+import { WareManufacturingProcessType } from "@/types/WareManufacturingProcessType";
 import { useState } from "react";
 import { toaster } from "@/components/ui/toaster";
 import { ButtonGroup, IconButton, Pagination, Spinner, Text } from "@chakra-ui/react";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
-import PaperColorRestoreTable from "./PaperColorRestoreTable";
-import PaperColorDetailDialog from "./PaperColorDetailDialog";
-import { useGetDeletedPaperColorQuery, useRestorePaperColorMutation } from "@/service/api/paperColorApiSlice";
+import WareManufacturingProcessTypeRestoreTable from "./WareManufacturingProcessTypeRestoreTable";
+import WareManufacturingProcessTypeDetailDialog from "./WareManufacturingProcessTypeDetailDialog";
+import { useGetDeletedWareManufacturingProcessTypeQuery, useRestoreWareManufacturingProcessTypeMutation } from "@/service/api/wareManufacturingProcessTypeApiSlice";
 
-const PaperColorRestoreList: React.FC = () => {
+const WareManufacturingProcessTypeRestoreList: React.FC = () => {
 
-    const [restoreItem] = useRestorePaperColorMutation();
+    const [restoreItem] = useRestoreWareManufacturingProcessTypeMutation();
 
     const [page, setPage] = useState(1);
     const limit = 10;
 
-    const { data: dataResp, error, isLoading } = useGetDeletedPaperColorQuery({ page: page, limit: limit });
+    const { data: dataResp, error, isLoading } = useGetDeletedWareManufacturingProcessTypeQuery({ page: page, limit: limit });
 
     const items = dataResp?.data?.data ?? [];
     const totalPages = dataResp?.data?.totalPages ?? 1;
 
     const [detailOpen, setDetailOpen] = useState(false);
-    const [selected, setSelected] = useState<PaperColor | undefined>(undefined);
+    const [selected, setSelected] = useState<WareManufacturingProcessType | undefined>(undefined);
 
-    const handleOpenDetail = (item?: PaperColor) => {
+    const handleOpenDetail = (item?: WareManufacturingProcessType) => {
         setSelected(item);
         setDetailOpen(true);
     };
@@ -58,10 +58,10 @@ const PaperColorRestoreList: React.FC = () => {
         }
     };
 
-    const handleRestore = async (data: PaperColor) => {
+    const handleRestore = async (data: WareManufacturingProcessType) => {
         handleMutation(
             () => restoreItem(data).unwrap(),
-            `Đã khôi phục màu giấy ${data.code}`,
+            `Đã khôi phục loại gia công mã hàng ${data.code}`,
             'Khôi phục thất bại',
         );
     }
@@ -72,7 +72,7 @@ const PaperColorRestoreList: React.FC = () => {
     return (
         <>
 
-            <PaperColorDetailDialog
+            <WareManufacturingProcessTypeDetailDialog
                 isOpen={detailOpen}
                 onClose={handleCloseDetail}
                 initialData={selected} />
@@ -80,7 +80,7 @@ const PaperColorRestoreList: React.FC = () => {
             {isLoading ? (<Spinner />) : (
                 <>
 
-                    <PaperColorRestoreTable
+                    <WareManufacturingProcessTypeRestoreTable
                         page={page}
                         limit={limit}
                         items={items}
@@ -127,4 +127,4 @@ const PaperColorRestoreList: React.FC = () => {
     );
 }
 
-export default PaperColorRestoreList;
+export default WareManufacturingProcessTypeRestoreList;

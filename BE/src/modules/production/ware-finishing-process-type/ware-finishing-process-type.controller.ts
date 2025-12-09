@@ -11,6 +11,7 @@ import { PaginatedList } from '@/common/dto/paginatedList.dto';
 export class WareFinishingProcessTypeController {
   constructor(private readonly service: WareFinishingProcessTypeService) { }
 
+  // @UseGuards(JwtAuthGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated ware finishing process types' })
   async findPaginated(
@@ -26,6 +27,22 @@ export class WareFinishingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
+  @Get('list-deleted')
+  @ApiOperation({ summary: 'List deleted ware finishing process type' })
+  async findDeleted(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+  ): Promise<BaseResponse<PaginatedList<WareFinishingProcessType>>> {
+    const docs = await this.service.findDeleted(page, limit);
+    return {
+      success: true,
+      message: 'Fetch successful',
+      data: docs,
+    };
+  }
+
+  // @UseGuards(JwtAuthGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List ware finishing process types' })
   async findAll(): Promise<BaseResponse<WareFinishingProcessType[]>> {
@@ -37,6 +54,7 @@ export class WareFinishingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Ware finishing process type detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<WareFinishingProcessType>> {
@@ -48,6 +66,7 @@ export class WareFinishingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Post('create')
   @ApiOperation({ summary: 'Create new ware finishing process type' })
   async create(@Body() dto: CreateWareFinishingProcessTypeDto): Promise<BaseResponse<WareFinishingProcessType>> {
@@ -59,6 +78,7 @@ export class WareFinishingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Patch('update/:id')
   @ApiOperation({ summary: 'Update ware finishing process type' })
   async update(
@@ -73,6 +93,7 @@ export class WareFinishingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Delete('delete-soft/:id')
   @ApiOperation({ summary: 'Soft delete ware finishing process type' })
   async softDelete(@Param('id') id: string): Promise<BaseResponse<null>> {
@@ -84,6 +105,7 @@ export class WareFinishingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Patch('restore/:id')
   @ApiOperation({ summary: 'Restore ware finishing process type' })
   async restore(@Param('id') id: string): Promise<BaseResponse<null>> {
@@ -95,6 +117,7 @@ export class WareFinishingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Delete('delete-hard/:id')
   @ApiOperation({ summary: 'Hard delete ware finishing process type' })
   async hardDelete(@Param('id') id: string): Promise<BaseResponse<null>> {

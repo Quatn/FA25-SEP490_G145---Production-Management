@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, Length, Matches, IsEmail, IsMongoId, IsNumber, Min } from 'class-validator';
+import { IsMongoId, IsNumber, Min } from 'class-validator';
 
 export class CreatePaperTypeRequestDto {
     @ApiProperty({
@@ -7,7 +7,7 @@ export class CreatePaperTypeRequestDto {
         description: 'MongoDB ObjectId of the paper color this paper type belongs to',
     })
     @IsMongoId({ message: 'paperColorId must be a valid MongoDB ObjectId' })
-    paperColorId: string;
+    paperColor: string;
 
     @ApiProperty({
         example: 1200,

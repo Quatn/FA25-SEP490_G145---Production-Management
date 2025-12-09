@@ -1,30 +1,32 @@
 "use client";
 
-import { PaperColor } from "@/types/PaperColor";
+import { PaperType } from "@/types/PaperType";
 import { useState } from "react";
 import { toaster } from "@/components/ui/toaster";
 import { ButtonGroup, IconButton, Pagination, Spinner, Text } from "@chakra-ui/react";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
-import PaperColorRestoreTable from "./PaperColorRestoreTable";
-import PaperColorDetailDialog from "./PaperColorDetailDialog";
-import { useGetDeletedPaperColorQuery, useRestorePaperColorMutation } from "@/service/api/paperColorApiSlice";
+import PaperTypeRestoreTable from "./PaperTypeRestoreTable";
+import PaperTypeDetailDialog from "./PaperTypeDetailDialog";
+import { useGetDeletedPaperTypeQuery, useRestorePaperTypeMutation } from "@/service/api/paperTypeApiSlice";
+import { PaperColor } from "@/types/PaperColor";
 
-const PaperColorRestoreList: React.FC = () => {
 
-    const [restoreItem] = useRestorePaperColorMutation();
+const PaperTypeRestoreList: React.FC = () => {
+
+    const [restoreItem] = useRestorePaperTypeMutation();
 
     const [page, setPage] = useState(1);
     const limit = 10;
 
-    const { data: dataResp, error, isLoading } = useGetDeletedPaperColorQuery({ page: page, limit: limit });
+    const { data: dataResp, error, isLoading } = useGetDeletedPaperTypeQuery({ page: page, limit: limit });
 
     const items = dataResp?.data?.data ?? [];
     const totalPages = dataResp?.data?.totalPages ?? 1;
 
     const [detailOpen, setDetailOpen] = useState(false);
-    const [selected, setSelected] = useState<PaperColor | undefined>(undefined);
+    const [selected, setSelected] = useState<PaperType | undefined>(undefined);
 
-    const handleOpenDetail = (item?: PaperColor) => {
+    const handleOpenDetail = (item?: PaperType) => {
         setSelected(item);
         setDetailOpen(true);
     };
@@ -58,10 +60,11 @@ const PaperColorRestoreList: React.FC = () => {
         }
     };
 
-    const handleRestore = async (data: PaperColor) => {
+    const handleRestore = async (data: PaperType) => {
+        const color = data.paperColor as PaperColor;
         handleMutation(
             () => restoreItem(data).unwrap(),
-            `Đã khôi phục màu giấy ${data.code}`,
+            `Đã khôi phục loại giấy ${color.code}/${data.width}/${data.grammage}`,
             'Khôi phục thất bại',
         );
     }
@@ -72,7 +75,7 @@ const PaperColorRestoreList: React.FC = () => {
     return (
         <>
 
-            <PaperColorDetailDialog
+            <PaperTypeDetailDialog
                 isOpen={detailOpen}
                 onClose={handleCloseDetail}
                 initialData={selected} />
@@ -80,7 +83,7 @@ const PaperColorRestoreList: React.FC = () => {
             {isLoading ? (<Spinner />) : (
                 <>
 
-                    <PaperColorRestoreTable
+                    <PaperTypeRestoreTable
                         page={page}
                         limit={limit}
                         items={items}
@@ -127,4 +130,4 @@ const PaperColorRestoreList: React.FC = () => {
     );
 }
 
-export default PaperColorRestoreList;
+export default PaperTypeRestoreList;

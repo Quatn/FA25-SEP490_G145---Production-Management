@@ -1,27 +1,19 @@
-import { Table, Group, Button, Icon } from "@chakra-ui/react";
-import { FaEdit, FaEye } from "react-icons/fa";
-import { FaTrashCan } from "react-icons/fa6";
+import { Table, Group, Button, Icon, Text } from "@chakra-ui/react";
+import { FaEye } from "react-icons/fa";
 import { PaperType } from "@/types/PaperType";
-import PaperTypeDetailDialog from "./PaperTypeDetailDialog";
+import { TbRestore } from "react-icons/tb";
+import React from "react";
 import { PaperColor } from "@/types/PaperColor";
 
-interface PaperTypeTableProps {
+interface Props {
     page: number;
     limit: number;
-    types: PaperType[];
-    onEdit: (type: PaperType) => void;
-    onDetail: (type: PaperType) => void;
-    onDelete: (type: PaperType) => void;
+    items: PaperType[];
+    onRestore: (item: PaperType) => void;
+    onDetail: (item: PaperType) => void;
 }
 
-const PaperTypeTable = ({
-    page,
-    limit,
-    types,
-    onEdit,
-    onDetail,
-    onDelete,
-}: PaperTypeTableProps) => {
+const PaperTypeRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, onDetail }) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
@@ -53,46 +45,36 @@ const PaperTypeTable = ({
                 </Table.Header>
 
                 <Table.Body>
-                    {types.map((type, index) => {
-                        const color: PaperColor = type.paperColor as PaperColor;
+                    {items.map((item, index) => {
+                        const color: PaperColor = item.paperColor as PaperColor;
                         return (
-                            <Table.Row key={type._id ?? index}>
+                            <Table.Row key={item._id ?? index}>
                                 <Table.Cell textAlign="center">{(page - 1) * limit + index + 1}</Table.Cell>
-                                <Table.Cell>{color?.code}/{type.width}/{type.grammage}</Table.Cell>
+                                <Table.Cell>{color?.code}/{item.width}/{item.grammage}</Table.Cell>
                                 <Table.Cell>{color?.title}</Table.Cell>
-                                <Table.Cell>{type.width}</Table.Cell>
-                                <Table.Cell>{type.grammage}</Table.Cell>
+                                <Table.Cell>{item.width}</Table.Cell>
+                                <Table.Cell>{item.grammage}</Table.Cell>
                                 <Table.Cell>
                                     <Group gap={5}>
                                         <Button
                                             variant="surface"
                                             colorPalette="blue"
-                                            onClick={() => onDetail(type)}
+                                            onClick={() => onDetail(item)}
                                         >
                                             <Icon>
                                                 <FaEye />
                                             </Icon>
                                             Chi tiết
                                         </Button>
-                                        {/* <Button
-                                            variant="surface"
-                                            colorPalette="yellow"
-                                            onClick={() => onEdit(type)}
-                                        >
-                                            <Icon>
-                                                <FaEdit />
-                                            </Icon>
-                                            Sửa
-                                        </Button> */}
                                         <Button
                                             variant="surface"
-                                            colorPalette="red"
-                                            onClick={() => onDelete(type)}
+                                            colorPalette="green"
+                                            onClick={() => onRestore(item)}
                                         >
                                             <Icon>
-                                                <FaTrashCan />
+                                                <TbRestore />
                                             </Icon>
-                                            Xóa
+                                            Khôi phục
                                         </Button>
                                     </Group>
                                 </Table.Cell>
@@ -105,4 +87,4 @@ const PaperTypeTable = ({
     );
 };
 
-export default PaperTypeTable;
+export default PaperTypeRestoreTable;

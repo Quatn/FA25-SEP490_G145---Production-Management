@@ -11,6 +11,7 @@ import WareFinishingProcessTypeFormDialog from "./WareFinishingProcessTypeFormDi
 import WareFinishingProcessTypeAlertDialog from "./WareFinishingProcessTypeAlertDialog";
 import WareFinishingProcessTypeTable from "./WareFinishingProcessTypeTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
+import WareFinishingProcessTypeDetailDialog from "./WareFinishingProcessTypeDetailDialog";
 
 const WareFinishingProcessTypeList: React.FC = () => {
 
@@ -34,6 +35,7 @@ const WareFinishingProcessTypeList: React.FC = () => {
     const totalPages = dataResp?.data?.totalPages ?? 1;
 
     const [formOpen, setFormOpen] = useState(false);
+    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [alertOpen, setAlertOpen] = useState(false);
     const [selected, setSelected] = useState<WareFinishingProcessType | undefined>(undefined);
 
@@ -44,19 +46,36 @@ const WareFinishingProcessTypeList: React.FC = () => {
         setFormOpen(true);
     };
 
+    const handleOpenDetailDialog = (item?: WareFinishingProcessType) => {
+        setSelected(item);
+        setDetailDialogOpen(true);
+    };
+
     const handleOpenAlert = (item: WareFinishingProcessType) => {
         setSelected(item);
         setAlertOpen(true);
     }
 
-    const handleCloseForm = () => setFormOpen(false);
-    const handleCloseAlert = () => setAlertOpen(false);
+    const handleCloseForm = () => {
+        setFormOpen(false);
+        setSelected(undefined);
+    }
+
+    const handleCloseDetailDialog = () => {
+        setDetailDialogOpen(false);
+        setSelected(undefined);
+    };
+
+    const handleCloseAlert = () => {
+        setAlertOpen(false);
+        setSelected(undefined);
+    }
 
     const handleMutation = async (
         fn: Function,
         successMessage: string,
         errorMessage: string
-    ) => {
+    ): Promise<boolean> => {
         try {
             await fn();
             toaster.create({
@@ -65,6 +84,7 @@ const WareFinishingProcessTypeList: React.FC = () => {
                 type: "success",
                 closable: true,
             });
+            return true;
         } catch (error: any) {
             const msg = error?.data?.message || error?.message || "Đã xảy ra lỗi, thử lại sau";
             toaster.create({
@@ -73,11 +93,13 @@ const WareFinishingProcessTypeList: React.FC = () => {
                 type: "error",
                 closable: true,
             });
+            return false;
         }
     };
 
     const handleAdd = async (data: WareFinishingProcessType) => {
-        handleMutation(
+
+        return await handleMutation(
             () => addItem(data).unwrap(),
             `Đã lưu loại hoàn thiện mã hàng ${data.code} - ${data.name}`,
             'Lưu thất bại',
@@ -85,7 +107,8 @@ const WareFinishingProcessTypeList: React.FC = () => {
     }
 
     const handleUpdate = async (data: WareFinishingProcessType) => {
-        handleMutation(
+
+        return await handleMutation(
             () => updateItem(data).unwrap(),
             `Đã cập nhật loại hoàn thiện mã hàng ${data.code} - ${data.name}`,
             'Cập nhật thất bại',
@@ -93,7 +116,7 @@ const WareFinishingProcessTypeList: React.FC = () => {
     }
 
     const handleDelete = async (data: WareFinishingProcessType) => {
-        handleMutation(
+        return await handleMutation(
             () => deleteItem(data).unwrap(),
             `Xóa loại hoàn thiện mã hàng ${data.code} - ${data.name}`,
             'Xóa thất bại',
@@ -130,6 +153,12 @@ const WareFinishingProcessTypeList: React.FC = () => {
                 onAdd={(d) => handleAdd(d)}
                 onUpdate={(d) => handleUpdate(d)} />
 
+            <WareFinishingProcessTypeDetailDialog
+                isOpen={detailDialogOpen}
+                onClose={handleCloseDetailDialog}
+                initialData={selected}
+            />
+
             <WareFinishingProcessTypeAlertDialog
                 isOpen={alertOpen}
                 onClose={handleCloseAlert}
@@ -147,7 +176,14 @@ const WareFinishingProcessTypeList: React.FC = () => {
                         onChange={(e) => { setPage(1); setSearch(e.target.value) }} />
                 </InputGroup>
                 <Spacer />
-                <Button colorPalette={"green"} onClick={() => handleOpenForm()}><Icon><FaPlus /></Icon>Thêm loại hoàn thiện mã hàng</Button>
+                <Button
+                    colorPalette={"green"}
+                    onClick={() => handleOpenForm()}
+                ><Icon>
+                        <FaPlus />
+                    </Icon>
+                    Thêm loại hoàn thiện mã hàng
+                </Button>
             </Flex>
 
             {isLoading ? (<Spinner />) : (
@@ -157,6 +193,7 @@ const WareFinishingProcessTypeList: React.FC = () => {
                         limit={limit}
                         items={items}
                         onEdit={handleOpenForm}
+                        onDetail={handleOpenDetailDialog}
                         onDelete={handleOpenAlert}
                     />
 

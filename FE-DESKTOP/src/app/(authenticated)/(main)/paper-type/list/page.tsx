@@ -1,6 +1,6 @@
 import PaperTypeList from "@/components/paper-storage/paper-type/PaperTypeList";
-import { Box, Button, Stack, Text } from "@chakra-ui/react";
-export default function PaperSupplierHome() {
+import { Box, Stack, Text } from "@chakra-ui/react";
+export default function PaperTypeHome() {
   return (
     <Box
       m={5}
@@ -15,7 +15,7 @@ export default function PaperSupplierHome() {
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>
-        <PaperTypeList/>
+        <PaperTypeList />
       </Stack>
     </Box>
   );
