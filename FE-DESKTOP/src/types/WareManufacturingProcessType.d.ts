@@ -1,4 +1,5 @@
-export interface WareManufacturingProcessType extends BaseSchema {
+export interface WareManufacturingProcessType {
+  _id?: string,
   code: string;
   name: string;
   description: string;

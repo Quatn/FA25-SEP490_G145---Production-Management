@@ -1,4 +1,4 @@
-import WareManufacturingProcessTypeList from "@/components/ware/ware-manufacturing-process-type/WareManufacturingProcessTypeList";
+import WareManufacturingProcessTypeRestoreList from "@/components/ware/ware-manufacturing-process-type/WareManufacturingProcessTypeRestoreList";
 import { Box, Stack, Text } from "@chakra-ui/react";
 export default function WareManufacturingProcessTypeHome() {
   return (
@@ -11,11 +11,11 @@ export default function WareManufacturingProcessTypeHome() {
     >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"bold"} color={"black"}>
-          DANH SÁCH LOẠI QUY TRÌNH MÃ HÀNG
+          KHÔI PHỤC LOẠI GIA CÔNG MÃ HÀNG
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>
-        <WareManufacturingProcessTypeList/>
+        <WareManufacturingProcessTypeRestoreList />
       </Stack>
     </Box>
   );

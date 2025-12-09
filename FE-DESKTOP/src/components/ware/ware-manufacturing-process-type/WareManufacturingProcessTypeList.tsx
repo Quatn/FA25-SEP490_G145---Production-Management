@@ -3,7 +3,7 @@
 import { Button, ButtonGroup, CloseButton, Flex, IconButton, Input, InputGroup, Pagination, Spacer, Spinner } from "@chakra-ui/react";
 import React, { useEffect, useRef, useState } from "react";
 import { Text, Icon } from "@chakra-ui/react";
-import { useAddWareManufacturingProcessMutation, useUpdateWareManufacturingProcessMutation, useDeleteWareManufacturingProcessMutation, useGetWareManufacturingProcessQuery } from "@/service/api/wareManufacturingProcessTypeApiSlice";
+import { useAddWareManufacturingProcessTypeMutation, useUpdateWareManufacturingProcessTypeMutation, useDeleteWareManufacturingProcessTypeMutation, useGetWareManufacturingProcessTypeQuery } from "@/service/api/wareManufacturingProcessTypeApiSlice";
 import { WareManufacturingProcessType } from "@/types/WareManufacturingProcessType";
 import { toaster } from "@/components/ui/toaster";
 import { FaPlus, FaSearch } from "react-icons/fa";
@@ -11,12 +11,13 @@ import WareManufacturingProcessTypeFormDialog from "./WareManufacturingProcessTy
 import WareManufacturingProcessTypeAlertDialog from "./WareManufacturingProcessTypeAlertDialog";
 import WareManufacturingProcessTypeTable from "./WareManufacturingProcessTypeTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
+import WareManufacturingProcessTypeDetailDialog from "./WareManufacturingProcessTypeDetailDialog";
 
 const WareManufacturingProcessTypeList: React.FC = () => {
 
-    const [addItem] = useAddWareManufacturingProcessMutation();
-    const [updateItem] = useUpdateWareManufacturingProcessMutation();
-    const [deleteItem] = useDeleteWareManufacturingProcessMutation();
+    const [addItem] = useAddWareManufacturingProcessTypeMutation();
+    const [updateItem] = useUpdateWareManufacturingProcessTypeMutation();
+    const [deleteItem] = useDeleteWareManufacturingProcessTypeMutation();
 
     const [page, setPage] = useState(1);
     const limit = 10;
@@ -28,12 +29,13 @@ const WareManufacturingProcessTypeList: React.FC = () => {
         return () => clearTimeout(timer);
     }, [search]);
 
-    const { data: dataResp, error, isLoading } = useGetWareManufacturingProcessQuery({ page: page, limit: limit, search: debouncedSearch });
+    const { data: dataResp, error, isLoading } = useGetWareManufacturingProcessTypeQuery({ page: page, limit: limit, search: debouncedSearch });
 
     const items = dataResp?.data?.data ?? [];
     const totalPages = dataResp?.data?.totalPages ?? 1;
 
     const [formOpen, setFormOpen] = useState(false);
+    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [alertOpen, setAlertOpen] = useState(false);
     const [selected, setSelected] = useState<WareManufacturingProcessType | undefined>(undefined);
 
@@ -44,19 +46,37 @@ const WareManufacturingProcessTypeList: React.FC = () => {
         setFormOpen(true);
     };
 
+    const handleOpenDetailDialog = (item?: WareManufacturingProcessType) => {
+        setSelected(item);
+        setDetailDialogOpen(true);
+    };
+
     const handleOpenAlert = (item: WareManufacturingProcessType) => {
         setSelected(item);
         setAlertOpen(true);
     }
 
-    const handleCloseForm = () => setFormOpen(false);
-    const handleCloseAlert = () => setAlertOpen(false);
+    const handleCloseForm = () => {
+        setFormOpen(false);
+        setSelected(undefined);
+    }
+
+    const handleCloseDetailDialog = () => {
+        setDetailDialogOpen(false);
+        setSelected(undefined);
+    };
+
+
+    const handleCloseAlert = () => {
+        setAlertOpen(false);
+        setSelected(undefined);
+    }
 
     const handleMutation = async (
         fn: Function,
         successMessage: string,
         errorMessage: string
-    ) => {
+    ): Promise<boolean> => {
         try {
             await fn();
             toaster.create({
@@ -65,6 +85,7 @@ const WareManufacturingProcessTypeList: React.FC = () => {
                 type: "success",
                 closable: true,
             });
+            return true;
         } catch (error: any) {
             const msg = error?.data?.message || error?.message || "Đã xảy ra lỗi, thử lại sau";
             toaster.create({
@@ -73,29 +94,30 @@ const WareManufacturingProcessTypeList: React.FC = () => {
                 type: "error",
                 closable: true,
             });
+            return false;
         }
     };
 
     const handleAdd = async (data: WareManufacturingProcessType) => {
-        handleMutation(
+        return await handleMutation(
             () => addItem(data).unwrap(),
-            `Đã lưu loại quy trình ${data.code} - ${data.name}`,
+            `Đã lưu loại gia công mã hàng ${data.code} - ${data.name}`,
             'Lưu thất bại',
         );
     }
 
     const handleUpdate = async (data: WareManufacturingProcessType) => {
-        handleMutation(
+        return await handleMutation(
             () => updateItem(data).unwrap(),
-            `Đã cập nhật loại quy trình ${data.code} - ${data.name}`,
+            `Đã cập nhật loại gia công mã hàng ${data.code} - ${data.name}`,
             'Cập nhật thất bại',
         );
     }
 
     const handleDelete = async (data: WareManufacturingProcessType) => {
-        handleMutation(
+        return await handleMutation(
             () => deleteItem(data).unwrap(),
-            `Xóa loại quy trình ${data.code} - ${data.name}`,
+            `Xóa loại gia công mã hàng ${data.code} - ${data.name}`,
             'Xóa thất bại',
         );
     }
@@ -130,6 +152,12 @@ const WareManufacturingProcessTypeList: React.FC = () => {
                 onAdd={(d) => handleAdd(d)}
                 onUpdate={(d) => handleUpdate(d)} />
 
+            <WareManufacturingProcessTypeDetailDialog
+                isOpen={detailDialogOpen}
+                onClose={handleCloseDetailDialog}
+                initialData={selected}
+            />
+
             <WareManufacturingProcessTypeAlertDialog
                 isOpen={alertOpen}
                 onClose={handleCloseAlert}
@@ -147,7 +175,14 @@ const WareManufacturingProcessTypeList: React.FC = () => {
                         onChange={(e) => { setPage(1); setSearch(e.target.value) }} />
                 </InputGroup>
                 <Spacer />
-                <Button colorPalette={"green"} onClick={() => handleOpenForm()}><Icon><FaPlus /></Icon>Thêm loại quy trình</Button>
+                <Button
+                    colorPalette={"green"}
+                    onClick={() => handleOpenForm()}>
+                    <Icon>
+                        <FaPlus />
+                    </Icon>
+                    Thêm loại gia công
+                </Button>
             </Flex>
 
             {isLoading ? (<Spinner />) : (
@@ -157,6 +192,7 @@ const WareManufacturingProcessTypeList: React.FC = () => {
                         limit={limit}
                         items={items}
                         onEdit={handleOpenForm}
+                        onDetail={handleOpenDetailDialog}
                         onDelete={handleOpenAlert}
                     />
 

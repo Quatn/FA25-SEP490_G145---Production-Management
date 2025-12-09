@@ -5,16 +5,20 @@ import { WareManufacturingProcessType } from "@/types/WareManufacturingProcessTy
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: WareManufacturingProcessType;
-    onAdd: (data: WareManufacturingProcessType) => void;
-    onUpdate: (data: WareManufacturingProcessType) => void;
+    initialData: WareManufacturingProcessType | undefined;
+    onAdd: (data: WareManufacturingProcessType) => Promise<boolean>;
+    onUpdate: (data: WareManufacturingProcessType) => Promise<boolean>;
 }
 
 type ErrorMap = Record<string, string>;
 
 const WareManufacturingProcessTypeFormDialog: React.FC<Props> = ({ isOpen, onClose, initialData, onAdd, onUpdate }) => {
-    const emptyItem = { _id: "", code: "", name: "", description: "", note: "", createdAt: new Date(), updatedAt: new Date() } as WareManufacturingProcessType;
-    const [item, setItem] = useState<WareManufacturingProcessType>(emptyItem);
+    const [item, setItem] = useState<WareManufacturingProcessType>({
+        code: "",
+        name: "",
+        description: "",
+        note: ""
+    });
     const [errors, setErrors] = useState<ErrorMap>({});
 
     const validateField = (field: keyof WareManufacturingProcessType, value: string) => {
@@ -22,10 +26,14 @@ const WareManufacturingProcessTypeFormDialog: React.FC<Props> = ({ isOpen, onClo
 
         switch (field) {
             case "code":
-                if (!value.trim()) errorMsg = "Mã không được để trống";
+                if (!value.trim()) errorMsg = "Mã loại gia công mã hàng không được để trống";
+                else if (!/^[A-Z]{2,20}$/.test(value))
+                    errorMsg = "Mã loại gia công mã hàng chỉ được dùng chữ in hoa, độ dài từ 2 đến 20 ký tự";
                 break;
             case "name":
-                if (!value.trim()) errorMsg = "Tên không được để trống";
+                if (!value.trim()) errorMsg = "Tên loại gia công mã hàng không được để trống";
+                else if (!/^(?!.* {2})[A-Za-zÀ-Ỹà-ỹ ]{2,20}$/.test(value))
+                    errorMsg = "Tên loại gia công mã hàng chỉ được dùng chữ cái, cách nhau tối đa 1 khoảng trắng, độ dài từ 2 đến 20 ký tự";
                 break;
         }
 
@@ -40,20 +48,37 @@ const WareManufacturingProcessTypeFormDialog: React.FC<Props> = ({ isOpen, onClo
 
     useEffect(() => {
         if (isOpen) {
-            setItem(initialData ?? emptyItem);
-            setErrors({ code: initialData ? "" : "Mã không được để trống", name: initialData ? "" : "Tên không được để trống" });
+            setItem({
+                _id: initialData?._id,
+                code: initialData?.code ?? "",
+                name: initialData?.name ?? "",
+                description: initialData?.description ?? "",
+                note: initialData?.note ?? "",
+            });
+            setErrors({
+                code: initialData ? "" : "Mã loại gia công mã hàng không được để trống",
+                name: initialData ? "" : "Tên loại gia công mã hàng không được để trống"
+            });
         }
     }, [isOpen, initialData]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const isCodeValid = validateField("code", item.code);
         const isNameValid = validateField("name", item.name);
 
         if (isCodeValid && isNameValid) {
-            !!initialData ? onUpdate(item) : onAdd(item);
-            if (!initialData) setItem(emptyItem);
-        } else return;
-        onClose();
+            let isSuccess = false;
+
+            if (!!initialData) {
+                isSuccess = await onUpdate(item);
+            } else {
+                isSuccess = await onAdd(item);
+            }
+
+            if (isSuccess) {
+                onClose();
+            }
+        }
     }
 
     const hasError = Object.values(errors).some((m) => m);
@@ -66,7 +91,9 @@ const WareManufacturingProcessTypeFormDialog: React.FC<Props> = ({ isOpen, onClo
                 <Dialog.Positioner>
                     <Dialog.Content>
                         <Dialog.Header>
-                            <Dialog.Title>{!initialData ? "Thêm Loại Quy Trình" : "Sửa Loại Quy Trình"}</Dialog.Title>
+                            <Dialog.Title>
+                                {!initialData ? "Thêm Loại Gia Công" : "Sửa Loại Gia Công"}
+                            </Dialog.Title>
                         </Dialog.Header>
 
                         <Dialog.Body>
@@ -74,24 +101,55 @@ const WareManufacturingProcessTypeFormDialog: React.FC<Props> = ({ isOpen, onClo
 
                                 <Field.Root invalid={errors.code !== ""} orientation="vertical">
                                     <Field.Label fontSize="lg">Mã</Field.Label>
-                                    <Input size="lg" fontSize="lg" fontWeight="bold" value={item.code} placeholder="Nhập mã" required onChange={(e) => handleChange("code", e.target.value.toUpperCase())} />
-                                    <Box minH="20px" mt="1">{errors.code && <Field.ErrorText>{errors.code}</Field.ErrorText>}</Box>
+                                    <Input
+                                        size="lg"
+                                        fontSize="lg"
+                                        fontWeight="bold"
+                                        value={item.code}
+                                        placeholder="Nhập mã loại gia công"
+                                        required
+                                        disabled={!!initialData}
+                                        onChange={(e) => handleChange("code", e.target.value.toUpperCase())} />
+                                    <Box minH="20px" mt="1">
+                                        {errors.code &&
+                                            <Field.ErrorText>
+                                                {errors.code}
+                                            </Field.ErrorText>}
+                                    </Box>
                                 </Field.Root>
 
                                 <Field.Root invalid={errors.name !== ""} orientation="vertical">
                                     <Field.Label fontSize="lg">Tên</Field.Label>
-                                    <Input size="lg" fontSize="lg" fontWeight="bold" value={item.name} placeholder="Nhập tên" required onChange={(e) => handleChange("name", e.target.value)} />
-                                    <Box minH="20px" mt="1">{errors.name && <Field.ErrorText>{errors.name}</Field.ErrorText>}</Box>
+                                    <Input
+                                        size="lg"
+                                        fontSize="lg"
+                                        fontWeight="bold"
+                                        value={item.name}
+                                        placeholder="Nhập tên loại gia công"
+                                        required
+                                        onChange={(e) => handleChange("name", e.target.value)} />
+                                    <Box minH="20px" mt="1">
+                                        {errors.name &&
+                                            <Field.ErrorText>
+                                                {errors.name}
+                                            </Field.ErrorText>}
+                                    </Box>
                                 </Field.Root>
 
                                 <Field.Root orientation="vertical">
                                     <Field.Label fontSize="lg">Mô tả</Field.Label>
-                                    <Input size="lg" value={item.description} onChange={(e) => handleChange("description", e.target.value)} />
+                                    <Input
+                                        size="lg"
+                                        value={item.description}
+                                        onChange={(e) => handleChange("description", e.target.value)} />
                                 </Field.Root>
 
                                 <Field.Root orientation="vertical">
                                     <Field.Label fontSize="lg">Ghi chú</Field.Label>
-                                    <Input size="lg" value={item.note} onChange={(e) => handleChange("note", e.target.value)} />
+                                    <Input
+                                        size="lg"
+                                        value={item.note}
+                                        onChange={(e) => handleChange("note", e.target.value)} />
                                 </Field.Root>
 
                             </Flex>
@@ -101,7 +159,12 @@ const WareManufacturingProcessTypeFormDialog: React.FC<Props> = ({ isOpen, onClo
                             <Dialog.ActionTrigger asChild>
                                 <Button onClick={onClose} colorPalette={"red"}>Thoát</Button>
                             </Dialog.ActionTrigger>
-                            <Button colorPalette={!initialData ? "green" : "yellow"} onClick={handleSubmit} disabled={hasError || isEmpty}>{!initialData ? "Thêm" : "Lưu thay đổi"}</Button>
+                            <Button
+                                colorPalette={!initialData ? "green" : "yellow"}
+                                onClick={handleSubmit}
+                                disabled={hasError || isEmpty}>
+                                {!initialData ? "Thêm" : "Lưu thay đổi"}
+                            </Button>
                         </Dialog.Footer>
                     </Dialog.Content>
                 </Dialog.Positioner>

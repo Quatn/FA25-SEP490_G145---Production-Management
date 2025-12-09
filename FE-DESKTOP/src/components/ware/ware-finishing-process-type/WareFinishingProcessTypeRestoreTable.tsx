@@ -1,25 +1,18 @@
 import { Table, Group, Button, Icon } from "@chakra-ui/react";
-import { FaEdit, FaEye } from "react-icons/fa";
-import { FaTrashCan } from "react-icons/fa6";
-import { WareManufacturingProcessType } from "@/types/WareManufacturingProcessType";
+import { FaEye } from "react-icons/fa";
+import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";
+import { TbRestore } from "react-icons/tb";
+import React from "react";
 
 interface Props {
     page: number;
     limit: number;
-    items: WareManufacturingProcessType[];
-    onEdit: (item: WareManufacturingProcessType) => void;
-    onDetail: (item: WareManufacturingProcessType) => void;
-    onDelete: (item: WareManufacturingProcessType) => void;
+    items: WareFinishingProcessType[];
+    onRestore: (item: WareFinishingProcessType) => void;
+    onDetail: (item: WareFinishingProcessType) => void;
 }
 
-const WareManufacturingProcessTypeTable = ({
-    page,
-    limit,
-    items,
-    onEdit,
-    onDetail,
-    onDelete
-}: Props) => {
+const WareFinishingProcessTypeRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, onDetail }) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
@@ -40,8 +33,8 @@ const WareManufacturingProcessTypeTable = ({
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
-                        <Table.ColumnHeader>Mã loại gia công</Table.ColumnHeader>
-                        <Table.ColumnHeader>Tên loại gia công</Table.ColumnHeader>
+                        <Table.ColumnHeader>Mã loại hoàn thiện</Table.ColumnHeader>
+                        <Table.ColumnHeader>Tên loại hoàn thiện</Table.ColumnHeader>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             Thao tác
                         </Table.ColumnHeader>
@@ -54,7 +47,6 @@ const WareManufacturingProcessTypeTable = ({
                             <Table.Cell textAlign="center">{(page - 1) * limit + index + 1}</Table.Cell>
                             <Table.Cell>{item.code}</Table.Cell>
                             <Table.Cell>{item.name}</Table.Cell>
-
                             <Table.Cell>
                                 <Group gap={5}>
                                     <Button
@@ -69,23 +61,13 @@ const WareManufacturingProcessTypeTable = ({
                                     </Button>
                                     <Button
                                         variant="surface"
-                                        colorPalette="yellow"
-                                        onClick={() => onEdit(item)}
+                                        colorPalette="green"
+                                        onClick={() => onRestore(item)}
                                     >
                                         <Icon>
-                                            <FaEdit />
+                                            <TbRestore />
                                         </Icon>
-                                        Sửa
-                                    </Button>
-                                    <Button
-                                        variant="surface"
-                                        colorPalette="red"
-                                        onClick={() => onDelete(item)}
-                                    >
-                                        <Icon>
-                                            <FaTrashCan />
-                                        </Icon>
-                                        Xóa
+                                        Khôi phục
                                     </Button>
                                 </Group>
                             </Table.Cell>
@@ -97,4 +79,4 @@ const WareManufacturingProcessTypeTable = ({
     );
 };
 
-export default WareManufacturingProcessTypeTable;
+export default WareFinishingProcessTypeRestoreTable;
