@@ -66,7 +66,7 @@ const getOrderStatus = (mo: Serialized<ManufacturingOrder>, processes: Serialize
   if (
     (mo.corrugatorProcess.status === CorrugatorProcessStatus.COMPLETED || mo.corrugatorProcess.status === CorrugatorProcessStatus.OVERCOMPLETED)
     && processes.every(p => p.status === OrderFinishingProcessStatus.FinishedProduction || p.status === OrderFinishingProcessStatus.QualityCheck || p.status === OrderFinishingProcessStatus.Completed)) {
-    return ManufacturingOrderOperativeStatus.RUNNING;
+    return ManufacturingOrderOperativeStatus.COMPLETED;
   }
 
   if (mo.corrugatorProcess.status === CorrugatorProcessStatus.RUNNING || processes.some(p => p.status === OrderFinishingProcessStatus.InProduction)) {
@@ -86,6 +86,8 @@ const getOrderStatus = (mo: Serialized<ManufacturingOrder>, processes: Serialize
   if (mo.corrugatorProcess.status === CorrugatorProcessStatus.CANCELLED || processes.some(p => p.status === OrderFinishingProcessStatus.Cancelled)) {
     return ManufacturingOrderOperativeStatus.PAUSED;
   }
+
+  return ManufacturingOrderOperativeStatus.PAUSED;
 }
 
 const corrugatorProcessStatusNameMap: Record<CorrugatorProcessStatus, string> = {

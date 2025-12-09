@@ -1,26 +1,19 @@
-import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
+import { Table, Group, Button, Icon, Text } from "@chakra-ui/react";
+import { FaEye } from "react-icons/fa";
 import { Tooltip } from "@/components/ui/tooltip"
-import { FaEdit, FaEye } from "react-icons/fa";
-import { FaTrashCan } from "react-icons/fa6";
 import { PaperSupplier } from "@/types/PaperSupplier";
+import { TbRestore } from "react-icons/tb";
+import React from "react";
 
-interface PaperSupplierTableProps {
+interface Props {
     page: number;
     limit: number;
-    suppliers: PaperSupplier[];
-    onEdit: (supplier: PaperSupplier) => void;
-    onDetail: (supplier: PaperSupplier) => void;
-    onDelete: (supplier: PaperSupplier) => void;
+    items: PaperSupplier[];
+    onRestore: (item: PaperSupplier) => void;
+    onDetail: (item: PaperSupplier) => void;
 }
 
-const PaperSupplierTable = ({
-    page,
-    limit,
-    suppliers,
-    onEdit,
-    onDetail,
-    onDelete,
-}: PaperSupplierTableProps) => {
+const PaperSupplierRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, onDetail }) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
@@ -53,34 +46,33 @@ const PaperSupplierTable = ({
                 </Table.Header>
 
                 <Table.Body>
-                    {suppliers.map((supplier, index) => (
-                        <Table.Row key={supplier._id ?? index}>
+                    {items.map((item, index) => (
+                        <Table.Row key={item._id ?? index}>
                             <Table.Cell textAlign="center">{(page - 1) * limit + index + 1}</Table.Cell>
-                            <Table.Cell>{supplier.code}</Table.Cell>
-                            <Table.Cell>{supplier.name}</Table.Cell>
+                            <Table.Cell>{item.code}</Table.Cell>
+                            <Table.Cell>{item.name}</Table.Cell>
 
                             <Table.Cell>
-                                <Tooltip content={supplier.address} showArrow>
+                                <Tooltip content={item.address} showArrow>
                                     <Text
                                         overflow="hidden"
                                         textOverflow="ellipsis"
                                         maxLines={1}
                                         maxW="300px"
                                     >
-                                        {supplier.address}
+                                        {item.address}
                                     </Text>
                                 </Tooltip>
                             </Table.Cell>
 
-                            <Table.Cell>{supplier.phone}</Table.Cell>
-                            <Table.Cell>{supplier.email}</Table.Cell>
-
+                            <Table.Cell>{item.phone}</Table.Cell>
+                            <Table.Cell>{item.email}</Table.Cell>
                             <Table.Cell>
                                 <Group gap={5}>
                                     <Button
                                         variant="surface"
                                         colorPalette="blue"
-                                        onClick={() => onDetail(supplier)}
+                                        onClick={() => onDetail(item)}
                                     >
                                         <Icon>
                                             <FaEye />
@@ -89,23 +81,13 @@ const PaperSupplierTable = ({
                                     </Button>
                                     <Button
                                         variant="surface"
-                                        colorPalette="yellow"
-                                        onClick={() => onEdit(supplier)}
+                                        colorPalette="green"
+                                        onClick={() => onRestore(item)}
                                     >
                                         <Icon>
-                                            <FaEdit />
+                                            <TbRestore />
                                         </Icon>
-                                        Sửa
-                                    </Button>
-                                    <Button
-                                        variant="surface"
-                                        colorPalette="red"
-                                        onClick={() => onDelete(supplier)}
-                                    >
-                                        <Icon>
-                                            <FaTrashCan />
-                                        </Icon>
-                                        Xóa
+                                        Khôi phục
                                     </Button>
                                 </Group>
                             </Table.Cell>
@@ -117,4 +99,4 @@ const PaperSupplierTable = ({
     );
 };
 
-export default PaperSupplierTable;
+export default PaperSupplierRestoreTable;

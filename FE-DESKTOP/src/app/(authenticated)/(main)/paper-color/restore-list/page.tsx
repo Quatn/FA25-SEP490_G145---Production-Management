@@ -1,6 +1,6 @@
-import FluteCombinationRestoreList from "@/components/flute-combination/FluteCombinationRestoreList";
+import PaperColorRestoreList from "@/components/paper-storage/paper-color/PaperColorRestoreList";
 import { Box, Stack, Text } from "@chakra-ui/react";
-export default function FluteCombinationRestorationHome() {
+export default function PaperColorRESTOREHome() {
   return (
     <Box
       m={5}
@@ -11,11 +11,11 @@ export default function FluteCombinationRestorationHome() {
     >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"bold"} color={"black"}>
-          KHÔI PHỤC TỔ HỢP SÓNG
+          KHÔI PHỤC MÀU GIẤY
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>
-        <FluteCombinationRestoreList/>
+        <PaperColorRestoreList/>
       </Stack>
     </Box>
   );

@@ -66,13 +66,16 @@ const FluteCombinationList: React.FC = () => {
         setDetailOpen(false);
         setSelected(undefined);
     }
-    const handleCloseAlert = () => setAlertOpen(false);
+    const handleCloseAlert = () => {
+        setAlertOpen(false);
+        setSelected(undefined);
+    }
 
     const handleMutation = async (
         fn: Function,
         successMessage: string,
         errorMessage: string
-    ) => {
+    ): Promise<boolean> => {
         try {
             await fn();
             toaster.create({
@@ -81,6 +84,7 @@ const FluteCombinationList: React.FC = () => {
                 type: "success",
                 closable: true,
             });
+            return true;
         } catch (error: any) {
             const msg = error?.data?.message || error?.message || "Đã xảy ra lỗi, thử lại sau";
             toaster.create({
@@ -89,11 +93,12 @@ const FluteCombinationList: React.FC = () => {
                 type: "error",
                 closable: true,
             });
+            return false;
         }
     };
 
     const handleAdd = async (data: FluteCombination) => {
-        handleMutation(
+        return await handleMutation(
             () => addItem(data).unwrap(),
             `Đã lưu tổ hợp sóng ${data.code}`,
             'Lưu thất bại',
@@ -101,15 +106,15 @@ const FluteCombinationList: React.FC = () => {
     }
 
     const handleUpdate = async (data: FluteCombination) => {
-        handleMutation(
+        return await handleMutation(
             () => updateItem(data).unwrap(),
-            `Đã cập nhật tổ hợp sóng ${data.code}}`,
+            `Đã cập nhật tổ hợp sóng ${data.code}`,
             'Cập nhật thất bại',
         );
     }
 
     const handleDelete = async (data: FluteCombination) => {
-        handleMutation(
+        return await handleMutation(
             () => deleteItem(data).unwrap(),
             `Xóa tổ hợp sóng ${data.code}`,
             'Xóa thất bại',
@@ -163,7 +168,7 @@ const FluteCombinationList: React.FC = () => {
                         ref={inputRef}
                         flex="1"
                         size={"lg"}
-                        placeholder="Tìm kiếm"
+                        placeholder="Tìm kiếm mã tổ hợp sóng"
                         value={search}
                         onChange={(e) => { setPage(1); setSearch(e.target.value) }} />
                 </InputGroup>

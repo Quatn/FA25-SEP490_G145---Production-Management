@@ -7,6 +7,7 @@ import check from "check-types";
 import { useCallback, useMemo } from "react";
 import ManufacturingOrderTrackPanelListItem from "./ListItem";
 import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
+import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 
 export default function ManufacturingOrderTrackPanelList() {
   const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
@@ -20,7 +21,7 @@ export default function ManufacturingOrderTrackPanelList() {
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
-  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: search });
+  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: search, approvalStatuses: [ManufacturingOrderApprovalStatus.Approved] });
 
   const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
 

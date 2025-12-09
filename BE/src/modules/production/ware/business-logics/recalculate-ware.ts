@@ -7,32 +7,32 @@ import { IllogicalError } from "@/common/errors/illogical.error";
 
 // All of the wareManufacturingProcessType codes that this recalculate script currently handle, the recalc function should throw if something other than these values is passed into it
 enum CurrentWareManufacturingProcessTypes {
-  "GHEP",
-  "GHEP1NAP",
-  "GHEPCHONGNAP",
-  "KHAY",
-  "LIEN",
-  "LIEN1NAP",
-  "LIENCHONGNAP",
-  "TAM",
-  "TAM1LAN",
-  "VACHU",
+  GHEP = "GHEP",
+  GHEP1NAP = "GHEP1NAP",
+  GHEPCHONGNAP = "GHEPCHONGNAP",
+  KHAY = "KHAY",
+  LIEN = "LIEN",
+  LIEN1NAP = "LIEN1NAP",
+  LIENCHONGNAP = "LIENCHONGNAP",
+  TAM = "TAM",
+  TAM1LAN = "TAM1LAN",
+  VACHU = "VACHU",
 }
 
 enum CurrentFluteCombinations {
-  "3B",
-  "3C",
-  "3E",
-  "4BC",
-  "5BE",
-  "5BC",
-  "5CB",
-  "7CBE",
-  "7BCB",
-  "3A",
-  "4BE",
-  "3BE",
-  "NL-3B",
+  "3B" = "3B",
+  "3C" = "3C",
+  "3E" = "3E",
+  "4BC" = "4BC",
+  "5BE" = "5BE",
+  "5BC" = "5BC",
+  "5CB" = "5CB",
+  "7CBE" = "7CBE",
+  "7BCB" = "7BCB",
+  "3A" = "3A",
+  "4BE" = "4BE",
+  "3BE" = "3BE",
+  "NL-3B" = "NL-3B",
 }
 
 const conditionalMeasurement = (n: number | undefined | null, alt?: number) => {
@@ -48,6 +48,15 @@ export function recalculateWare(ware: Ware): Ware {
     0,
   )
     ? ware.warePerBlankAdjustment
+    : null;
+  const flapAdjustment = check.greater(ware.flapAdjustment as number, 0)
+    ? ware.flapAdjustment
+    : null;
+  const flapOverlapAdjustment = check.greater(
+    ware.flapOverlapAdjustment as number,
+    0,
+  )
+    ? ware.flapOverlapAdjustment
     : null;
   const crossCutCountAdjustment = check.greater(
     ware.crossCutCountAdjustment as number,
@@ -68,6 +77,7 @@ export function recalculateWare(ware: Ware): Ware {
     );
   }
 
+  /*
   if (
     !check.in(
       ware.wareManufacturingProcessType.code,
@@ -78,6 +88,7 @@ export function recalculateWare(ware: Ware): Ware {
       `Ware recalculate function received unsupported value of ${ware.wareManufacturingProcessType.code}. The current recalculate function only supports one of the following values: ${Object.keys(CurrentWareManufacturingProcessTypes).join(", ")}`,
     );
   }
+  */
 
   const manuType = ware.wareManufacturingProcessType
     .code as unknown as CurrentWareManufacturingProcessTypes;
@@ -106,8 +117,8 @@ export function recalculateWare(ware: Ware): Ware {
       ])
     ) {
       const E2 = ware.wareLength / 2;
-      if (check.number(ware.flapOverlapAdjustment)) {
-        return E2 + ware.flapOverlapAdjustment;
+      if (check.number(flapOverlapAdjustment)) {
+        return E2 + flapOverlapAdjustment;
       }
 
       if (
@@ -125,7 +136,7 @@ export function recalculateWare(ware: Ware): Ware {
       else if (fluteType === CurrentFluteCombinations["3B"]) return E2 + 1;
       else if (fluteType === CurrentFluteCombinations["3E"]) return E2;
       else if (fluteType === CurrentFluteCombinations["7CBE"]) return E2 + 2.5;
-      else return NaN;
+      else return E2;
     }
 
     if (
@@ -144,9 +155,7 @@ export function recalculateWare(ware: Ware): Ware {
         CurrentWareManufacturingProcessTypes.GHEPCHONGNAP,
       ])
     ) {
-      return (
-        ware.wareLength + conditionalMeasurement(ware.flapOverlapAdjustment)
-      );
+      return ware.wareLength + conditionalMeasurement(flapOverlapAdjustment);
     }
 
     return null;
@@ -162,7 +171,7 @@ export function recalculateWare(ware: Ware): Ware {
     ) {
       return (
         (ware.wareWidth + ware.wareLength) * 2 +
-        conditionalMeasurement(ware.flapAdjustment, 35)
+        conditionalMeasurement(flapAdjustment, 35)
       );
     }
 
@@ -170,7 +179,7 @@ export function recalculateWare(ware: Ware): Ware {
       return (
         ware.wareWidth +
         ware.wareLength +
-        conditionalMeasurement(ware.flapAdjustment, 35)
+        conditionalMeasurement(flapAdjustment, 35)
       );
     }
 
@@ -188,10 +197,10 @@ export function recalculateWare(ware: Ware): Ware {
         CurrentWareManufacturingProcessTypes.VACHU,
       ])
     ) {
-      return ware.wareWidth + conditionalMeasurement(ware.flapAdjustment, 35);
+      return ware.wareWidth + conditionalMeasurement(flapAdjustment, 35);
     }
 
-    return 1;
+    return ware.wareLength;
   })();
 
   const blankWidth: number = (() => {
@@ -238,7 +247,8 @@ export function recalculateWare(ware: Ware): Ware {
         conditionalMeasurement(ware.wareLength)
       );
     }
-    return 1;
+
+    return ware.wareWidth;
   })();
 
   const crossCutCount = check.number(crossCutCountAdjustment)
@@ -268,8 +278,8 @@ export function recalculateWare(ware: Ware): Ware {
       if (width <= t) return t;
     }
 
-    throw new IllogicalError(
-      "Paper Width calculation somehow got over the thresholds check",
+    throw new BusinessLogicError(
+      `Paper width calculation for ware failed due to required paperWidth of ${width} exceeding the maximum width of 1750`,
     );
   })();
 
@@ -277,6 +287,10 @@ export function recalculateWare(ware: Ware): Ware {
 
   return {
     ...ware,
+    warePerBlankAdjustment,
+    flapAdjustment,
+    flapOverlapAdjustment,
+    crossCutCountAdjustment,
     recalculateFlag: false,
     warePerBlank,
     blankWidth,

@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { PaperColorService } from './paper-color.service';
 import { CreatePaperColorRequestDto } from './dto/create-paper-color-request.dto';
 import { UpdatePaperColorRequestDto } from './dto/update-paper-color-request.dto';
-import { PaperColorDocument } from '../schemas/paper-color.schema';
+import { PaperColor, PaperColorDocument } from '../schemas/paper-color.schema';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { ApiOperation } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
@@ -23,6 +23,21 @@ export class PaperColorController {
         return {
             success: true,
             message: "Fetch successful",
+            data: docs,
+        };
+    }
+
+    // @UseGuards(JwtAuthGuard)
+    @Get('list-deleted')
+    @ApiOperation({ summary: 'List deleted paper colors' })
+    async findDeleted(
+        @Query("page") page: number = 1,
+        @Query("limit") limit: number = 10,
+    ): Promise<BaseResponse<PaginatedList<PaperColor>>> {
+        const docs = await this.pcService.findDeleted(page, limit);
+        return {
+            success: true,
+            message: 'Fetch successful',
             data: docs,
         };
     }

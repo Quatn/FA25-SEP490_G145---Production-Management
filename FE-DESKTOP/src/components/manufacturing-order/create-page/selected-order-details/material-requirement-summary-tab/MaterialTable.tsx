@@ -21,6 +21,7 @@ export type MaterialRequirementTableProps = {
   tabsRootProps?: TabsRootProps;
   tableRootProps?: TableRootProps;
   type: "FACE" | "RAW"
+  header: string,
 };
 
 function accumulateMaterialRequirements(
@@ -125,7 +126,7 @@ export default function MaterialRequirementTable(
 
   const table = useReactTable({
     data: tableData,
-    columns: materialRequirementColumns,
+    columns: materialRequirementColumns(props.header),
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.code,
   });
@@ -145,7 +146,6 @@ export default function MaterialRequirementTable(
 
   return (
     <Box mt={3} {...props.rootProps}>
-      <Text textAlign={"center"} fontWeight={"bold"}>Trọng lượng giấy {props.type === "RAW" ? " mộc" : " mặt"}</Text>
       <Table.ScrollArea borderWidth="1px">
         <Table.Root
           minW={table.getTotalSize()}
@@ -160,6 +160,8 @@ export default function MaterialRequirementTable(
                 {headerGroup.headers.map((header) => (
                   <Table.ColumnHeader key={header.id}
                     colorPalette={"blue"} bgColor={"colorPalette.muted"}
+                    colSpan={header.colSpan}
+                    textAlign={header.colSpan > 1 ? "center" : "start"}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </Table.ColumnHeader>

@@ -209,6 +209,7 @@ export class PurchaseOrderItemService {
     const productPath = SubPurchaseOrderSchema.path("product");
     const customerPath = PurchaseOrderSchema.path("customer");
     const wareManufacturingProcessTypePath = WareSchema.path("wareManufacturingProcessType")
+    const printColorsPath = WareSchema.path("printColors")
 
     const populate = [
       {
@@ -217,6 +218,7 @@ export class PurchaseOrderItemService {
           fluteCombinationPath,
           finishingProcessesPath,
           wareManufacturingProcessTypePath,
+          printColorsPath,
         ],
       },
       {
@@ -236,7 +238,7 @@ export class PurchaseOrderItemService {
       .populate(populate)
       .lean();
 
-    const mappedData: FullDetailPurchaseOrderItemDto[] = data.map(
+    const mappedData: FullDetailPurchaseOrderItemDto[] = data.filter(poi => poi.subPurchaseOrder).map(
       (poi) => new FullDetailPurchaseOrderItemDto(poi),
     );
 

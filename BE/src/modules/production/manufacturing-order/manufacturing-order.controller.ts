@@ -177,9 +177,14 @@ export class ManufacturingOrderController {
 
   @Delete("id/:id")
   @ApiOperation({ summary: "Delete one manufacturing order" })
-  async deleteOne(
-    @Param() param: DeleteManufacturingOrderRequestDto,
-  ): Promise<BaseResponse<DeleteResult<{ code: string }>>> {
+  async deleteOne(@Param() param: DeleteManufacturingOrderRequestDto): Promise<
+    BaseResponse<
+      DeleteResult<{
+        code: string;
+        orderProcessDeleteResult: DeleteResult;
+      }>
+    >
+  > {
     const result = await this.moService.deleteOne(param.id);
     return {
       success: true,

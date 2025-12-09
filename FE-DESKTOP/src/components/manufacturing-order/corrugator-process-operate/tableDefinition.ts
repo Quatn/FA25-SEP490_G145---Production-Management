@@ -231,7 +231,7 @@ export const manufacturingOrderCorrugatorOperatePageTableColumns: (ColumnDef<Man
   columnHelper.defineHeaderGroup({
     id: "calculatedMeasurements",
     header: () => "Theo lệnh",
-    size: 500,
+    size: 200,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "calculatedPaperWidth",
@@ -256,7 +256,7 @@ export const manufacturingOrderCorrugatorOperatePageTableColumns: (ColumnDef<Man
   columnHelper.defineHeaderGroup({
     id: "actualMeasurements",
     header: () => "Thực",
-    size: 500,
+    size: 200,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "actualPaperWidth",

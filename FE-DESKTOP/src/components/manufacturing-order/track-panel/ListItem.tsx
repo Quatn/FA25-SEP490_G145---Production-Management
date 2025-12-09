@@ -110,7 +110,7 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
             </Alert.Root>}
             {!check.undefined(completedAmount) && <Progress.Root value={completedAmount} max={requiredAmount} flexGrow={1} colorPalette={orderStatus ? OrderStatusAlertColorMap[orderStatus] : "gray"}>
               <HStack gap="5">
-                <Progress.Label>Số lượng đã sản xuất</Progress.Label>
+                <Progress.Label>Sản lượng</Progress.Label>
                 <Progress.Track flex="1">
                   <Progress.Range />
                 </Progress.Track>

@@ -16,25 +16,31 @@ export default function ManufacturingOrderCorrugatorProcessOperate() {
 
         <ManufacturingOrderCorrugatorOperatePageComponents.CorrugatorLineSwitcher />
 
-        <Box mt={5}>
+        <Box mt={5} mx={5}>
           <Box mt={5}>
             <DataTableProvider initialState={{ allowEdit: true }}>
               <Heading size="md">Danh sách chạy</Heading>
+              <ManufacturingOrderCorrugatorOperatePageComponents.SearchBar />
               <ManufacturingOrderCorrugatorOperatePageComponents.Table corrugatorProcessStatuses={[CorrugatorProcessStatus.RUNNING, CorrugatorProcessStatus.PAUSED]} />
+              <ManufacturingOrderCorrugatorOperatePageComponents.Pagination />
             </DataTableProvider>
           </Box>
 
           <Box mt={5}>
             <DataTableProvider initialState={{ allowEdit: true }}>
               <Heading size="md">Danh sách chờ</Heading>
+              <ManufacturingOrderCorrugatorOperatePageComponents.SearchBar />
               <ManufacturingOrderCorrugatorOperatePageComponents.Table corrugatorProcessStatuses={[CorrugatorProcessStatus.NOTSTARTED]} />
+              <ManufacturingOrderCorrugatorOperatePageComponents.Pagination />
             </DataTableProvider>
           </Box>
 
           <Box mt={5}>
-            <DataTableProvider initialState={{ allowEdit: true }}>
+            <DataTableProvider initialState={{ allowEdit: false }}>
               <Heading size="md">Lịch sử</Heading>
+              <ManufacturingOrderCorrugatorOperatePageComponents.SearchBar />
               <ManufacturingOrderCorrugatorOperatePageComponents.Table corrugatorProcessStatuses={[CorrugatorProcessStatus.COMPLETED, CorrugatorProcessStatus.OVERCOMPLETED, CorrugatorProcessStatus.CANCELLED]} />
+              <ManufacturingOrderCorrugatorOperatePageComponents.Pagination />
             </DataTableProvider>
           </Box>
         </Box>

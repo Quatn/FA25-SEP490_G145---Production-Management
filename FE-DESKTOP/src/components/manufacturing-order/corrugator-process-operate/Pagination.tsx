@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  ManufacturingOrderTableReducerStore,
-} from "@/context/manufacturing-order/manufacturingOrderTableContext";
+import { ManufacturingOrderCorrugatorProcessOperateReducerStore } from "@/context/manufacturing-order/manufacturingOrderCorrugatorProcessOperateContext";
 import {
   Button,
   ButtonGroup,
@@ -17,21 +15,19 @@ import {
   SelectValueChangeDetails,
 } from "@chakra-ui/react";
 import check from "check-types";
-import { useState } from "react";
 import { LuArrowRight, LuChevronLeft, LuChevronRight } from "react-icons/lu";
 
 const pageOptions = createListCollection({
   items: [
+    { label: "5 dòng", value: "5" },
     { label: "10 dòng", value: "10" },
+    { label: "15 dòng", value: "15" },
     { label: "20 dòng", value: "20" },
-    { label: "30 dòng", value: "30" },
-    { label: "40 dòng", value: "40" },
-    { label: "50 dòng", value: "50" },
   ],
 });
 
-export default function ManufacturingOrderPagination() {
-  const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
+export default function ManufacturingOrderCorrugatorOperatePagePagination() {
+  const { useDispatch, useSelector } = ManufacturingOrderCorrugatorProcessOperateReducerStore;
   const dispatch = useDispatch();
   const page = useSelector(s => s.page);
   const limit = useSelector(s => s.limit);
@@ -43,17 +39,6 @@ export default function ManufacturingOrderPagination() {
       dispatch({ type: "SET_LIMIT", payload: newPageSize });
     }
   };
-
-  const [_page, _setPage] = useState<number | undefined>(undefined)
-  const handleSetPageInput = (value: string | undefined) => {
-    if (!value) _setPage(undefined)
-    const p = parseInt(value + "")
-    if (check.number(p)) _setPage(p)
-  }
-
-  const handleJumpToPage = () => {
-    if (_page) dispatch({ type: "SET_PAGE", payload: _page })
-  }
 
   return (
     <HStack>
@@ -88,8 +73,8 @@ export default function ManufacturingOrderPagination() {
       </Pagination.Root>
 
       <Group attached>
-        <Input flex="1" bg="bg" placeholder="Nhập trang" w={"100px"} size="sm" value={_page ?? ""} onChange={(e) => handleSetPageInput(e.target.value)} />
-        <Button colorPalette={"teal"} variant="solid" size="sm" onClick={handleJumpToPage}>
+        <Input flex="1" bg="bg" placeholder="Nhập trang" w={"100px"} size="sm" />
+        <Button colorPalette={"teal"} variant="solid" size="sm">
           <LuArrowRight />
         </Button>
       </Group>
@@ -114,9 +99,9 @@ export default function ManufacturingOrderPagination() {
         <Portal>
           <Select.Positioner>
             <Select.Content>
-              {pageOptions.items.map((framework) => (
-                <Select.Item bg="bg" item={framework} key={framework.value}>
-                  {framework.label}
+              {pageOptions.items.map((o) => (
+                <Select.Item bg="bg" item={o} key={o.value}>
+                  {o.label}
                   <Select.ItemIndicator />
                 </Select.Item>
               ))}

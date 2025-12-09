@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, ButtonGroup, CloseButton, Flex, IconButton, Input, InputGroup, Pagination, Spacer, Spinner } from "@chakra-ui/react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Text } from "@chakra-ui/react"
 import { useAddPaperSupplierMutation, useDeletePaperSupplierMutation, useGetPaperSupplierQuery, useUpdatePaperSupplierMutation } from "@/service/api/paperSupplierApiSlice";
 import { PaperSupplier } from "@/types/PaperSupplier";
@@ -12,6 +12,7 @@ import PaperSupplierFormDialog from "./PaperSupplierFormDialog";
 import PaperSupplierAlertDialog from "./PaperSupplierAlertDialog";
 import PaperSupplierTable from "./PaperSupplierTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
+import PaperSupplierDetailDialog from "./PaperSupplierDetailDialog";
 
 
 const PaperSupplierList: React.FC = () => {
@@ -37,6 +38,7 @@ const PaperSupplierList: React.FC = () => {
     const totalPages = suppliersData?.data?.totalPages ?? 1;
 
     const [formDialogOpen, setFormDialogOpen] = useState(false);
+    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [alertDialogOpen, setAlertDialogOpen] = useState(false);
     const [selectedSupplier, setSelectedSupplier] = useState<PaperSupplier | undefined>(undefined);
 
@@ -48,6 +50,11 @@ const PaperSupplierList: React.FC = () => {
         setFormDialogOpen(true);
     };
 
+    const handleOpenDetailDialog = (supplier?: PaperSupplier) => {
+        setSelectedSupplier(supplier);
+        setDetailDialogOpen(true);
+    };
+
     const handleOpenAlertDialog = (supplier: PaperSupplier) => {
         setSelectedSupplier(supplier);
         setAlertDialogOpen(true);
@@ -55,17 +62,24 @@ const PaperSupplierList: React.FC = () => {
 
     const handleCloseFormDialog = () => {
         setFormDialogOpen(false);
+        setSelectedSupplier(undefined);
+    };
+
+    const handleCloseDetailDialog = () => {
+        setDetailDialogOpen(false);
+        setSelectedSupplier(undefined);
     };
 
     const handleCloseAlertDialog = () => {
         setAlertDialogOpen(false);
+        setSelectedSupplier(undefined);
     };
 
     const handleMutation = async (
         fn: Function,
         successMessage: string,
         errorMessage: string
-    ) => {
+    ): Promise<boolean> => { 
         try {
             await fn();
             toaster.create({
@@ -74,31 +88,30 @@ const PaperSupplierList: React.FC = () => {
                 type: "success",
                 closable: true,
             });
+            return true;
         } catch (error: any) {
-
-            const msg =
-                error?.data?.message || error?.message || "Đã xảy ra lỗi, thử lại sau";
+            const msg = error?.data?.message || error?.message || "Đã xảy ra lỗi, thử lại sau";
             toaster.create({
                 title: errorMessage,
                 description: msg,
                 type: "error",
                 closable: true,
             });
+            return false; 
         }
     };
 
     const handleAddSupplier = async (data: PaperSupplier) => {
-
-        handleMutation(
+        return await handleMutation(
             () => addPaperSupplier(data).unwrap(),
             `Đã lưu nhà giấy ${data.code} - ${data.name}`,
             'Lưu thất bại',
-        )
+        );
     }
 
     const handleUpdateSupplier = async (data: PaperSupplier) => {
 
-        handleMutation(
+        return await handleMutation(
             () => updatePaperSupplier(data).unwrap(),
             `Đã cập nhật nhà giấy ${data.code} - ${data.name}`,
             'Cập nhật thất bại',
@@ -108,7 +121,7 @@ const PaperSupplierList: React.FC = () => {
 
     const handleDeleteSupplier = async (data: PaperSupplier) => {
 
-        handleMutation(
+        return await handleMutation(
             () => deletePaperSupplier(data).unwrap(),
             `Xóa nhà giấy ${data.code} - ${data.name}`,
             'Xóa thất bại',
@@ -147,6 +160,12 @@ const PaperSupplierList: React.FC = () => {
                 onAdd={(data) => handleAddSupplier(data)}
                 onUpdate={(data) => handleUpdateSupplier(data)} />
 
+            <PaperSupplierDetailDialog
+                isOpen={detailDialogOpen}
+                onClose={handleCloseDetailDialog}
+                initialData={selectedSupplier}
+            />
+
             <PaperSupplierAlertDialog
                 isOpen={alertDialogOpen}
                 onClose={handleCloseAlertDialog}
@@ -176,6 +195,7 @@ const PaperSupplierList: React.FC = () => {
                         limit={limit}
                         suppliers={suppliers}
                         onEdit={handleOpenFormDialog}
+                        onDetail={handleOpenDetailDialog}
                         onDelete={handleOpenAlertDialog}
                     />
 
