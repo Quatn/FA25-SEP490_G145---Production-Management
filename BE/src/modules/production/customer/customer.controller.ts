@@ -1,18 +1,21 @@
 // src/modules/production/customer/customer.controller.ts
-import { Controller, Get, Query, Param } from '@nestjs/common';
+import { Controller, Get, Query, Param, Post, Body, Patch, Delete } from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import { ApiOperation } from '@nestjs/swagger';
 import { BaseResponse } from '@/common/dto/response.dto';
-import { Customer } from '../schemas/customer.schema';
+import { Customer, CustomerDocument } from '../schemas/customer.schema';
+import { PaginatedList } from '@/common/dto/paginated-list.dto';
+import { CreateCustomerRequestDto } from './dto/create-customer-request.dto';
+import { UpdateCustomerRequestDto } from './dto/update-customer-request.dto';
 
 @Controller('customer')
 export class CustomerController {
-  constructor(private readonly svc: CustomerService) {}
+  constructor(private readonly service: CustomerService) { }
 
   @Get('list-all')
   @ApiOperation({ summary: 'List all customers' })
   async findAll(): Promise<BaseResponse<Customer[]>> {
-    const docs = await this.svc.findAll();
+    const docs = await this.service.findAll();
     return {
       success: true,
       message: 'Fetch successful',
@@ -20,14 +23,31 @@ export class CustomerController {
     };
   }
 
-  @Get('list')
-  @ApiOperation({ summary: 'List customers (paginated)' })
+  // @UseGuards(JwtAuthGuard)
+  @Get("list")
+  @ApiOperation({ summary: "List paginated customers" })
   async findPaginated(
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
     @Query('search') search?: string,
-  ): Promise<BaseResponse<any>> {
-    const docs = await this.svc.findPaginated(Number(page), Number(limit), search);
+  ): Promise<BaseResponse<PaginatedList<CustomerDocument>>> {
+    const docs = await this.service.findPaginated(page, limit, search);
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
+    };
+  }
+
+
+  // @UseGuards(JwtAuthGuard)
+  @Get('list-deleted')
+  @ApiOperation({ summary: 'List deleted customer' })
+  async findDeleted(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+  ): Promise<BaseResponse<PaginatedList<Customer>>> {
+    const docs = await this.service.findDeleted(page, limit);
     return {
       success: true,
       message: 'Fetch successful',
@@ -35,14 +55,88 @@ export class CustomerController {
     };
   }
 
-  @Get('detail/:id')
-  @ApiOperation({ summary: 'Customer detail' })
-  async detail(@Param('id') id: string): Promise<BaseResponse<any>> {
-    const doc = await this.svc.findOne(id);
+  // @UseGuards(JwtAuthGuard)
+  @Get("detail/:id")
+  @ApiOperation({ summary: "Customer detail" })
+  async findOne(@Param("id") id: string): Promise<BaseResponse<CustomerDocument>> {
+    const doc = await this.service.findOne(id);
     return {
       success: true,
-      message: 'Fetch successful',
+      message: "Fetch successful",
+      data: doc,
+    }
+  }
+
+  // @UseGuards(JwtAuthGuard)
+  @Post("create")
+  @ApiOperation({ summary: "Create new customer" })
+  async create(
+    @Body() dto: CreateCustomerRequestDto,
+  ): Promise<BaseResponse<CustomerDocument>> {
+    const doc = await this.service.createOne(dto);
+    return {
+      success: true,
+      message: `Created customer ${doc.code} - ${doc.name} successfully`,
       data: doc,
     };
   }
+
+  // @UseGuards(JwtAuthGuard)
+  @Patch("update/:id")
+  @ApiOperation({ summary: "Update customer" })
+  async update(
+    @Param("id") id: string,
+    @Body() dto: UpdateCustomerRequestDto,
+  ): Promise<BaseResponse<CustomerDocument>> {
+    const doc = await this.service.updateOne(id, dto);
+    return {
+      success: true,
+      message: `Updated customer ${doc.code} - ${doc.name} successfully`,
+      data: doc,
+    };
+  }
+
+  // @UseGuards(JwtAuthGuard)
+  @Delete("delete-soft/:id")
+  @ApiOperation({ summary: "Soft delete customer" })
+  async softDelete(
+    @Param("id") id: string,
+  ): Promise<BaseResponse<null>> {
+    await this.service.softDelete(id);
+    return {
+      success: true,
+      message: "Soft deleted successfully",
+      data: null,
+    };
+  }
+
+  // @UseGuards(JwtAuthGuard)
+  @Patch("restore/:id")
+  @ApiOperation({ summary: "Restore customer" })
+  async restore(
+    @Param("id") id: string,
+  ): Promise<BaseResponse<null>> {
+    await this.service.restore(id);
+    return {
+      success: true,
+      message: "Restored successfully",
+      data: null,
+    };
+  }
+
+  // @UseGuards(JwtAuthGuard)
+  @Delete("delete-hard/:id")
+  @ApiOperation({ summary: "Hard delete customer" })
+  async hardDelete(
+    @Param("id") id: string,
+  ): Promise<BaseResponse<null>> {
+    await this.service.removeHard(id);
+    return {
+      success: true,
+      message: "Permanently deleted successfully",
+      data: null,
+    };
+  }
+
+
 }

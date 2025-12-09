@@ -105,7 +105,7 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                         <Table.ColumnHeader colSpan={1}>Mã hàng</Table.ColumnHeader>
                         <Table.ColumnHeader colSpan={1}>Dài</Table.ColumnHeader>
                         <Table.ColumnHeader colSpan={1}>Rộng</Table.ColumnHeader>
-                        <Table.ColumnHeader colSpan={1}> Cao</Table.ColumnHeader>
+                        <Table.ColumnHeader colSpan={1}>Cao</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>
 
@@ -210,7 +210,7 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                                     {item.currentQuantity}
                                 </Table.Cell>
                                 <Table.Cell backgroundColor={hoursInStock > 48 ? "red" : "white"}
-                                    color={hoursInStock > 2 ? "white" : "black"}
+                                    color={hoursInStock > 48 ? "white" : "black"}
                                     fontWeight={"bold"}
                                     textAlign={"center"}>
                                     {hoursInStock}

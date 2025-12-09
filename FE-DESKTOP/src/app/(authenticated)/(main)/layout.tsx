@@ -29,6 +29,24 @@ const initialCollection = createTreeCollection<Node>({
         children: [],
       },
       {
+        id: "customer",
+        name: "Customer",
+        children: [
+          {
+            id: "customer-list",
+            name: "Customer List",
+            href: "/customer/list",
+            children: [],
+          },
+          {
+            id: "customer-restore-list",
+            name: "Customer Restore List",
+            href: "/customer/restore-list",
+            children: [],
+          },
+        ],
+      },
+      {
         id: "purchase-order",
         name: "Purchase Order",
         children: [

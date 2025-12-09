@@ -1,19 +1,26 @@
-import { Table, Group, Button, Icon, Text } from "@chakra-ui/react";
-import { FaEye } from "react-icons/fa";
+import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip"
-import { PaperSupplier } from "@/types/PaperSupplier";
-import { TbRestore } from "react-icons/tb";
-import React from "react";
+import { FaEdit, FaEye } from "react-icons/fa";
+import { FaTrashCan } from "react-icons/fa6";
+import { Customer } from "@/types/Customer";
 
-interface Props {
+interface CustomerTableProps {
     page: number;
     limit: number;
-    items: PaperSupplier[];
-    onRestore: (item: PaperSupplier) => void;
-    onDetail: (item: PaperSupplier) => void;
+    customers: Customer[];
+    onEdit: (customer: Customer) => void;
+    onDetail: (customer: Customer) => void;
+    onDelete: (customer: Customer) => void;
 }
 
-const PaperSupplierRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, onDetail }) => {
+const CustomerTable = ({
+    page,
+    limit,
+    customers,
+    onEdit,
+    onDetail,
+    onDelete,
+}: CustomerTableProps) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
@@ -34,8 +41,8 @@ const PaperSupplierRestoreTable: React.FC<Props> = ({ page, limit, items, onRest
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
-                        <Table.ColumnHeader>Mã nhà giấy</Table.ColumnHeader>
-                        <Table.ColumnHeader>Tên nhà giấy</Table.ColumnHeader>
+                        <Table.ColumnHeader>Mã khách hàng</Table.ColumnHeader>
+                        <Table.ColumnHeader>Tên khách hàng</Table.ColumnHeader>
                         <Table.ColumnHeader>Địa chỉ</Table.ColumnHeader>
                         <Table.ColumnHeader>Số điện thoại</Table.ColumnHeader>
                         <Table.ColumnHeader>Email</Table.ColumnHeader>
@@ -46,33 +53,45 @@ const PaperSupplierRestoreTable: React.FC<Props> = ({ page, limit, items, onRest
                 </Table.Header>
 
                 <Table.Body>
-                    {items.map((item, index) => (
-                        <Table.Row key={item._id ?? index}>
+                    {customers.map((customer, index) => (
+                        <Table.Row key={customer._id ?? index}>
                             <Table.Cell textAlign="center">{(page - 1) * limit + index + 1}</Table.Cell>
-                            <Table.Cell>{item.code}</Table.Cell>
-                            <Table.Cell>{item.name}</Table.Cell>
-
+                            <Table.Cell>{customer.code}</Table.Cell>
                             <Table.Cell>
-                                <Tooltip content={item.address} showArrow>
+                                <Tooltip content={customer.name} showArrow>
                                     <Text
                                         overflow="hidden"
                                         textOverflow="ellipsis"
                                         maxLines={1}
                                         maxW="300px"
                                     >
-                                        {item.address}
+                                        {customer.name}
                                     </Text>
                                 </Tooltip>
                             </Table.Cell>
 
-                            <Table.Cell>{item.phone}</Table.Cell>
-                            <Table.Cell>{item.email}</Table.Cell>
+                            <Table.Cell>
+                                <Tooltip content={customer.address} showArrow>
+                                    <Text
+                                        overflow="hidden"
+                                        textOverflow="ellipsis"
+                                        maxLines={1}
+                                        maxW="300px"
+                                    >
+                                        {customer.address}
+                                    </Text>
+                                </Tooltip>
+                            </Table.Cell>
+
+                            <Table.Cell>{customer.contactNumber}</Table.Cell>
+                            <Table.Cell>{customer.email}</Table.Cell>
+
                             <Table.Cell>
                                 <Group gap={5}>
                                     <Button
                                         variant="surface"
                                         colorPalette="blue"
-                                        onClick={() => onDetail(item)}
+                                        onClick={() => onDetail(customer)}
                                     >
                                         <Icon>
                                             <FaEye />
@@ -81,13 +100,23 @@ const PaperSupplierRestoreTable: React.FC<Props> = ({ page, limit, items, onRest
                                     </Button>
                                     <Button
                                         variant="surface"
-                                        colorPalette="green"
-                                        onClick={() => onRestore(item)}
+                                        colorPalette="yellow"
+                                        onClick={() => onEdit(customer)}
                                     >
                                         <Icon>
-                                            <TbRestore />
+                                            <FaEdit />
                                         </Icon>
-                                        Khôi phục
+                                        Sửa
+                                    </Button>
+                                    <Button
+                                        variant="surface"
+                                        colorPalette="red"
+                                        onClick={() => onDelete(customer)}
+                                    >
+                                        <Icon>
+                                            <FaTrashCan />
+                                        </Icon>
+                                        Xóa
                                     </Button>
                                 </Group>
                             </Table.Cell>
@@ -99,4 +128,4 @@ const PaperSupplierRestoreTable: React.FC<Props> = ({ page, limit, items, onRest
     );
 };
 
-export default PaperSupplierRestoreTable;
+export default CustomerTable;

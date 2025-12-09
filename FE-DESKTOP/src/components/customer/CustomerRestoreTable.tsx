@@ -1,19 +1,19 @@
 import { Table, Group, Button, Icon, Text } from "@chakra-ui/react";
 import { FaEye } from "react-icons/fa";
 import { Tooltip } from "@/components/ui/tooltip"
-import { PaperSupplier } from "@/types/PaperSupplier";
+import { Customer } from "@/types/Customer";
 import { TbRestore } from "react-icons/tb";
 import React from "react";
 
 interface Props {
     page: number;
     limit: number;
-    items: PaperSupplier[];
-    onRestore: (item: PaperSupplier) => void;
-    onDetail: (item: PaperSupplier) => void;
+    items: Customer[];
+    onRestore: (item: Customer) => void;
+    onDetail: (item: Customer) => void;
 }
 
-const PaperSupplierRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, onDetail }) => {
+const CustomerRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, onDetail }) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
@@ -34,8 +34,8 @@ const PaperSupplierRestoreTable: React.FC<Props> = ({ page, limit, items, onRest
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
-                        <Table.ColumnHeader>Mã nhà giấy</Table.ColumnHeader>
-                        <Table.ColumnHeader>Tên nhà giấy</Table.ColumnHeader>
+                        <Table.ColumnHeader>Mã khách hàng</Table.ColumnHeader>
+                        <Table.ColumnHeader>Tên khách hàng</Table.ColumnHeader>
                         <Table.ColumnHeader>Địa chỉ</Table.ColumnHeader>
                         <Table.ColumnHeader>Số điện thoại</Table.ColumnHeader>
                         <Table.ColumnHeader>Email</Table.ColumnHeader>
@@ -50,7 +50,19 @@ const PaperSupplierRestoreTable: React.FC<Props> = ({ page, limit, items, onRest
                         <Table.Row key={item._id ?? index}>
                             <Table.Cell textAlign="center">{(page - 1) * limit + index + 1}</Table.Cell>
                             <Table.Cell>{item.code}</Table.Cell>
-                            <Table.Cell>{item.name}</Table.Cell>
+                            <Table.Cell>
+                                <Tooltip content={item.name} showArrow>
+                                    <Text
+                                        overflow="hidden"
+                                        textOverflow="ellipsis"
+                                        maxLines={1}
+                                        maxW="300px"
+                                    >
+                                        {item.name}
+                                    </Text>
+                                </Tooltip>
+
+                            </Table.Cell>
 
                             <Table.Cell>
                                 <Tooltip content={item.address} showArrow>
@@ -65,7 +77,7 @@ const PaperSupplierRestoreTable: React.FC<Props> = ({ page, limit, items, onRest
                                 </Tooltip>
                             </Table.Cell>
 
-                            <Table.Cell>{item.phone}</Table.Cell>
+                            <Table.Cell>{item.contactNumber}</Table.Cell>
                             <Table.Cell>{item.email}</Table.Cell>
                             <Table.Cell>
                                 <Group gap={5}>
@@ -99,4 +111,4 @@ const PaperSupplierRestoreTable: React.FC<Props> = ({ page, limit, items, onRest
     );
 };
 
-export default PaperSupplierRestoreTable;
+export default CustomerRestoreTable;

@@ -45,7 +45,7 @@ const PaperTypeTable = ({
                         <Table.ColumnHeader>Mã Loại Giấy</Table.ColumnHeader>
                         <Table.ColumnHeader>Màu Giấy</Table.ColumnHeader>
                         <Table.ColumnHeader>Khổ Giấy</Table.ColumnHeader>
-                        <Table.ColumnHeader>Định lượng</Table.ColumnHeader>
+                        <Table.ColumnHeader>Định Lượng</Table.ColumnHeader>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             Thao tác
                         </Table.ColumnHeader>
