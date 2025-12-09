@@ -8,6 +8,7 @@ import { CreateSemiFinishedGoodTransactionDTO } from "@/types/SemiFinishedTransa
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { UserState } from "@/types/UserState";
 import { useAppSelector } from "@/service/hooks";
+import { formatDateForInput } from "@/utils/dateUtils";
 
 interface Props {
     isOpen: boolean;
@@ -25,7 +26,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
         state.auth.userState
     );
     const today = new Date();
-    const localDate = today.toISOString().split("T")[0];
+    const localDate = formatDateForInput(today);
     const departments = createListCollection({
         items: [
             { label: "Bộ Phận In", value: "BP IN" },
@@ -70,7 +71,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                 quantity: 0,
                 transactionDate: localDate,
                 exportedTo: initialData?.exportedTo,
-                employee: userState?.id ?? '', // should be employee id
+                employee: userState?.employeeId ?? '',
                 note: "",
             });
         }
@@ -78,12 +79,32 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
 
     const handleSubmit = async () => {
         if (!transaction.manufacturingOrder) {
-            toaster.create({ title: "Lỗi", description: "Chưa chọn phôi", type: "error", closable: true });
+            toaster.create({ title: "Lỗi", description: "Chưa chọn mã lệnh", type: "error", closable: true });
             return;
         }
 
         if (transaction.transactionType == 'EXPORT' && transaction.exportedTo == undefined) {
             toaster.create({ title: "Lỗi", description: "Chưa chọn bộ phận xuất phôi", type: "error", closable: true });
+            return;
+        }
+
+        if (transaction.transactionType == 'EXPORT' && transaction.quantity > (initialData?.currentQuantity ?? 0)) {
+            toaster.create({ title: "Lỗi", description: "Số lượng vượt quá tồn kho", type: "error", closable: true });
+            return;
+        }
+
+        if (transaction.transactionType == 'IMPORT' && transaction.quantity > 10000) {
+            toaster.create({ title: "Lỗi", description: "Mỗi lần nhập không được quá 10000 phôi", type: "error", closable: true });
+            return;
+        }
+
+        if (transaction.transactionDate == "") {
+            toaster.create({ title: "Lỗi", description: "Vui lòng chọn ngày thao tác", type: "error", closable: true });
+            return;
+        }
+
+        if (transaction.quantity <= 0) {
+            toaster.create({ title: "Lỗi", description: "Số lượng phải lớn hơn 0", type: "error", closable: true });
             return;
         }
 
@@ -170,27 +191,22 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
 
                                 <Field.Root invalid={transaction.quantity <= 0} orientation="vertical">
                                     <Field.Label fontSize="lg">Số lượng</Field.Label>
-
+                                    {transactionType == 'EXPORT' &&
+                                        <Field.HelperText>
+                                            Tồn kho hiện tại: {initialData?.currentQuantity}
+                                        </Field.HelperText>
+                                    }
                                     <NumberInput.Root
                                         size="lg"
                                         width="200px"
                                         step={100}
                                         min={0}
-                                        max={
-                                            transaction.transactionType === "IMPORT"
-                                                ? undefined
-                                                : (initialData?.currentQuantity ?? 0)
-                                        }
                                         value={String(transaction.quantity ?? 0)}
                                         onValueChange={(details) => {
                                             let value = details.valueAsNumber;
 
                                             if (value == null || isNaN(value) || value < 0) {
                                                 value = 0;
-                                            }
-
-                                            if (transaction.transactionType === "EXPORT") {
-                                                value = Math.min(value, initialData?.currentQuantity ?? 0);
                                             }
 
                                             setTransaction({

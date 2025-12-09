@@ -12,6 +12,18 @@ export function formatDate(value?: string | Date | number | null): string {
   return `${dd}/${mm}/${yyyy}`;
 }
 
+export function formatDateForInput(value?: string | Date | number | null): string {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) return "";
+
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export function formatDateTime(value?: string | Date | number | null): string {
   if (!value) return "";
   const date = value instanceof Date ? value : new Date(value);
@@ -96,6 +108,16 @@ export function formatDateToYYYYMMDD(date: Date | string | null | undefined) {
 }
 
 export function minDate(a: string, b: string): string {
-  const date = new Date(Math.min(new Date(a).getTime(), new Date(b).getTime()));
-  return date.toISOString().split("T")[0];
+  const da = new Date(a);
+  const db = new Date(b);
+
+  const invalidA = isNaN(da.getTime());
+  const invalidB = isNaN(db.getTime());
+
+  if (invalidA && invalidB) return "";
+  if (invalidA) return b;
+  if (invalidB) return a;
+
+  const min = da < db ? da : db;
+  return min.toISOString().split("T")[0];
 }
