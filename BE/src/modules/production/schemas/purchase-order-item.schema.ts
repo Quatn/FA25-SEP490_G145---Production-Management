@@ -131,13 +131,13 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
   totalWeight: number = 0;
 
   @ApiProperty({
-    default: PurchaseOrderItemStatus.PendingApproval,
+    default: PurchaseOrderItemStatus.Draft,
     enum: PurchaseOrderStatus,
   })
   @Prop({
     required: true,
     enum: PurchaseOrderItemStatus,
-    default: PurchaseOrderItemStatus.PendingApproval,
+    default: PurchaseOrderItemStatus.Draft,
   })
   @IsEnum(PurchaseOrderItemStatus)
   status: PurchaseOrderItemStatus;

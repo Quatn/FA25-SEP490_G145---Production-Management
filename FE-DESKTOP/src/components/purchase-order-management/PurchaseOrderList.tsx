@@ -899,8 +899,7 @@ const PurchaseOrderList: React.FC = () => {
                             minWidth: 200,
                             maxWidth: 280,
                           }}
-                        >
-                        </div>
+                        ></div>
                       </div>
                     </div>
 
@@ -1166,16 +1165,33 @@ const PurchaseOrderList: React.FC = () => {
                                                   <input
                                                     className="form-control form-control-sm"
                                                     type="number"
+                                                    min={0}
+                                                    step={1}
+                                                    inputMode="numeric"
                                                     value={Number(
                                                       it.amount ?? 0
                                                     )}
+                                                    onKeyDown={(e) => {
+                                                      if (
+                                                        e.key === "-" ||
+                                                        e.key === "+" ||
+                                                        e.key === "e" ||
+                                                        e.key === "."
+                                                      ) {
+                                                        e.preventDefault();
+                                                      }
+                                                    }}
                                                     onChange={(e) => {
-                                                      const v =
+                                                      let v =
                                                         e.target.value === ""
                                                           ? 0
-                                                          : Number(
-                                                              e.target.value
+                                                          : Math.floor(
+                                                              Number(
+                                                                e.target.value
+                                                              ) || 0
                                                             );
+                                                      if (v < 0) v = 0;
+
                                                       setExpandedLocalDoc(
                                                         (prev: any) => {
                                                           if (!prev)
@@ -1222,13 +1238,22 @@ const PurchaseOrderList: React.FC = () => {
                                                       );
                                                     }}
                                                     onBlur={(e) => {
-                                                      const finalVal = Number(
-                                                        e.target.value || 0
+                                                      let finalVal = Math.floor(
+                                                        Number(
+                                                          e.target.value || 0
+                                                        ) || 0
                                                       );
+                                                      if (finalVal < 0)
+                                                        finalVal = 0;
                                                       handleUpdateServerItemAmount(
                                                         it,
                                                         finalVal
                                                       );
+                                                    }}
+                                                    onWheel={(e) => {
+                                                      (
+                                                        e.currentTarget as HTMLInputElement
+                                                      ).blur();
                                                     }}
                                                     disabled={!itemEditable}
                                                   />
@@ -1343,10 +1368,11 @@ const PurchaseOrderList: React.FC = () => {
               const productId = p.productId ?? p._id ?? p.unique_id;
               if (existingProductIds.has(String(productId)))
                 duplicates.push(String(productId));
+              // Force newly added products to DRAFT status regardless of p.status
               return {
                 productId: productId,
                 deliveryDate: p.deliveryDate,
-                status: p.status ?? "DRAFT",
+                status: "DRAFT",
               };
             });
 

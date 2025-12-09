@@ -46,37 +46,57 @@ export class CreateWareDto {
   @IsNotEmpty()
   wareManufacturingProcessType: string;
 
-  @ApiProperty({ description: "Adjustment for warePerBlank (must be > 0)" })
-  @Transform(({ value }) => (value === "" ? undefined : value))
+  @ApiProperty({
+    description: "Adjustment for warePerBlank (must be >= 1 when provided)",
+    required: false,
+    nullable: true,
+    default: null,
+  })
+  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
   @Type(() => Number)
+  @IsOptional()
   @IsNumber()
-  @IsNotEmpty()
   @Min(1)
-  warePerBlankAdjustment: number;
+  warePerBlankAdjustment?: number | null = null;
 
-  @ApiProperty({ description: "Flap adjustment (must be > 0)" })
-  @Transform(({ value }) => (value === "" ? undefined : value))
+  @ApiProperty({
+    description: "Flap adjustment (must be >= 1 when provided)",
+    required: false,
+    nullable: true,
+    default: null,
+  })
+  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
   @Type(() => Number)
+  @IsOptional()
   @IsNumber()
-  @IsNotEmpty()
   @Min(1)
-  flapAdjustment: number;
+  flapAdjustment?: number | null = null;
 
-  @ApiProperty({ description: "Flap overlap adjustment (must be > 0)" })
-  @Transform(({ value }) => (value === "" ? undefined : value))
+  @ApiProperty({
+    description: "Flap overlap adjustment (must be >= 1 when provided)",
+    required: false,
+    nullable: true,
+    default: null,
+  })
+  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
   @Type(() => Number)
+  @IsOptional()
   @IsNumber()
-  @IsNotEmpty()
   @Min(1)
-  flapOverlapAdjustment: number;
+  flapOverlapAdjustment?: number | null = null;
 
-  @ApiProperty({ description: "Cross cut count adjustment (must be > 0)" })
-  @Transform(({ value }) => (value === "" ? undefined : value))
+  @ApiProperty({
+    description: "Cross cut count adjustment (must be >= 1 when provided)",
+    required: false,
+    nullable: true,
+    default: null,
+  })
+  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
   @Type(() => Number)
+  @IsOptional()
   @IsNumber()
-  @IsNotEmpty()
   @Min(1)
-  crossCutCountAdjustment: number;
+  crossCutCountAdjustment?: number | null = null;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -171,17 +191,17 @@ export class CreateWareDto {
 
   @ApiProperty()
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   warePerSet: number;
 
   @ApiProperty()
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   warePerCombinedSet: number;
 
   @ApiProperty()
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   horizontalWareSplit: number;
 
   @ApiProperty({ type: [String], description: "Array of PrintColor ObjectIds" })
