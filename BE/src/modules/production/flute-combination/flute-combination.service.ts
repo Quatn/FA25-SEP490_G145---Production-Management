@@ -15,28 +15,23 @@ export class FluteCombinationService {
     private readonly fcModel: Model<FluteCombination>,
   ) { }
 
-  async checkDuplicates(dto: CreateFluteCombinationDto | UpdateFluteCombinationDto) {
-    const duplicates = await this.fcModel.aggregate([
-      {
-        $match: {
-          $or: [
-            { code: dto.code },
-          ],
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          code: 1,
-        },
-      },
-    ]);
+  async checkDuplicates(
+    dto: CreateFluteCombinationDto,
+  ) {
+    const code = dto.code?.trim();
+
+    const query: any = {
+      $or: [{ code }],
+    };
+
+    const duplicates = await this.fcModel.find(query).lean();
 
     if (duplicates.length > 0) {
       const duplicateFields: string[] = [];
-      duplicates.forEach((d) => {
-        if (d.code === dto.code) duplicateFields.push('Mã sóng');
+      duplicates.forEach((item) => {
+        if (item.code === code) duplicateFields.push('Mã tổ hợp sóng');
       });
+
       throw new BadRequestException(
         `Trùng lặp giá trị ở các trường: ${duplicateFields.join(', ')}`,
       );
@@ -52,7 +47,6 @@ export class FluteCombinationService {
       const regex = new RegExp(search.trim(), 'i');
       query.$or = [
         { code: regex },
-        { description: regex },
       ];
     }
 
@@ -78,6 +72,31 @@ export class FluteCombinationService {
     return await this.fcModel.find();
   }
 
+  async findDeleted(page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const filter = { isDeleted: true };
+
+    const [data, totalItems] = await Promise.all([
+      this.fcModel
+        .find(filter)
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.fcModel.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil((totalItems || 0) / limit);
+    return {
+      data,
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
+
   async findOne(id: string) {
     const doc = await this.fcModel.findById(id) as FluteCombinationDocument;
     if (!doc) throw new NotFoundException('Flute combination not found');
@@ -85,25 +104,9 @@ export class FluteCombinationService {
   }
 
   async createOne(dto: CreateFluteCombinationDto): Promise<FluteCombinationDocument> {
-    try {
-      const doc = new this.fcModel(dto);
-      return await doc.save();
-    } catch (err: any) {
-      if (err.code === 11000 && err.keyValue) {
-        const field = Object.keys(err.keyValue)[0];
-        const value = err.keyValue[field];
-        let message = '';
-
-        if (field === 'code') {
-          message = `Mã sóng "${value}" đã tồn tại.`;
-        } else {
-          message = `Giá trị "${value}" ở trường "${field}" đã tồn tại.`;
-        }
-
-        throw new BadRequestException(message);
-      }
-      throw err;
-    }
+    await this.checkDuplicates(dto);
+    const doc = new this.fcModel(dto);
+    return await doc.save();
   }
 
   async updateOne(id: string, dto: UpdateFluteCombinationDto): Promise<FluteCombinationDocument> {
@@ -137,15 +140,25 @@ export class FluteCombinationService {
   }
 
   async restore(id: string) {
-    const doc = await this.fcModel.findById(id) as SoftFluteCombination;
+    const doc = await this.fcModel.findOne({
+      _id: id,
+      isDeleted: true
+    }) as SoftFluteCombination;
     if (!doc) throw new NotFoundException('Flute combination not found');
     await doc.restore();
     return { success: true };
   }
 
   async removeHard(id: string) {
-    const result = await this.fcModel.findByIdAndDelete(id);
-    if (!result) throw new NotFoundException('Flute combination not found');
+    const result = await this.fcModel.findOneAndDelete({
+      _id: id,
+      isDeleted: true
+    });
+
+    if (!result) {
+      throw new NotFoundException('Flute combination not found or not in trash');
+    }
+
     return { success: true };
   }
 }

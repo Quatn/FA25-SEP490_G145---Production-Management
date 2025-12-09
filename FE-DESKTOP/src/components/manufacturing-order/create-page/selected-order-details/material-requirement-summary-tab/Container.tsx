@@ -27,10 +27,10 @@ export default function MaterialRequirementContainer(props: MaterialRequirementC
       <Box colorPalette={"gray"} bg={"colorPalette.subtle"} p={5} rounded={"md"}>
         <SimpleGrid columns={2} gap="40px">
           <GridItem colSpan={{ base: 1 }}>
-            <MaterialRequirementTable type="FACE" />
+            <MaterialRequirementTable type="FACE" header={"Trọng lượng giấy mặt"} />
           </GridItem>
           <GridItem colSpan={{ base: 1 }}>
-            <MaterialRequirementTable type="RAW" />
+            <MaterialRequirementTable type="RAW" header={"Trọng lượng giấy mộc"} />
           </GridItem>
           <Box height="20" />
           <Box height="20" />

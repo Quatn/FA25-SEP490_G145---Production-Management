@@ -37,7 +37,7 @@ export class CorrugatorProcess {
   manufacturedAmount: number;
 
   @Prop({ required: true, default: 0 })
-  actualBlankWidth: number;
+  actualPaperWidth: number;
 
   @Prop({ required: true, default: 0 })
   actualRunningLength: number;

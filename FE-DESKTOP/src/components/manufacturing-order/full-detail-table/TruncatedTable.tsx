@@ -2,7 +2,6 @@
 
 import {
   ManufacturingOrderTableReducerStore,
-  ManufacturingTableTabType,
 } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import {
   useGetFullDetailManufacturingOrdersQuery,
@@ -11,7 +10,6 @@ import {
 import {
   ActionBar,
   Box,
-  BoxProps,
   Button,
   Center,
   Kbd,
@@ -19,22 +17,14 @@ import {
   Spinner,
   Stack,
   Table,
-  TableRootProps,
-  Tabs,
-  TabsRootProps,
   Text,
 } from "@chakra-ui/react";
 import check from "check-types";
-import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
-import { manufacturingOrderColumnsByTabs, manufacturingOrderMergedHeaders } from "./tableDefinition";
 import { useCallback, useEffect, useMemo } from "react";
 import { getCoreRowModel } from "@tanstack/react-table";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
-import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
-import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import useDataTable from "@/components/ui/data-table/hook";
-import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import DataFetchError from "@/components/common/DataFetchError";
 import { useDataTableSelector } from "@/components/ui/data-table/Provider";
 import { convertSerializedMOToTruncatedManufacturingOrderTableData, truncatedManufacturingOrderTableColumns, TruncatedManufacturingOrderTableData, truncatedManufacturingOrderTableMergedHeaders } from "./truncatedTableDefinition";
@@ -58,6 +48,7 @@ export default function TruncatedManufacturingOrderTable(
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
+    refetch: refetchTable,
   } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query });
 
   const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
@@ -98,7 +89,7 @@ export default function TruncatedManufacturingOrderTable(
     else {
       return undefined
     }
-  }, [fullDetailMOPaginatedResponse?.data])
+  }, [fullDetailMOPaginatedResponse?.data, orderFinishingProcessesResponse?.data])
 
   const moList = useMemo(() => moPaginatedList?.data ?? [], [moPaginatedList?.data])
   const getMo = useCallback((id: string) => {
@@ -110,11 +101,12 @@ export default function TruncatedManufacturingOrderTable(
       order: mo, processes: mo.finishingProcesses ?? []
     }
   }, [moList])
+
   const rawTableData: TruncatedManufacturingOrderTableData[] = useMemo(() => moList.map(mo =>
     convertSerializedMOToTruncatedManufacturingOrderTableData(mo, mo.finishingProcesses, getMo)
   ), [moList, getMo])
 
-  const { table, tableComponent, tableData, resetTable } = useDataTable({
+  const { tableComponent, tableData, resetTable } = useDataTable({
     data: rawTableData,
     columns: truncatedManufacturingOrderTableColumns,
     getCoreRowModel: getCoreRowModel(),
@@ -145,10 +137,6 @@ export default function TruncatedManufacturingOrderTable(
   });
 
   useEffect(() => {
-    logTimestamp("Table hook re-calculated")
-  }, [table, tableComponent, tableData]);
-
-  useEffect(() => {
     logTimestamp("SET_TOTAL_ITEMS effect Triggered")
     dispatch({
       type: "SET_TOTAL_ITEMS",
@@ -156,7 +144,7 @@ export default function TruncatedManufacturingOrderTable(
     });
   }, [dispatch, moPaginatedList, moPaginatedList?.totalItems]);
 
-  if (isFetchingList) {
+  if (isFetchingList || isOrderFinishingProcessFetchingList) {
     return (
       <Center h={"full"} flex={1} flexGrow={1}>
         <Stack alignItems={"center"}>
@@ -167,12 +155,12 @@ export default function TruncatedManufacturingOrderTable(
     );
   }
 
-  if (fetchError) {
-    return <DataFetchError h={"full"} flexGrow={1} errorText={tryGetApiErrorMsg(fetchError)} />;
+  if (fetchError || orderFinishingProcessFetchError) {
+    return <DataFetchError h={"full"} flexGrow={1} errorText={tryGetApiErrorMsg(fetchError)} refetch={refetchTable} />;
   }
 
   if (check.undefined(moPaginatedList)) {
-    return <DataFetchError h={"full"} flexGrow={1} />;
+    return <DataFetchError h={"full"} flexGrow={1} refetch={refetchTable} />;
   }
 
   const editedItemsNum = tableData.filter(row => row.isEdited).length

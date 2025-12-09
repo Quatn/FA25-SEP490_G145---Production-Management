@@ -7,6 +7,7 @@ import check from "check-types";
 import { useCallback, useMemo } from "react";
 import ManufacturingOrderTrackPanelListItem from "./ListItem";
 import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
+import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 
 export default function ManufacturingOrderTrackPanelList() {
   const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
@@ -20,7 +21,7 @@ export default function ManufacturingOrderTrackPanelList() {
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
-  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: search });
+  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: search, approvalStatuses: [ManufacturingOrderApprovalStatus.Approved] });
 
   const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
 
@@ -59,7 +60,6 @@ export default function ManufacturingOrderTrackPanelList() {
   }, [fullDetailMOPaginatedResponse?.data, orderFinishingProcessesResponse?.data])
 
   const moList = useMemo(() => moPaginatedList?.data ?? [], [moPaginatedList?.data])
-  const getMo = useCallback((id: string) => moList.find(mo => mo._id === id), [moList])
 
   return (
     <Box
@@ -79,11 +79,11 @@ export default function ManufacturingOrderTrackPanelList() {
           minHeight={"80vh"}
         >
           <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-            Các lệnh đáng chú ý
+            Quản lý lệnh
           </Text>
-          <HStack justifyContent={"space-between"}>
+          <HStack justifyContent={"end"}>
 
-            <Link href="/manufacturing-order/create">
+            <Link href="/manufacturing-order/list">
               <Button size={"sm"} colorPalette={"cyan"}>Xem danh sách chi tiết</Button>
             </Link>
           </HStack>

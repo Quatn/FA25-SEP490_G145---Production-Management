@@ -25,7 +25,7 @@ import {
   PurchaseOrderItemDocument,
   PurchaseOrderItemSchema,
 } from "../schemas/purchase-order-item.schema";
-import { SubPurchaseOrderSchema } from "../schemas/sub-purchase-order.schema";
+import { SubPurchaseOrderDocument, SubPurchaseOrderSchema } from "../schemas/sub-purchase-order.schema";
 import { PurchaseOrderSchema } from "../schemas/purchase-order.schema";
 import { Ware, WareDocument, WareSchema } from "../schemas/ware.schema";
 import { MOCodeGenerator } from "./business-logics/mo-code-generator";
@@ -65,18 +65,29 @@ export class ManufacturingOrderService {
   ) { }
 
   async recalCheckDocs(docs: ManufacturingOrderDocument[]) {
+      // Record of resulting docs after the would check and recalc process
     const resultRocs: ManufacturingOrderDocument[] = [];
+      // Record of ids of pois that will be recalculated 
+    const previouslyRecalcPOIs: string[] = [];
 
     for (const moDoc of docs) {
+      const poi = moDoc.purchaseOrderItem as PurchaseOrderItemDocument
+      const ware = poi.ware as WareDocument
+      if (!previouslyRecalcPOIs.includes(poi._id.toString()) && poi.recalculateFlag && ware.recalculateFlag) {
+        previouslyRecalcPOIs.push(poi._id.toString())
+      }
+
       const alreadyRecalcedPOI = resultRocs.find((co) =>
         (co.purchaseOrderItem as PurchaseOrderItemDocument)._id.equals(
           (moDoc.purchaseOrderItem as PurchaseOrderItemDocument)._id,
         ),
       );
 
+      // If the poi is found on a previously recalculated mo in resultRocs, take that (presumably already recalculated) poi and reuse it instead of recalculating the poi once again
       if (alreadyRecalcedPOI) {
         moDoc.purchaseOrderItem = alreadyRecalcedPOI.purchaseOrderItem;
       } else {
+      // If not then check the wares to see which can be reused from a previously recalculated MO, similar to the poi check
         const moDocWithSameWare = resultRocs.find((co) => {
           return (
             (co.purchaseOrderItem as PurchaseOrderItemDocument)
@@ -98,6 +109,11 @@ export class ManufacturingOrderService {
         }
       }
 
+      // By now all pois or wares should have been recalculated or reused from the resultRocs array, however if the poi or ware recalculated then the mo must also be recalculated, so if the current mo's poi or ware have just been recalculated or was reused from the resultRocs array, set the mo's recalculateFlag to true.
+      // console.log("AHHHHHHHHHHHH", previouslyRecalcPOIs)
+      if (previouslyRecalcPOIs.includes(poi._id.toString())) {
+        moDoc.set("recalculateFlag", true)
+      }
       const recaledMoDoc =
         await this.recalcService.checkAndRecalculateManufacturingOrderDoc(
           moDoc,
@@ -231,7 +247,7 @@ export class ManufacturingOrderService {
         corrugatorProcess: {
           manufacturedAmount: 0,
           status: CorrugatorProcessStatus.NOTSTARTED,
-          actualBlankWidth: 0,
+          actualPaperWidth: 0,
           actualRunningLength: 0,
           note: "",
         },
@@ -302,7 +318,7 @@ export class ManufacturingOrderService {
           corrugatorProcess: {
             manufacturedAmount: 0,
             status: CorrugatorProcessStatus.NOTSTARTED,
-            actualBlankWidth: 0,
+            actualPaperWidth: 0,
             actualRunningLength: 0,
             note: "",
           },
@@ -357,7 +373,7 @@ export class ManufacturingOrderService {
         const processes: OrderFinishingProcess[] = ware.finishingProcesses.map(
           (type, index) => {
             return {
-              code: `${mo.code}-${mo._id.toString()}-${index + 1}`,
+              code: `${mo.code}-${index + 1}`,
               manufacturingOrder: mo._id,
               wareFinishingProcessType: type,
               sequenceNumber: index + 1,
@@ -510,25 +526,40 @@ export class ManufacturingOrderService {
       }
 
       if (dto.corrugatorProcess) {
-        // Object.assign(doc.corrugatorProcess, dto.corrugatorProcess);
-
-        const shouldUpdateStatus =
-          check.equal(
-            dto.corrugatorProcess?.status,
-            doc.corrugatorProcess.status,
-          ) &&
-          check.number(dto.corrugatorProcess?.manufacturedAmount) &&
-          check.greater(
-            dto.corrugatorProcess?.manufacturedAmount,
-            doc.corrugatorProcess.manufacturedAmount,
-          );
-
-        if (shouldUpdateStatus) {
-          dto.corrugatorProcess.status = CorrugatorProcessStatus.RUNNING
+        if (
+          check.in(doc.corrugatorProcess?.status, [
+            CorrugatorProcessStatus.NOTSTARTED,
+            CorrugatorProcessStatus.PAUSED,
+          ])
+        ) {
+          if (
+            check.greater(
+              parseInt(dto.corrugatorProcess.manufacturedAmount + ""),
+              parseInt(doc.corrugatorProcess.manufacturedAmount + ""),
+            )
+          ) {
+            dto.corrugatorProcess.status = CorrugatorProcessStatus.RUNNING;
+          }
         }
 
-        doc.set("corrugatorProcess", dto.corrugatorProcess)
+        if (
+          !check.in(doc.corrugatorProcess?.status, [
+            CorrugatorProcessStatus.COMPLETED,
+            CorrugatorProcessStatus.CANCELLED,
+            CorrugatorProcessStatus.OVERCOMPLETED,
+          ])
+        ) {
+          if (
+            check.greaterOrEqual(
+              parseInt(dto.corrugatorProcess.manufacturedAmount + ""),
+              parseInt(doc.numberOfBlanks + ""),
+            )
+          ) {
+            dto.corrugatorProcess.status = CorrugatorProcessStatus.COMPLETED;
+          }
+        }
 
+        doc.set("corrugatorProcess", dto.corrugatorProcess);
       }
       const { corrugatorProcess: _, ...dtoWOCorruProgress } = dto;
       Object.assign(doc, dtoWOCorruProgress);
@@ -541,7 +572,6 @@ export class ManufacturingOrderService {
       );
 
       await doc.save();
-      console.log(doc)
     }
 
     return {
@@ -553,9 +583,12 @@ export class ManufacturingOrderService {
     };
   }
 
-  async deleteOne(
-    id: mongoose.Types.ObjectId,
-  ): Promise<DeleteResult<{ code: string }>> {
+  async deleteOne(id: mongoose.Types.ObjectId): Promise<
+    DeleteResult<{
+      code: string;
+      orderProcessDeleteResult: DeleteResult;
+    }>
+  > {
     const doc = (await this.manufacturingOrderModel.findById(
       id,
     )) as DocWithSoftDelete;
@@ -563,14 +596,25 @@ export class ManufacturingOrderService {
     const code = doc.code;
     await doc.softDelete();
 
-    const res = await this.orderFinishingProcessModel.updateMany(
+    const processDeleteCount =
+      await this.orderFinishingProcessModel.countDocuments({
+        manufacturingOrder: id,
+      });
+    const processDeleteRes = await this.orderFinishingProcessModel.updateMany(
       { manufacturingOrder: id },
       { $set: { isDeleted: true } },
     );
+
     return {
       deletedAmount: 1,
       requestedAmount: 1,
-      echo: { code },
+      echo: {
+        code,
+        orderProcessDeleteResult: {
+          requestedAmount: processDeleteCount,
+          deletedAmount: processDeleteRes.upsertedCount,
+        },
+      },
     };
   }
 

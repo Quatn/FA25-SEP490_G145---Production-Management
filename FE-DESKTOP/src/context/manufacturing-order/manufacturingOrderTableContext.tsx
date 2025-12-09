@@ -58,7 +58,7 @@ type StoreAction =
 
 const initialState: StoreState = {
   page: 1,
-  limit: 20,
+  limit: 10,
   totalItems: 0,
   search: "",
   tab: "all",

@@ -21,9 +21,7 @@ import {
   AssembledCreateManufacturingOrderRequestDto,
   CreateManufacturingOrderRequestDto,
 } from "./dto/create-order-request.dto";
-import {
-  QueryListManufacturingOrderResponseDto,
-} from "./dto/query-list.dto";
+import { QueryListManufacturingOrderResponseDto } from "./dto/query-list.dto";
 import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
 import { ApiResponseWith } from "@/common/decorators/swagger-response-docs";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
@@ -45,6 +43,7 @@ import { QueryListFullDetailsManufacturingOrderRequestDto } from "./dto/query-li
 import check from "check-types";
 import { PrivilegedJwtAuthGuard } from "@/common/guards/privileged-jwt-auth.guard";
 import { manufacturingOrderGetPrivileges } from "./manufacturing-order-module-access-privileges";
+import { buildFullDetailsMOFilterFromDto } from "./utils/buildFullDetailsFilterFromDto";
 
 const ManufacturingOrderGetRequestGuard = PrivilegedJwtAuthGuard({
   requiredPrivileges: manufacturingOrderGetPrivileges,
@@ -85,37 +84,7 @@ export class ManufacturingOrderController {
   ): Promise<QueryListManufacturingOrderResponseDto> {
     const docs = await this.moService.queryListFullDetails({
       ...query,
-      filter: check.undefined(query.query)
-        ? {}
-        : {
-          $or: [
-            { code: { $regex: query.query, $options: "i" } },
-            {
-              "purchaseOrderItem.code": {
-                $regex: query.query,
-                $options: "i",
-              },
-            },
-            {
-              "purchaseOrderItem.ware.code": {
-                $regex: query.query,
-                $options: "i",
-              },
-            },
-            {
-              "purchaseOrderItem.ware.fluteCombination.code": {
-                $regex: query.query,
-                $options: "i",
-              },
-            },
-            // { "purchaseOrderItem.subPurchaseOrder.product.code": { $regex: query.query, $options: "i" } },
-            // { "purchaseOrderItem.subPurchaseOrder.purchaseOrder.code": { $regex: query.query, $options: "i" } },
-            {
-              "purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code":
-                { $regex: query.query, $options: "i" },
-            },
-          ],
-        },
+      filter: buildFullDetailsMOFilterFromDto(query),
     });
     return {
       success: true,
@@ -208,9 +177,14 @@ export class ManufacturingOrderController {
 
   @Delete("id/:id")
   @ApiOperation({ summary: "Delete one manufacturing order" })
-  async deleteOne(
-    @Param() param: DeleteManufacturingOrderRequestDto,
-  ): Promise<BaseResponse<DeleteResult<{ code: string }>>> {
+  async deleteOne(@Param() param: DeleteManufacturingOrderRequestDto): Promise<
+    BaseResponse<
+      DeleteResult<{
+        code: string;
+        orderProcessDeleteResult: DeleteResult;
+      }>
+    >
+  > {
     const result = await this.moService.deleteOne(param.id);
     return {
       success: true,
@@ -231,5 +205,4 @@ export class ManufacturingOrderController {
       data: result,
     };
   }
-
 }

@@ -1,8 +1,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 import type { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import check from "check-types";
-import type { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
-import { PrintColor } from "@/types/PrintColor";
 import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";
 import { getDataTableColumnHelper } from "@/components/ui/data-table/utils/getDataTableColumnHelper";
 import { DataTableCellType } from "@/components/ui/data-table/Cell";
@@ -11,11 +9,7 @@ import { createListCollection } from "@chakra-ui/react";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import ManufacturingOrderTableActionColumn from "./ActionColumn";
-import { FluteCombination } from "@/types/FluteCombination";
-import { LEGACY_OrderStatus } from "@/types/enums/LEGACY_OrderStatus";
 import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
-import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
-import { OrderFinishingProcessStatus } from "@/types/enums/OrderFinishingProcessStatus";
 import { manufacturingOrderComponentUtils as utils } from "../utils"
 
 const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, getOrderStatus, OrderStatusNameMap } = utils
@@ -25,7 +19,6 @@ export type TruncatedManufacturingOrderTableData = {
   code: string,
   manufacturingDirective: ManufacturingOrderDirectives | null,
   customerCode: string,
-  overallStatus: LEGACY_OrderStatus,
   wareCode: string,
   purchaseOrderCode: string,
   fluteCombinationCode: string,
@@ -42,6 +35,7 @@ export type TruncatedManufacturingOrderTableData = {
   corrugatorLine: CorrugatorLine,
   corrugatorLineAdjustment: CorrugatorLine | null,
   wareManufacturingProcessType: Omit<WareFinishingProcessType, "createdAt" | "updatedAt">,
+  // Refers to ware finishing processes, this is to display the processes listed on the ware, not the actual created order manufacturing processes. Use `processes` provided by getOrder() for that.
   finishingProcesses: Omit<WareFinishingProcessType, "createdAt" | "updatedAt">[],
   wareNote: string,
   note: string,
@@ -50,7 +44,10 @@ export type TruncatedManufacturingOrderTableData = {
   orderStatusDisplay: string,
 }
 
-export const convertSerializedMOToTruncatedManufacturingOrderTableData = (mo: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[], getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined): TruncatedManufacturingOrderTableData => {
+export const convertSerializedMOToTruncatedManufacturingOrderTableData = (
+  mo: Serialized<ManufacturingOrder>,
+  processes: Serialized<OrderFinishingProcess>[],
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined): TruncatedManufacturingOrderTableData => {
   const customer = getPopulatedCustomer(mo)
   const ware = getPopulatedWare(mo)
   const subPo = getPopulatedSubPo(mo)
@@ -82,7 +79,6 @@ export const convertSerializedMOToTruncatedManufacturingOrderTableData = (mo: Se
     code: mo.code,
     manufacturingDirective: mo.manufacturingDirective ?? null,
     customerCode: customer?.code ?? "",
-    overallStatus: mo.overallStatus,
     wareCode: ware?.code ?? "",
     purchaseOrderCode: po?.code ?? "",
     fluteCombinationCode: check.string(ware?.fluteCombination) ? ware.fluteCombination : ware?.fluteCombination.code ?? "",
@@ -109,15 +105,6 @@ export const convertSerializedMOToTruncatedManufacturingOrderTableData = (mo: Se
 }
 
 const columnHelper = getDataTableColumnHelper<TruncatedManufacturingOrderTableData>()
-
-const orderStatusNameMap: Record<LEGACY_OrderStatus, string> = {
-  NOTSTARTED: "Chưa bắt đầu",
-  RUNNING: "Đang chạy",
-  COMPLETED: "Đã hoàn thành",
-  OVERCOMPLETED: "Đã hoàn thành",
-  PAUSED: "Tạm dừng",
-  CANCELLED: "Đã hủy",
-}
 
 const manufacturingDirectives: { label: string, value: string }[] = [
   { label: "Hủy", value: ManufacturingOrderDirectives.Cancel },
@@ -212,7 +199,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     accessorKey: "purchaseOrderCode",
     header: "Đơn hàng",
     enablePinning: true,
-    cellType: DataTableCellType.Readonly,
+    cellType: DataTableCellType.Highlight,
     ...colSize.md,
   }),
 
@@ -315,7 +302,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
         accessorKey: "orderDate",
         header: "Nhận đơn",
         enablePinning: true,
-        cellType: DataTableCellType.Date,
+        cellType: DataTableCellType.Readonly,
         ...colSize.md,
       }),
       columnHelper.defineDataTableAccessorColumn({
@@ -323,17 +310,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
         accessorKey: "deliveryDate",
         header: "Giao đơn",
         enablePinning: true,
-        cellType: DataTableCellType.Date,
-        ...colSize.md,
-      }),
-      columnHelper.defineDataTableAccessorColumn({
-        id: "manufacturingDate",
-        accessorFn: (tmo) => {
-          return tmo.manufacturingDateAdjustment ?? tmo.manufacturingDate
-        },
-        header: "Ngày SX",
-        enablePinning: true,
-        cellType: DataTableCellType.Date,
+        cellType: DataTableCellType.Readonly,
         ...colSize.md,
       }),
     ]

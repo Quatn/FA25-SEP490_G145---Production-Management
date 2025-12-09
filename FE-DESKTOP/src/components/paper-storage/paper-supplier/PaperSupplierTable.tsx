@@ -1,15 +1,15 @@
 import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip"
-import { FaEdit } from "react-icons/fa";
+import { FaEdit, FaEye } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
 import { PaperSupplier } from "@/types/PaperSupplier";
-import PaperSupplierDetailDialog from "./PaperSupplierDetailDialog";
 
 interface PaperSupplierTableProps {
     page: number;
     limit: number;
     suppliers: PaperSupplier[];
     onEdit: (supplier: PaperSupplier) => void;
+    onDetail: (supplier: PaperSupplier) => void;
     onDelete: (supplier: PaperSupplier) => void;
 }
 
@@ -18,6 +18,7 @@ const PaperSupplierTable = ({
     limit,
     suppliers,
     onEdit,
+    onDetail,
     onDelete,
 }: PaperSupplierTableProps) => {
     return (
@@ -59,26 +60,33 @@ const PaperSupplierTable = ({
                             <Table.Cell>{supplier.name}</Table.Cell>
 
                             <Table.Cell>
-                                <Tooltip content={supplier.address ?? ""} showArrow>
+                                <Tooltip content={supplier.address} showArrow>
                                     <Text
                                         overflow="hidden"
                                         textOverflow="ellipsis"
                                         maxLines={1}
                                         maxW="300px"
                                     >
-                                        {supplier.address ?? ""}
+                                        {supplier.address}
                                     </Text>
                                 </Tooltip>
                             </Table.Cell>
 
-                            <Table.Cell>{supplier.phone ?? ""}</Table.Cell>
-                            <Table.Cell>{supplier.email ?? ""}</Table.Cell>
+                            <Table.Cell>{supplier.phone}</Table.Cell>
+                            <Table.Cell>{supplier.email}</Table.Cell>
 
                             <Table.Cell>
                                 <Group gap={5}>
-                                    <PaperSupplierDetailDialog
-                                        supplier={supplier}
-                                    />
+                                    <Button
+                                        variant="surface"
+                                        colorPalette="blue"
+                                        onClick={() => onDetail(supplier)}
+                                    >
+                                        <Icon>
+                                            <FaEye />
+                                        </Icon>
+                                        Chi tiết
+                                    </Button>
                                     <Button
                                         variant="surface"
                                         colorPalette="yellow"

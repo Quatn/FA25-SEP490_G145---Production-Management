@@ -10,18 +10,27 @@ import {
 } from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
 import { DeleteManufacturingOrderRequestDto, DeleteManufacturingOrderResponseDto } from "@/types/DTO/manufacturing-order/DeleteManufacturingOrderDto";
 import { UpdateManyManufacturingOrdersRequestDto, UpdateManyManufacturingOrdersResponseDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
+import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
+import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
+import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-
     getFullDetailManufacturingOrders: createApiEndpoint<
       PageResponse<Serialized<ManufacturingOrder>>,
-      { page: number; limit: number, query?: string }
+      {
+        page: number,
+        limit: number,
+        query?: string,
+        approvalStatuses?: ManufacturingOrderApprovalStatus[];
+        corrugatorLines?: CorrugatorLine[];
+        corrugatorProcessStatuses?: CorrugatorProcessStatus[],
+      }
     >(builder, {
-      query: ({ page, limit, query }) => ({
+      query: ({ page, limit, query, approvalStatuses, corrugatorLines, corrugatorProcessStatuses }) => ({
         url: `${MANUFACTURING_ORDER_URL}/query/full-details`,
         method: "GET",
-        params: { page, limit, query },
+        params: { page, limit, query, approvalStatuses, corrugatorLines, corrugatorProcessStatuses },
         credentials: "include",
       }),
       providesTags: ["ManufacturingOrder"],

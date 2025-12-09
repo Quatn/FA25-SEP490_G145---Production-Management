@@ -26,6 +26,17 @@ export const paperColorApiSlice = apiSlice.injectEndpoints({
                 providesTags: ["PaperColor"],
             }),
 
+        getDeletedPaperColor: builder.query<BaseResponse<PaginatedList<PaperColor>>, { page?: number; limit?: number }>(
+            {
+                query: ({ page = 1, limit = 10 }) => ({
+                    url: `${PAPER_COLOR_URL}/list-deleted`,
+                    method: "GET",
+                    params: { page, limit },
+                    credentials: "include",
+                }),
+                providesTags: ["PaperColor"],
+            }),
+
         addPaperColor: builder.mutation<{ success: boolean; message: string }, PaperColor>({
             query: (body) => ({
                 url: `${PAPER_COLOR_URL}/create`,
@@ -46,14 +57,42 @@ export const paperColorApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: ["PaperColor"],
         }),
 
-        deletePaperColor: builder.mutation<{ success: boolean; message: string }, PaperColor>({
-            query: (body) => ({
-                url: `${PAPER_COLOR_URL}/delete-soft/${body._id}`,
-                method: "DELETE",
-                credentials: "include",
-            }),
+        deleteSoftPaperColor: builder.mutation<{ success: boolean; message: string }, PaperColor>({
+            query: (body) => {
+                const id = body._id;
+                return {
+                    url: `${PAPER_COLOR_URL}/delete-soft/${id}`,
+                    method: "DELETE",
+                    credentials: "include",
+                };
+            },
             invalidatesTags: ["PaperColor"],
         }),
+
+        deleteHardPaperColor: builder.mutation<{ success: boolean; message: string }, PaperColor>({
+            query: (body) => {
+                const id = body._id;
+                return {
+                    url: `${PAPER_COLOR_URL}/delete-hard/${id}`,
+                    method: "DELETE",
+                    credentials: "include",
+                };
+            },
+            invalidatesTags: ["PaperColor"],
+        }),
+
+        restorePaperColor: builder.mutation<{ success: boolean; message: string }, PaperColor>({
+            query: (body) => {
+                const id = body._id;
+                return {
+                    url: `${PAPER_COLOR_URL}/restore/${id}`,
+                    method: "PATCH",
+                    credentials: "include",
+                };
+            },
+            invalidatesTags: ["PaperColor"],
+        }),
+
     }),
 });
 
@@ -61,6 +100,9 @@ export const {
     useGetAllPaperColorsQuery,
     useAddPaperColorMutation,
     useGetPaperColorQuery,
+    useGetDeletedPaperColorQuery,
     useUpdatePaperColorMutation,
-    useDeletePaperColorMutation,
+    useDeleteSoftPaperColorMutation,
+    useRestorePaperColorMutation,
+    useDeleteHardPaperColorMutation,
 } = paperColorApiSlice;

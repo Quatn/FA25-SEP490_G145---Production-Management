@@ -4,22 +4,37 @@ import { Alert, Box, Button, Card, createListCollection, DataList, Editable, Hea
 import check from "check-types"
 import { useMemo, useState } from "react"
 import { manufacturingOrderComponentUtils as utils } from "../utils"
-import { WareFinishingProcessType } from "@/types/WareFinishingProcessType"
-import { FluteCombination } from "@/types/FluteCombination"
-import { WareManufacturingProcessType } from "@/types/WareManufacturingProcessType"
 import { ManufacturingOrderDirectives } from "@/types/enums/ManufacturingOrderDirectives"
 import { formatDateToDDMMYYYY, formatDateToYYYYMMDD } from "@/utils/dateUtils"
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine"
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError"
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto"
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem"
-import { ManufacturingOrderTableReducerStore } from "@/context/manufacturing-order/manufacturingOrderTableContext"
 import { useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice"
 import { toaster } from "@/components/ui/toaster"
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg"
 import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent"
 import { OrderFinishingProcess } from "@/types/OrderFinishingProcess"
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus"
+import { ManufacturingOrderOperativeStatus } from "@/types/enums/ManufacturingOrderOperativeStatus"
+import { LuCircleCheckBig, LuCircleMinus, LuCircleX, LuPause, LuPlay } from "react-icons/lu"
+import ManufacturingOrderDetailsDialogManufacturingDetailsAdditionalDetails from "./ManufacturingDetailsAdditionalDetails"
+
+const OrderStatusAlertColorMap: Record<ManufacturingOrderOperativeStatus, string> = {
+  NOTSTARTED: "gray",
+  RUNNING: "blue",
+  PAUSED: "yellow",
+  COMPLETED: "green",
+  CANCELLED: "red",
+}
+
+const OrderStatusStatusSymbolMap: Record<ManufacturingOrderOperativeStatus, React.ReactNode> = {
+  NOTSTARTED: <LuCircleMinus />,
+  RUNNING: <LuPlay />,
+  PAUSED: <LuPause />,
+  COMPLETED: <LuCircleCheckBig />,
+  CANCELLED: <LuCircleX />,
+}
 
 const manufacturingDirectives: { label: string, value: string }[] = [
   { label: "Hủy", value: ManufacturingOrderDirectives.Cancel },
@@ -72,7 +87,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
   const [updateOrders, { isLoading: updating, error: updateError }] = useUpdateManyManufacturingOrdersMutation();
 
   const ware = utils.getPopulatedWare(props.order)
-  const orderStatue = utils.getOrderStatus(props.order, props.processes)
+  const orderStatus = utils.getOrderStatus(props.order, props.processes)
 
   const initialFormVal = {
     manufacturingDirective: props.order.manufacturingDirective ?? null,
@@ -186,6 +201,18 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
               <DataList.Item>
                 <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Mã lệnh</Heading></DataList.ItemLabel>
                 <DataList.ItemValue color="fg.muted" flexGrow={1}>{props.order.code ?? ""}</DataList.ItemValue>
+              </DataList.Item>
+
+              <DataList.Item>
+                <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Trạng thái chạy</Heading></DataList.ItemLabel>
+                <DataList.ItemValue color="fg.muted" flexGrow={1}>
+                  {orderStatus && <Alert.Root colorPalette={OrderStatusAlertColorMap[orderStatus]} w="10rem">
+                    <Alert.Indicator>
+                      {OrderStatusStatusSymbolMap[orderStatus]}
+                    </Alert.Indicator>
+                    <Alert.Title>{utils.OrderStatusNameMap[orderStatus]}</Alert.Title>
+                  </Alert.Root>}
+                </DataList.ItemValue>
               </DataList.Item>
 
               <DataList.Item>
@@ -342,13 +369,8 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     }}
                   />
                 </DataList.ItemValue>
-
               </DataList.Item>
 
-              <DataList.Item>
-                <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Trạng thái chạy</Heading></DataList.ItemLabel>
-                <DataList.ItemValue color="fg.muted" flexGrow={1}>{orderStatue ? utils.OrderStatusNameMap[orderStatue] : ""}</DataList.ItemValue>
-              </DataList.Item>
             </DataList.Root>
             <Stack mt={2}>
               <Heading size="lg">Ghi chú</Heading>
@@ -477,6 +499,8 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                 </Table.Body>
               </Table.Root>
             </Table.ScrollArea>
+
+            <ManufacturingOrderDetailsDialogManufacturingDetailsAdditionalDetails order={props.order} />
 
           </Stack>
         </HStack>

@@ -1,17 +1,15 @@
 import { PaperColor } from "@/types/PaperColor";
-import { Button, CloseButton, DataList, Dialog, Icon, Portal } from "@chakra-ui/react"
-import { FaEye } from "react-icons/fa"
+import { Button, CloseButton, DataList, Dialog, Portal } from "@chakra-ui/react"
 
 interface PaperColorDetailDialogProps {
-    color: PaperColor;
+    isOpen: boolean;
+    onClose: () => void;
+    initialData: PaperColor | undefined;
 }
 
-const PaperColorDetailDialog: React.FC<PaperColorDetailDialogProps> = ({ color }) => {
+const PaperColorDetailDialog: React.FC<PaperColorDetailDialogProps> = ({ isOpen, onClose, initialData }) => {
     return (
-        <Dialog.Root>
-            <Dialog.Trigger asChild>
-                <Button variant={"surface"} colorPalette={"blue"}> <Icon><FaEye /></Icon> Chi tiết</Button>
-            </Dialog.Trigger>
+        <Dialog.Root open={isOpen} onOpenChange={onClose}>
             <Portal>
                 <Dialog.Backdrop />
                 <Dialog.Positioner>
@@ -23,11 +21,11 @@ const PaperColorDetailDialog: React.FC<PaperColorDetailDialogProps> = ({ color }
                             <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Mã Màu Giấy</DataList.ItemLabel>
-                                    <DataList.ItemValue>{color.code}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.code}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Tiêu Đề Màu Giấy</DataList.ItemLabel>
-                                    <DataList.ItemValue>{color.title}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.title}</DataList.ItemValue>
                                 </DataList.Item>
                             </DataList.Root>
                         </Dialog.Body>

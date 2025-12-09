@@ -3,8 +3,12 @@ import { BaseSchema } from "../schemas/base.schema";
 
 export function softDeletePlugin<T extends BaseSchema>(schema: Schema<T>) {
   // Automatically filter isDeleted = false
-  schema.pre<Query<any, T>>('find', function (next) {
-    this.where({ isDeleted: { $ne: true } });
+  // refactor: allow filter isDeleted = true
+  schema.pre(/^find/, function (this: Query<any, any>, next) {
+    const query = this.getQuery();
+    if (query.isDeleted === undefined) {
+      this.where({ isDeleted: { $ne: true } });
+    }
     next();
   });
 

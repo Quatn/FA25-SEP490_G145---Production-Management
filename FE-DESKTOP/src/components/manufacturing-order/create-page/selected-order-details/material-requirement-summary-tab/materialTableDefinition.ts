@@ -21,33 +21,39 @@ const colSize = {
   },
 }
 
-export const materialRequirementColumns = [
-  columnHelper.display({
-    id: "code",
-    header: "Mã giấy",
-    ...colSize.md,
-    cell: ({ row }) =>
-      row.original.code,
-  }),
-  columnHelper.display({
-    id: "requirementWeight",
-    header: "Trọng lượng sử dựng (kg)",
-    ...colSize.sm,
-    cell: ({ row }) =>
-      row.original.requirementWeight.toFixed(4),
-  }),
-  columnHelper.display({
-    id: "inventoryWeight",
-    header: "Tồn kho (kg)",
-    ...colSize.sm,
-    cell: ({ row }) =>
-      row.original.inventoryWeight.toFixed(4),
-  }),
-  columnHelper.display({
-    id: "status",
-    header: "Trạng thái",
-    ...colSize.sm,
-    cell: ({ row }) =>
-      row.original.status,
-  }),
+export const materialRequirementColumns = (header: string) => [
+  columnHelper.group({
+    id: "table",
+    header: header,
+    columns: [
+      columnHelper.display({
+        id: "code",
+        header: "Mã giấy",
+        ...colSize.md,
+        cell: ({ row }) =>
+          row.original.code,
+      }),
+      columnHelper.display({
+        id: "requirementWeight",
+        header: "Trọng lượng sử dựng (kg)",
+        ...colSize.sm,
+        cell: ({ row }) =>
+          row.original.requirementWeight.toFixed(4),
+      }),
+      columnHelper.display({
+        id: "inventoryWeight",
+        header: "Tồn kho (kg)",
+        ...colSize.sm,
+        cell: ({ row }) =>
+          row.original.inventoryWeight.toFixed(4),
+      }),
+      columnHelper.display({
+        id: "status",
+        header: "Trạng thái",
+        ...colSize.sm,
+        cell: ({ row }) =>
+          row.original.status,
+      }),
+    ]
+  })
 ]

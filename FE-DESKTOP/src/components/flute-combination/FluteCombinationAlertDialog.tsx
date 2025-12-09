@@ -1,25 +1,25 @@
-import { useState, useEffect } from "react";
-import { Box, Button, CloseButton, Dialog, Portal } from "@chakra-ui/react"
+import { Button, CloseButton, Dialog, Portal } from "@chakra-ui/react"
 import { FluteCombination } from "@/types/FluteCombination";
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: FluteCombination;
-    onDelete: (data: FluteCombination) => void;
+    initialData: FluteCombination | undefined;
+    onDelete: (data: FluteCombination) => Promise<boolean>;
 }
 
 const FluteCombinationAlertDialog: React.FC<Props> = ({ isOpen, onClose, initialData, onDelete }) => {
-    const [item, setItem] = useState<FluteCombination>({ _id: "", code: "", description: "", note: "", createdAt: new Date(), updatedAt: new Date() } as FluteCombination);
 
-    const handleSubmit = () => {
-        onDelete(item);
-        onClose();
+    const handleSubmit = async () => {
+        let isSuccess = false;
+        if (!!initialData) {
+            isSuccess = await onDelete(initialData);
+        }
+
+        if (isSuccess) {
+            onClose();
+        }
     };
-
-    useEffect(() => {
-        if (isOpen) setItem(initialData ?? { _id: "", code: "", description: "", note: "", createdAt: new Date(), updatedAt: new Date() } as FluteCombination);
-    }, [isOpen, initialData]);
 
     return (
         <Dialog.Root role="alertdialog" open={isOpen} onOpenChange={onClose}>
@@ -32,7 +32,7 @@ const FluteCombinationAlertDialog: React.FC<Props> = ({ isOpen, onClose, initial
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
-                                Xóa loại sóng {item.code}?
+                                Xóa tổ hợp sóng {initialData?.code}?
                             </p>
                         </Dialog.Body>
                         <Dialog.Footer>

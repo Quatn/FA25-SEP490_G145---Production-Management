@@ -1,7 +1,6 @@
 "use client";
 
 import { useDataTableDispatch, useDataTableSelector } from "@/components/ui/data-table/Provider";
-import { ManufacturingOrderTableReducerStore } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { Input, InputGroup } from "@chakra-ui/react";
 import { ChangeEvent, useEffect, useState } from "react";
 import { LuSearch } from "react-icons/lu";
