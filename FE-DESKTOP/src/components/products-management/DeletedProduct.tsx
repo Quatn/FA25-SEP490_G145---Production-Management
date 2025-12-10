@@ -51,11 +51,17 @@ export default function DeletedProduct() {
 
     try {
       await restoreProduct(productId).unwrap();
-      // refetch listed deleted products
+      // show success to user
+      window.alert("Khôi phục sản phẩm thành công.");
+      // refresh the deleted list
       refetch();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      window.alert("Đã xảy ra lỗi khi khôi phục sản phẩm. Vui lòng thử lại.");
+      const message =
+        err?.data?.message ||
+        err?.message ||
+        "Đã xảy ra lỗi khi khôi phục sản phẩm. Vui lòng thử lại.";
+      window.alert(message);
     }
   };
 
