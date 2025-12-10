@@ -12,6 +12,9 @@ import { SubPurchaseOrder, SubPurchaseOrderSchema } from "../schemas/sub-purchas
 import { PurchaseOrder, PurchaseOrderSchema } from "../schemas/purchase-order.schema";
 import { UpdatePurchaseOrderItemDto } from "./dto/update-purchase-order-item.dto";
 import { Product, ProductDocument } from "../schemas/product.schema";
+import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
+
+type SoftPOI = PurchaseOrderItem & SoftDeleteDocument;
 
 @Injectable()
 export class PurchaseOrderItemService {
@@ -345,7 +348,10 @@ export class PurchaseOrderItemService {
 
 
   async restore(id: string) {
-    const doc = await this.purchaseOrderItemModel.findById(id) as any;
+    const doc = await this.purchaseOrderItemModel.findOne({
+      _id: id,
+      isDeleted: true
+    }) as SoftPOI;
     if (!doc) throw new NotFoundException("Purchase order item not found");
     await doc.restore();
     return { success: true };

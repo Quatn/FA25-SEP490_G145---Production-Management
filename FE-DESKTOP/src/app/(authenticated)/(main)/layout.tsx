@@ -111,6 +111,12 @@ const initialCollection = createTreeCollection<Node>({
             href: "/products",
             children: [],
           },
+          {
+            id: "product-restore",
+            name: "Restore Product",
+            href: "/products/restore-product",
+            children: [],
+          },
         ],
       },
       {
