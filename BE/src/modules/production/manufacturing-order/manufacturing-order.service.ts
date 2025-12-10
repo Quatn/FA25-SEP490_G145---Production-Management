@@ -152,7 +152,11 @@ export class ManufacturingOrderService {
       ],
     };
 
-    return await this.manufacturingOrderModel.find().populate(populate);
+    return await this.manufacturingOrderModel
+      .find({
+        "corrugatorProcess.manufacturedAmount": { $gt: 0 },
+      })
+      .populate(populate);
   }
 
   async getLastOrder() {

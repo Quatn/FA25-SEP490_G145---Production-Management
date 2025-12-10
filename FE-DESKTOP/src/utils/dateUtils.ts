@@ -61,14 +61,9 @@ export function hourGap(date?: string): number {
   const created = new Date(date);
   if (isNaN(created.getTime())) return 0;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const createdDay = new Date(created);
-  createdDay.setHours(0, 0, 0, 0);
-
-  const diffMs = today.getTime() - createdDay.getTime();
-  return Math.floor(diffMs / (1000 * 60 * 60));
+  const diffMs = Date.now() - created.getTime();
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  return Math.max(0, hours);
 }
 
 export function formatDateToDDMMYYYY(date: Date | string | null | undefined) {
