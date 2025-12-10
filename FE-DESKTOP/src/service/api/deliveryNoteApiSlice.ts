@@ -1,4 +1,3 @@
-// src/service/api/deliveryNoteApiSlice.ts
 import { apiSlice } from "./apiSlice";
 import { DELIVERY_NOTE_URL } from "../constants";
 import { BaseResponse } from "@/types/DTO/BaseResponse";
@@ -28,7 +27,7 @@ export const deliveryNoteApiSlice = apiSlice.injectEndpoints({
       ],
     }),
 
-    // get remaining amounts for poitems (unchanged)
+    // get remaining amounts for poitems
     getPoitemsRemaining: builder.query<BaseResponse<Record<string, number>>, { ids: string[] }>({
       query: (arg) => ({
         url: `${DELIVERY_NOTE_URL}/poitems/remaining`,
@@ -38,9 +37,9 @@ export const deliveryNoteApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
-    // LIST with pagination support (page + limit + optional query)
+    // LIST with pagination support
     listDeliveryNotes: builder.query<
-      BaseResponse<any>, // may be paginated object or raw array
+      BaseResponse<any>,
       { page?: number; limit?: number; query?: string } | void
     >({
       query: (args) => {
@@ -73,6 +72,20 @@ export const deliveryNoteApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: (result, error, id) => [{ type: "DeliveryNote", id }],
     }),
+
+    // NEW: update delivery note (PATCH)
+    updateDeliveryNote: builder.mutation<BaseResponse<DeliveryNote>, { id: string; body: Partial<DeliveryNote> }>({
+      query: ({ id, body }) => ({
+        url: `${DELIVERY_NOTE_URL}/${id}`,
+        method: "PATCH",
+        body,
+        credentials: "include",
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "DeliveryNote" as const, id },
+        { type: "DeliveryNote" as const, id: "LIST" },
+      ],
+    }),
   }),
   overrideExisting: false,
 });
@@ -82,5 +95,6 @@ export const {
   useGetPoitemsRemainingQuery,
   useListDeliveryNotesQuery,
   useGetDeliveryNoteByIdQuery,
+  useUpdateDeliveryNoteMutation,
 } = deliveryNoteApiSlice;
 export default deliveryNoteApiSlice;

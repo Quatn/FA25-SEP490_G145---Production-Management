@@ -1,8 +1,10 @@
-// src/components/purchase-order-management/DeliveryNoteList.tsx
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useListDeliveryNotesQuery } from "@/service/api/deliveryNoteApiSlice";
+import {
+  useListDeliveryNotesQuery,
+  useUpdateDeliveryNoteMutation,
+} from "@/service/api/deliveryNoteApiSlice";
 
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
@@ -34,35 +36,9 @@ export default function DeliveryNoteList() {
     { refetchOnMountOrArgChange: true }
   );
 
-  // -------------------------
-  // Column width configuration (change if needed)
-  // Order: PO item | PO code | Length | Width | Height | Ware | Req amount | Delivered
-  // -------------------------
-  const colWidths = {
-    poitem: "minmax(220px, 1fr)",
-    poCode: "120px",
-    sizeLen: "80px",
-    sizeWid: "80px",
-    sizeHei: "80px",
-    ware: "220px",
-    req: "120px",
-    delivered: "120px",
-  };
+  const [updateDeliveryNote] = useUpdateDeliveryNoteMutation();
 
-  // separator color: light but visible
-  const separatorColor = "rgba(0, 0, 0, 0.06)";
-
-  const cellBaseStyle: React.CSSProperties = {
-    padding: "10px 12px",
-    fontSize: 13,
-    display: "flex",
-    alignItems: "center",
-    overflow: "hidden",
-    whiteSpace: "nowrap",
-    textOverflow: "ellipsis",
-  };
-
-  // normalize response -> notes array
+  // local notes state (keeps UI snappy)
   let notesRaw: any[] = [];
   if (resp?.data?.data && Array.isArray(resp.data.data))
     notesRaw = resp.data.data;
@@ -88,16 +64,19 @@ export default function DeliveryNoteList() {
     if (!same) setNotes(notesRaw);
   }, [notesRaw]);
 
-  // expanded state (which cards are open)
+  // expanded cards
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const toggle = (id: string) => setExpanded((s) => ({ ...s, [id]: !s[id] }));
 
-  // reset expansions when page/query change or notes list length changes
+  // which notes currently updating (ids)
+  const [updatingIds, setUpdatingIds] = useState<Record<string, boolean>>({});
+
+  // reset expansions when page/query/limit/notes change
   useEffect(() => {
     setExpanded({});
   }, [page, limit, query, notes.length]);
 
-  // pagination meta detection (supports several shapes)
+  // pagination
   const totalCount =
     Number(
       resp?.data?.total ??
@@ -122,7 +101,62 @@ export default function DeliveryNoteList() {
   if (isLoading) return <div>Đang tải...</div>;
   if (error) return <div className="text-danger">Lỗi tải dữ liệu</div>;
 
-  // build the grid template string used for item rows
+  // status options
+  const statusOptions = [
+    "PENDINGAPPROVAL",
+    "APPROVED",
+    "EXPORTED",
+    "CANCELLED",
+  ] as const;
+
+  // change handler: optimistic update, rollback on failure
+  const handleStatusChange = async (noteId: string, newStatus: string) => {
+    const prev = notes.find((n) => (n._id ?? n.id) === noteId)?.status;
+    if (prev === newStatus) return;
+
+    // optimistic update
+    setNotes((prevNotes) =>
+      prevNotes.map((n) =>
+        (n._id ?? n.id) === noteId ? { ...n, status: newStatus } : n
+      )
+    );
+    setUpdatingIds((m) => ({ ...m, [noteId]: true }));
+
+    try {
+      await updateDeliveryNote({
+        id: noteId,
+        body: { status: newStatus },
+      }).unwrap();
+      // success - leave optimistic result; invalidate handled by RTK tags
+    } catch (err: any) {
+      // rollback
+      setNotes((prevNotes) =>
+        prevNotes.map((n) =>
+          (n._id ?? n.id) === noteId ? { ...n, status: prev } : n
+        )
+      );
+      // notify user
+      alert(err?.data?.message ?? err?.message ?? "Failed to update status");
+    } finally {
+      setUpdatingIds((m) => {
+        const copy = { ...m };
+        delete copy[noteId];
+        return copy;
+      });
+    }
+  };
+
+  // grid template from earlier code (keep the rest of layout)
+  const colWidths = {
+    poitem: "minmax(220px, 1fr)",
+    poCode: "120px",
+    sizeLen: "80px",
+    sizeWid: "80px",
+    sizeHei: "80px",
+    ware: "220px",
+    req: "120px",
+    delivered: "120px",
+  };
   const gridTemplate = [
     colWidths.poitem,
     colWidths.poCode,
@@ -133,8 +167,16 @@ export default function DeliveryNoteList() {
     colWidths.req,
     colWidths.delivered,
   ].join(" ");
-
-  // helper to compute per-column border-left style
+  const separatorColor = "rgba(0,0,0,0.06)";
+  const cellBaseStyle: React.CSSProperties = {
+    padding: "10px 12px",
+    fontSize: 13,
+    display: "flex",
+    alignItems: "center",
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    textOverflow: "ellipsis",
+  };
   const leftBorder = (colIndex: number) =>
     colIndex === 0 ? undefined : { borderLeft: `1px solid ${separatorColor}` };
 
@@ -151,20 +193,6 @@ export default function DeliveryNoteList() {
         <div>
           <strong>Phiếu xuất kho</strong>
         </div>
-
-        {/* <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input
-            className="form-control form-control-sm"
-            placeholder="Tìm kiếm (tùy chọn)"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(1);
-            }}
-            style={{ minWidth: 240 }}
-          />
-
-        </div> */}
       </div>
 
       <div style={{ display: "grid", gap: 12 }}>
@@ -190,7 +218,6 @@ export default function DeliveryNoteList() {
                 background: "#fff",
               }}
             >
-              {/* header */}
               <div
                 style={{
                   display: "flex",
@@ -251,18 +278,27 @@ export default function DeliveryNoteList() {
                   >
                     {items.length} items
                   </div>
-                  <div
+
+                  {/* status dropdown */}
+                  <select
+                    className="form-select form-select-sm"
+                    value={n.status ?? "PENDINGAPPROVAL"}
+                    onChange={(e) => handleStatusChange(id, e.target.value)}
+                    disabled={!!updatingIds[id]}
                     style={{
-                      padding: "6px 10px",
-                      borderRadius: 999,
-                      background: "#f1f5f9",
-                      fontSize: 13,
+                      minWidth: 160,
+                      height: 34,
                       fontWeight: 600,
-                      color: "#333",
+                      textAlignLast: "center",
                     }}
                   >
-                    {n.status}
-                  </div>
+                    {statusOptions.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+
                   <button
                     type="button"
                     className="btn btn-sm btn-outline-secondary"
@@ -275,7 +311,6 @@ export default function DeliveryNoteList() {
                 </div>
               </div>
 
-              {/* body: only render when expanded */}
               {expanded[id] && (
                 <div style={{ padding: 12 }}>
                   <div
@@ -285,7 +320,6 @@ export default function DeliveryNoteList() {
                       overflow: "hidden",
                     }}
                   >
-                    {/* header: two-row grid so "Size" can span three subcolumns */}
                     <div
                       style={{
                         display: "grid",
@@ -294,7 +328,6 @@ export default function DeliveryNoteList() {
                         background: "#f7f9fc",
                       }}
                     >
-                      {/* top header row */}
                       <div
                         style={{
                           ...cellBaseStyle,
@@ -304,8 +337,6 @@ export default function DeliveryNoteList() {
                       >
                         Mã PO item
                       </div>
-
-                      {/* PO code */}
                       <div
                         style={{
                           ...cellBaseStyle,
@@ -316,8 +347,6 @@ export default function DeliveryNoteList() {
                       >
                         PO
                       </div>
-
-                      {/* Size label spanning 3 cols (grid column 3..5 in 1-based) */}
                       <div
                         style={{
                           ...cellBaseStyle,
@@ -329,8 +358,6 @@ export default function DeliveryNoteList() {
                       >
                         Size
                       </div>
-
-                      {/* Ware / Req / Delivered - these occupy columns 6/7/8 */}
                       <div
                         style={{
                           ...cellBaseStyle,
@@ -362,10 +389,8 @@ export default function DeliveryNoteList() {
                         Số lượng xuất
                       </div>
 
-                      {/* second header row: individual size labels */}
                       <div style={{ ...cellBaseStyle, paddingLeft: 12 }}></div>
                       <div style={{ ...cellBaseStyle, ...leftBorder(1) }}></div>
-
                       <div
                         style={{
                           ...cellBaseStyle,
@@ -402,7 +427,6 @@ export default function DeliveryNoteList() {
                       <div style={{ ...cellBaseStyle, ...leftBorder(7) }}></div>
                     </div>
 
-                    {/* items */}
                     {(items || []).length === 0 ? (
                       <div style={{ padding: 12, color: "#666" }}>
                         Không có PO items
@@ -416,21 +440,15 @@ export default function DeliveryNoteList() {
                           (typeof pi.poitem === "string"
                             ? pi.poitem
                             : `noid-${idx}`);
-
-                        // PO code: subPurchaseOrder.purchaseOrder.code
                         const poCode =
                           poitemDoc?.subPurchaseOrder?.purchaseOrder?.code ??
                           poitemDoc?.subPurchaseOrder?.purchaseOrder?.id ??
                           "-";
-
-                        // ware code (prefer ware.code; if ware is string fallback)
                         const wareCode =
                           poitemDoc?.ware?.code ??
                           (typeof poitemDoc?.ware === "string"
                             ? poitemDoc.ware
                             : "-");
-
-                        // sizes (prefer ware properties)
                         const wareLength =
                           poitemDoc?.ware?.wareLength ??
                           poitemDoc?.wareLength ??
@@ -443,7 +461,6 @@ export default function DeliveryNoteList() {
                           poitemDoc?.ware?.wareHeight ??
                           poitemDoc?.wareHeight ??
                           "-";
-
                         const reqAmount = poitemDoc?.amount ?? "-";
                         const delivered = pi.deliveredAmount ?? 0;
 
@@ -461,7 +478,6 @@ export default function DeliveryNoteList() {
                             <div style={{ ...cellBaseStyle, paddingLeft: 12 }}>
                               {poitemDoc?.code ?? poitemId}
                             </div>
-
                             <div
                               style={{
                                 ...cellBaseStyle,
@@ -471,7 +487,6 @@ export default function DeliveryNoteList() {
                             >
                               {poCode}
                             </div>
-
                             <div
                               style={{
                                 ...cellBaseStyle,
@@ -499,7 +514,6 @@ export default function DeliveryNoteList() {
                             >
                               {wareHeight}
                             </div>
-
                             <div
                               style={{
                                 ...cellBaseStyle,
@@ -539,7 +553,7 @@ export default function DeliveryNoteList() {
         })}
       </div>
 
-      {/* pagination controls */}
+      {/* pagination */}
       <div
         style={{
           display: "flex",

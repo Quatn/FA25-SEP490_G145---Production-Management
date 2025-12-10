@@ -1,5 +1,4 @@
-// production/delivery-note/delivery-note.service.ts
-import { Injectable, Logger, InternalServerErrorException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, InternalServerErrorException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { DeliveryNote } from './../schemas/delivery-note.schema';
@@ -160,6 +159,12 @@ export class DeliveryNoteService {
         throw new InternalServerErrorException('Failed to create DeliveryNote after retries');
     }
 
+    /**
+     * Manual population helper:
+     * - populates customer document into `customer`
+     * - populates each poitems[].poitem with the corresponding PurchaseOrderItem doc
+     * - also populates purchaseOrder and ware under each poitem (so front-end can use ware.code and purchaseOrder.code)
+     */
     private async populateDeliveryNotes(docs: any[]) {
         if (!docs || docs.length === 0) return [];
 
@@ -215,7 +220,7 @@ export class DeliveryNoteService {
         const wareIds = wareIdStrings.map((s) => new mongoose.Types.ObjectId(s));
         const subPoIds = subPoIdStrings.map((s) => new mongoose.Types.ObjectId(s));
 
-        // fetch wares / subPos using collection names (adjust if your names differ)
+        // fetch wares / subPos / purchaseOrders using collection names (adjust names if different)
         let waresRaw: any[] = [];
         let subPosRaw: any[] = [];
         let purchaseOrdersRaw: any[] = [];
@@ -290,7 +295,7 @@ export class DeliveryNoteService {
                         deliveredAmount = 0;
                     }
 
-                    // <-- FIXED typing here: string | null
+                    // string or null
                     let idStr: string | null = null;
                     try {
                         idStr = rawId != null ? String(rawId) : null;
@@ -313,7 +318,6 @@ export class DeliveryNoteService {
         return populated;
     }
 
-
     async findAll() {
         const docs = await this.deliveryNoteModel.find().sort({ createdAt: -1 }).lean().exec();
         const populated = await this.populateDeliveryNotes(docs);
@@ -325,5 +329,17 @@ export class DeliveryNoteService {
         if (!doc) return null;
         const [pop] = await this.populateDeliveryNotes([doc]);
         return pop ?? null;
+    }
+
+    /**
+     * Generic update: accepts partial fields; returns populated delivery note
+     */
+    async update(id: string, payload: Partial<any>) {
+        if (!id) throw new BadRequestException('id is required');
+        // Only allow certain fields? currently generic - you can restrict keys if needed.
+        const updated = await this.deliveryNoteModel.findByIdAndUpdate(id, payload, { new: true }).lean().exec();
+        if (!updated) throw new NotFoundException('DeliveryNote not found');
+        const [pop] = await this.populateDeliveryNotes([updated]);
+        return pop ?? updated;
     }
 }
