@@ -1,7 +1,7 @@
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { WareManufacturingProcessType, WareManufacturingProcessTypeDocument } from '../schemas/ware-manufacturing-process-type.schema';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateWareManufacturingProcessTypeDto } from './dto/create-ware-manufacturing-process-type.dto';
 import { UpdateWareManufacturingProcessTypeDto } from './dto/update-ware-manufacturing-process-type.dto';
@@ -13,36 +13,45 @@ export class WareManufacturingProcessTypeService {
   constructor(
     @InjectModel(WareManufacturingProcessType.name)
     private readonly wmptModel: Model<WareManufacturingProcessType>,
-  ) {}
+  ) { }
 
-  async checkDuplicates(dto: CreateWareManufacturingProcessTypeDto | UpdateWareManufacturingProcessTypeDto) {
-    const duplicates = await this.wmptModel.aggregate([
-      {
-        $match: {
-          $or: [
-            { code: dto.code },
-            { name: dto.name },
-          ],
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          code: 1,
-          name: 1,
-        },
-      },
-    ]);
+  async checkDuplicates(
+    dto: CreateWareManufacturingProcessTypeDto | UpdateWareManufacturingProcessTypeDto,
+    excludeId?: string,
+  ) {
+    const code = dto.code?.trim();
+    const name = dto.name?.trim();
+
+    const orConditions: FilterQuery<WareManufacturingProcessTypeDocument>[] = [];
+    if (code) orConditions.push({ code });
+    if (name) orConditions.push({ name });
+
+    if (orConditions.length === 0) return;
+
+    const query: FilterQuery<WareManufacturingProcessTypeDocument> = { $or: orConditions };
+
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+
+    const duplicates = await this.wmptModel
+      .find(query)
+      .select('code name')
+      .lean();
 
     if (duplicates.length > 0) {
-      const duplicateFields: string[] = [];
-      duplicates.forEach((d) => {
-        if (d.code === dto.code) duplicateFields.push('Mã loại quy trình');
-        if (d.name === dto.name) duplicateFields.push('Tên loại quy trình');
+      const duplicateFields = new Set<string>();
+
+      duplicates.forEach((doc) => {
+        if (code && doc.code === code) duplicateFields.add('Mã loại gia công');
+        if (name && doc.name === name) duplicateFields.add('Tên loại gia công');
       });
-      throw new BadRequestException(
-        `Trùng lặp giá trị ở các trường: ${duplicateFields.join(', ')}`,
-      );
+
+      if (duplicateFields.size > 0) {
+        throw new BadRequestException(
+          `Trùng lặp giá trị ở các trường: ${Array.from(duplicateFields).join(', ')}`,
+        );
+      }
     }
   }
 
@@ -52,7 +61,8 @@ export class WareManufacturingProcessTypeService {
     const query: any = {};
 
     if (search && search.trim() !== '') {
-      const regex = new RegExp(search.trim(), 'i');
+      const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escapedSearch.trim(), 'i');
       query.$or = [
         { code: regex },
         { name: regex },
@@ -60,7 +70,12 @@ export class WareManufacturingProcessTypeService {
     }
 
     const [data, totalItems] = await Promise.all([
-      this.wmptModel.find(query).skip(skip).limit(limit).exec(),
+      this.wmptModel
+        .find(query)
+        .skip(skip)
+        .limit(limit)
+        .sort({ 'updatedAt': -1 })
+        .exec(),
       this.wmptModel.countDocuments(query),
     ]);
 
@@ -81,6 +96,32 @@ export class WareManufacturingProcessTypeService {
     return await this.wmptModel.find();
   }
 
+  async findDeleted(page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const filter = { isDeleted: true };
+
+    const [data, totalItems] = await Promise.all([
+      this.wmptModel
+        .find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort({ 'updatedAt': -1 })
+        .exec(),
+      this.wmptModel.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil((totalItems || 0) / limit);
+    return {
+      data,
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
+
   async findOne(id: string) {
     const doc = await this.wmptModel.findById(id) as WareManufacturingProcessTypeDocument;
     if (!doc) throw new NotFoundException('Ware manufacturing process type not found');
@@ -88,48 +129,22 @@ export class WareManufacturingProcessTypeService {
   }
 
   async createOne(dto: CreateWareManufacturingProcessTypeDto): Promise<WareManufacturingProcessTypeDocument> {
-    try {
-      const doc = new this.wmptModel(dto);
-      return await doc.save();
-    } catch (err: any) {
-      if (err.code === 11000 && err.keyValue) {
-        const field = Object.keys(err.keyValue)[0];
-        const value = err.keyValue[field];
-        let message = '';
+    dto.code = dto.code.trim();
+    dto.name = dto.name.trim();
 
-        if (field === 'code') {
-          message = `Mã loại quy trình "${value}" đã tồn tại.`;
-        } else {
-          message = `Giá trị "${value}" ở trường "${field}" đã tồn tại.`;
-        }
+    await this.checkDuplicates(dto);
 
-        throw new BadRequestException(message);
-      }
-      throw err;
-    }
+    const doc = new this.wmptModel(dto);
+    return await doc.save();
   }
 
   async updateOne(id: string, dto: UpdateWareManufacturingProcessTypeDto): Promise<WareManufacturingProcessTypeDocument> {
-    try {
-      const updated = await this.wmptModel.findByIdAndUpdate(id, dto, { new: true });
-      if (!updated) throw new NotFoundException('Ware manufacturing process type not found');
-      return updated as WareManufacturingProcessTypeDocument;
-    } catch (err: any) {
-      if (err.code === 11000 && err.keyValue) {
-        const field = Object.keys(err.keyValue)[0];
-        const value = err.keyValue[field];
-        let message = '';
-
-        if (field === 'code') {
-          message = `Mã loại quy trình "${value}" đã tồn tại.`;
-        } else {
-          message = `Giá trị "${value}" ở trường "${field}" đã tồn tại.`;
-        }
-
-        throw new BadRequestException(message);
-      }
-      throw err;
-    }
+    dto.code = dto.code?.trim();
+    dto.name = dto.name?.trim();
+    await this.checkDuplicates(dto, id);
+    const updated = await this.wmptModel.findByIdAndUpdate(id, dto, { new: true });
+    if (!updated) throw new NotFoundException('Ware manufacturing process type not found');
+    return updated;
   }
 
   async softDelete(id: string) {
@@ -140,14 +155,20 @@ export class WareManufacturingProcessTypeService {
   }
 
   async restore(id: string) {
-    const doc = await this.wmptModel.findById(id) as SoftWareManufacturingProcessType;
+    const doc = await this.wmptModel.findOne({
+      _id: id,
+      isDeleted: true
+    }) as SoftWareManufacturingProcessType;
     if (!doc) throw new NotFoundException('Ware manufacturing process type not found');
     await doc.restore();
     return { success: true };
   }
 
   async removeHard(id: string) {
-    const result = await this.wmptModel.findByIdAndDelete(id);
+    const result = await this.wmptModel.findOneAndDelete({
+      _id: id,
+      isDeleted: true
+    });
     if (!result) throw new NotFoundException('Ware manufacturing process type not found');
     return { success: true };
   }

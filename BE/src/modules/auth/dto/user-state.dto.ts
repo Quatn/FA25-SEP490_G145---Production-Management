@@ -12,6 +12,9 @@ export class UserState {
   employeeCode: string;
 
   @ApiProperty()
+  employeeId: string;
+
+  @ApiProperty()
   name: string;
 
   @ApiProperty()

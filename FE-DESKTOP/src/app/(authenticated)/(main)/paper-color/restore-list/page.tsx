@@ -1,6 +1,6 @@
 import PaperColorRestoreList from "@/components/paper-storage/paper-color/PaperColorRestoreList";
 import { Box, Stack, Text } from "@chakra-ui/react";
-export default function PaperColorRESTOREHome() {
+export default function PaperColorRestoreHome() {
   return (
     <Box
       m={5}

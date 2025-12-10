@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PaperSupplier, PaperSupplierDocument } from '../schemas/paper-supplier.schema';
-import { Connection, FilterQuery, Model } from 'mongoose';
-import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { FilterQuery, Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 import { CreatePaperSupplierRequestDto } from './dto/create-paper-supplier-request.dto';
 import { UpdatePaperSupplierRequestDto } from './dto/update-paper-supplier-request.dto';
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
@@ -69,7 +69,8 @@ export class PaperSupplierService {
         const query: any = {};
 
         if (search && search.trim() !== "") {
-            const regex = new RegExp(search.trim(), 'i');
+            const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedSearch, 'i');
             query.$or = [
                 { code: regex },
                 { name: regex },
@@ -80,7 +81,12 @@ export class PaperSupplierService {
         }
 
         const [data, totalItems] = await Promise.all([
-            this.paperSupplierModel.find(query).skip(skip).limit(limit).exec(),
+            this.paperSupplierModel
+                .find(query)
+                .skip(skip)
+                .limit(limit)
+                .sort({ 'updatedAt': -1 })
+                .exec(),
             this.paperSupplierModel.countDocuments(),
         ]);
 
@@ -110,6 +116,7 @@ export class PaperSupplierService {
                 .find(filter)
                 .skip(skip)
                 .limit(limit)
+                .sort({ 'updatedAt': -1 })
                 .exec(),
             this.paperSupplierModel.countDocuments(filter),
         ]);

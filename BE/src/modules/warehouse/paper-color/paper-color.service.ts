@@ -62,7 +62,8 @@ export class PaperColorService {
         const query: any = {};
 
         if (search && search.trim() !== "") {
-            const regex = new RegExp(search.trim(), 'i');
+            const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedSearch, 'i');
             query.$or = [
                 { code: regex },
                 { title: regex },
@@ -70,7 +71,12 @@ export class PaperColorService {
         }
 
         const [data, totalItems] = await Promise.all([
-            this.paperColorModel.find(query).skip(skip).limit(limit).exec(),
+            this.paperColorModel
+            .find(query)
+            .skip(skip)
+            .limit(limit)
+            .sort({ 'updatedAt': -1 })
+            .exec(),
             this.paperColorModel.countDocuments(),
         ]);
 
@@ -100,6 +106,7 @@ export class PaperColorService {
                 .find(filter)
                 .skip(skip)
                 .limit(limit)
+                .sort({ 'updatedAt': -1 })
                 .exec(),
             this.paperColorModel.countDocuments(filter),
         ]);

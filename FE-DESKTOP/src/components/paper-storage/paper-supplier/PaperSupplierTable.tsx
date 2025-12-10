@@ -41,8 +41,8 @@ const PaperSupplierTable = ({
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
-                        <Table.ColumnHeader>Mã Nhà Giấy</Table.ColumnHeader>
-                        <Table.ColumnHeader>Tên Nhà Giấy</Table.ColumnHeader>
+                        <Table.ColumnHeader>Mã nhà giấy</Table.ColumnHeader>
+                        <Table.ColumnHeader>Tên nhà giấy</Table.ColumnHeader>
                         <Table.ColumnHeader>Địa chỉ</Table.ColumnHeader>
                         <Table.ColumnHeader>Số điện thoại</Table.ColumnHeader>
                         <Table.ColumnHeader>Email</Table.ColumnHeader>

@@ -17,7 +17,7 @@ export default function ManufacturingOrderCorrugatorProcessOperate() {
         <ManufacturingOrderCorrugatorOperatePageComponents.CorrugatorLineSwitcher />
 
         <Box mt={5} mx={5}>
-          <Box mt={5}>
+          <Box my={5}>
             <DataTableProvider initialState={{ allowEdit: true }}>
               <Heading size="md">Danh sách chạy</Heading>
               <ManufacturingOrderCorrugatorOperatePageComponents.SearchBar />
@@ -26,7 +26,7 @@ export default function ManufacturingOrderCorrugatorProcessOperate() {
             </DataTableProvider>
           </Box>
 
-          <Box mt={5}>
+          <Box my={5}>
             <DataTableProvider initialState={{ allowEdit: true }}>
               <Heading size="md">Danh sách chờ</Heading>
               <ManufacturingOrderCorrugatorOperatePageComponents.SearchBar />
@@ -35,7 +35,7 @@ export default function ManufacturingOrderCorrugatorProcessOperate() {
             </DataTableProvider>
           </Box>
 
-          <Box mt={5}>
+          <Box my={5}>
             <DataTableProvider initialState={{ allowEdit: false }}>
               <Heading size="md">Lịch sử</Heading>
               <ManufacturingOrderCorrugatorOperatePageComponents.SearchBar />

@@ -4,14 +4,14 @@ import React, { useState } from "react";
 import { Box, Flex, Input, Spinner, Field, Tabs, Button } from "@chakra-ui/react";
 import { useGetFGDailyReportQuery } from "@/service/api/finishedGoodTransactionApiSlice";
 import FinishedDailyReportTable from "./FinishedDailyReportTable";
-import { minDate } from "@/utils/dateUtils";
+import { formatDateForInput, minDate } from "@/utils/dateUtils";
 import { exportFinishedDailyReport } from "./FinishedExportExcelButton";
 import { FaFileExcel } from "react-icons/fa";
 
 
 const FinishedDailyReport: React.FC = () => {
     const today = new Date();
-    const localDate = today.toISOString().slice(0, 10);
+    const localDate = formatDateForInput(today);
 
     const [page, setPage] = useState(1);
     const limit = 10;

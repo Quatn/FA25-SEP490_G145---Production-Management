@@ -44,14 +44,20 @@ export class FluteCombinationService {
     const query: any = {};
 
     if (search && search.trim() !== '') {
-      const regex = new RegExp(search.trim(), 'i');
+      const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escapedSearch, 'i');
       query.$or = [
         { code: regex },
       ];
     }
 
     const [data, totalItems] = await Promise.all([
-      this.fcModel.find(query).skip(skip).limit(limit).exec(),
+      this.fcModel
+      .find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort({ 'updatedAt': -1 })
+      .exec(),
       this.fcModel.countDocuments(query),
     ]);
 
@@ -81,6 +87,7 @@ export class FluteCombinationService {
         .find(filter)
         .skip(skip)
         .limit(limit)
+        .sort({ 'updatedAt': -1 })
         .exec(),
       this.fcModel.countDocuments(filter),
     ]);

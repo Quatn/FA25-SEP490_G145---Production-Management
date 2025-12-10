@@ -11,6 +11,7 @@ import { PaginatedList } from '@/common/dto/paginatedList.dto';
 export class WareManufacturingProcessTypeController {
   constructor(private readonly service: WareManufacturingProcessTypeService) { }
 
+  // @UseGuards(JwtAuthGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated ware manufacturing process types' })
   async findPaginated(
@@ -26,6 +27,22 @@ export class WareManufacturingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
+    @Get('list-deleted')
+    @ApiOperation({ summary: 'List deleted ware manufacturing process type' })
+    async findDeleted(
+      @Query("page") page: number = 1,
+      @Query("limit") limit: number = 10,
+    ): Promise<BaseResponse<PaginatedList<WareManufacturingProcessType>>> {
+      const docs = await this.service.findDeleted(page, limit);
+      return {
+        success: true,
+        message: 'Fetch successful',
+        data: docs,
+      };
+    }
+
+  // @UseGuards(JwtAuthGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List ware manufacturing process types' })
   async findAll(): Promise<BaseResponse<WareManufacturingProcessType[]>> {
@@ -37,6 +54,7 @@ export class WareManufacturingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Ware manufacturing process type detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<WareManufacturingProcessType>> {
@@ -48,6 +66,7 @@ export class WareManufacturingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Post('create')
   @ApiOperation({ summary: 'Create new ware manufacturing process type' })
   async create(@Body() dto: CreateWareManufacturingProcessTypeDto): Promise<BaseResponse<WareManufacturingProcessType>> {
@@ -59,6 +78,7 @@ export class WareManufacturingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Patch('update/:id')
   @ApiOperation({ summary: 'Update ware manufacturing process type' })
   async update(
@@ -73,6 +93,7 @@ export class WareManufacturingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Delete('delete-soft/:id')
   @ApiOperation({ summary: 'Soft delete ware manufacturing process type' })
   async softDelete(@Param('id') id: string): Promise<BaseResponse<null>> {
@@ -84,6 +105,7 @@ export class WareManufacturingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Patch('restore/:id')
   @ApiOperation({ summary: 'Restore ware manufacturing process type' })
   async restore(@Param('id') id: string): Promise<BaseResponse<null>> {
@@ -95,6 +117,7 @@ export class WareManufacturingProcessTypeController {
     };
   }
 
+  // @UseGuards(JwtAuthGuard)
   @Delete('delete-hard/:id')
   @ApiOperation({ summary: 'Hard delete ware manufacturing process type' })
   async hardDelete(@Param('id') id: string): Promise<BaseResponse<null>> {

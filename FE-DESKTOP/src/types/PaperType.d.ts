@@ -2,8 +2,7 @@ import { PaperColor } from "./PaperColor";
 
 export type PaperType = {
     _id?: string,
-    paperColorId?: string; 
-    paperColor?: PaperColor,
+    paperColor: PaperColor | string,
     width: number,
     grammage: number,
 };

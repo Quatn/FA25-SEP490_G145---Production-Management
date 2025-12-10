@@ -4,6 +4,7 @@ export interface UserState {
   id: string;
   code: string;
   employeeCode: string;
+  employeeId: string;
   name: string;
   address: string | null;
   email: string | null;

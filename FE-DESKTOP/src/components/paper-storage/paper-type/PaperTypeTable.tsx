@@ -1,15 +1,17 @@
-import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
-import { FaEdit } from "react-icons/fa";
+import { Table, Group, Button, Icon } from "@chakra-ui/react";
+import { FaEdit, FaEye } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
 import { PaperType } from "@/types/PaperType";
 import PaperTypeDetailDialog from "./PaperTypeDetailDialog";
+import { PaperColor } from "@/types/PaperColor";
 
 interface PaperTypeTableProps {
     page: number;
     limit: number;
     types: PaperType[];
-    onEdit: (color: PaperType) => void;
-    onDelete: (color: PaperType) => void;
+    onEdit: (type: PaperType) => void;
+    onDetail: (type: PaperType) => void;
+    onDelete: (type: PaperType) => void;
 }
 
 const PaperTypeTable = ({
@@ -17,6 +19,7 @@ const PaperTypeTable = ({
     limit,
     types,
     onEdit,
+    onDetail,
     onDelete,
 }: PaperTypeTableProps) => {
     return (
@@ -42,7 +45,7 @@ const PaperTypeTable = ({
                         <Table.ColumnHeader>Mã Loại Giấy</Table.ColumnHeader>
                         <Table.ColumnHeader>Màu Giấy</Table.ColumnHeader>
                         <Table.ColumnHeader>Khổ Giấy</Table.ColumnHeader>
-                        <Table.ColumnHeader>Định lượng</Table.ColumnHeader>
+                        <Table.ColumnHeader>Định Lượng</Table.ColumnHeader>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             Thao tác
                         </Table.ColumnHeader>
@@ -50,42 +53,52 @@ const PaperTypeTable = ({
                 </Table.Header>
 
                 <Table.Body>
-                    {types.map((type, index) => (
-                        <Table.Row key={type._id ?? index}>
-                            <Table.Cell textAlign="center">{(page - 1) * limit + index + 1}</Table.Cell>
-                            <Table.Cell>{type.paperColor?.code}/{type.width}/{type.grammage}</Table.Cell>
-                            <Table.Cell>{type.paperColor?.title}</Table.Cell>
-                            <Table.Cell>{type.width}</Table.Cell>
-                            <Table.Cell>{type.grammage}</Table.Cell>
-                            <Table.Cell>
-                                <Group gap={5}>
-                                    <PaperTypeDetailDialog
-                                        type={type}
-                                    />
-                                    <Button
-                                        variant="surface"
-                                        colorPalette="yellow"
-                                        onClick={() => onEdit(type)}
-                                    >
-                                        <Icon>
-                                            <FaEdit />
-                                        </Icon>
-                                        Sửa
-                                    </Button>
-                                    <Button
-                                        variant="surface"
-                                        colorPalette="red"
-                                        onClick={() => onDelete(type)}
-                                    >
-                                        <Icon>
-                                            <FaTrashCan />
-                                        </Icon>
-                                        Xóa
-                                    </Button>
-                                </Group>
-                            </Table.Cell>
-                        </Table.Row>
-                    ))}
+                    {types.map((type, index) => {
+                        const color: PaperColor = type.paperColor as PaperColor;
+                        return (
+                            <Table.Row key={type._id ?? index}>
+                                <Table.Cell textAlign="center">{(page - 1) * limit + index + 1}</Table.Cell>
+                                <Table.Cell>{color?.code}/{type.width}/{type.grammage}</Table.Cell>
+                                <Table.Cell>{color?.title}</Table.Cell>
+                                <Table.Cell>{type.width}</Table.Cell>
+                                <Table.Cell>{type.grammage}</Table.Cell>
+                                <Table.Cell>
+                                    <Group gap={5}>
+                                        <Button
+                                            variant="surface"
+                                            colorPalette="blue"
+                                            onClick={() => onDetail(type)}
+                                        >
+                                            <Icon>
+                                                <FaEye />
+                                            </Icon>
+                                            Chi tiết
+                                        </Button>
+                                        {/* <Button
+                                            variant="surface"
+                                            colorPalette="yellow"
+                                            onClick={() => onEdit(type)}
+                                        >
+                                            <Icon>
+                                                <FaEdit />
+                                            </Icon>
+                                            Sửa
+                                        </Button> */}
+                                        <Button
+                                            variant="surface"
+                                            colorPalette="red"
+                                            onClick={() => onDelete(type)}
+                                        >
+                                            <Icon>
+                                                <FaTrashCan />
+                                            </Icon>
+                                            Xóa
+                                        </Button>
+                                    </Group>
+                                </Table.Cell>
+                            </Table.Row>
+                        )
+                    })}
                 </Table.Body>
             </Table.Root>
         </Table.ScrollArea>

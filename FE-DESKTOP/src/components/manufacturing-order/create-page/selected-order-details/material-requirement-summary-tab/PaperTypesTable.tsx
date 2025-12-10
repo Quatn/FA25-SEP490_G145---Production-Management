@@ -5,7 +5,7 @@ import { MaterialRequirementDto } from "@/types/DTO/material-requirement-summary
 import { Box, BoxProps, Center, Spinner, Stack, Table, TableRootProps, TabsRootProps, Text } from "@chakra-ui/react";
 import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { useEffect, useMemo, useReducer, useState } from "react";
-import { materialRequirementColumns } from "./materialTableDefinition";
+import { paperTypesTableColumns } from "./paperTypesTableDefinition";
 import check from "check-types";
 import { useSelectedOrdersState } from "../TabbedContainer";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
@@ -16,7 +16,7 @@ import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-da
 import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 
-export type MaterialRequirementTableProps = {
+export type PaperTypesTableProps = {
   rootProps?: BoxProps;
   tabsRootProps?: TabsRootProps;
   tableRootProps?: TableRootProps;
@@ -80,8 +80,8 @@ function accumulateMaterialRequirements(
   return result;
 }
 
-export default function MaterialRequirementTable(
-  props: MaterialRequirementTableProps,
+export default function PaperTypesTable(
+  props: PaperTypesTableProps,
 ) {
   const { useSelector } = ManufacturingOrderCreatePageReducerStore;
   const selectedPOIsIds = useSelector(s => s.selectedPOIsIds);
@@ -126,7 +126,7 @@ export default function MaterialRequirementTable(
 
   const table = useReactTable({
     data: tableData,
-    columns: materialRequirementColumns(props.header),
+    columns: paperTypesTableColumns(props.header),
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.code,
   });
@@ -134,7 +134,7 @@ export default function MaterialRequirementTable(
   if (check.undefined(moPaginatedList?.data) || moPaginatedList?.data.length < 1) {
     return (
       <Center>
-        <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
+        <Box bgColor={"colorPalette.muted"} px={3} py={2} rounded={"md"}>
           <Stack alignItems={"center"}>
             <Text>Các lệnh sẽ được tạo sẽ được hiển thị ở đây</Text>
             <Text>Hãy chọn PO Item bên trên</Text>

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, Length, Matches, IsEmail } from 'class-validator';
+import { IsOptional, IsString, Matches, IsEmail } from 'class-validator';
 
 export class CreatePaperSupplierRequestDto {
     @ApiProperty({

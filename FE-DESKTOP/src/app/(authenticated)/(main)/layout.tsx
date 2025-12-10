@@ -29,6 +29,24 @@ const initialCollection = createTreeCollection<Node>({
         children: [],
       },
       {
+        id: "customer",
+        name: "Customer",
+        children: [
+          {
+            id: "customer-list",
+            name: "Customer List",
+            href: "/customer/list",
+            children: [],
+          },
+          {
+            id: "customer-restore-list",
+            name: "Customer Restore List",
+            href: "/customer/restore-list",
+            children: [],
+          },
+        ],
+      },
+      {
         id: "purchase-order",
         name: "Purchase Order",
         children: [
@@ -70,7 +88,24 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
-
+      {
+        id: "print-color",
+        name: "Print Color",
+        children: [
+          {
+            id: "print-color-list",
+            name: "Print Color List",
+            href: "/print-color/list",
+            children: [],
+          },
+          {
+            id: "print-color-restore-list",
+            name: "Print Color Restore List",
+            href: "/print-color/restore-list",
+            children: [],
+          },
+        ],
+      },
       {
         id: "manufacturing-order",
         name: "Manufacturing Order",
@@ -97,6 +132,12 @@ const initialCollection = createTreeCollection<Node>({
             id: "manufacturing-order-corrugator-process-operate",
             name: "Manufacturing Order Corrugator Process Operate",
             href: "/manufacturing-order/corrugator-process-operate",
+            children: [],
+          },
+          {
+            id: "order-finishing-process",
+            name: "Order Finishing Process",
+            href: "/order-finishing-process",
             children: [],
           },
         ],
@@ -162,7 +203,13 @@ const initialCollection = createTreeCollection<Node>({
           {
             id: "paper-type-list",
             name: "Paper Type List",
-            href: "/paper-type",
+            href: "/paper-type/list",
+            children: [],
+          },
+          {
+            id: "paper-type-restore-list",
+            name: "Paper Type Restore List",
+            href: "/paper-type/restore-list",
             children: [],
           },
         ],
@@ -204,7 +251,13 @@ const initialCollection = createTreeCollection<Node>({
           {
             id: "ware-manufacturing-process-type-list",
             name: "Ware Manufacturing Process Type List",
-            href: "/ware-manufacturing-process-type",
+            href: "/ware-manufacturing-process-type/list",
+            children: [],
+          },
+          {
+            id: "ware-manufacturing-process-type-restore-list",
+            name: "Ware Manufacturing Process Type Restore List",
+            href: "/ware-manufacturing-process-type/restore-list",
             children: [],
           },
         ],
@@ -216,7 +269,13 @@ const initialCollection = createTreeCollection<Node>({
           {
             id: "ware-finishing-process-type-list",
             name: "Ware Finishing Process Type List",
-            href: "/ware-finishing-process-type",
+            href: "/ware-finishing-process-type/list",
+            children: [],
+          },
+          {
+            id: "ware-finishing-process-type-restore-list",
+            name: "Ware Finishing Process Type Restore List",
+            href: "/ware-finishing-process-type/restore-list",
             children: [],
           },
         ],
@@ -228,7 +287,13 @@ const initialCollection = createTreeCollection<Node>({
           {
             id: "product-type-list",
             name: "Product Type List",
-            href: "/product-type",
+            href: "/product-type/list",
+            children: [],
+          },
+          {
+            id: "product-type-restore-list",
+            name: "Product Type Restore List",
+            href: "/product-type/restore-list",
             children: [],
           },
         ],

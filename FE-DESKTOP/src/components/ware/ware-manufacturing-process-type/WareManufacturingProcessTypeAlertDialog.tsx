@@ -1,25 +1,25 @@
-import { useState, useEffect } from "react";
-import { Box, Button, CloseButton, Dialog, Portal } from "@chakra-ui/react"
+import { Button, CloseButton, Dialog, Portal } from "@chakra-ui/react"
 import { WareManufacturingProcessType } from "@/types/WareManufacturingProcessType";
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: WareManufacturingProcessType;
-    onDelete: (data: WareManufacturingProcessType) => void;
+    initialData: WareManufacturingProcessType | undefined;
+    onDelete: (data: WareManufacturingProcessType) => Promise<boolean>;
 }
 
 const WareManufacturingProcessTypeAlertDialog: React.FC<Props> = ({ isOpen, onClose, initialData, onDelete }) => {
-    const [item, setItem] = useState<WareManufacturingProcessType>({ _id: "", code: "", name: "", description: "", note: "", createdAt: new Date(), updatedAt: new Date() } as WareManufacturingProcessType);
 
-    const handleSubmit = () => {
-        onDelete(item);
-        onClose();
+    const handleSubmit = async () => {
+        let isSuccess = false;
+        if (!!initialData) {
+            isSuccess = await onDelete(initialData);
+        }
+
+        if (isSuccess) {
+            onClose();
+        }
     };
-
-    useEffect(() => {
-        if (isOpen) setItem(initialData ?? { _id: "", code: "", name: "", description: "", note: "", createdAt: new Date(), updatedAt: new Date() } as WareManufacturingProcessType);
-    }, [isOpen, initialData]);
 
     return (
         <Dialog.Root role="alertdialog" open={isOpen} onOpenChange={onClose}>
@@ -32,7 +32,7 @@ const WareManufacturingProcessTypeAlertDialog: React.FC<Props> = ({ isOpen, onCl
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
-                                Xóa loại quy trình {item.code} - {item.name}?
+                                Xóa loại gia công mã hàng {initialData?.code} - {initialData?.name}?
                             </p>
                         </Dialog.Body>
                         <Dialog.Footer>

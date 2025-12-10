@@ -2,10 +2,11 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { PaperRollService } from './paper-roll.service';
 import { CreatePaperRollDto, CreateMultiplePaperRollDto } from './dto/create-paper-roll.dto';
 import { UpdatePaperRollDto } from './dto/update-paper-roll.dto';
-import { PaperRollDocument } from '../schemas/paper-roll.schema';
+import { PaperRoll, PaperRollDocument } from '../schemas/paper-roll.schema';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
+import { QueryByWarePaperTypeCodesRequestDto } from './dto/query-by-ware-paper-type-codes.dto';
 
 @Controller('paper-roll')
 export class PaperRollController {
@@ -173,6 +174,21 @@ export class PaperRollController {
       success: true,
       message: 'Fetch successful',
       data: doc,
+    };
+  }
+
+
+  @Get("inventory/by-ware-paper-type-codes")
+  @ApiOperation({ summary: "Query using the codes from ware's paper types field" })
+  async queryInventoryByWarePaperTypeCodes(
+    @Query() query: QueryByWarePaperTypeCodesRequestDto,
+  ): Promise<BaseResponse<{code: string, weight: number}[]>> {
+    const docs = await this.prService.queryInventoryByWarePaperTypeCodes(query.codes);
+
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
     };
   }
 }

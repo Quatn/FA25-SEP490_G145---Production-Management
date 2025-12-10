@@ -61,7 +61,7 @@ const PaperColorRestoreList: React.FC = () => {
     const handleRestore = async (data: PaperColor) => {
         handleMutation(
             () => restoreItem(data).unwrap(),
-            `Đã khôi phục màu giấy ${data.code}}`,
+            `Đã khôi phục màu giấy ${data.code}`,
             'Khôi phục thất bại',
         );
     }

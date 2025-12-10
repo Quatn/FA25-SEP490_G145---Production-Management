@@ -11,14 +11,6 @@ export function fullDetailsFilterAggregationPipeline({
     // from mo
     {
       $lookup: {
-        from: "manufacturingorderprocesses",
-        localField: "processes",
-        foreignField: "_id",
-        as: "processes",
-      },
-    },
-    {
-      $lookup: {
         from: "purchaseorderitems",
         localField: "purchaseOrderItem",
         foreignField: "_id",
@@ -27,6 +19,13 @@ export function fullDetailsFilterAggregationPipeline({
     },
     {
       $unwind: { path: "$purchaseOrderItem", preserveNullAndEmptyArrays: true },
+    },
+    {
+      $match: {
+        "purchaseOrderItem.isDeleted": {
+          $ne: true,
+        },
+      },
     },
 
     // from poi
@@ -42,6 +41,13 @@ export function fullDetailsFilterAggregationPipeline({
       $unwind: {
         path: "$purchaseOrderItem.ware",
         preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $match: {
+        "purchaseOrderItem.ware.isDeleted": {
+          $ne: true,
+        },
       },
     },
 
@@ -61,6 +67,14 @@ export function fullDetailsFilterAggregationPipeline({
       },
     },
     {
+      $match: {
+        "purchaseOrderItem.ware.fluteCombination.isDeleted": {
+          $ne: true,
+        },
+      },
+    },
+
+    {
       $lookup: {
         from: "warefinishingprocesstypes",
         localField: "purchaseOrderItem.ware.finishingProcesses",
@@ -68,6 +82,14 @@ export function fullDetailsFilterAggregationPipeline({
         as: "purchaseOrderItem.ware.finishingProcesses",
       },
     },
+    {
+      $match: {
+        "purchaseOrderItem.ware.finishingProcesses": {
+          $all: [{ $elemMatch: { $ne: true } }],
+        },
+      },
+    },
+
     {
       $lookup: {
         from: "waremanufacturingprocesstypes",
@@ -80,6 +102,13 @@ export function fullDetailsFilterAggregationPipeline({
       $unwind: {
         path: "$purchaseOrderItem.ware.wareManufacturingProcessType",
         preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $match: {
+        "purchaseOrderItem.ware.wareManufacturingProcessType.isDeleted": {
+          $ne: true,
+        },
       },
     },
     {
@@ -106,6 +135,13 @@ export function fullDetailsFilterAggregationPipeline({
         preserveNullAndEmptyArrays: true,
       },
     },
+    {
+      $match: {
+        "purchaseOrderItem.subPurchaseOrder.isDeleted": {
+          $ne: true,
+        },
+      },
+    },
 
     // from spo
     {
@@ -123,6 +159,13 @@ export function fullDetailsFilterAggregationPipeline({
       },
     },
     {
+      $match: {
+        "purchaseOrderItem.subPurchaseOrder.product.isDeleted": {
+          $ne: true,
+        },
+      },
+    },
+    {
       $lookup: {
         from: "purchaseorders",
         localField: "purchaseOrderItem.subPurchaseOrder.purchaseOrder",
@@ -134,6 +177,13 @@ export function fullDetailsFilterAggregationPipeline({
       $unwind: {
         path: "$purchaseOrderItem.subPurchaseOrder.purchaseOrder",
         preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $match: {
+        "purchaseOrderItem.subPurchaseOrder.purchaseOrder.isDeleted": {
+          $ne: true,
+        },
       },
     },
 
@@ -150,6 +200,13 @@ export function fullDetailsFilterAggregationPipeline({
       $unwind: {
         path: "$purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer",
         preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $match: {
+        "purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.isDeleted": {
+          $ne: true,
+        },
       },
     },
 
