@@ -4,7 +4,7 @@ export interface DeliveryNote {
   code: number;
   customer: string | { _id?: string; id?: string; name?: string; [key: string]: any };
   poitems: string[];
-  status: "PENDINGAPPROVAL" | "APPROVED" | "CONFIRMEDAPPROVAL";
+  status: "PENDINGAPPROVAL" | "APPROVED" | "EXPORTED" | "CANCELLED";
   date: string;
   createdAt?: string;
   updatedAt?: string;
@@ -20,7 +20,7 @@ export interface CreateDeliveryNoteDto {
 
   poitems: string[];
 
-  status?: "PENDINGAPPROVAL" | "APPROVED" | "CONFIRMEDAPPROVAL";
+  status?: "PENDINGAPPROVAL" | "APPROVED" | "EXPORTED" | "CANCELLED";
 
   date?: string;
 }

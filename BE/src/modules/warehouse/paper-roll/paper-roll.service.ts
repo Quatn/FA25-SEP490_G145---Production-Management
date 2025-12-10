@@ -295,7 +295,10 @@ export class PaperRollService {
   }
 
   async restore(id: string) {
-    const type = await this.PaperRollModel.findById(id) as SoftPaperRoll;
+    const type = await this.PaperRollModel.findOne({
+      _id: id,
+      isDeleted: true
+    }) as SoftPaperRoll;
     if (!type) throw new NotFoundException("Paper type not found");
     await type.restore();
     return { success: true };

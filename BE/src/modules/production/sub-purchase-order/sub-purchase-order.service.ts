@@ -15,6 +15,9 @@ import { CreateSubPurchaseOrderDto } from "./dto/create-sub-purchase-order.dto";
 import { UpdateSubPurchaseOrderDto } from "./dto/update-sub-purchase-order.dto";
 import { CreateSubFromProductsDto } from "./dto/create-sub-from-products.dto";
 import { PurchaseOrder, PurchaseOrderDocument } from "../schemas/purchase-order.schema";
+import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
+
+type SoftSubPO = SubPurchaseOrder & SoftDeleteDocument;
 
 @Injectable()
 export class SubPurchaseOrderService {
@@ -176,7 +179,10 @@ export class SubPurchaseOrderService {
 
 
     async restore(id: string) {
-        const doc = await this.subPoModel.findById(id) as any;
+        const doc = await this.subPoModel.findOne({
+            _id: id,
+            isDeleted: true
+        }) as SoftSubPO;
         if (!doc) throw new NotFoundException("Sub purchase order not found");
         await doc.restore();
         return { success: true };

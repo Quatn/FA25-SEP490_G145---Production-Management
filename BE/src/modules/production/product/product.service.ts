@@ -4,12 +4,15 @@ import { FilterQuery, Model } from "mongoose";
 import { Product, ProductDocument } from "../schemas/product.schema";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
+import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
+
+type SoftProduct = Product & SoftDeleteDocument;
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
-  ) {}
+  ) { }
 
   async create(payload: CreateProductDto): Promise<Product> {
     const created = await this.productModel.create(payload);
@@ -64,7 +67,7 @@ export class ProductService {
         .find(filter)
         .populate({
           path: "wares",
-          populate:  [
+          populate: [
             { path: "finishingProcesses" },
             { path: "fluteCombination" }
           ],
@@ -134,10 +137,54 @@ export class ProductService {
   async remove(id: string): Promise<void> {
     // Soft delete
     const res = await this.productModel
-      .findByIdAndUpdate(id, { isDeleted: true }, { new: true })
-      .exec();
-    if (!res) {
-      throw new NotFoundException("Product not found");
-    }
+      .findById(id) as SoftProduct;
+    if (!res) throw new NotFoundException("Paper type not found");
+    await res.softDelete();
+
+  }
+
+  async restore(id: string) {
+    const doc = await this.productModel.findOne({
+      _id: id,
+      isDeleted: true
+    }) as SoftProduct;
+    if (!doc) throw new NotFoundException("Product not found");
+    await doc.restore();
+    return { success: true };
+  }
+
+  // Find deleted products (bypassing pre('find') middleware using raw collection)
+  async findDeleted(page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const filter = { isDeleted: true };
+
+    const [rawDocs, totalCount] = await Promise.all([
+      this.productModel.collection.find(filter).skip(skip).limit(limit).toArray(),
+      this.productModel.collection.countDocuments(filter),
+    ]);
+
+    // Populate raw documents with nested populates similar to findAll
+    const populatedDocs = await this.productModel.populate(rawDocs, [
+      {
+        path: "wares",
+        populate: [
+          { path: "finishingProcesses" },
+          { path: "fluteCombination" },
+        ],
+      },
+      { path: "customer" },
+      { path: "productType" },
+    ]);
+
+    const totalPages = Math.ceil((totalCount || 0) / limit);
+    return {
+      data: populatedDocs,
+      page,
+      limit,
+      totalItems: totalCount,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
   }
 }

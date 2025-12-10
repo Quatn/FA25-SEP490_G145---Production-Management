@@ -1,11 +1,11 @@
-// production/delivery-note/delivery-note.service.ts
-import { Injectable, Logger, InternalServerErrorException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, InternalServerErrorException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { DeliveryNote } from './../schemas/delivery-note.schema';
 import { CreateDeliveryNoteDto } from './dto/create-delivery-note.dto';
 import { PurchaseOrderItem } from '../schemas/purchase-order-item.schema';
-
+import { Customer } from '../schemas/customer.schema';
+import mongoose from 'mongoose';
 
 @Injectable()
 export class DeliveryNoteService {
@@ -15,10 +15,10 @@ export class DeliveryNoteService {
     constructor(
         @InjectModel(DeliveryNote.name) private readonly deliveryNoteModel: Model<DeliveryNote>,
         @InjectModel(PurchaseOrderItem.name) private readonly poItemModel: Model<PurchaseOrderItem>,
+        @InjectModel(Customer.name) private readonly customerModel: Model<Customer>,
     ) { }
 
     private async computeNextCode(): Promise<number> {
-        // find current max code
         const doc = await this.deliveryNoteModel.findOne({}, { code: 1 }).sort({ code: -1 }).lean().exec();
         const max = doc?.code ?? 0;
         return Number(max) + 1;
@@ -42,7 +42,6 @@ export class DeliveryNoteService {
                 const id = new Types.ObjectId(String(entry));
                 out.push({ poitem: id, deliveredAmount: 0 });
             } catch (e) {
-                // skip invalid
                 this.logger.warn('Skipping invalid poitem entry during normalization: ' + JSON.stringify(entry));
             }
         }
@@ -160,11 +159,187 @@ export class DeliveryNoteService {
         throw new InternalServerErrorException('Failed to create DeliveryNote after retries');
     }
 
+    /**
+     * Manual population helper:
+     * - populates customer document into `customer`
+     * - populates each poitems[].poitem with the corresponding PurchaseOrderItem doc
+     * - also populates purchaseOrder and ware under each poitem (so front-end can use ware.code and purchaseOrder.code)
+     */
+    private async populateDeliveryNotes(docs: any[]) {
+        if (!docs || docs.length === 0) return [];
+
+        // collect customer ids and poitem ids (handles mixed shapes)
+        const customerIdStrings = new Set<string>();
+        const poitemIdStrings = new Set<string>();
+
+        for (const d of docs) {
+            if (d?.customer) customerIdStrings.add(String(d.customer));
+            if (!Array.isArray(d?.poitems)) continue;
+            for (const pi of d.poitems) {
+                if (!pi) continue;
+                if (pi && typeof pi === "object" && (pi.poitem !== undefined && pi.poitem !== null)) {
+                    poitemIdStrings.add(String(pi.poitem));
+                } else {
+                    try {
+                        poitemIdStrings.add(String(pi));
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+            }
+        }
+
+        const customerIds = Array.from(customerIdStrings).map((s) => new Types.ObjectId(s));
+        const poitemIds = Array.from(poitemIdStrings)
+            .map((s) => {
+                try {
+                    return new Types.ObjectId(s);
+                } catch {
+                    return null;
+                }
+            })
+            .filter(Boolean) as Types.ObjectId[];
+
+        const customerColl = this.customerModel.collection;
+        const poitemColl = this.poItemModel.collection;
+
+        // fetch raw poitems and customers
+        const [customersRaw, poitemsRaw] = (await Promise.all([
+            customerIds.length ? customerColl.find({ _id: { $in: customerIds } }).toArray() : [],
+            poitemIds.length ? poitemColl.find({ _id: { $in: poitemIds } }).toArray() : [],
+        ])) as any[];
+
+        // --- additional population for PO items: ware and subPurchaseOrder -> purchaseOrder ---
+        const wareIdStrings = Array.from(
+            new Set((poitemsRaw as any[]).map((d) => d.ware).filter(Boolean).map((id: any) => String(id)))
+        );
+        const subPoIdStrings = Array.from(
+            new Set((poitemsRaw as any[]).map((d) => d.subPurchaseOrder).filter(Boolean).map((id: any) => String(id)))
+        );
+
+        const wareIds = wareIdStrings.map((s) => new mongoose.Types.ObjectId(s));
+        const subPoIds = subPoIdStrings.map((s) => new mongoose.Types.ObjectId(s));
+
+        // fetch wares / subPos / purchaseOrders using collection names (adjust names if different)
+        let waresRaw: any[] = [];
+        let subPosRaw: any[] = [];
+        let purchaseOrdersRaw: any[] = [];
+
+        try {
+            if (wareIds.length) {
+                try {
+                    waresRaw = await this.poItemModel.db.collection("wares").find({ _id: { $in: wareIds } }).toArray();
+                } catch {
+                    waresRaw = [];
+                }
+            }
+
+            if (subPoIds.length) {
+                try {
+                    subPosRaw = await this.poItemModel.db.collection("subpurchaseorders").find({ _id: { $in: subPoIds } }).toArray();
+                } catch {
+                    subPosRaw = [];
+                }
+            }
+
+            const nestedPoIdStrings = Array.from(
+                new Set((subPosRaw as any[]).map((s: any) => s.purchaseOrder).filter(Boolean).map((id: any) => String(id)))
+            );
+            const nestedPoIds = nestedPoIdStrings.map((s) => new mongoose.Types.ObjectId(s));
+            if (nestedPoIds.length) {
+                try {
+                    purchaseOrdersRaw = await this.poItemModel.db.collection("purchaseorders").find({ _id: { $in: nestedPoIds } }).toArray();
+                } catch {
+                    purchaseOrdersRaw = [];
+                }
+            }
+        } catch (e) {
+            this.logger.debug("Warning while attempting to fetch ware/subPo/purchaseOrder collections: " + (e && e.message));
+        }
+
+        const customerMap = (customersRaw as any[]).reduce<Map<string, any>>((m, c) => m.set(String(c._id), c), new Map());
+        const wareMap = (waresRaw as any[]).reduce<Map<string, any>>((m, w) => m.set(String(w._id), w), new Map());
+        const subPoMapRaw = (subPosRaw as any[]).reduce<Map<string, any>>((m, s) => m.set(String(s._id), s), new Map());
+        const purchaseOrderMap = (purchaseOrdersRaw as any[]).reduce<Map<string, any>>((m, p) => m.set(String(p._id), p), new Map());
+
+        const populatedSubPos = (subPosRaw as any[]).map((s) => ({
+            ...s,
+            purchaseOrder: s.purchaseOrder ? (purchaseOrderMap.get(String(s.purchaseOrder)) ?? null) : null,
+        }));
+        const populatedSubPoMap = populatedSubPos.reduce<Map<string, any>>((m, s) => m.set(String(s._id), s), new Map());
+
+        const populatedPoitems = (poitemsRaw as any[]).map((p) => ({
+            ...p,
+            ware: p.ware ? (wareMap.get(String(p.ware)) ?? null) : null,
+            subPurchaseOrder: p.subPurchaseOrder ? (populatedSubPoMap.get(String(p.subPurchaseOrder)) ?? null) : null,
+        }));
+
+        const poitemMap = populatedPoitems.reduce<Map<string, any>>((m, p) => m.set(String(p._id), p), new Map());
+
+        const populated = docs.map((r) => {
+            const customerPop = r.customer ? (customerMap.get(String(r.customer)) ?? null) : null;
+
+            const poitemsOut: Array<{ poitem: any | null; deliveredAmount: number }> = [];
+            if (Array.isArray(r.poitems)) {
+                for (const rawPi of r.poitems) {
+                    if (!rawPi) continue;
+
+                    let rawId: any = null;
+                    let deliveredAmount = 0;
+
+                    if (typeof rawPi === "object" && (rawPi.poitem !== undefined && rawPi.poitem !== null)) {
+                        rawId = rawPi.poitem;
+                        deliveredAmount = Number(rawPi.deliveredAmount ?? 0) || 0;
+                    } else {
+                        rawId = rawPi;
+                        deliveredAmount = 0;
+                    }
+
+                    // string or null
+                    let idStr: string | null = null;
+                    try {
+                        idStr = rawId != null ? String(rawId) : null;
+                    } catch {
+                        idStr = null;
+                    }
+
+                    const poitemDoc = idStr ? (poitemMap.get(idStr) ?? null) : null;
+                    poitemsOut.push({ poitem: poitemDoc, deliveredAmount });
+                }
+            }
+
+            return {
+                ...r,
+                customer: customerPop,
+                poitems: poitemsOut,
+            };
+        });
+
+        return populated;
+    }
+
     async findAll() {
-        return this.deliveryNoteModel.find().sort({ createdAt: -1 }).lean().exec();
+        const docs = await this.deliveryNoteModel.find().sort({ createdAt: -1 }).lean().exec();
+        const populated = await this.populateDeliveryNotes(docs);
+        return populated;
     }
 
     async findById(id: string) {
-        return this.deliveryNoteModel.findById(id).lean().exec();
+        const doc = await this.deliveryNoteModel.findById(id).lean().exec();
+        if (!doc) return null;
+        const [pop] = await this.populateDeliveryNotes([doc]);
+        return pop ?? null;
+    }
+
+    /**
+     * Generic update: accepts partial fields; returns populated delivery note
+     */
+    async update(id: string, payload: Partial<any>) {
+        if (!id) throw new BadRequestException('id is required');
+        // Only allow certain fields? currently generic - you can restrict keys if needed.
+        const updated = await this.deliveryNoteModel.findByIdAndUpdate(id, payload, { new: true }).lean().exec();
+        if (!updated) throw new NotFoundException('DeliveryNote not found');
+        const [pop] = await this.populateDeliveryNotes([updated]);
+        return pop ?? updated;
     }
 }

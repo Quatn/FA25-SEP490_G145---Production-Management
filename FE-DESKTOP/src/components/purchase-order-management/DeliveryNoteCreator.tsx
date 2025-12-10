@@ -404,7 +404,6 @@ export default function DeliveryNoteCreator() {
             <col style={{ width: 60 }} />
             <col style={{ width: 60 }} />
             <col style={{ width: 60 }} />
-            {/* <col style={{ width: 140 }} /> */}
             <col style={{ width: 120 }} />
             <col style={{ width: 100 }} />
             <col style={{ width: 120 }} />
@@ -429,9 +428,6 @@ export default function DeliveryNoteCreator() {
                 Kích thước
               </th>
               <th rowSpan={2}>PO</th>
-              {/* <th rowSpan={2} style={{ textAlign: "right" }}>
-                Đơn giá
-              </th> */}
               <th rowSpan={2} style={{ textAlign: "right" }}>
                 Số lượng yêu cầu
               </th>
@@ -479,9 +475,6 @@ export default function DeliveryNoteCreator() {
                     <td style={{ textAlign: "right" }}>{getWareWidth(it)}</td>
                     <td style={{ textAlign: "right" }}>{getWareHeight(it)}</td>
                     <td>{getPoCode(it)}</td>
-                    {/* <td style={{ textAlign: "right" }}>
-                      {Number(getUnitPrice(it)).toLocaleString()}
-                    </td> */}
                     <td style={{ textAlign: "right" }}>{getAmount(it)}</td>
 
                     <td style={{ textAlign: "right", verticalAlign: "top" }}>
