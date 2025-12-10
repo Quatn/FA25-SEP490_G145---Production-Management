@@ -1,4 +1,4 @@
-import { Box, Text } from "@chakra-ui/react";
+import { Box, GridItem, SimpleGrid, Text } from "@chakra-ui/react";
 
 export default function Dashboard() {
   return (
@@ -8,11 +8,24 @@ export default function Dashboard() {
       flexGrow={1}
       boxSizing={"border-box"}
       rounded={"sm"}
-      bg={"gray.200"}
+      colorPalette={"gray"}
+      backgroundColor={"colorPalette.subtle"}
     >
-      <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
+      <Text fontWeight={"semibold"} color={"fg"}>
         Dashboard
       </Text>
+        <SimpleGrid columns={{md: 1, lg: 2}} gap="40px" mx={5}>
+          <GridItem colSpan={{ base: 1 }}>
+          </GridItem>
+          <GridItem colSpan={{ base: 1 }}>
+            <Box bg="bg" p={2} pt={5} rounded={"sm"}>
+            </Box>
+          </GridItem>
+          <GridItem colSpan={{ base: 1 }}>
+          </GridItem>
+          <GridItem colSpan={{ base: 1 }}>
+          </GridItem>
+        </SimpleGrid>
     </Box>
   );
 }

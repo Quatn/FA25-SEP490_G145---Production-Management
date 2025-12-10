@@ -123,7 +123,7 @@ export default function CreatePageManufacturingOrderTable(
   if (check.undefined(selectedPOIsIds) || selectedPOIsIds.length < 1) {
     return (
       <Center>
-        <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
+        <Box bgColor={"colorPalette.muted"} px={3} py={2} rounded={"md"}>
           <Stack alignItems={"center"}>
             <Text>Các lệnh sẽ được tạo sẽ được hiển thị ở đây</Text>
             <Text>Hãy chọn PO Item bên trên</Text>
