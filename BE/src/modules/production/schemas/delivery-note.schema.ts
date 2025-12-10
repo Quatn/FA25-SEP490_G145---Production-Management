@@ -31,7 +31,7 @@ export class DeliveryNote extends BaseSchema {
 
     @Prop({
         type: String,
-        enum: ['PENDINGAPPROVAL', 'APPROVED', 'CONFIRMEDAPPROVAL'],
+        enum: ['PENDINGAPPROVAL', 'APPROVED', 'EXPORTED', 'CANCELLED'],
         default: 'PENDINGAPPROVAL',
     })
     status: string;

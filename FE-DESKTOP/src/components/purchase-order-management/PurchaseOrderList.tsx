@@ -249,8 +249,29 @@ const PurchaseOrderList: React.FC = () => {
 
   const handleSaveFromModal = async (updated: PurchaseOrder) => {
     try {
+      // Basic client-side validation for PO number uniqueness
+      const trimmedPoNumber = (updated.poNumber || "").trim();
+      // require PO number for creation or update (adjust if empty allowed in your business logic)
+      if (!trimmedPoNumber) {
+        alert("PO number is required.");
+        return;
+      }
+
+      const conflict = orders.find(
+        (o) =>
+          (o.poNumber || "").trim().toLowerCase() ===
+            trimmedPoNumber.toLowerCase() && String(o.id) !== String(updated.id)
+      );
+
+      if (conflict) {
+        alert(
+          `PO number \"${trimmedPoNumber}\" already exists (PO id: ${conflict.id}). Please use a different PO number.`
+        );
+        return;
+      }
+
       const payload: any = {
-        code: updated.poNumber,
+        code: trimmedPoNumber,
         orderDate: updated.poDate,
         deliveryAddress: updated.address,
         paymentTerms: updated.taxTemplate,
