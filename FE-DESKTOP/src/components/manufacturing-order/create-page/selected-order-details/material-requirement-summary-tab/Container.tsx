@@ -38,11 +38,15 @@ export default function MaterialRequirementContainer(props: MaterialRequirementC
             <MaterialRequirement type="RAW" header={"Trọng lượng giấy mộc"} />
           </GridItem>
           <GridItem colSpan={{ base: 1 }}>
-            <PaperUsageChart />
+            <Box bg="bg" p={2} pt={5} rounded={"sm"}>
+              <PaperUsageChart type="FACE" />
+            </Box>
           </GridItem>
-          <Box height="20" />
-          <Box height="20" />
-          <Box height="20" />
+          <GridItem colSpan={{ base: 1 }}>
+            <Box bg="bg" p={2} pt={5} rounded={"sm"}>
+              <PaperUsageChart type="RAW" />
+            </Box>
+          </GridItem>
         </SimpleGrid>
         {props.children}
       </Box>

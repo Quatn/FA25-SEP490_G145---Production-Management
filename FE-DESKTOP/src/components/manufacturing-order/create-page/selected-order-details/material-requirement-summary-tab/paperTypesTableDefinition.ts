@@ -37,10 +37,17 @@ export const paperTypesTableColumns = (header: string) => [
       }),
       columnHelper.display({
         id: "requirementWeight",
-        header: "Trọng lượng sử dựng (kg)",
+        header: "Trọng lượng sử dụng (kg)",
         ...colSize.sm,
         cell: ({ row }) =>
           numToFixedBounded(row.original.requirementWeight),
+      }),
+      columnHelper.display({
+        id: "inventoryWeight",
+        header: "Tồn kho (kg)",
+        ...colSize.sm,
+        cell: ({ row }) =>
+          row.original.inventoryWeight.toFixed(4),
       }),
     ]
   })
