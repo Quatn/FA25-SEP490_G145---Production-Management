@@ -49,54 +49,16 @@ export default function ManufacturingOrderTable(
   const limit = useSelector(s => s.limit)
   const tab = useSelector(s => s.tab)
   const query = useDataTableSelector(s => s.query)
+  const sorts = useSelector(s => s.sorts)
 
   const {
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
     refetch: refetchTable,
-  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query });
+  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query, sort: sorts });
 
-  const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
-
-  const {
-    data: orderFinishingProcessesResponse,
-    error: orderFinishingProcessFetchError,
-    isLoading: isOrderFinishingProcessFetchingList,
-  } = useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery({ orders: ids ?? [] });
-
-  const moPaginatedList = useMemo(() => {
-    if (fullDetailMOPaginatedResponse?.data) {
-      const calculatedMoPaginatedList = fullDetailMOPaginatedResponse?.data?.data.map((mo) => {
-        if (check.string(mo.purchaseOrderItem)) {
-          throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
-        }
-
-        const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
-        const calculatedPOI = recalculatePurchaseOrderItem({
-          ...mo.purchaseOrderItem!,
-          ware: calculatedWare
-        })
-
-        const process = orderFinishingProcessesResponse?.data.filter(p => (p.manufacturingOrder as unknown as string) === mo._id)
-
-        return {
-          ...mo,
-          purchaseOrderItem: calculatedPOI,
-          finishingProcesses: process ?? [],
-        }
-      })
-      return {
-        ...fullDetailMOPaginatedResponse.data,
-        data: calculatedMoPaginatedList
-      }
-    }
-    else {
-      return undefined
-    }
-  }, [fullDetailMOPaginatedResponse?.data, orderFinishingProcessesResponse?.data])
-
-  const rawTableData: (Omit<ManufacturingOrderTableDataType, "isEdited">)[] = moPaginatedList?.data ?? []
+  const rawTableData: (Omit<ManufacturingOrderTableDataType, "isEdited">)[] = fullDetailMOPaginatedResponse?.data?.data ?? []
 
   const { table, tableComponent, tableData, resetTable } = useDataTable({
     data: rawTableData,
@@ -136,11 +98,11 @@ export default function ManufacturingOrderTable(
     devlog("SET_TOTAL_ITEMS effect Triggered")
     dispatch({
       type: "SET_TOTAL_ITEMS",
-      payload: moPaginatedList ? moPaginatedList.totalItems : 0,
+      payload: fullDetailMOPaginatedResponse?.data ? fullDetailMOPaginatedResponse?.data.totalItems : 0,
     });
-  }, [dispatch, moPaginatedList, moPaginatedList?.totalItems]);
+  }, [dispatch, fullDetailMOPaginatedResponse?.data, fullDetailMOPaginatedResponse?.data?.totalItems]);
 
-  if (isFetchingList || isOrderFinishingProcessFetchingList) {
+  if (isFetchingList) {
     return (
       <Center h={"full"} flex={1} flexGrow={1}>
         <Stack alignItems={"center"}>
@@ -151,11 +113,11 @@ export default function ManufacturingOrderTable(
     );
   }
 
-  if (fetchError || orderFinishingProcessFetchError) {
+  if (fetchError) {
     return <DataFetchError h={"full"} flexGrow={1} refetch={refetchTable} />;
   }
 
-  if (check.undefined(moPaginatedList)) {
+  if (check.undefined(fullDetailMOPaginatedResponse?.data)) {
     return <DataFetchError h={"full"} flexGrow={1} />;
   }
 

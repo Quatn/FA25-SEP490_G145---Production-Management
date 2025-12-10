@@ -1,7 +1,8 @@
 "use client";
 
 import { useDataTableDispatch, useDataTableSelector } from "@/components/ui/data-table/Provider";
-import { Checkbox } from "@chakra-ui/react";
+import { Checkbox, HStack, Stack } from "@chakra-ui/react";
+import ManufacturingOrderFullDetailTableFilterMenu from "./FilterMenu";
 
 export default function ManufacturingOrderTableControl() {
   // const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
@@ -9,10 +10,17 @@ export default function ManufacturingOrderTableControl() {
   const allowEdit = useDataTableSelector(s => s.allowEdit)
 
   return (
-    <Checkbox.Root checked={allowEdit == true} onCheckedChange={(v) => dispatch({ type: "SET_ALLOW_EDIT", payload: !!v.checked })} colorPalette={"blue"}>
-      <Checkbox.HiddenInput />
-      <Checkbox.Control />
-      <Checkbox.Label>Cho phép chỉnh sửa trên bảng</Checkbox.Label>
-    </Checkbox.Root>
+    <Stack>
+      <HStack>
+        <Checkbox.Root checked={allowEdit == true} onCheckedChange={(v) => dispatch({ type: "SET_ALLOW_EDIT", payload: !!v.checked })} colorPalette={"blue"}>
+          <Checkbox.HiddenInput />
+          <Checkbox.Control />
+          <Checkbox.Label>Cho phép chỉnh sửa trên bảng</Checkbox.Label>
+        </Checkbox.Root>
+      </HStack>
+      <HStack>
+        <ManufacturingOrderFullDetailTableFilterMenu />
+      </HStack>
+    </Stack>
   );
 }

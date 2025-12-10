@@ -11,14 +11,13 @@ import { createListCollection } from "@chakra-ui/react";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import ManufacturingOrderTableActionColumn from "./ActionColumn";
-import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
 import { manufacturingOrderComponentUtils as utils } from "../utils"
 
-const { getPopulatedPoi, getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, getOrderStatus, OrderStatusNameMap } = utils
+const { getPopulatedPoi, getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, OrderStatusNameMap } = utils
 
-export type ManufacturingOrderTableDataType = Serialized<ManufacturingOrder> & { finishingProcesses: Serialized<OrderFinishingProcess>[], isEdited: boolean }
+export type ManufacturingOrderTableDataType = Serialized<ManufacturingOrder> & { isEdited: boolean }
 
-const columnHelper = getDataTableColumnHelper<Serialized<ManufacturingOrder> & { finishingProcesses: Serialized<OrderFinishingProcess>[] }>()
+const columnHelper = getDataTableColumnHelper<Serialized<ManufacturingOrder>>()
 
 const manufacturingDirectives: { label: string, value: string }[] = [
   { label: "Hủy", value: ManufacturingOrderDirectives.Cancel },
@@ -124,8 +123,7 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
   columnHelper.defineDataTableAccessorColumn({
     id: "orderStatusDisplay",
     accessorFn: (mo) => {
-      const orderStatus = getOrderStatus(mo, mo.finishingProcesses)
-      return orderStatus ? OrderStatusNameMap[orderStatus] : ""
+      return mo.operativeStatus ? OrderStatusNameMap[mo.operativeStatus] : ""
     },
     header: "Trạng thái chạy",
     enablePinning: true,

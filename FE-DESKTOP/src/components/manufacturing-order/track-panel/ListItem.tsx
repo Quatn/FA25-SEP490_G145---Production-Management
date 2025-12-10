@@ -12,6 +12,7 @@ import { LuChevronsDown, LuChevronsDownUp, LuCircleCheckBig, LuCircleMinus, LuCi
 import { useState } from "react";
 import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { ManufacturingOrderOperativeStatus } from "@/types/enums/ManufacturingOrderOperativeStatus";
+import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 
 const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, getOrderStatus, OrderStatusNameMap } = manufacturingOrderComponentUtils
 
@@ -66,17 +67,20 @@ const getListItems = (mo: Serialized<ManufacturingOrder>) => {
 
 export type ManufacturingOrderTrackPanelListItemProps = {
   mo: Serialized<ManufacturingOrder>
-  processes: Serialized<OrderFinishingProcess>[]
 }
 
 export default function ManufacturingOrderTrackPanelListItem(props: ManufacturingOrderTrackPanelListItemProps) {
   const dialogDispatch = ManufacturingOrderDetailsDialogReducerStore.useDispatch();
 
   const [open, setOpen] = useState(false)
-  const orderStatus = getOrderStatus(props.mo, props.processes)
-  const statusDisplayName = orderStatus ? OrderStatusNameMap[orderStatus] : undefined
+  const statusDisplayName = props.mo.operativeStatus ? OrderStatusNameMap[props.mo.operativeStatus] : undefined
   const requiredAmount = props.mo.amount
-  const completedAmount = (props.processes.length < 1) ? props.mo.corrugatorProcess.manufacturedAmount : props.processes.at(-1)?.completedAmount
+  const orderStatus = props.mo.operativeStatus
+  if (check.array.of.string(props.mo.finishingProcesses)) {
+    throw new UnpopulatedFieldError("mo.finishingProcesses should have been populated before reaching here ManufacturingOrderTrackPanelListItem")
+  }
+  const processes = (props.mo.finishingProcesses ?? []) as Serialized<OrderFinishingProcess>[]
+  const completedAmount = (processes.length < 1) ? props.mo.corrugatorProcess.manufacturedAmount : processes.at(-1)?.completedAmount
 
   return (
     <Card.Root size="sm">
@@ -97,7 +101,7 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
             <Button colorPalette={"blue"} size="sm" onClick={
               () => dialogDispatch({
                 type: "OPEN_DIALOG_WITH_ORDER",
-                payload: { order: props.mo, processes: props.processes },
+                payload: { order: props.mo },
               })
             }>Chi tiết lệnh</Button>
           </HStack>
@@ -140,7 +144,7 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
                 </Card.Root>
 
 
-                {props.processes.map(proc => (
+                {processes.map(proc => (
                   <Card.Root size="sm" key={proc._id}>
                     <Card.Header>
                       <Heading size="md">{check.string(proc.wareFinishingProcessType) ? proc.wareFinishingProcessType : proc.wareFinishingProcessType.name}</Heading>

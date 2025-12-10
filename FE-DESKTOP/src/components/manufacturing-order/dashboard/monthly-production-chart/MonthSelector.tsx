@@ -8,7 +8,7 @@ import check from "check-types"
 const { monthValueArray, monthCollection } = ManufacturingOrderMonthlyProductionBarChartCommons
 
 
-export const ManufacturingOrderMonthlyProductionBarChartMonthSelector = () => {
+export default function ManufacturingOrderMonthlyProductionBarChartMonthSelector() {
   const { useSelector, useDispatch } = ManufacturingOrderMonthlyProductionChartReducerStore
   const dispatch = useDispatch()
   const month = useSelector(s => s.month)

@@ -18,16 +18,13 @@ import {
 import { CSSProperties, useMemo, useState } from "react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
-import { useCreateManyManufacturingOrdersMutation, useDeleteManufacturingOrderMutation, useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
+import { useCreateManyManufacturingOrdersMutation, useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
 import check from "check-types";
 import { CreateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/CreateManyManufacturingOrdersDto";
-import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
-import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
+import { getCoreRowModel } from "@tanstack/react-table";
 import { toaster } from "@/components/ui/toaster";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import { manufacturingOrderColumnsByTabs, manufacturingOrderMergedHeaders, ManufacturingOrderTableDataType } from "@/components/manufacturing-order/full-detail-table/tableDefinition";
-import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import DataFetchError from "@/components/common/DataFetchError";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import useDataTable from "@/components/ui/data-table/hook";
@@ -56,35 +53,7 @@ export default function CreatePageManufacturingOrderTable(
     ids: selectedPOIsIds,
   });
 
-  const moPaginatedList = useMemo(() => {
-    if (fullDetailMOsResponse?.data) {
-      const calculatedMoPaginatedList = fullDetailMOsResponse.data.map((mo) => {
-        if (check.string(mo.purchaseOrderItem)) {
-          throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
-        }
-
-        const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
-        const calculatedPOI = recalculatePurchaseOrderItem({
-          ...mo.purchaseOrderItem,
-          ware: calculatedWare
-        })
-
-        return {
-          ...mo,
-          purchaseOrderItem: calculatedPOI,
-          finishingProcesses: [],
-        }
-      })
-      return {
-        data: calculatedMoPaginatedList
-      }
-    }
-    else {
-      return undefined
-    }
-  }, [fullDetailMOsResponse?.data])
-
-  const rawTableData: (Omit<ManufacturingOrderTableDataType, "isEdited">)[] = moPaginatedList?.data ?? []
+  const rawTableData: (Omit<ManufacturingOrderTableDataType, "isEdited">)[] = fullDetailMOsResponse?.data ?? []
 
   const { table, tableComponent, tableData, resetTable } = useDataTable({
     data: rawTableData,
@@ -123,7 +92,7 @@ export default function CreatePageManufacturingOrderTable(
   if (check.undefined(selectedPOIsIds) || selectedPOIsIds.length < 1) {
     return (
       <Center>
-        <Box bgColor={"colorPalette.muted"} px={3} py={2} rounded={"md"}>
+        <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
           <Stack alignItems={"center"}>
             <Text>Các lệnh sẽ được tạo sẽ được hiển thị ở đây</Text>
             <Text>Hãy chọn PO Item bên trên</Text>
@@ -133,7 +102,7 @@ export default function CreatePageManufacturingOrderTable(
     );
   }
 
-  // const moPaginatedList = selectedManufacturingOrders;
+  // const fullDetailMOsResponse?.data = selectedManufacturingOrders;
 
   if (isFetchingList) {
     return (
@@ -150,7 +119,7 @@ export default function CreatePageManufacturingOrderTable(
     return <DataFetchError h={"full"} flexGrow={1} />;
   }
 
-  if (check.undefined(moPaginatedList)) {
+  if (check.undefined(fullDetailMOsResponse?.data)) {
     return <DataFetchError h={"full"} flexGrow={1} />;
   }
 

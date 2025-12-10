@@ -1,4 +1,5 @@
 "use client";
+import { QueryListFullDetailsManufacturingOrderRequestSortOptions } from "@/types/enums/QueryListFullDetailsManufacturingOrderRequestSortOptions";
 import { Store, useStore } from "@tanstack/react-store";
 import React, { createContext, useContext } from "react";
 
@@ -25,6 +26,7 @@ interface StoreState {
   limit: number;
   totalItems: number;
   search: string;
+  sorts: string[],
   tab: TabType;
   hoveredRowId: string | null;
   selectedOrderId: string | null;
@@ -60,6 +62,10 @@ const initialState: StoreState = {
   page: 1,
   limit: 10,
   totalItems: 0,
+  sorts: [
+    QueryListFullDetailsManufacturingOrderRequestSortOptions.Code + "_desc",
+    QueryListFullDetailsManufacturingOrderRequestSortOptions.Directive + "_asc"
+  ],
   search: "",
   tab: "all",
   hoveredRowId: null,

@@ -6,8 +6,6 @@ import check from "check-types"
 import { Heading, HStack, Stack, Text } from "@chakra-ui/react"
 import { numToFixedBounded } from "@/utils/numToFixedBounded"
 
-const MIN_DISPLAY_WEIGHT = 0.0001
-
 export type ManufacturingOrderDetailsDialogManufacturingDetailsAdditionalDetailsProps = {
   order: Serialized<ManufacturingOrder>
   // processes: Serialized<OrderFinishingProcess>[]

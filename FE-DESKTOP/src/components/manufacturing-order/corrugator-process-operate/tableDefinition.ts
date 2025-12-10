@@ -32,7 +32,7 @@ export type ManufacturingOrderCorrugatorOperatePageTableData = {
   manufacturingDate: Date,
   requestedDatetime: Date | null,
   manufacturingDateAdjustment: Date | null,
-  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined,
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder> } | undefined,
   purchaseOrderItemId: string,
   initialManufacturedAmount: number,
   numberOfBlanks: number,
@@ -40,7 +40,7 @@ export type ManufacturingOrderCorrugatorOperatePageTableData = {
 
 export const convertSerializedMOToManufacturingOrderCorrugatorOperatePageTableData = (
   mo: Serialized<ManufacturingOrder>,
-  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined): ManufacturingOrderCorrugatorOperatePageTableData => {
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder> } | undefined): ManufacturingOrderCorrugatorOperatePageTableData => {
   const ware = getPopulatedWare(mo)
   const subPo = getPopulatedSubPo(mo)
   const po = getPopulatedPo(mo)
