@@ -1,18 +1,17 @@
 "use client"
 import { ManufacturingOrderTrackPanelListReducerStore } from "@/context/manufacturing-order/manufacturingOrderTrackPanelContext";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
-import { useGetFullDetailManufacturingOrdersQuery, useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice";
-import { Box, Button, HStack, Link, Stack, Text } from "@chakra-ui/react";
+import { useGetFullDetailManufacturingOrdersQuery } from "@/service/api/manufacturingOrderApiSlice";
+import { Box, Button, Center, HStack, Link, Spinner, Stack, Text } from "@chakra-ui/react";
 import check from "check-types";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import ManufacturingOrderTrackPanelListItem from "./ListItem";
 import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
+import DataFetchError from "@/components/common/DataFetchError";
 
 export default function ManufacturingOrderTrackPanelList() {
-  const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
-  const { useDispatch, useSelector } = ManufacturingOrderTrackPanelListReducerStore;
-  const dispatch = useDispatch();
+  const { useSelector } = ManufacturingOrderTrackPanelListReducerStore;
   const page = useSelector(s => s.page)
   const limit = useSelector(s => s.limit)
   const search = useSelector(s => s.search)
@@ -21,6 +20,7 @@ export default function ManufacturingOrderTrackPanelList() {
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
+    refetch: refetchList,
   } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: search, approvalStatuses: [ManufacturingOrderApprovalStatus.Approved] });
 
   const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
@@ -38,16 +38,13 @@ export default function ManufacturingOrderTrackPanelList() {
           throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
         }
 
-        // Unpopulated field
         const process = orderFinishingProcessesResponse?.data.filter(p => (p.manufacturingOrder as unknown as string) === mo._id)
 
         return {
           ...mo,
           finishingProcesses: process ?? [],
-          // purchaseOrderItem: calculatedPOI,
         }
       })
-
 
       return {
         ...fullDetailMOPaginatedResponse.data,
@@ -61,39 +58,28 @@ export default function ManufacturingOrderTrackPanelList() {
 
   const moList = useMemo(() => moPaginatedList?.data ?? [], [moPaginatedList?.data])
 
-  return (
-    <Box
-      m={5}
-      p={2}
-      flexGrow={1}
-    >
-      <Box
-        px={3}
-        py={5}
-        rounded={"md"}
-        colorPalette={"gray"}
-        backgroundColor={"colorPalette.subtle"}
-      >
-        <Stack
-          gapY={2}
-          minHeight={"80vh"}
-        >
-          <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-            Quản lý lệnh
-          </Text>
-          <HStack justifyContent={"end"}>
-
-            <Link href="/manufacturing-order/list">
-              <Button size={"sm"} colorPalette={"cyan"}>Xem danh sách chi tiết</Button>
-            </Link>
-          </HStack>
-
-          <Stack flexGrow={1}>
-            {moList.map(mo => <ManufacturingOrderTrackPanelListItem key={mo._id} mo={mo} processes={mo.finishingProcesses} />)}
-          </Stack>
-
+  if (isFetchingList || isOrderFinishingProcessFetchingList) {
+    return (
+      <Center h={"full"} flex={1} flexGrow={1}>
+        <Stack alignItems={"center"}>
+          <Spinner size="xl" />
+          <Text>Đang tải danh sách lệnh</Text>
         </Stack>
-      </Box>
-    </Box>
+      </Center>
+    );
+  }
+
+  if (fetchError || orderFinishingProcessFetchError) {
+    return <DataFetchError h={"full"} flexGrow={1} refetch={refetchList} />;
+  }
+
+  if (check.undefined(moPaginatedList)) {
+    return <DataFetchError h={"full"} flexGrow={1} />;
+  }
+
+  return (
+    <Stack flexGrow={1}>
+      {moList.map(mo => <ManufacturingOrderTrackPanelListItem key={mo._id} mo={mo} processes={mo.finishingProcesses} />)}
+    </Stack>
   )
 }

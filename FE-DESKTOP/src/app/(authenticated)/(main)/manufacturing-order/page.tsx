@@ -11,7 +11,7 @@ export default function ManufacturingOrderDashboard() {
       <ManufacturingOrderDialogProvider>
         <Box mt={5}>
           <Heading>Dashboard lệnh sản xuất</Heading>
-          <ManufacturingOrderTrackPanel.List />
+          <ManufacturingOrderTrackPanel.Panel />
         </Box>
         <ManufacturingOrderDetailsDialog />
         <ManufacturingOrderOrderDetailsConfirmDialog />

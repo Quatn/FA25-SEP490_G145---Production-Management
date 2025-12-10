@@ -24,7 +24,6 @@ import {
 import { QueryListManufacturingOrderResponseDto } from "./dto/query-list.dto";
 import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
 import { ApiResponseWith } from "@/common/decorators/swagger-response-docs";
-import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { PurchaseOrderItemService } from "../purchase-order-item/purchase-order-item.service";
 import { QueryListFullDetailsPurchaseOrderItemByIdsRequestDto } from "../purchase-order-item/dto/query-list-full-details-by-ids.dto";
 import {
@@ -40,7 +39,6 @@ import {
 } from "./dto/update-many-orders.dto";
 import { AssembledUpdateManufacturingOrderRequestDto } from "./dto/update-order-request.dto";
 import { QueryListFullDetailsManufacturingOrderRequestDto } from "./dto/query-list-full-details.dto";
-import check from "check-types";
 import { PrivilegedJwtAuthGuard } from "@/common/guards/privileged-jwt-auth.guard";
 import { manufacturingOrderGetPrivileges } from "./manufacturing-order-module-access-privileges";
 import { buildFullDetailsMOFilterFromDto } from "./utils/buildFullDetailsFilterFromDto";

@@ -11,6 +11,18 @@ import {
 import { Transform } from "class-transformer";
 import { BadRequestException } from "@nestjs/common";
 
+export enum QueryListFullDetailsManufacturingOrderRequestSortOptions {
+  Code = "code",
+  Directive = "directive",
+  ApprovalStatus = "approval_status",
+  OperativeStatus = "operative_status",
+  Amount = "amount",
+  Inventory = "inventory",
+  OrderDate = "order_date",
+  DeliveryDate = "delivery_date",
+  ManufacturingDate = "manufacturing_date"
+}
+
 export class QueryListFullDetailsManufacturingOrderRequestDto extends PageRequest {
   @ApiProperty({ required: false })
   @IsOptional()
