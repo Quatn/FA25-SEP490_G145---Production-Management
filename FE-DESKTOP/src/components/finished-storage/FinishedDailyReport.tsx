@@ -138,6 +138,8 @@ const FinishedDailyReport: React.FC = () => {
                             search={search}
                             limit={importReport.limit}
                             page={importReport.page}
+                            startDate={startDate}
+                            endDate={endDate}
                             totalPages={importReport.totalPages}
                             handlePageChange={setPage}
                             dailyItems={importReport.data}
@@ -151,6 +153,8 @@ const FinishedDailyReport: React.FC = () => {
                             search={search}
                             limit={exportReport.limit}
                             page={exportReport.page}
+                            startDate={startDate}
+                            endDate={endDate}
                             totalPages={exportReport.totalPages}
                             handlePageChange={setPage}
                             dailyItems={exportReport.data}

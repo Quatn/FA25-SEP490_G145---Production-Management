@@ -1,6 +1,6 @@
-import SemiFinishedList from "@/components/semi-finished-storage/SemiFinishedList";
-import { Box, Button, Stack, Text } from "@chakra-ui/react";
-export default function SemiFinishedGoodHome() {
+import SemiFinishedInventoryAuditList from "@/components/semi-finished-storage/SemiFinishedInventoryAuditList";
+import { Box, Stack, Text } from "@chakra-ui/react";
+export default function SemiFinishedGoodInventoryAuditHome() {
   return (
     <Box
       m={5}
@@ -11,11 +11,11 @@ export default function SemiFinishedGoodHome() {
     >
       <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
         <Text fontWeight={"bold"} color={"black"}>
-          KHO PHÔI
+          KIỂM KÊ KHO PHÔI
         </Text>
       </Stack>
       <Stack ms={3} mt={5}>
-        <SemiFinishedList/>
+        <SemiFinishedInventoryAuditList />
       </Stack>
     </Box>
   );

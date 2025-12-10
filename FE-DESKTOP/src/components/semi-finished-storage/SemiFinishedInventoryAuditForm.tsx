@@ -13,14 +13,11 @@ import { formatDateForInput } from "@/utils/dateUtils";
 interface Props {
     isOpen: boolean;
     manufacturingOrders: ManufacturingOrder[];
-    semiFinishedGoods: SemiFinishedGood[];
     onClose: () => void;
-    initialData?: SemiFinishedGood | undefined;
-    transactionType?: "IMPORT" | "EXPORT";
 }
 
 
-const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initialData, transactionType, manufacturingOrders, semiFinishedGoods }) => {
+const SemiFinishedInventoryAuditForm: React.FC<Props> = ({ isOpen, onClose, manufacturingOrders }) => {
     const [createSemiTransaction] = useCreateSemiFinishedGoodTransactionMutation();
 
     const userState: UserState | null = useAppSelector((state) =>
@@ -29,18 +26,17 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
     const today = new Date();
     const localDate = formatDateForInput(today);
 
+    const [corrugatorProcessAmount, setCorrugatorProcessAmount] = useState(0);
+
     const [transaction, setTransaction] = useState<CreateSemiFinishedGoodTransactionDTO>({
         manufacturingOrder: "",
         manufacturingOrderCode: "",
-        transactionType: transactionType ?? "IMPORT",
+        transactionType: "ADJUSTMENT",
         quantity: 0,
         transactionDate: localDate,
-        exportedTo: undefined,
-        employee: "",
+        employee: userState?.employeeId ?? "",
         note: "",
     });
-
-    const [corrugatorProcessAmount, setCorrugatorProcessAmount] = useState(0);
 
     const { contains } = useFilter({ sensitivity: "base" });
     const initialMOs = manufacturingOrders.map((mo) => {
@@ -58,71 +54,19 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
         filter: contains,
     });
 
-    const handlUpdateImportBoundAmount = (id?: string) => {
-        if (id) {
-            const mo = manufacturingOrders.find(item => item._id == id);
-            const sf = semiFinishedGoods.find(item => item.manufacturingOrder == id);
-            const currentSFAmount = sf?.importedQuantity ?? 0;
-            const amount = mo?.corrugatorProcess.manufacturedAmount ?? 0;
-            const availableAmount = Math.max((amount - currentSFAmount), 0);
-            setCorrugatorProcessAmount(availableAmount);
-        } else setCorrugatorProcessAmount(0);
-    }
-
-    useEffect(() => {
-        if (isOpen) {
-            const mo = initialData?.manufacturingOrder as ManufacturingOrder;
-            const ware = (mo?.purchaseOrderItem as PurchaseOrderItem)?.ware;
-
-            const initExportedTo =
-                initialData?.exportedTo ??
-                (ware?.finishingProcesses?.length === 0
-                    ? "KHO THANH PHAM"
-                    : "KHAU HOAN THIEN");
-
-            setTransaction({
-                manufacturingOrder: mo?._id ?? "",
-                manufacturingOrderCode: mo?.code ?? "",
-                transactionType: transactionType ?? "IMPORT",
-                quantity: 0,
-                transactionDate: localDate,
-                exportedTo: initialData?.exportedTo ?? initExportedTo,
-                employee: userState?.employeeId ?? "",
-                note: "",
-            });
-
-            handlUpdateImportBoundAmount(mo?._id);
-        }
-    }, [isOpen]);
-
     const handleSubmit = async () => {
         if (!transaction.manufacturingOrder) {
             toaster.create({ title: "Lỗi", description: "Chưa chọn mã lệnh", type: "error", closable: true });
             return;
         }
 
-        if (transaction.transactionType == 'EXPORT' && transaction.exportedTo == undefined) {
-            toaster.create({ title: "Lỗi", description: "Chưa chọn bộ phận xuất phôi", type: "error", closable: true });
+        if (transaction.quantity < 0) {
+            toaster.create({ title: "Lỗi", description: "Số lượng phải lớn hơn hoặc bằng 0", type: "error", closable: true });
             return;
         }
 
-        if (transaction.transactionType == 'EXPORT' && transaction.quantity > (initialData?.currentQuantity ?? 0)) {
-            toaster.create({ title: "Lỗi", description: `Số lượng vượt quá tồn kho (hiện tại ${initialData?.currentQuantity})`, type: "error", closable: true });
-            return;
-        }
-
-        if (transaction.transactionType == 'IMPORT' && transaction.quantity > corrugatorProcessAmount) {
-            toaster.create({ title: "Lỗi", description: `Nhập phôi không được vượt quá sản lượng sóng (hiện tại ${corrugatorProcessAmount})`, type: "error", closable: true });
-            return;
-        }
-
-        if (transaction.transactionDate == "") {
-            toaster.create({ title: "Lỗi", description: "Vui lòng chọn ngày thao tác", type: "error", closable: true });
-            return;
-        }
-
-        if (transaction.quantity <= 0) {
-            toaster.create({ title: "Lỗi", description: "Số lượng phải lớn hơn 0", type: "error", closable: true });
+        if (transaction.quantity > corrugatorProcessAmount) {
+            toaster.create({ title: "Lỗi", description: "Số lượng không được lớn hơn sản lượng sóng", type: "error", closable: true });
             return;
         }
 
@@ -132,41 +76,40 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                 transactionType: transaction.transactionType,
                 quantity: transaction.quantity,
                 transactionDate: transaction.transactionDate,
-                exportedTo: transaction.exportedTo,
                 employee: transaction.employee,
                 note: transaction.note
             } as any).unwrap();
             toaster.create({
                 title: "Thành công",
-                description: `${transaction.transactionType === "IMPORT" ? "Nhập" : "Xuất"} kho 
-                ${transaction.quantity} phôi lệnh ${transaction.manufacturingOrderCode}`,
+                description: `Tạo phiếu kiểm kê kho phôi lệnh ${transaction.manufacturingOrderCode} thành công`,
                 type: "success",
                 closable: true
             });
             moFilter("");
+            setTransaction({
+                manufacturingOrder: "",
+                manufacturingOrderCode: "",
+                transactionType: "ADJUSTMENT",
+                quantity: 0,
+                transactionDate: localDate,
+                employee: userState?.employeeId ?? "",
+                note: "",
+            });
             setCorrugatorProcessAmount(0);
             onClose();
         } catch (err: any) {
-            const msg = err?.data?.message || err?.message || "Lỗi khi tạo giao dịch";
+            const msg = err?.data?.message || err?.message || "Lỗi khi tạo phiếu kiểm kê";
             toaster.create({ title: "Lỗi", description: msg, type: "error", closable: true });
         }
     };
 
-    const manufacturingOrder = initialData?.manufacturingOrder as ManufacturingOrder;
-
-    const purchaseOrderItem = manufacturingOrder?.purchaseOrderItem as PurchaseOrderItem;
-
-    const customerCode =
-        purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.customer?.code ?? "";
-
-    const poCode =
-        purchaseOrderItem?.subPurchaseOrder?.purchaseOrder?.code ?? "";
-
-    const moCode = manufacturingOrder?.code ?? "";
-
-    const defaultMoDisplay = initialData
-        ? `${moCode} - ${customerCode} - ${poCode}`
-        : "";
+    const handlUpdateAdjustmentBoundAmount = (id?: string) => {
+        if (id) {
+            const mo = manufacturingOrders.find(item => item._id == id);
+            const amount = mo?.corrugatorProcess.manufacturedAmount ?? 0;
+            setCorrugatorProcessAmount(amount);
+        } else setCorrugatorProcessAmount(0);
+    }
 
     return (
         <Dialog.Root open={isOpen} onOpenChange={onClose} size="md">
@@ -176,7 +119,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                     <Dialog.Content>
                         <Dialog.Header>
                             <Dialog.Title>
-                                {transaction.transactionType === "IMPORT" ? "Phiếu Nhập" : "Phiếu Xuất"} Kho Phôi
+                                Phiếu Kiểm Kê Kho Phôi
                             </Dialog.Title>
                         </Dialog.Header>
                         <Dialog.Body>
@@ -185,11 +128,9 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                                     <Field.Label fontSize="lg">Mã lệnh</Field.Label>
                                     <Combobox.Root
                                         collection={moCollection}
-                                        defaultInputValue={defaultMoDisplay}
-                                        readOnly={!!initialData}
                                         onInputValueChange={(e) => moFilter(e.inputValue)}
                                         onValueChange={(details) => {
-                                            handlUpdateImportBoundAmount(details.value[0]);
+                                            handlUpdateAdjustmentBoundAmount(details.value[0]);
                                             setTransaction({ ...transaction, manufacturingOrder: details.value[0] });
                                         }}>
                                         <Combobox.Control>
@@ -220,14 +161,13 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
                                     <Input
                                         size="lg"
                                         type="text"
-                                        value={transaction.transactionType === "IMPORT" ? "Nhập Phôi" : "Xuất Phôi"}
+                                        value={"Kiểm kê"}
                                         readOnly
                                     />
                                 </Field.Root>
 
                                 <Field.Root invalid={transaction.quantity <= 0} orientation="vertical">
                                     <Field.Label fontSize="lg">Số lượng</Field.Label>
-
                                     <NumberInput.Root
                                         size="lg"
                                         width="200px"
@@ -269,30 +209,14 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
 
                                         <NumberInput.Control />
                                     </NumberInput.Root>
-                                    {transactionType == 'EXPORT' &&
-                                        <Field.HelperText fontSize={'md'} fontWeight={'bold'}>
-                                            Tồn kho hiện tại: {initialData?.currentQuantity}
-                                        </Field.HelperText>
-                                    }
-                                    {transactionType == 'IMPORT' &&
-                                        <Field.HelperText fontSize={'md'} fontWeight={'bold'}>
-                                            Sản lượng sóng hiện tại (trừ tồn kho): {corrugatorProcessAmount}
-                                        </Field.HelperText>
-                                    }
+                                    <Field.HelperText fontSize={'md'} fontWeight={'bold'}>
+                                        Đối chiếu sản lượng sóng: {corrugatorProcessAmount}
+                                    </Field.HelperText>
                                 </Field.Root>
-
-                                {transaction.transactionType == 'EXPORT' &&
-                                    <Field.Root orientation="vertical">
-                                        <Field.Label>Xuất phôi</Field.Label>
-                                        <Input
-                                            value={transaction.exportedTo}
-                                            disabled />
-                                    </Field.Root>
-                                }
 
                                 <Field.Root orientation="vertical">
                                     <Field.Label fontSize="lg">
-                                        Ngày {transaction.transactionType === "IMPORT" ? "nhập" : "xuất"}
+                                        Ngày kiểm kê
                                     </Field.Label>
                                     <Input
                                         type="date"
@@ -324,4 +248,4 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
     );
 };
 
-export default SemiFinishedTransactionForm;
+export default SemiFinishedInventoryAuditForm;

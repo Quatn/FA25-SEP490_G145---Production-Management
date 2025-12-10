@@ -5,6 +5,7 @@ import { SemiFinishedGood } from "@/types/SemiFinishedGood";
 import { formatDate, hourGap } from "@/utils/dateUtils";
 import { safeGet } from "@/utils/storagesUtils";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
+import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 
 interface Props {
     page: number;
@@ -47,7 +48,7 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                     },
                 }}>
                 <Table.Header>
-                    <Table.Row>
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader rowSpan={2} w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
@@ -91,15 +92,15 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                         <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>
                             Số giờ tồn kho
                         </Table.ColumnHeader>
-                        <Table.ColumnHeader rowSpan={2}>
+                        {/* <Table.ColumnHeader rowSpan={2}>
                             Ghi chú
-                        </Table.ColumnHeader>
+                        </Table.ColumnHeader> */}
                         <Table.ColumnHeader rowSpan={2} textAlign={"center"}>
                             Thao tác
                         </Table.ColumnHeader>
 
                     </Table.Row>
-                    <Table.Row >
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader colSpan={1}>Khách hàng</Table.ColumnHeader>
                         <Table.ColumnHeader colSpan={1}>Đơn hàng</Table.ColumnHeader>
                         <Table.ColumnHeader colSpan={1}>Mã hàng</Table.ColumnHeader>
@@ -111,7 +112,7 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
 
                 <Table.Body>
                     {items.map((item, index) => {
-                        const mo = item.manufacturingOrder;
+                        const mo = item.manufacturingOrder as ManufacturingOrder;
                         const poItem = mo?.purchaseOrderItem;
                         const amount = (poItem as PurchaseOrderItem)?.amount ?? 0;
                         const importDiff = item.importedQuantity - amount;
@@ -215,9 +216,9 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                                     textAlign={"center"}>
                                     {hoursInStock}
                                 </Table.Cell>
-                                <Table.Cell>
+                                {/* <Table.Cell>
                                     {item.note}
-                                </Table.Cell>
+                                </Table.Cell> */}
 
                                 <Table.Cell>
                                     <Group gap={3}>

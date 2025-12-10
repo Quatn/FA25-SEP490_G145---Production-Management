@@ -18,7 +18,7 @@ const PrintColorTable = ({ page, limit, items, onEdit, onDetail, onDelete }: Pri
         <Table.ScrollArea borderWidth="1px" rounded="md" mt={5}>
             <Table.Root size="lg" showColumnBorder stickyHeader interactive colorPalette="orange" tableLayout="auto" w="100%">
                 <Table.Header>
-                    <Table.Row>
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader w="1%" textAlign="center">STT</Table.ColumnHeader>
                         <Table.ColumnHeader>Mã Màu In</Table.ColumnHeader>
                         <Table.ColumnHeader>Mô tả</Table.ColumnHeader>

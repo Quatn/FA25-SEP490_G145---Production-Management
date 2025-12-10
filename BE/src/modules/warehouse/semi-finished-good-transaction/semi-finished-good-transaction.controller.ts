@@ -32,6 +32,16 @@ export class SemiFinishedGoodTransactionController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
+  @Get('list-adjustment')
+  @ApiOperation({ summary: 'List semi finished inventory audit transactions' })
+  async findAdjustment(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+  ): Promise<BaseResponse<PaginatedList<SemiFinishedGoodTransaction>>> {
+    const docs = await this.semiFinishedGoodTransactionService.findAdjustmentTransaction(page, limit);
+    return { success: true, message: 'Fetch successful', data: docs };
+  }
+
   @Get('detail/:id')
   @ApiOperation({ summary: 'Transaction detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<SemiFinishedGoodTransaction>> {

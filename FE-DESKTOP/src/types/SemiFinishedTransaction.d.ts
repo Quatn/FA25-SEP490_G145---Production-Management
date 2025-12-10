@@ -1,4 +1,5 @@
 import { Employee } from "./Employee";
+import { SemiFinishedGood } from "./SemiFinishedGood";
 
 export type SemiFinishedGoodTransaction = {
   _id?: string;
@@ -17,7 +18,7 @@ export type SemiFinishedGoodTransaction = {
 export interface SemiFinishedGoodTransactionHistory {
   index: number;
   createdDate: string;
-  transactionType: 'IMPORT' | 'EXPORT';
+  transactionType: 'IMPORT' | 'EXPORT' | 'ADJUSTMENT';
   totalImport: number;
   totalExport: number;
   totalCurrent: number;
@@ -29,7 +30,7 @@ export interface SemiFinishedGoodTransactionHistory {
 export interface CreateSemiFinishedGoodTransactionDTO {
   manufacturingOrder: string;
   manufacturingOrderCode?: string;
-  transactionType: "IMPORT" | "EXPORT";
+  transactionType: "IMPORT" | "EXPORT" | "ADJUSTMENT";
   quantity: number;
   transactionDate: string;
   exportedTo?: string;

@@ -29,7 +29,7 @@ const PaperColorRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore
                 w="100%"
             >
                 <Table.Header>
-                    <Table.Row>
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>

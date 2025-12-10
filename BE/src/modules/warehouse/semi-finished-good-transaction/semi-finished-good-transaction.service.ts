@@ -8,6 +8,11 @@ import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
 import { SemiFinishedGood, SemiFinishedGoodDocument, SemiFinishedGoodSchema } from '../schemas/semi-finished-good.schema';
 import { TransactionType } from '../enums/transaction-type.enum';
 import { GetSemiFinishedGoodTransactionsDto } from './dto/get-semi-finished-good-transaction.dto';
+import { ManufacturingOrderSchema } from '@/modules/production/schemas/manufacturing-order.schema';
+import { PurchaseOrderItemSchema } from '@/modules/production/schemas/purchase-order-item.schema';
+import { SubPurchaseOrderSchema } from '@/modules/production/schemas/sub-purchase-order.schema';
+import { PurchaseOrderSchema } from '@/modules/production/schemas/purchase-order.schema';
+import { dot } from 'node:test/reporters';
 
 type SoftSFGTransaction = SemiFinishedGoodTransaction & SoftDeleteDocument;
 
@@ -17,6 +22,73 @@ export class SemiFinishedGoodTransactionService {
     @InjectModel(SemiFinishedGoodTransaction.name) private readonly sfgTransactionModel: Model<SemiFinishedGoodTransactionDocument>,
     @InjectModel(SemiFinishedGood.name) private readonly semiModel: Model<SemiFinishedGoodDocument>,
   ) { }
+
+  async findAdjustmentTransaction(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    const filter = { transactionType: 'ADJUSTMENT' };
+
+    const employeePath = SemiFinishedGoodTransactionSchema.path('employee');
+    const sfgPath = SemiFinishedGoodTransactionSchema.path('semiFinishedGood');
+    const moPath = SemiFinishedGoodSchema.path("manufacturingOrder");
+    const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
+    const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
+    const warePath = PurchaseOrderItemSchema.path("ware");
+    const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
+    const customerPath = PurchaseOrderSchema.path("customer");
+
+    const populate = [{
+      path: sfgPath.path,
+      populate:
+      {
+        path: moPath.path,
+        populate: [
+          {
+            path: poiPath.path,
+            populate: [
+              {
+                path: warePath.path,
+              },
+              {
+                path: subpoPath.path,
+                populate: [
+                  {
+                    path: poPath.path,
+                    populate: { path: customerPath.path },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }
+    },
+    {
+      path: employeePath.path,
+    }
+    ];
+
+    const [data, totalItems] = await Promise.all([
+      this.sfgTransactionModel
+        .find(filter)
+        .skip(skip)
+        .limit(limit)
+        .populate(populate)
+        .sort({ 'updatedAt': -1 })
+        .exec(),
+      this.sfgTransactionModel.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil((totalItems || 0) / limit);
+    return {
+      data,
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
 
   async findPaginated(dto: GetSemiFinishedGoodTransactionsDto) {
     const {
@@ -88,6 +160,8 @@ export class SemiFinishedGoodTransactionService {
 
     if (transactionType) {
       filterQuery.transactionType = transactionType;
+    } else {
+      filterQuery.transactionType = { $in: ["IMPORT", "EXPORT"] };
     }
 
     if (startDate && endDate) {
@@ -226,11 +300,15 @@ export class SemiFinishedGoodTransactionService {
     else if (dto.transactionType === 'EXPORT') {
       finalQuantity = initialQuantity - dto.quantity;
       semi.exportedQuantity += dto.quantity;
+    } else if (dto.transactionType === 'ADJUSTMENT') {
+      finalQuantity = dto.quantity;
     }
-    else if (dto.transactionType === 'ADJUSTMENT') finalQuantity = dto.quantity;
+    // else if (dto.transactionType === 'ADJUSTMENT') finalQuantity = dto.quantity;
 
-    semi.currentQuantity = finalQuantity;
-    await semi.save();
+    if (dto.transactionType != 'ADJUSTMENT') {
+      semi.currentQuantity = finalQuantity;
+      await semi.save();
+    }
 
     const doc = new this.sfgTransactionModel({
       semiFinishedGood: semi._id,
@@ -456,14 +534,20 @@ export class SemiFinishedGoodTransactionService {
   }
 
   async restore(id: string) {
-    const doc = await this.sfgTransactionModel.findById(id) as SoftSFGTransaction;
+    const doc = await this.sfgTransactionModel.findOne({
+      _id: id,
+      isDeleted: true
+    }) as SoftSFGTransaction;
     if (!doc) throw new NotFoundException('Transaction not found');
     await doc.restore();
     return { success: true };
   }
 
   async removeHard(id: string) {
-    const res = await this.sfgTransactionModel.findByIdAndDelete(id);
+    const res = await this.sfgTransactionModel.findOne({
+      _id: id,
+      isDeleted: true
+    });
     if (!res) throw new NotFoundException('Transaction not found');
     return { success: true };
   }
