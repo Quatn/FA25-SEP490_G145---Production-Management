@@ -1,4 +1,4 @@
-export interface ProductType extends BaseSchema {
+export interface ProductType {
   _id?: string;
   code: string;
   name: string;

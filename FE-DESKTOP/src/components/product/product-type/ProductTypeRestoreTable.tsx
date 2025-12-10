@@ -1,30 +1,22 @@
 import { Table, Group, Button, Icon } from "@chakra-ui/react";
-import { FaEdit, FaEye } from "react-icons/fa";
-import { FaTrashCan } from "react-icons/fa6";
+import { FaEye } from "react-icons/fa";
 import { ProductType } from "@/types/ProductType";
+import { TbRestore } from "react-icons/tb";
+import React from "react";
 
 interface Props {
     page: number;
     limit: number;
     items: ProductType[];
-    onEdit: (item: ProductType) => void;
+    onRestore: (item: ProductType) => void;
     onDetail: (item: ProductType) => void;
-    onDelete: (item: ProductType) => void;
 }
 
-const ProductTypeTable = ({
-    page,
-    limit,
-    items,
-    onEdit,
-    onDetail,
-    onDelete
-}: Props) => {
+const ProductTypeRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, onDetail }) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
             rounded="md"
-            height="701px"
             mt={5}
         >
             <Table.Root
@@ -41,8 +33,8 @@ const ProductTypeTable = ({
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
-                        <Table.ColumnHeader>Mã loại sản phẩm</Table.ColumnHeader>
-                        <Table.ColumnHeader>Tên loại sản phẩm</Table.ColumnHeader>
+                        <Table.ColumnHeader>Mã sản phẩm</Table.ColumnHeader>
+                        <Table.ColumnHeader>Tên sản phẩm</Table.ColumnHeader>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             Thao tác
                         </Table.ColumnHeader>
@@ -55,7 +47,6 @@ const ProductTypeTable = ({
                             <Table.Cell textAlign="center">{(page - 1) * limit + index + 1}</Table.Cell>
                             <Table.Cell>{item.code}</Table.Cell>
                             <Table.Cell>{item.name}</Table.Cell>
-
                             <Table.Cell>
                                 <Group gap={5}>
                                     <Button
@@ -70,23 +61,13 @@ const ProductTypeTable = ({
                                     </Button>
                                     <Button
                                         variant="surface"
-                                        colorPalette="yellow"
-                                        onClick={() => onEdit(item)}
+                                        colorPalette="green"
+                                        onClick={() => onRestore(item)}
                                     >
                                         <Icon>
-                                            <FaEdit />
+                                            <TbRestore />
                                         </Icon>
-                                        Sửa
-                                    </Button>
-                                    <Button
-                                        variant="surface"
-                                        colorPalette="red"
-                                        onClick={() => onDelete(item)}
-                                    >
-                                        <Icon>
-                                            <FaTrashCan />
-                                        </Icon>
-                                        Xóa
+                                        Khôi phục
                                     </Button>
                                 </Group>
                             </Table.Cell>
@@ -98,4 +79,4 @@ const ProductTypeTable = ({
     );
 };
 
-export default ProductTypeTable;
+export default ProductTypeRestoreTable;

@@ -4,7 +4,7 @@ import { UpdateProductTypeDto } from './dto/update-product-type.dto';
 import { ProductType, ProductTypeDocument } from '../schemas/product-type.schema';
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 
 type SoftProductType = ProductType & SoftDeleteDocument;
 
@@ -15,34 +15,43 @@ export class ProductTypeService {
     private readonly pModel: Model<ProductType>,
   ) { }
 
-  async checkDuplicates(dto: CreateProductTypeDto | UpdateProductTypeDto) {
-    const duplicates = await this.pModel.aggregate([
-      {
-        $match: {
-          $or: [
-            { code: dto.code },
-            { name: dto.name },
-          ],
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          code: 1,
-          name: 1,
-        },
-      },
-    ]);
+  async checkDuplicates(
+    dto: CreateProductTypeDto | UpdateProductTypeDto,
+    excludeId?: string,
+  ) {
+    const code = dto.code?.trim();
+    const name = dto.name?.trim();
+
+    const orConditions: FilterQuery<ProductTypeDocument>[] = [];
+    if (code) orConditions.push({ code });
+    if (name) orConditions.push({ name });
+
+    if (orConditions.length === 0) return;
+
+    const query: FilterQuery<ProductTypeDocument> = { $or: orConditions };
+
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+
+    const duplicates = await this.pModel
+      .find(query)
+      .select('code name')
+      .lean();
 
     if (duplicates.length > 0) {
-      const duplicateFields: string[] = [];
-      duplicates.forEach((d) => {
-        if (d.code === dto.code) duplicateFields.push('Mã loại sản phẩm');
-        if (d.name === dto.name) duplicateFields.push('Tên loại sản phẩm');
+      const duplicateFields = new Set<string>();
+
+      duplicates.forEach((doc) => {
+        if (code && doc.code === code) duplicateFields.add('Mã loại sản phẩm');
+        if (name && doc.name === name) duplicateFields.add('Tên loại sản phẩm');
       });
-      throw new BadRequestException(
-        `Trùng lặp giá trị ở các trường: ${duplicateFields.join(', ')}`,
-      );
+
+      if (duplicateFields.size > 0) {
+        throw new BadRequestException(
+          `Trùng lặp giá trị ở các trường: ${Array.from(duplicateFields).join(', ')}`,
+        );
+      }
     }
   }
 
@@ -52,7 +61,8 @@ export class ProductTypeService {
     const query: any = {};
 
     if (search && search.trim() !== '') {
-      const regex = new RegExp(search.trim(), 'i');
+      const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escapedSearch.trim(), 'i');
       query.$or = [
         { code: regex },
         { name: regex },
@@ -60,12 +70,43 @@ export class ProductTypeService {
     }
 
     const [data, totalItems] = await Promise.all([
-      this.pModel.find(query).skip(skip).limit(limit).exec(),
-      this.pModel.countDocuments(query),
+      this.pModel
+        .find(query)
+        .skip(skip)
+        .limit(limit)
+        .sort({ 'updatedAt': -1 })
+        .exec(),
+      this.pModel.countDocuments(),
     ]);
 
     const totalPages = Math.ceil(totalItems / limit);
 
+    return {
+      data,
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
+
+  async findDeleted(page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const filter = { isDeleted: true };
+
+    const [data, totalItems] = await Promise.all([
+      this.pModel
+        .find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort({ 'updatedAt': -1 })
+        .exec(),
+      this.pModel.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil((totalItems || 0) / limit);
     return {
       data,
       page,
@@ -88,48 +129,22 @@ export class ProductTypeService {
   }
 
   async createOne(dto: CreateProductTypeDto): Promise<ProductTypeDocument> {
-    try {
-      const doc = new this.pModel(dto);
-      return await doc.save();
-    } catch (err: any) {
-      if (err.code === 11000 && err.keyValue) {
-        const field = Object.keys(err.keyValue)[0];
-        const value = err.keyValue[field];
-        let message = '';
+    dto.code = dto.code.trim();
+    dto.name = dto.name.trim();
 
-        if (field === 'code') {
-          message = `Mã loại sản phẩm "${value}" đã tồn tại.`;
-        } else {
-          message = `Giá trị "${value}" ở trường "${field}" đã tồn tại.`;
-        }
+    await this.checkDuplicates(dto);
 
-        throw new BadRequestException(message);
-      }
-      throw err;
-    }
+    const doc = new this.pModel(dto);
+    return await doc.save();
   }
 
   async updateOne(id: string, dto: UpdateProductTypeDto): Promise<ProductTypeDocument> {
-    try {
-      const updated = await this.pModel.findByIdAndUpdate(id, dto, { new: true });
-      if (!updated) throw new NotFoundException('Product type not found');
-      return updated as ProductTypeDocument;
-    } catch (err: any) {
-      if (err.code === 11000 && err.keyValue) {
-        const field = Object.keys(err.keyValue)[0];
-        const value = err.keyValue[field];
-        let message = '';
-
-        if (field === 'code') {
-          message = `Mã loại sản phẩm "${value}" đã tồn tại.`;
-        } else {
-          message = `Giá trị "${value}" ở trường "${field}" đã tồn tại.`;
-        }
-
-        throw new BadRequestException(message);
-      }
-      throw err;
-    }
+    dto.code = dto.code?.trim();
+    dto.name = dto.name?.trim();
+    await this.checkDuplicates(dto, id);
+    const updated = await this.pModel.findByIdAndUpdate(id, dto, { new: true });
+    if (!updated) throw new NotFoundException('Product type not found');
+    return updated;
   }
 
   async softDelete(id: string) {
@@ -140,14 +155,20 @@ export class ProductTypeService {
   }
 
   async restore(id: string) {
-    const doc = await this.pModel.findById(id) as SoftProductType;
+    const doc = await this.pModel.findOne({
+      _id: id,
+      isDeleted: true
+    }) as SoftProductType;
     if (!doc) throw new NotFoundException('Product type not found');
     await doc.restore();
     return { success: true };
   }
 
   async removeHard(id: string) {
-    const result = await this.pModel.findByIdAndDelete(id);
+    const result = await this.pModel.findOneAndDelete({
+      _id: id,
+      isDeleted: true
+    });
     if (!result) throw new NotFoundException('Product type not found');
     return { success: true };
   }

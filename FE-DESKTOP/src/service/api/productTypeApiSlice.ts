@@ -26,6 +26,17 @@ export const ProductTypeApiSlice = apiSlice.injectEndpoints({
                 providesTags: ["ProductType"],
             }),
 
+        getDeletedProductType: builder.query<BaseResponse<PaginatedList<ProductType>>, { page?: number; limit?: number }>(
+            {
+                query: ({ page = 1, limit = 10 }) => ({
+                    url: `${PRODUCT_TYPE_URL}/list-deleted`,
+                    method: "GET",
+                    params: { page, limit },
+                    credentials: "include",
+                }),
+                providesTags: ["ProductType"],
+            }),
+
         addProductType: builder.mutation<{ success: boolean; message: string }, ProductType>({
             query: (body) => ({
                 url: `${PRODUCT_TYPE_URL}/create`,
@@ -60,6 +71,30 @@ export const ProductTypeApiSlice = apiSlice.injectEndpoints({
             },
             invalidatesTags: ["ProductType"],
         }),
+
+        deleteHardProductType: builder.mutation<{ success: boolean; message: string }, ProductType>({
+            query: (body) => {
+                const id = body._id;
+                return {
+                    url: `${PRODUCT_TYPE_URL}/delete-hard/${id}`,
+                    method: "DELETE",
+                    credentials: "include",
+                };
+            },
+            invalidatesTags: ["ProductType"],
+        }),
+
+        restoreProductType: builder.mutation<{ success: boolean; message: string }, ProductType>({
+            query: (body) => {
+                const id = body._id;
+                return {
+                    url: `${PRODUCT_TYPE_URL}/restore/${id}`,
+                    method: "PATCH",
+                    credentials: "include",
+                };
+            },
+            invalidatesTags: ["ProductType"],
+        }),
     }),
 });
 
@@ -69,4 +104,7 @@ export const {
     useGetProductTypeQuery,
     useUpdateProductTypeMutation,
     useDeleteProductTypeMutation,
+    useDeleteHardProductTypeMutation,
+    useGetDeletedProductTypeQuery,
+    useRestoreProductTypeMutation,
 } = ProductTypeApiSlice;

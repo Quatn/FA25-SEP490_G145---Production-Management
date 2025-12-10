@@ -128,6 +128,12 @@ const initialCollection = createTreeCollection<Node>({
             href: "/manufacturing-order/corrugator-process-operate",
             children: [],
           },
+          {
+            id: "order-finishing-process",
+            name: "Order Finishing Process",
+            href: "/order-finishing-process",
+            children: [],
+          },
         ],
       },
       {
@@ -269,7 +275,13 @@ const initialCollection = createTreeCollection<Node>({
           {
             id: "product-type-list",
             name: "Product Type List",
-            href: "/product-type",
+            href: "/product-type/list",
+            children: [],
+          },
+          {
+            id: "product-type-restore-list",
+            name: "Product Type Restore List",
+            href: "/product-type/restore-list",
             children: [],
           },
         ],
