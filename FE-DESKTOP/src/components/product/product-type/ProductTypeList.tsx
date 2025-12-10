@@ -11,6 +11,7 @@ import ProductTypeTable from "./ProductTypeTable";
 import ProductTypeFormDialog from "./ProductTypeFormDialog";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import { useAddProductTypeMutation, useDeleteProductTypeMutation, useGetProductTypeQuery, useUpdateProductTypeMutation } from "@/service/api/productTypeApiSlice";
+import ProductTypeDetailDialog from "./ProductTypeDetailDialog";
 
 
 const ProductTypeList: React.FC = () => {
@@ -35,6 +36,7 @@ const ProductTypeList: React.FC = () => {
     const totalPages = dataResp?.data?.totalPages ?? 1;
 
     const [formOpen, setFormOpen] = useState(false);
+    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [alertOpen, setAlertOpen] = useState(false);
     const [selected, setSelected] = useState<ProductType | undefined>(undefined);
 
@@ -45,19 +47,36 @@ const ProductTypeList: React.FC = () => {
         setFormOpen(true);
     };
 
+    const handleOpenDetailDialog = (item?: ProductType) => {
+        setSelected(item);
+        setDetailDialogOpen(true);
+    };
+
     const handleOpenAlert = (item: ProductType) => {
         setSelected(item);
         setAlertOpen(true);
     }
 
-    const handleCloseForm = () => setFormOpen(false);
-    const handleCloseAlert = () => setAlertOpen(false);
+    const handleCloseForm = () => {
+        setFormOpen(false);
+        setSelected(undefined);
+    }
+
+    const handleCloseDetailDialog = () => {
+        setDetailDialogOpen(false);
+        setSelected(undefined);
+    };
+
+    const handleCloseAlert = () => {
+        setAlertOpen(false);
+        setSelected(undefined);
+    }
 
     const handleMutation = async (
         fn: Function,
         successMessage: string,
         errorMessage: string
-    ) => {
+    ): Promise<boolean> => {
         try {
             await fn();
             toaster.create({
@@ -66,6 +85,7 @@ const ProductTypeList: React.FC = () => {
                 type: "success",
                 closable: true,
             });
+            return true;
         } catch (error: any) {
             const msg = error?.data?.message || error?.message || "Đã xảy ra lỗi, thử lại sau";
             toaster.create({
@@ -74,11 +94,12 @@ const ProductTypeList: React.FC = () => {
                 type: "error",
                 closable: true,
             });
+            return false;
         }
     };
 
     const handleAdd = async (data: ProductType) => {
-        handleMutation(
+        return await handleMutation(
             () => addItem(data).unwrap(),
             `Đã lưu loại sản phẩm ${data.code} - ${data.name}`,
             'Lưu thất bại',
@@ -86,7 +107,7 @@ const ProductTypeList: React.FC = () => {
     }
 
     const handleUpdate = async (data: ProductType) => {
-        handleMutation(
+        return await handleMutation(
             () => updateItem(data).unwrap(),
             `Đã cập nhật loại sản phẩm ${data.code} - ${data.name}`,
             'Cập nhật thất bại',
@@ -94,7 +115,7 @@ const ProductTypeList: React.FC = () => {
     }
 
     const handleDelete = async (data: ProductType) => {
-        handleMutation(
+        return await handleMutation(
             () => deleteItem(data).unwrap(),
             `Xóa loại sản phẩm ${data.code} - ${data.name}`,
             'Xóa thất bại',
@@ -131,6 +152,12 @@ const ProductTypeList: React.FC = () => {
                 onAdd={(d) => handleAdd(d)}
                 onUpdate={(d) => handleUpdate(d)} />
 
+            <ProductTypeDetailDialog
+                isOpen={detailDialogOpen}
+                onClose={handleCloseDetailDialog}
+                initialData={selected}
+            />
+
             <ProductTypeAlertDialog
                 isOpen={alertOpen}
                 onClose={handleCloseAlert}
@@ -158,6 +185,7 @@ const ProductTypeList: React.FC = () => {
                         limit={limit}
                         items={items}
                         onEdit={handleOpenForm}
+                        onDetail={handleOpenDetailDialog}
                         onDelete={handleOpenAlert}
                     />
 
