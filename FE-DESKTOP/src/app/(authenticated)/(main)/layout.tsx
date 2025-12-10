@@ -321,6 +321,12 @@ const initialCollection = createTreeCollection<Node>({
         name: "Semi Finished Good",
         children: [
           {
+            id: "semi-finished-good-dashboard",
+            name: "Semi Finished Good Dashboard",
+            href: "/semi-finished-good/dashboard",
+            children: [],
+          },
+          {
             id: "semi-finished-good-list",
             name: "Semi Finished Good List",
             href: "/semi-finished-good/list",

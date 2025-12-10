@@ -68,6 +68,15 @@ export class SemiFinishedGoodTransactionController {
     return this.semiFinishedGoodTransactionService.getDailyEmployees(date);
   }
 
+  @Get('chart/daily')
+  async getDailyStats(@Query('date') date: string) {
+    const data = await this.semiFinishedGoodTransactionService.getDailyStatistics(date);
+    return {
+      success: true,
+      data: data,
+    };
+  }
+
   @Get('report/daily')
   @ApiOperation({ summary: 'Get daily report of transactions' })
   async getSFGDailyReport(

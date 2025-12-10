@@ -72,7 +72,7 @@ const SemiFinishedInventoryAuditTable: React.FC<Props> = ({ page, limit, items }
                     </Table.Row>
                     <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader colSpan={1}>Khách hàng</Table.ColumnHeader>
-                        <Table.ColumnHeader colSpan={1}>Đơn hàng</Table.ColumnHeader>
+                        <Table.ColumnHeader colSpan={1}>Mã đơn hàng</Table.ColumnHeader>
                         <Table.ColumnHeader colSpan={1}>Mã hàng</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>
