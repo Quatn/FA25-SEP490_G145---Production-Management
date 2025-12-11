@@ -22,7 +22,7 @@ export function enumObjectToPrioritySortPipe(
       },
     },
     {
-      $sort: { sortPriority: sortDirection },
+      $sort: { sortPriority: -sortDirection },
     },
     {
       $unset: "sortPriority",

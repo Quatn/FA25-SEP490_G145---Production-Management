@@ -16,7 +16,7 @@ const SortOptionNameMap: Record<QueryListFullDetailsManufacturingOrderRequestSor
   amount: "Số lượng",
 }
 
-export default function ManufacturingOrderFullDetailTableFilterMenu() {
+export default function ManufacturingOrderFullDetailTableSortMenu() {
   const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
   const dispatch = useDispatch();
   const sorts = useSelector(s => s.sorts);
@@ -31,36 +31,58 @@ export default function ManufacturingOrderFullDetailTableFilterMenu() {
     return undefined;
   }).filter(s => !check.undefined(s))
 
-  const items = Object.values(QueryListFullDetailsManufacturingOrderRequestSortOptions).sort(s => selectedSortOptions.includes(s) ? -1 : 1)
+  const merge = [selectedSortOptions, Object.values(QueryListFullDetailsManufacturingOrderRequestSortOptions)]
+
+  const set = new Set(merge.flat())
+  const items = [...set] as QueryListFullDetailsManufacturingOrderRequestSortOptions[]
+
+  const handleAddSortOption = (o: string) => {
+    dispatch({ type: "ADD_SORT", payload: o })
+  }
+
+  const removeSortOption = (o: string) => {
+    dispatch({ type: "REMOVE_SORT", payload: o })
+  }
 
   return (
     <Menu.Root closeOnSelect={false}>
       <Menu.Trigger asChild>
         <Button variant="outline" bg={"bg"} size="sm">
-          Điều chỉnh bộ lọc
+          Sắp xếp
         </Button>
       </Menu.Trigger>
       <Portal>
         <Menu.Positioner>
           <Menu.Content>
-            {items.map(item => {
+            {items.map((item, index) => {
               const isAsc = sorts.find(s => s.startsWith(item))?.endsWith("_asc")
               const isDesc = sorts.find(s => s.startsWith(item))?.endsWith("_desc")
 
               return (
-                <Menu.Item key={item} value={item} justifyContent={"space-between"} >
+                <Menu.Item key={index} value={index + ""} justifyContent={"space-between"} >
                   {
                     selectedSortOptions.includes(item) &&
-                    <Button size={"sm"} variant="ghost" colorPalette={"red"}><LuX /></Button>
+                    <Button size={"sm"} variant="ghost" colorPalette={"red"} onClick={() => removeSortOption(item + (isAsc ? "_asc" : "_desc"))}><LuX /></Button>
                   }
                   <Text>
                     {SortOptionNameMap[item]}
                   </Text>
                   <Group>
-                    <Button size={"sm"} variant="outline" bg={{ base: isAsc ? "blue.subtle" : "bg" }}><LuArrowUpWideNarrow /></Button>
-                    <Button size={"sm"} variant="outline" bg={{ base: isDesc ? "red.subtle" : "bg" }}><LuArrowDownNarrowWide /></Button>
+                    <Button size={"sm"} variant="outline" bg={{ base: isDesc ? "blue.subtle" : "bg" }} onClick={() => {
+                      if (isAsc) dispatch({ type: "CHANGE_SORT", payload: item + "_asc" })
+                      else if (!isDesc) {
+                        handleAddSortOption(item + "_desc")
+                      }
+                    }}><LuArrowUpWideNarrow /></Button>
+                    <Button size={"sm"} variant="outline" bg={{ base: isAsc ? "red.subtle" : "bg" }} onClick={() => {
+                      if (isDesc) dispatch({ type: "CHANGE_SORT", payload: item + "_desc" })
+                      else if (!isAsc) {
+                        handleAddSortOption(item + "_asc")
+                      }
+                    }}><LuArrowDownNarrowWide /></Button>
                   </Group>
-                </Menu.Item>)
+                </Menu.Item>
+              )
             })}
           </Menu.Content>
         </Menu.Positioner>

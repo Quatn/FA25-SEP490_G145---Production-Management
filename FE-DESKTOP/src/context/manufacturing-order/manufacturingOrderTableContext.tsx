@@ -44,6 +44,10 @@ type StoreAction =
   | { type: "SET_LIMIT"; payload: number }
   | { type: "SET_TOTAL_ITEMS"; payload: number }
   | { type: "SET_SEARCH"; payload: string }
+  | { type: "SET_SORTS"; payload: string[] }
+  | { type: "ADD_SORT"; payload: string }
+  | { type: "CHANGE_SORT"; payload: string }
+  | { type: "REMOVE_SORT"; payload: string }
   | { type: "SET_TAB"; payload: TabType }
   | { type: "SET_HOVERED_ROW_ID"; payload: string | null }
   | { type: "SET_SELECTED_ORDER_ID"; payload: string | null }
@@ -88,6 +92,25 @@ function reducer(state: StoreState, action: StoreAction): StoreState {
       return { ...state, totalItems: action.payload };
     case "SET_SEARCH":
       return { ...state, search: action.payload };
+    case "SET_SORTS":
+      return { ...state, sorts: action.payload };
+    case "ADD_SORT":
+      return { ...state, sorts: [...state.sorts, action.payload] };
+    case "REMOVE_SORT":
+      return { ...state, sorts: state.sorts.filter(s => s !== action.payload) };
+    case "CHANGE_SORT":
+      return {
+        ...state, sorts: state.sorts.map(s => {
+          if (s === action.payload) {
+            if (s.endsWith("_asc"))
+              return s.slice(0, -"_asc".length) + "_desc"
+
+            if (s.endsWith("_desc"))
+              return s.slice(0, -"_desc".length) + "_asc"
+          }
+          return s
+        })
+      };
     case "SET_TAB":
       return { ...state, tab: action.payload };
     case "SET_HOVERED_ROW_ID":

@@ -19,7 +19,7 @@ import {
   UpdateManufacturingOrderRequestDto,
 } from "./dto/update-order-request.dto";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
-import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
+import { FullDetailManufacturingOrderDto, PopulatedPurchaseOrderItem, PopulatedWare } from "./dto/full-details-orders.dto";
 import {
   PurchaseOrderItem,
   PurchaseOrderItemDocument,
@@ -53,6 +53,8 @@ import { UnpopulatedFieldError } from "@/common/errors/unpopulated-field.error";
 import { ProductionRecalculateService } from "../common/recalculate/recalculate.service";
 import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type.schema";
 import { queryAllByPaperTypesUsagePipeline } from "./aggregate-pipes/query-all-by-paper-types-usage";
+import { recalculateWare } from "../ware/business-logics/recalculate-ware";
+import { recalculatePurchaseOrderItem } from "../purchase-order-item/business-logics/recalculate-poi";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -254,7 +256,7 @@ export class ManufacturingOrderService {
     const mos: FullDetailManufacturingOrderDto[] = purchaseOrderItems.map(
       (poi, index): FullDetailManufacturingOrderDto => ({
         code: codeGenerator.getCode(index),
-        purchaseOrderItem: poi,
+        purchaseOrderItem: recalculatePurchaseOrderItem({...poi, ware: recalculateWare(poi.ware) as PopulatedWare}) as PopulatedPurchaseOrderItem,
         approvalStatus: ManufacturingOrderApprovalStatus.Draft,
         overallStatus: OrderStatus.NOTSTARTED,
         corrugatorProcess: {
@@ -295,7 +297,7 @@ export class ManufacturingOrderService {
       }),
     );
 
-    return mos;
+    return mos.map((mo) => recalculateManufacturingOrder(mo) as FullDetailManufacturingOrderDto);
   }
 
   // This might not work, just use createMany for everything

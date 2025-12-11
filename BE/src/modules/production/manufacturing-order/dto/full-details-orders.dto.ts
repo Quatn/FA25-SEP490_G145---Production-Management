@@ -31,7 +31,7 @@ class PopulatedPurchaseOrder extends PurchaseOrder {
   }
 }
 
-class PopulatedWare extends Ware {
+export class PopulatedWare extends Ware {
   @ApiProperty({
     type: FluteCombination,
     description: "Populated fluteCombination",
@@ -106,7 +106,7 @@ class PopulatedSubPurchaseOrder extends SubPurchaseOrder {
   }
 }
 
-class PopulatedPurchaseOrderItem extends PurchaseOrderItem {
+export class PopulatedPurchaseOrderItem extends PurchaseOrderItem {
   @ApiProperty({
     type: PopulatedSubPurchaseOrder,
     description: "Populated subPurchaseOrder",

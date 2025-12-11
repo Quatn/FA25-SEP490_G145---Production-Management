@@ -2,7 +2,7 @@
 
 import { useDataTableDispatch, useDataTableSelector } from "@/components/ui/data-table/Provider";
 import { Checkbox, HStack, Stack } from "@chakra-ui/react";
-import ManufacturingOrderFullDetailTableFilterMenu from "./FilterMenu";
+import ManufacturingOrderFullDetailTableSortMenu from "./SortMenu";
 
 export default function ManufacturingOrderTableControl() {
   // const { useDispatch, useSelector } = ManufacturingOrderTableReducerStore;
@@ -19,7 +19,7 @@ export default function ManufacturingOrderTableControl() {
         </Checkbox.Root>
       </HStack>
       <HStack>
-        <ManufacturingOrderFullDetailTableFilterMenu />
+        <ManufacturingOrderFullDetailTableSortMenu />
       </HStack>
     </Stack>
   );
