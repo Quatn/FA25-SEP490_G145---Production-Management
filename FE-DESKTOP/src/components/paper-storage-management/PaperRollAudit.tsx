@@ -13,6 +13,7 @@ import {
 import { useGetAllPaperColorsQuery } from "@/service/api/paperColorApiSlice";
 import { useGetAllPaperSuppliersQuery } from "@/service/api/paperSupplierApiSlice";
 import { useGetAllPaperTypesQuery } from "@/service/api/paperTypeApiSlice";
+import { toaster } from "@/components/ui/toaster";
 
 function getIdFromDoc(doc: any): string | undefined {
   if (!doc && doc !== 0) return undefined;
@@ -224,13 +225,19 @@ export const PaperRollAudit: React.FC = () => {
     const dbId = row.dbId;
     const value = inputs[dbId];
     if (value === undefined || value === null || String(value).trim() === "") {
-      return alert(
-        "Vui lòng nhập trọng lượng (TL hiện tại) trước khi Thay đổi."
-      );
+      toaster.create({
+        description: "Vui lòng nhập trọng lượng trước khi Thay đổi.",
+        type: "error",
+      });
+      return;
     }
     const newW = Number(value);
     if (!Number.isFinite(newW) || newW < 0) {
-      return alert("Vui lòng nhập trọng lượng hợp lệ (>= 0).");
+      toaster.create({
+        description: "Vui lòng nhập trọng lượng hợp lệ (>= 0).",
+        type: "error",
+      });
+      return;
     }
 
     // disable button for this row
@@ -265,10 +272,16 @@ export const PaperRollAudit: React.FC = () => {
       // update the input value to reflect persisted weight
       setInputs((p) => ({ ...p, [dbId]: String(newW) }));
 
-      alert("Thay đổi thành công (Kiểm kê).");
+      toaster.create({
+        description: "Thay đổi thành công (Kiểm kê).",
+        type: "success",
+      });
     } catch (err: any) {
       console.error("Kiểm kê failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Kiểm kê thất bại");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Kiểm kê thất bại",
+        type: "error",
+      });
     } finally {
       setPending((p) => ({ ...p, [dbId]: false }));
     }

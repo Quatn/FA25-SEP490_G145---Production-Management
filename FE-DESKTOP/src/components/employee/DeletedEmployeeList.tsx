@@ -5,6 +5,8 @@ import {
   useGetDeletedEmployeesQuery,
   useRestoreEmployeeMutation,
 } from "@/service/api/employeeApiSlice";
+import { toaster } from "@/components/ui/toaster";
+import { useConfirm } from "@/components/common/ConfirmModal";
 
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
@@ -28,6 +30,9 @@ const DeletedEmployeeList: React.FC = () => {
     limit,
   });
   const [restore] = useRestoreEmployeeMutation();
+
+  // confirm hook
+  const showConfirm = useConfirm();
 
   // normalize response shapes (supports: { data: { data: [...] } }, { data: [...] }, [...], etc.)
   let items: any[] = [];
@@ -55,20 +60,37 @@ const DeletedEmployeeList: React.FC = () => {
   };
 
   const handleRestore = async (idRaw: any) => {
-    if (!confirm("Restore this employee?")) return;
+    const ok = await showConfirm({
+      title: "Restore employee",
+      description: "Restore this employee?",
+      confirmText: "Restore",
+      cancelText: "Cancel",
+      destructive: false,
+    });
+    if (!ok) return;
+
     try {
       const id =
         getIdFromDoc(idRaw) ??
         (typeof idRaw === "object" ? idRaw._id ?? idRaw.id : idRaw);
-      if (!id) return alert("No id provided");
+      if (!id) {
+        toaster.create({ description: "No id provided", type: "error" });
+        return;
+      }
       const res: any = await restore(id).unwrap();
-      alert(res?.message ?? "Restored");
+      toaster.create({
+        description: res?.message ?? "Restored",
+        type: "success",
+      });
       try {
         refetch();
       } catch {}
     } catch (err: any) {
       console.error("Restore failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Restore failed");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Restore failed",
+        type: "error",
+      });
     }
   };
 

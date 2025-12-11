@@ -24,6 +24,9 @@ import { useGetAllProductTypeQuery } from "@/service/api/productTypeApiSlice";
 import ProductModal from "./ProductModal";
 import ProductAddItemCodeModal from "./ProductAddItemCodeModal";
 
+import { toaster } from "@/components/ui/toaster";
+import { useConfirm } from "@/components/common/ConfirmModal";
+
 export default function ProductList() {
   // Load wares from API instead of mock data
   const { data: waresData, isLoading: isLoadingWares } = useGetWaresQuery({
@@ -122,6 +125,9 @@ export default function ProductList() {
     wares: [],
   };
 
+  // confirm hook (ConfirmProvider must be mounted above this component)
+  const showConfirm = useConfirm();
+
   // 🔹 Hàm mở modal chính (Thêm/Sửa Sản phẩm)
   const handleOpenProductModal = (product: any = null) => {
     if (product) {
@@ -200,10 +206,17 @@ export default function ProductList() {
       }).unwrap();
 
       // Đóng modal sau khi cập nhật thành công
+      toaster.create({
+        description: "Thêm mã hàng thành công",
+        type: "success",
+      });
       handleCloseAddItemCodeModal();
     } catch (error) {
       console.error("Không thể thêm mã hàng vào sản phẩm:", error);
-      window.alert("Đã xảy ra lỗi khi thêm mã hàng. Vui lòng thử lại.");
+      toaster.create({
+        description: "Đã xảy ra lỗi khi thêm mã hàng. Vui lòng thử lại.",
+        type: "error",
+      });
     }
   };
 
@@ -216,13 +229,16 @@ export default function ProductList() {
     const product = products.find((p: any) => p._id === productId);
     if (!product) return;
 
-    if (
-      !window.confirm(
-        `Bạn có chắc chắn muốn xóa mã hàng ${
-          itemCode || itemCodeId
-        } khỏi sản phẩm ${product.code || product._id} không?`
-      )
-    ) {
+    const ok = await showConfirm({
+      title: "Xóa mã hàng",
+      description: `Bạn có chắc chắn muốn xóa mã hàng ${
+        itemCode || itemCodeId
+      } khỏi sản phẩm ${product.code || product._id} không?`,
+      confirmText: "Xóa",
+      cancelText: "Hủy",
+      destructive: true,
+    });
+    if (!ok) {
       return;
     }
 
@@ -264,9 +280,17 @@ export default function ProductList() {
         productId: productId,
         body: payload,
       }).unwrap();
+
+      toaster.create({
+        description: "Xóa mã hàng thành công",
+        type: "success",
+      });
     } catch (error) {
       console.error("Không thể xóa mã hàng:", error);
-      window.alert("Đã xảy ra lỗi khi xóa mã hàng. Vui lòng thử lại.");
+      toaster.create({
+        description: "Đã xảy ra lỗi khi xóa mã hàng. Vui lòng thử lại.",
+        type: "error",
+      });
     }
   };
 
@@ -334,22 +358,34 @@ export default function ProductList() {
 
     // Validation
     if (!payload.code || !payload.name) {
-      window.alert("Vui lòng nhập mã sản phẩm và tên sản phẩm.");
+      toaster.create({
+        description: "Vui lòng nhập mã sản phẩm và tên sản phẩm.",
+        type: "error",
+      });
       return;
     }
 
     if (!payload.customer) {
-      window.alert("Vui lòng chọn khách hàng.");
+      toaster.create({
+        description: "Vui lòng chọn khách hàng.",
+        type: "error",
+      });
       return;
     }
 
     if (!payload.productType) {
-      window.alert("Vui lòng chọn loại sản phẩm.");
+      toaster.create({
+        description: "Vui lòng chọn loại sản phẩm.",
+        type: "error",
+      });
       return;
     }
 
     if (!Array.isArray(payload.wares) || payload.wares.length === 0) {
-      window.alert("Vui lòng chọn ít nhất một mã hàng.");
+      toaster.create({
+        description: "Vui lòng chọn ít nhất một mã hàng.",
+        type: "error",
+      });
       return;
     }
 
@@ -357,9 +393,10 @@ export default function ProductList() {
     // When editing, exclude the current product id to allow not changing the code.
     const excludeId = editingProduct._id ? editingProduct._id : null;
     if (isDuplicateCode(payload.code, excludeId)) {
-      window.alert(
-        `Mã sản phẩm "${payload.code}" đã tồn tại. Vui lòng chọn mã khác.`
-      );
+      toaster.create({
+        description: `Mã sản phẩm "${payload.code}" đã tồn tại. Vui lòng chọn mã khác.`,
+        type: "error",
+      });
       return;
     }
 
@@ -369,8 +406,16 @@ export default function ProductList() {
           productId: editingProduct._id,
           body: payload,
         }).unwrap();
+        toaster.create({
+          description: "Cập nhật sản phẩm thành công",
+          type: "success",
+        });
       } else {
         await createProduct(payload).unwrap();
+        toaster.create({
+          description: "Tạo sản phẩm thành công",
+          type: "success",
+        });
       }
       handleCloseProductModal();
     } catch (error: any) {
@@ -379,7 +424,7 @@ export default function ProductList() {
         error?.data?.message ||
         error?.message ||
         "Đã xảy ra lỗi khi lưu sản phẩm. Vui lòng thử lại.";
-      window.alert(errorMessage);
+      toaster.create({ description: errorMessage, type: "error" });
     }
   };
 
@@ -388,21 +433,30 @@ export default function ProductList() {
     productId: string,
     productCode?: string
   ) => {
-    if (
-      !productId ||
-      !window.confirm(
-        `Bạn có chắc chắn muốn xóa sản phẩm ${productCode || productId} không?`
-      )
-    ) {
-      return;
-    }
+    const ok = await showConfirm({
+      title: "Xóa sản phẩm",
+      description: `Bạn có chắc chắn muốn xóa sản phẩm ${
+        productCode || productId
+      } không?`,
+      confirmText: "Xóa",
+      cancelText: "Hủy",
+      destructive: true,
+    });
+    if (!ok) return;
 
     try {
       await deleteProductMutation(productId).unwrap();
       setOpenIds((prev) => prev.filter((id) => id !== productId));
+      toaster.create({
+        description: "Xóa sản phẩm thành công",
+        type: "success",
+      });
     } catch (error) {
       console.error("Không thể xóa sản phẩm:", error);
-      window.alert("Đã xảy ra lỗi khi xóa sản phẩm. Vui lòng thử lại.");
+      toaster.create({
+        description: "Đã xảy ra lỗi khi xóa sản phẩm. Vui lòng thử lại.",
+        type: "error",
+      });
     }
   };
 
