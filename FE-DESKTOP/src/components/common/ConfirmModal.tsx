@@ -1,3 +1,4 @@
+// /components/common/ConfirmModal.tsx
 "use client";
 
 import React, {
@@ -127,30 +128,57 @@ const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({
                 borderRadius: 8,
                 boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
                 padding: 20,
+                // small fallback border in case global CSS was removed
+                border: "1px solid rgba(0,0,0,0.06)",
               }}
             >
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 18, fontWeight: 600 }}>
+                <div
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 600,
+                    color: "#111",
+                    lineHeight: 1.2,
+                  }}
+                >
                   {opts.title}
                 </div>
                 {opts.description && (
-                  <div style={{ marginTop: 6, color: "#444" }}>
+                  <div style={{ marginTop: 6, color: "#444", fontSize: 14 }}>
                     {opts.description}
                   </div>
                 )}
               </div>
 
               <div
-                style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 8,
+                  marginTop: 6,
+                }}
               >
+                {/* Cancel button: keep bootstrap class but provide inline fallback */}
                 <button
                   type="button"
                   className="btn btn-outline-secondary"
                   onClick={handleCancel}
+                  style={{
+                    // fallback styling if .btn is not available
+                    padding: "6px 12px",
+                    borderRadius: 6,
+                    border: "1px solid rgba(108,117,125,0.6)",
+                    background: "transparent",
+                    fontSize: 14,
+                    cursor: "pointer",
+                    // allow bootstrap to override if present
+                    ...(typeof window !== "undefined" ? {} : {}),
+                  }}
                 >
                   {opts.cancelText}
                 </button>
 
+                {/* Confirm button: keep bootstrap class but provide inline fallback */}
                 <button
                   ref={confirmBtnRef}
                   type="button"
@@ -158,6 +186,16 @@ const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({
                     opts.destructive ? "btn btn-danger" : "btn btn-primary"
                   }
                   onClick={handleConfirm}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 6,
+                    fontSize: 14,
+                    cursor: "pointer",
+                    // destructive fallback vs primary fallback
+                    background: opts.destructive ? "#dc3545" : "#0d6efd",
+                    color: "#fff",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                  }}
                 >
                   {opts.confirmText}
                 </button>
