@@ -17,20 +17,22 @@ const SemiFinishedInventoryAuditList: React.FC = () => {
     const limit = 10;
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState(search);
+
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search), 400);
+        return () => clearTimeout(t);
+    }, [search]);
+
     const { data, error, isLoading } = useGetSemiFinishedGoodAdjustmentTransactionQuery({
         page,
         limit,
-        search,
+        search: debouncedSearch,
     });
     const { data: moData, error: moError, isLoading: moLoading } = useGetAllManufacturingOrdersQuery();
     const items: SemiFinishedGoodTransaction[] = (data as any)?.data?.data ?? [];
     const mos: ManufacturingOrder[] = moData?.data ?? [];
     const totalPages = (data as any)?.data?.totalPages ?? 1;
 
-    useEffect(() => {
-        const t = setTimeout(() => setDebouncedSearch(search), 400);
-        return () => clearTimeout(t);
-    }, [search]);
 
     const [txOpen, setTxOpen] = useState(false);
 
