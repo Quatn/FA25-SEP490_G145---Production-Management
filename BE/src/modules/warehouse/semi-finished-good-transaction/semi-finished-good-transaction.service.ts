@@ -5,13 +5,9 @@ import { Model, PipelineStage, Types } from 'mongoose';
 import { CreateSemiFinishedGoodTransactionDto } from './dto/create-semi-finished-good-transaction.dto';
 import { UpdateSemiFinishedGoodTransactionDto } from './dto/update-semi-finished-good-transaction.dto';
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
-import { SemiFinishedGood, SemiFinishedGoodDocument, SemiFinishedGoodSchema } from '../schemas/semi-finished-good.schema';
+import { SemiFinishedGood, SemiFinishedGoodDocument } from '../schemas/semi-finished-good.schema';
 import { TransactionType } from '../enums/transaction-type.enum';
 import { GetSemiFinishedGoodTransactionsDto } from './dto/get-semi-finished-good-transaction.dto';
-import { ManufacturingOrderSchema } from '@/modules/production/schemas/manufacturing-order.schema';
-import { PurchaseOrderItemSchema } from '@/modules/production/schemas/purchase-order-item.schema';
-import { SubPurchaseOrderSchema } from '@/modules/production/schemas/sub-purchase-order.schema';
-import { PurchaseOrderSchema } from '@/modules/production/schemas/purchase-order.schema';
 import { HourlyStockChart } from '@/common/types/semi-finished-good-types';
 
 type SoftSFGTransaction = SemiFinishedGoodTransaction & SoftDeleteDocument;
@@ -23,62 +19,121 @@ export class SemiFinishedGoodTransactionService {
     @InjectModel(SemiFinishedGood.name) private readonly semiModel: Model<SemiFinishedGoodDocument>,
   ) { }
 
-  async findAdjustmentTransaction(page: number = 1, limit: number = 10) {
+  async findAdjustmentTransaction(page: number = 1, limit: number = 10, search?: string) {
     const skip = (page - 1) * limit;
-    const filter = { transactionType: 'ADJUSTMENT' };
 
-    const employeePath = SemiFinishedGoodTransactionSchema.path('employee');
-    const sfgPath = SemiFinishedGoodTransactionSchema.path('semiFinishedGood');
-    const moPath = SemiFinishedGoodSchema.path("manufacturingOrder");
-    const poiPath = ManufacturingOrderSchema.path("purchaseOrderItem");
-    const subpoPath = PurchaseOrderItemSchema.path("subPurchaseOrder");
-    const warePath = PurchaseOrderItemSchema.path("ware");
-    const poPath = SubPurchaseOrderSchema.path("purchaseOrder");
-    const customerPath = PurchaseOrderSchema.path("customer");
-
-    const populate = [{
-      path: sfgPath.path,
-      populate:
+    const populateOptions = [
       {
-        path: moPath.path,
-        populate: [
-          {
-            path: poiPath.path,
-            populate: [
-              {
-                path: warePath.path,
-              },
-              {
-                path: subpoPath.path,
-                populate: [
-                  {
-                    path: poPath.path,
-                    populate: { path: customerPath.path },
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      }
-    },
-    {
-      path: employeePath.path,
-    }
+        path: 'semiFinishedGood',
+        populate: {
+          path: 'manufacturingOrder',
+          populate: [
+            {
+              path: 'purchaseOrderItem',
+              populate: [
+                { path: 'ware' },
+                {
+                  path: 'subPurchaseOrder',
+                  populate: {
+                    path: 'purchaseOrder',
+                    populate: { path: 'customer' }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      { path: 'employee' }
     ];
 
-    const [data, totalItems] = await Promise.all([
-      this.sfgTransactionModel
-        .find(filter)
-        .skip(skip)
-        .limit(limit)
-        .populate(populate)
-        .sort({ 'updatedAt': -1 })
-        .exec(),
-      this.sfgTransactionModel.countDocuments(filter),
-    ]);
+    let data: any = [];
+    let totalItems = 0;
 
-    const totalPages = Math.ceil((totalItems || 0) / limit);
+    if (search && search.trim()) {
+      const regex = new RegExp(search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+      const aggregateResult = await this.sfgTransactionModel.aggregate([
+        { $match: { transactionType: 'ADJUSTMENT' } },
+
+        { $lookup: { from: 'employees', localField: 'employee', foreignField: '_id', as: 'emp' } },
+        { $unwind: { path: '$emp', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'semifinishedgoods', localField: 'semiFinishedGood', foreignField: '_id', as: 'sfg' } },
+        { $unwind: { path: '$sfg', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'manufacturingorders', localField: 'sfg.manufacturingOrder', foreignField: '_id', as: 'mo' } },
+        { $unwind: { path: '$mo', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'purchaseorderitems', localField: 'mo.purchaseOrderItem', foreignField: '_id', as: 'poi' } },
+        { $unwind: { path: '$poi', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'wares', localField: 'poi.ware', foreignField: '_id', as: 'ware' } },
+        { $unwind: { path: '$ware', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'subpurchaseorders', localField: 'poi.subPurchaseOrder', foreignField: '_id', as: 'subpo' } },
+        { $unwind: { path: '$subpo', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'purchaseorders', localField: 'subpo.purchaseOrder', foreignField: '_id', as: 'po' } },
+        { $unwind: { path: '$po', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'customers', localField: 'po.customer', foreignField: '_id', as: 'customer' } },
+        { $unwind: { path: '$customer', preserveNullAndEmptyArrays: true } },
+
+        {
+          $match: {
+            $or: [
+              { 'mo.code': regex },
+              { 'ware.code': regex },
+              { 'po.code': regex },
+              { 'customer.code': regex },
+              { 'emp.code': regex }
+            ]
+          }
+        },
+
+        {
+          $facet: {
+            metadata: [{ $count: 'total' }],
+            data: [
+              { $sort: { updatedAt: -1 } },
+              { $skip: skip },
+              { $limit: limit },
+              { $project: { _id: 1 } }
+            ]
+          }
+        }
+      ]);
+
+      const result = aggregateResult[0];
+      totalItems = result.metadata[0]?.total || 0;
+      const ids = result.data.map((item: any) => item._id);
+
+      if (ids.length > 0) {
+        data = await this.sfgTransactionModel
+          .find({ _id: { $in: ids } })
+          .populate(populateOptions)
+          .sort({ updatedAt: -1 });
+      }
+
+    } else {
+
+      const query = { transactionType: 'ADJUSTMENT' };
+
+      [data, totalItems] = await Promise.all([
+        this.sfgTransactionModel
+          .find(query)
+          .skip(skip)
+          .limit(limit)
+          .populate(populateOptions)
+          .sort({ updatedAt: -1 })
+          .exec(),
+        this.sfgTransactionModel.countDocuments(query),
+      ]);
+    }
+
+    const totalPages = Math.ceil(totalItems / limit);
+
     return {
       data,
       page,

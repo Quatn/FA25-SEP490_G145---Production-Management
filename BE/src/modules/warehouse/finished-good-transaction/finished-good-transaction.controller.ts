@@ -8,6 +8,7 @@ import { BaseResponse } from '@/common/dto/response.dto';
 import { GetFinishedGoodTransactionsDto } from './dto/get-finished-good-transaction.dto';
 import { FinishedGoodDailyReportResponse } from '@/common/types/finished-good-types';
 import { GetFinishedGoodDailyReportDto } from './dto/get-finished-good-daily-report.dto';
+import { PaginatedList } from '@/common/dto/paginated-list.dto';
 
 @Controller('finished-good-transaction')
 export class FinishedGoodTransactionController {
@@ -24,6 +25,17 @@ export class FinishedGoodTransactionController {
       message: 'Fetch successful',
       data: result
     };
+  }
+
+  @Get('list-adjustment')
+  @ApiOperation({ summary: 'List finished inventory audit transactions' })
+  async findAdjustment(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+    @Query('search') search?: string,
+  ): Promise<BaseResponse<PaginatedList<FinishedGoodTransaction>>> {
+    const docs = await this.fgtService.findAdjustmentTransaction(page, limit, search);
+    return { success: true, message: 'Fetch successful', data: docs };
   }
 
   // @UseGuards(JwtAuthGuard)

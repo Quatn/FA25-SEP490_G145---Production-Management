@@ -2,35 +2,36 @@
 
 import React, { useEffect, useState } from "react";
 import { IconButton, Pagination, ButtonGroup, Spinner, Flex, Button, InputGroup, Input, Spacer } from "@chakra-ui/react";
-import { SemiFinishedGoodTransaction } from "@/types/SemiFinishedTransaction";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
-import { useGetSemiFinishedGoodAdjustmentTransactionQuery } from "@/service/api/semiFinishedGoodTransactionApiSlice";
-import SemiFinishedInventoryAuditTable from "./SemiFinishedInventoryAuditTable";
+import FinishedInventoryAuditTable from "./FinishedInventoryAuditTable";
 import { FaPlus } from "react-icons/fa";
 import { toaster } from "@/components/ui/toaster";
-import SemiFinishedInventoryAuditForm from "./SemiFinishedInventoryAuditForm";
+import FinishedInventoryAuditForm from "./FinishedInventoryAuditForm";
 import { useGetAllManufacturingOrdersQuery } from "@/service/api/manufacturingOrderApiSlice";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { useGetFinishedGoodAdjustmentTransactionQuery } from "@/service/api/finishedGoodTransactionApiSlice";
+import { FinishedGoodTransaction } from "@/types/FinishedGoodTransaction";
 
-const SemiFinishedInventoryAuditList: React.FC = () => {
+const FinishedInventoryAuditList: React.FC = () => {
     const [page, setPage] = useState(1);
     const limit = 10;
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState(search);
-    const { data, error, isLoading } = useGetSemiFinishedGoodAdjustmentTransactionQuery({
-        page,
-        limit,
-        search,
-    });
-    const { data: moData, error: moError, isLoading: moLoading } = useGetAllManufacturingOrdersQuery();
-    const items: SemiFinishedGoodTransaction[] = (data as any)?.data?.data ?? [];
-    const mos: ManufacturingOrder[] = moData?.data ?? [];
-    const totalPages = (data as any)?.data?.totalPages ?? 1;
 
     useEffect(() => {
         const t = setTimeout(() => setDebouncedSearch(search), 400);
         return () => clearTimeout(t);
     }, [search]);
+
+    const { data, error, isLoading } = useGetFinishedGoodAdjustmentTransactionQuery({
+        page,
+        limit,
+        search: debouncedSearch,
+    });
+    const { data: moData, error: moError, isLoading: moLoading } = useGetAllManufacturingOrdersQuery();
+    const items: FinishedGoodTransaction[] = (data as any)?.data?.data ?? [];
+    const mos: ManufacturingOrder[] = moData?.data ?? [];
+    const totalPages = (data as any)?.data?.totalPages ?? 1;
 
     const [txOpen, setTxOpen] = useState(false);
 
@@ -51,7 +52,7 @@ const SemiFinishedInventoryAuditList: React.FC = () => {
     return (
         <>
 
-            <SemiFinishedInventoryAuditForm
+            <FinishedInventoryAuditForm
                 isOpen={txOpen}
                 onClose={handleCloseTx}
                 manufacturingOrders={mos}
@@ -78,7 +79,7 @@ const SemiFinishedInventoryAuditList: React.FC = () => {
 
             </Flex>
 
-            <SemiFinishedInventoryAuditTable page={page} limit={limit} items={items} />
+            <FinishedInventoryAuditTable page={page} limit={limit} items={items} />
 
             <Pagination.Root
                 count={totalPages * limit}
@@ -102,4 +103,4 @@ const SemiFinishedInventoryAuditList: React.FC = () => {
     );
 }
 
-export default SemiFinishedInventoryAuditList;
+export default FinishedInventoryAuditList;

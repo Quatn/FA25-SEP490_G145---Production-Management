@@ -37,8 +37,9 @@ export class SemiFinishedGoodTransactionController {
   async findAdjustment(
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10,
+    @Query('search') search?: string,
   ): Promise<BaseResponse<PaginatedList<SemiFinishedGoodTransaction>>> {
-    const docs = await this.semiFinishedGoodTransactionService.findAdjustmentTransaction(page, limit);
+    const docs = await this.semiFinishedGoodTransactionService.findAdjustmentTransaction(page, limit, search);
     return { success: true, message: 'Fetch successful', data: docs };
   }
 

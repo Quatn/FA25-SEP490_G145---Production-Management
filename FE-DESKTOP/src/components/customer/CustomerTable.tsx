@@ -43,9 +43,9 @@ const CustomerTable = ({
                         </Table.ColumnHeader>
                         <Table.ColumnHeader>Mã khách hàng</Table.ColumnHeader>
                         <Table.ColumnHeader>Tên khách hàng</Table.ColumnHeader>
-                        <Table.ColumnHeader>Địa chỉ</Table.ColumnHeader>
                         <Table.ColumnHeader>Số điện thoại</Table.ColumnHeader>
                         <Table.ColumnHeader>Email</Table.ColumnHeader>
+                        <Table.ColumnHeader>Địa chỉ</Table.ColumnHeader>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             Thao tác
                         </Table.ColumnHeader>
@@ -69,7 +69,8 @@ const CustomerTable = ({
                                     </Text>
                                 </Tooltip>
                             </Table.Cell>
-
+                            <Table.Cell>{customer.contactNumber}</Table.Cell>
+                            <Table.Cell>{customer.email}</Table.Cell>
                             <Table.Cell>
                                 <Tooltip content={customer.address} showArrow>
                                     <Text
@@ -82,10 +83,6 @@ const CustomerTable = ({
                                     </Text>
                                 </Tooltip>
                             </Table.Cell>
-
-                            <Table.Cell>{customer.contactNumber}</Table.Cell>
-                            <Table.Cell>{customer.email}</Table.Cell>
-
                             <Table.Cell>
                                 <Group gap={5}>
                                     <Button

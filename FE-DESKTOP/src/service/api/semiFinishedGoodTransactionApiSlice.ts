@@ -20,11 +20,11 @@ export const SemiFinishedGoodTransactionApiSlice = apiSlice.injectEndpoints({
 
         getSemiFinishedGoodAdjustmentTransaction: builder.query<
             BaseResponse<PaginatedList<SemiFinishedGoodTransaction>>,
-            { page?: number; limit?: number }>({
-                query: ({ page = 1, limit = 10 }) => ({
+            { page?: number; limit?: number; search?: string }>({
+                query: ({ page = 1, limit = 10, search }) => ({
                     url: `${SEMI_FINISHED_GOOD_TRANSACTION_URL}/list-adjustment`,
                     method: "GET",
-                    params: { page, limit },
+                    params: { page, limit, search },
                     credentials: "include",
                 }),
                 providesTags: ["SemiFinishedGoodTransaction"],
