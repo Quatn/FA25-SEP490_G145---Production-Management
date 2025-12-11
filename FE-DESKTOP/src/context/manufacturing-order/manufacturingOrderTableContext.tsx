@@ -68,7 +68,7 @@ const initialState: StoreState = {
   totalItems: 0,
   sorts: [
     QueryListFullDetailsManufacturingOrderRequestSortOptions.Code + "_desc",
-    QueryListFullDetailsManufacturingOrderRequestSortOptions.Directive + "_asc"
+    QueryListFullDetailsManufacturingOrderRequestSortOptions.Directive + "_desc"
   ],
   search: "",
   tab: "all",

@@ -19,7 +19,11 @@ import {
   UpdateManufacturingOrderRequestDto,
 } from "./dto/update-order-request.dto";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
-import { FullDetailManufacturingOrderDto, PopulatedPurchaseOrderItem, PopulatedWare } from "./dto/full-details-orders.dto";
+import {
+  FullDetailManufacturingOrderDto,
+  PopulatedPurchaseOrderItem,
+  PopulatedWare,
+} from "./dto/full-details-orders.dto";
 import {
   PurchaseOrderItem,
   PurchaseOrderItemDocument,
@@ -256,7 +260,10 @@ export class ManufacturingOrderService {
     const mos: FullDetailManufacturingOrderDto[] = purchaseOrderItems.map(
       (poi, index): FullDetailManufacturingOrderDto => ({
         code: codeGenerator.getCode(index),
-        purchaseOrderItem: recalculatePurchaseOrderItem({...poi, ware: recalculateWare(poi.ware) as PopulatedWare}) as PopulatedPurchaseOrderItem,
+        purchaseOrderItem: recalculatePurchaseOrderItem({
+          ...poi,
+          ware: recalculateWare(poi.ware) as PopulatedWare,
+        }) as PopulatedPurchaseOrderItem,
         approvalStatus: ManufacturingOrderApprovalStatus.Draft,
         overallStatus: OrderStatus.NOTSTARTED,
         corrugatorProcess: {
@@ -297,7 +304,10 @@ export class ManufacturingOrderService {
       }),
     );
 
-    return mos.map((mo) => recalculateManufacturingOrder(mo) as FullDetailManufacturingOrderDto);
+    return mos.map(
+      (mo) =>
+        recalculateManufacturingOrder(mo) as FullDetailManufacturingOrderDto,
+    );
   }
 
   // This might not work, just use createMany for everything
@@ -482,9 +492,24 @@ export class ManufacturingOrderService {
       })
       .populate(populate);
 
+    const accRes: { updatedAmount: number; code: string }[] = [];
+
     for (const dto of dtos) {
       const doc = items.find((x) => x.id === dto.id);
       if (!doc) continue;
+
+      if (doc.approvalStatus !== ManufacturingOrderApprovalStatus.Draft) {
+        if (dto.manufacturingDirective) {
+          doc.manufacturingDirective = dto.manufacturingDirective;
+          const res = await doc.save();
+
+          accRes.push({
+            updatedAmount: 1,
+            code: res.code,
+          });
+        }
+        continue;
+      }
 
       const poi = doc.purchaseOrderItem as FullDetailPurchaseOrderItemDto;
 
@@ -497,7 +522,10 @@ export class ManufacturingOrderService {
         poi.subPurchaseOrder.purchaseOrder.customer.code,
       );
 
-      if (dto.approvalStatus === ManufacturingOrderApprovalStatus.Approved) {
+      if (
+        doc.approvalStatus !== dto.approvalStatus &&
+        dto.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+      ) {
         const currentCount =
           await this.orderFinishingProcessModel.countDocuments({
             manufacturingOrder: doc._id,
@@ -586,14 +614,18 @@ export class ManufacturingOrderService {
         },
       );
 
-      await doc.save();
+      const res = await doc.save();
+      accRes.push({
+        updatedAmount: 1,
+        code: res.code,
+      });
     }
 
     return {
       requestedAmount: dtos.length,
-      patchedAmount: items.length,
+      patchedAmount: accRes.reduce((acc, i) => acc + i.updatedAmount, 0),
       echo: {
-        codes: items.map((item) => item.code),
+        codes: accRes.map((item) => item.code),
       },
     };
   }

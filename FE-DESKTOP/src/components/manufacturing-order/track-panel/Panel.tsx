@@ -2,6 +2,7 @@ import { Box, Button, Heading, HStack, Stack, Text } from "@chakra-ui/react";
 import Link from "next/link";
 import ManufacturingOrderTrackPanelList from "./List";
 import ManufacturingOrderTrackPanelPagination from "./Pagination";
+import ManufacturingOrderTrackPanelSearchBar from "./SearchBar";
 
 export type ManufacturingOrderTrackPanelProps = {
 }
@@ -34,7 +35,11 @@ export default function ManufacturingOrderTrackPanelBox(_props: ManufacturingOrd
             </Link>
           </HStack>
 
-          <ManufacturingOrderTrackPanelList />
+          <ManufacturingOrderTrackPanelSearchBar />
+
+          <Box flexGrow={1}>
+            <ManufacturingOrderTrackPanelList />
+          </Box>
 
           <ManufacturingOrderTrackPanelPagination />
 

@@ -5,7 +5,7 @@ import { DataTableEditableCellInputTypes } from "./constants";
 import { DataTableEditableCellValueTypes, DataTableMeta } from "./types";
 import { Highlight, ListCollection, Text } from "@chakra-ui/react";
 import check from "check-types";
-import { formatDateToDDMMYYYY, formatDateToYYYYMMDD } from "@/utils/dateUtils";
+import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
 import { useDataTableSelector } from "./Provider";
 import { numToFixedBounded } from "@/utils/numToFixedBounded";
 
@@ -18,19 +18,51 @@ export enum DataTableCellType {
   Select = "SELECT",
 }
 
+export type CellOptions<RowData> = {
+  nullIfNumLessOrEqual?: number,
+  boundFloat?: boolean,
+  parseDate?: boolean,
+  getDisabled?: (data: RowData) => boolean
+}
+
 type CellProps<RowData, TValue> = {
   context: CellContext<RowData, TValue>
   selectCollection?: ListCollection<{ label: string, value: string }>
+  options?: CellOptions<RowData>,
 }
 
-function ReadonlyCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueTypes>) {
-  let value: DataTableEditableCellValueTypes = props.context.cell.getValue()
-  const date = new Date(value)
-  if (check.string(value) && check.date(date)) value = formatDateToDDMMYYYY(date)
+function formatDisplayValue<RowData>(value: DataTableEditableCellValueTypes, options?: CellOptions<RowData>): string {
+  if (check.null(value) || check.undefined(value)) {
+    return ""
+  }
 
   const num = parseFloat(value + "")
 
-  return <Text textWrap={"wrap"}>{check.number(num) ? (num == 0) ? "" : numToFixedBounded(num) : check.assigned(value) ? value + "" : ""}</Text>;
+  if (check.number(options?.nullIfNumLessOrEqual) && num <= options.nullIfNumLessOrEqual) {
+    return ""
+  }
+
+  if (options?.boundFloat && check.number(num)) return numToFixedBounded(num)
+
+  if (check.date(value)) return formatDateToDDMMYYYY(value)
+
+  if (options?.parseDate) {
+    const date = new Date(value)
+    if ((check.string(value) && check.date(date))) return formatDateToDDMMYYYY(date)
+    else return ""
+  }
+
+  return value + ""
+}
+
+function ReadonlyCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueTypes>) {
+  const value: DataTableEditableCellValueTypes = props.context.cell.getValue()
+
+  const displayText = formatDisplayValue(value, props.options)
+
+  return <Text textWrap={"wrap"}>
+    {displayText}
+  </Text>;
 }
 
 function HighlightCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueTypes>) {
@@ -76,10 +108,11 @@ function TextCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueT
   }, [initialValue]);
 
   const allowEdit = useDataTableSelector((state) => state.allowEdit)
+  const disabled = (props.options?.getDisabled)? props.options.getDisabled(row.original) : false
 
   if (allowEdit) {
     if (meta?.editableCellNode) {
-      return meta.editableCellNode({ value, updateTableData, setValue: handleSetValue, onBlur, type: DataTableEditableCellInputTypes.Text })
+      return meta.editableCellNode({ value, updateTableData, setValue: handleSetValue, onBlur, type: DataTableEditableCellInputTypes.Text, disabled })
     }
   }
 
@@ -119,6 +152,7 @@ function SelectCell<RowData>(props: CellProps<RowData, DataTableEditableCellValu
   }, [initialValue]);
 
   const allowEdit = useDataTableSelector((state) => state.allowEdit)
+  const disabled = (props.options?.getDisabled)? props.options.getDisabled(row.original) : false
 
   if (allowEdit) {
     if (meta?.editableCellNode) {
@@ -129,6 +163,7 @@ function SelectCell<RowData>(props: CellProps<RowData, DataTableEditableCellValu
         onBlur,
         type: DataTableEditableCellInputTypes.Select,
         selectCollection: props.selectCollection,
+        disabled,
       })
     }
   }
@@ -164,10 +199,11 @@ function DateCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueT
   }, [initialValue]);
 
   const allowEdit = useDataTableSelector((state) => state.allowEdit)
+  const disabled = (props.options?.getDisabled)? props.options.getDisabled(row.original) : false
 
   if (allowEdit) {
     if (meta?.editableCellNode) {
-      return meta.editableCellNode({ value, updateTableData, setValue: handleSetValue, onBlur, type: DataTableEditableCellInputTypes.Date })
+      return meta.editableCellNode({ value, updateTableData, setValue: handleSetValue, onBlur, type: DataTableEditableCellInputTypes.Date, disabled })
     }
   }
 
@@ -200,10 +236,11 @@ function NumberCell<RowData>(props: CellProps<RowData, DataTableEditableCellValu
   }, [initialValue]);
 
   const allowEdit = useDataTableSelector((state) => state.allowEdit)
+  const disabled = (props.options?.getDisabled)? props.options.getDisabled(row.original) : false
 
   if (allowEdit) {
     if (meta?.editableCellNode) {
-      return meta.editableCellNode({ value, updateTableData, setValue: handleSetValue, onBlur, type: DataTableEditableCellInputTypes.Number })
+      return meta.editableCellNode({ value, updateTableData, setValue: handleSetValue, onBlur, type: DataTableEditableCellInputTypes.Number, disabled })
     }
   }
 

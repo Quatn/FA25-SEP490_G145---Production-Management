@@ -62,6 +62,13 @@ export function fullDetailsFilterAggregationPipeline({
         as: "finishingProcesses",
       },
     },
+    {
+      $match: {
+        finishingProcesses: {
+          $all: [{ $elemMatch: { $ne: true } }],
+        },
+      },
+    },
     ...CompileMOOperativeStatusPipe,
 
     // from poi
@@ -153,6 +160,13 @@ export function fullDetailsFilterAggregationPipeline({
         localField: "purchaseOrderItem.ware.printColors",
         foreignField: "_id",
         as: "purchaseOrderItem.ware.printColors",
+      },
+    },
+    {
+      $match: {
+        "purchaseOrderItem.ware.printColors": {
+          $all: [{ $elemMatch: { $ne: true } }],
+        },
       },
     },
 

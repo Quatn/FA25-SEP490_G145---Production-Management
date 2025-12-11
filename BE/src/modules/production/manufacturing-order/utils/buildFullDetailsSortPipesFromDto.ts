@@ -141,7 +141,5 @@ export const buildFullDetailsMOSortPipesFromDto = (
       }
     })
     .flat();
-
-  console.log(JSON.stringify(sorts));
   return sorts;
 };

@@ -133,6 +133,7 @@ export default function TruncatedManufacturingOrderTable(
       orders: tableData.filter((row) => row.isEdited).map((order) => ({
         id: order._id,
         corrugatorLineAdjustment: order.corrugatorLineAdjustment,
+        approvalStatus: order.approvalStatus,
         manufacturingDirective: order.manufacturingDirective,
         amount: order.amount,
         note: order.note,
