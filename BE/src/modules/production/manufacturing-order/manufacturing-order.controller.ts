@@ -43,6 +43,8 @@ import { PrivilegedJwtAuthGuard } from "@/common/guards/privileged-jwt-auth.guar
 import { manufacturingOrderGetPrivileges } from "./manufacturing-order-module-access-privileges";
 import { buildFullDetailsMOFilterFromDto } from "./utils/buildFullDetailsFilterFromDto";
 import { QueryAllByPaperTypesUsageRequestDto } from "./dto/query-all-by-paper-types-usage.dto";
+import { buildFullDetailsMOSortPipesFromDto } from "./utils/buildFullDetailsSortPipesFromDto";
+import check from "check-types";
 
 const ManufacturingOrderGetRequestGuard = PrivilegedJwtAuthGuard({
   requiredPrivileges: manufacturingOrderGetPrivileges,
@@ -84,6 +86,9 @@ export class ManufacturingOrderController {
     const docs = await this.moService.queryListFullDetails({
       ...query,
       filter: buildFullDetailsMOFilterFromDto(query),
+      sort: check.undefined(query.sort)
+        ? undefined
+        : buildFullDetailsMOSortPipesFromDto(query.sort),
     });
     return {
       success: true,

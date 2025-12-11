@@ -50,46 +50,14 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
     corrugatorProcessStatuses: props.corrugatorProcessStatuses,
   });
 
-  const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
-
-  const {
-    data: orderFinishingProcessesResponse,
-    error: orderFinishingProcessFetchError,
-    isLoading: isOrderFinishingProcessFetchingList,
-  } = useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery({ orders: ids ?? [] });
-
-  const moPaginatedList = useMemo(() => {
-    if (fullDetailMOPaginatedResponse?.data) {
-      const calculatedMoPaginatedList = fullDetailMOPaginatedResponse?.data?.data.map((mo) => {
-        if (check.string(mo.purchaseOrderItem)) {
-          throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
-        }
-
-        const process = orderFinishingProcessesResponse?.data.filter(p => (p.manufacturingOrder as unknown as string) === mo._id)
-
-        return {
-          ...mo,
-          finishingProcesses: process ?? [],
-        }
-      })
-      return {
-        ...fullDetailMOPaginatedResponse.data,
-        data: calculatedMoPaginatedList
-      }
-    }
-    else {
-      return undefined
-    }
-  }, [fullDetailMOPaginatedResponse?.data, orderFinishingProcessesResponse?.data])
-
-  const moList = useMemo(() => moPaginatedList?.data ?? [], [moPaginatedList?.data])
+  const moList = useMemo(() => fullDetailMOPaginatedResponse?.data?.data ?? [], [fullDetailMOPaginatedResponse?.data?.data])
   const getMo = useCallback((id: string) => {
     const mo = moList.find(mo => mo._id === id)
     if (!mo) {
       return undefined
     }
     return {
-      order: mo, processes: mo.finishingProcesses ?? []
+      order: mo
     }
   }, [moList])
 
@@ -131,11 +99,11 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
     devlog("SET_TOTAL_ITEMS effect Triggered")
     dispatch({
       type: "SET_TOTAL_ITEMS",
-      payload: moPaginatedList ? moPaginatedList.totalItems : 0,
+      payload: fullDetailMOPaginatedResponse?.data ? fullDetailMOPaginatedResponse?.data.totalItems : 0,
     });
-  }, [dispatch, moPaginatedList, moPaginatedList?.totalItems]);
+  }, [dispatch, fullDetailMOPaginatedResponse?.data, fullDetailMOPaginatedResponse?.data?.totalItems]);
 
-  if (isFetchingList || isOrderFinishingProcessFetchingList) {
+  if (isFetchingList) {
     return (
       <Center h={"full"} flex={1} flexGrow={1}>
         <Stack alignItems={"center"}>
@@ -146,11 +114,11 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
     );
   }
 
-  if (fetchError || orderFinishingProcessFetchError) {
+  if (fetchError) {
     return <DataFetchError h={"full"} flexGrow={1} errorText={tryGetApiErrorMsg(fetchError)} refetch={refetchTable} />;
   }
 
-  if (check.undefined(moPaginatedList)) {
+  if (check.undefined(fullDetailMOPaginatedResponse?.data)) {
     return <DataFetchError h={"full"} flexGrow={1} refetch={refetchTable} />;
   }
 

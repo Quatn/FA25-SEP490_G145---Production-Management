@@ -7,6 +7,7 @@ import { Highlight, ListCollection, Text } from "@chakra-ui/react";
 import check from "check-types";
 import { formatDateToDDMMYYYY, formatDateToYYYYMMDD } from "@/utils/dateUtils";
 import { useDataTableSelector } from "./Provider";
+import { numToFixedBounded } from "@/utils/numToFixedBounded";
 
 export enum DataTableCellType {
   Readonly = "READONLY",
@@ -24,20 +25,25 @@ type CellProps<RowData, TValue> = {
 
 function ReadonlyCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueTypes>) {
   let value: DataTableEditableCellValueTypes = props.context.cell.getValue()
-  if (check.date(value)) value = formatDateToYYYYMMDD(value)
+  const date = new Date(value)
+  if (check.string(value) && check.date(date)) value = formatDateToDDMMYYYY(date)
 
-  return <Text textWrap={"wrap"}>{value}</Text>;
+  const num = parseFloat(value + "")
+
+  return <Text textWrap={"wrap"}>{check.number(num) ? (num == 0) ? "" : numToFixedBounded(num) : check.assigned(value) ? value + "" : ""}</Text>;
 }
 
 function HighlightCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueTypes>) {
   let value: DataTableEditableCellValueTypes = props.context.cell.getValue()
-  if (check.date(value)) value = formatDateToYYYYMMDD(value)
+  if (check.date(value)) value = formatDateToDDMMYYYY(value)
   const query = useDataTableSelector((state) => state.query)
 
   return (
-    <Highlight query={[query ?? ""]} styles={{ bg: "yellow.emphasized" }}>
-      {value + ""}
-    </Highlight>
+    <Text textWrap={"wrap"}>
+      <Highlight query={[query ?? ""]} styles={{ bg: "yellow.emphasized" }}>
+        {value + ""}
+      </Highlight>
+    </Text>
   );
 }
 
@@ -77,7 +83,7 @@ function TextCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueT
     }
   }
 
-  return value;
+  return <Text textWrap={"wrap"}>{check.date(value) ? formatDateToDDMMYYYY(value) : value}</Text>;
 }
 
 function SelectCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueTypes>) {
@@ -128,7 +134,7 @@ function SelectCell<RowData>(props: CellProps<RowData, DataTableEditableCellValu
   }
 
   const colItem = props.selectCollection.find(value + "")
-  return colItem?.label ?? value;
+  return colItem?.label ?? <Text textWrap={"wrap"}>{check.date(value) ? formatDateToDDMMYYYY(value) : value}</Text>;
 }
 
 
@@ -201,7 +207,7 @@ function NumberCell<RowData>(props: CellProps<RowData, DataTableEditableCellValu
     }
   }
 
-  return value;
+  return <Text textWrap={"wrap"}>{check.date(value) ? formatDateToDDMMYYYY(value) : value}</Text>;
 }
 
 export const dataTableCells = {

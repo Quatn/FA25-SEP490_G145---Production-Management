@@ -48,6 +48,8 @@ export default function PurchaseOrderCreatePage() {
                 <Box flexGrow={1} overflowY={"auto"}>
                   <CreatePage.ItemSelector />
                 </Box>
+
+                <CreatePage.OrderPickerPagination />
               </Stack>
             </Box>
 

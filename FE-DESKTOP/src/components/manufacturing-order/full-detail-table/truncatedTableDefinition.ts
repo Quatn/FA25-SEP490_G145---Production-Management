@@ -9,10 +9,9 @@ import { createListCollection } from "@chakra-ui/react";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import ManufacturingOrderTableActionColumn from "./ActionColumn";
-import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
 import { manufacturingOrderComponentUtils as utils } from "../utils"
 
-const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, getOrderStatus, OrderStatusNameMap } = utils
+const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, OrderStatusNameMap } = utils
 
 export type TruncatedManufacturingOrderTableData = {
   _id: string,
@@ -39,15 +38,14 @@ export type TruncatedManufacturingOrderTableData = {
   finishingProcesses: Omit<WareFinishingProcessType, "createdAt" | "updatedAt">[],
   wareNote: string,
   note: string,
-  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined,
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder> } | undefined,
   purchaseOrderItemId: string,
   orderStatusDisplay: string,
 }
 
 export const convertSerializedMOToTruncatedManufacturingOrderTableData = (
   mo: Serialized<ManufacturingOrder>,
-  processes: Serialized<OrderFinishingProcess>[],
-  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined): TruncatedManufacturingOrderTableData => {
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder> } | undefined): TruncatedManufacturingOrderTableData => {
   const customer = getPopulatedCustomer(mo)
   const ware = getPopulatedWare(mo)
   const subPo = getPopulatedSubPo(mo)
@@ -71,8 +69,6 @@ export const convertSerializedMOToTruncatedManufacturingOrderTableData = (
       "poi should be populated before reaching convertSerializedMOToTruncatedManufacturingOrderTableData"
     )
   }
-
-  const orderStatus = getOrderStatus(mo, processes)
 
   return {
     _id: mo._id,
@@ -100,7 +96,7 @@ export const convertSerializedMOToTruncatedManufacturingOrderTableData = (
     note: mo.note,
     getOrder,
     purchaseOrderItemId: poi._id,
-    orderStatusDisplay: orderStatus ? OrderStatusNameMap[orderStatus] : ""
+    orderStatusDisplay: mo.operativeStatus ? OrderStatusNameMap[mo.operativeStatus] : ""
   }
 }
 

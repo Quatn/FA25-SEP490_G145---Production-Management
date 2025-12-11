@@ -1,4 +1,3 @@
-// components/purchase-order-management/DeletedProduct.tsx (or wherever you keep it)
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import {
@@ -16,6 +15,9 @@ import {
   useGetDeletedProductsQuery,
   useRestoreProductMutation,
 } from "@/service/api/productApiSlice";
+
+import { toaster } from "@/components/ui/toaster";
+import { useConfirm } from "@/components/common/ConfirmModal";
 
 export default function DeletedProduct() {
   const [page, setPage] = useState(1);
@@ -45,23 +47,42 @@ export default function DeletedProduct() {
     );
   };
 
+  // confirm hook (ConfirmProvider must be mounted above this component)
+  const showConfirm = useConfirm();
+
   const handleRestore = async (productId: string) => {
     if (!productId) return;
-    if (!window.confirm("Bạn có muốn khôi phục sản phẩm này không?")) return;
+
+    const ok = await showConfirm({
+      title: "Khôi phục sản phẩm",
+      description: "Bạn có muốn khôi phục sản phẩm này không?",
+      confirmText: "Khôi phục",
+      cancelText: "Hủy",
+      destructive: false,
+    });
+    if (!ok) return;
 
     try {
       await restoreProduct(productId).unwrap();
       // show success to user
-      window.alert("Khôi phục sản phẩm thành công.");
+      toaster.create({
+        description: "Khôi phục sản phẩm thành công.",
+        type: "success",
+      });
       // refresh the deleted list
-      refetch();
+      try {
+        refetch();
+      } catch {}
     } catch (err: any) {
       console.error(err);
       const message =
         err?.data?.message ||
         err?.message ||
         "Đã xảy ra lỗi khi khôi phục sản phẩm. Vui lòng thử lại.";
-      window.alert(message);
+      toaster.create({
+        description: message,
+        type: "error",
+      });
     }
   };
 

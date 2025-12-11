@@ -2,7 +2,6 @@
 
 import { ManufacturingOrderMonthlyProductionChartReducerStore } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyProductionChartContext"
 import { Chart, useChart } from "@chakra-ui/charts"
-import { useState } from "react"
 import {
   Bar,
   BarChart,
@@ -18,7 +17,7 @@ const { getDaysInMonth } = ManufacturingOrderMonthlyProductionBarChartCommons
 
 const randomList = Array.from({ length: 50 }, () => Math.floor(Math.random() * (100 - 30 + 1)) + 30);
 
-export const ManufacturingOrderMonthlyProductionBarChart = () => {
+export default function ManufacturingOrderMonthlyProductionBarChart() {
   const { useSelector } = ManufacturingOrderMonthlyProductionChartReducerStore
   const month = useSelector(s => s.month)
   // Maybe there will also be a year selector, idk

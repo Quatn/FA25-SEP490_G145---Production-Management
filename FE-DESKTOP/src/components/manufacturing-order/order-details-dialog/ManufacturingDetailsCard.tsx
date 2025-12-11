@@ -69,7 +69,6 @@ const approvalStatusCol = createListCollection({
 
 export type ManufacturingOrderDetailsDialogManufacturingDetailsCardProps = {
   order: Serialized<ManufacturingOrder>
-  processes: Serialized<OrderFinishingProcess>[]
 }
 
 type FormValue = {
@@ -88,7 +87,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
   const [updateOrders, { isLoading: updating, error: updateError }] = useUpdateManyManufacturingOrdersMutation();
 
   const ware = utils.getPopulatedWare(props.order)
-  const orderStatus = utils.getOrderStatus(props.order, props.processes)
+  const orderStatus = props.order.operativeStatus
 
   const initialFormVal = {
     manufacturingDirective: props.order.manufacturingDirective ?? null,

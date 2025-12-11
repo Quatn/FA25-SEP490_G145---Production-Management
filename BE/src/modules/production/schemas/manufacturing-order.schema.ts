@@ -16,6 +16,14 @@ import { PurchaseOrderItem } from "./purchase-order-item.schema";
 import { ApiProperty } from "@nestjs/swagger";
 import { RecalculateFlagPlugin } from "@/common/plugins/set-recalculate-flag-on-save.plugin";
 
+export enum ManufacturingOrderOperativeStatus {
+  NOTSTARTED = "NOTSTARTED",
+  RUNNING = "RUNNING",
+  PAUSED = "PAUSED",
+  CANCELLED = "CANCELLED",
+  COMPLETED = "COMPLETED",
+}
+
 export enum CorrugatorProcessStatus {
   NOTSTARTED = "NOTSTARTED",
   RUNNING = "RUNNING",

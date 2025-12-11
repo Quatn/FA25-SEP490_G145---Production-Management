@@ -25,12 +25,13 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
         approvalStatuses?: ManufacturingOrderApprovalStatus[];
         corrugatorLines?: CorrugatorLine[];
         corrugatorProcessStatuses?: CorrugatorProcessStatus[],
+        sort?: string[],
       }
     >(builder, {
-      query: ({ page, limit, query, approvalStatuses, corrugatorLines, corrugatorProcessStatuses }) => ({
+      query: ({ page, limit, query, approvalStatuses, corrugatorLines, corrugatorProcessStatuses, sort }) => ({
         url: `${MANUFACTURING_ORDER_URL}/query/full-details`,
         method: "GET",
-        params: { page, limit, query, approvalStatuses, corrugatorLines, corrugatorProcessStatuses },
+        params: { page, limit, query, approvalStatuses, corrugatorLines, corrugatorProcessStatuses, sort },
         credentials: "include",
       }),
       providesTags: ["ManufacturingOrder"],

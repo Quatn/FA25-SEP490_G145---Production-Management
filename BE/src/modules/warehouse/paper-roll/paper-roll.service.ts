@@ -21,7 +21,7 @@ export class PaperRollService {
     page = 1,
     limit = 10,
     search?: string,
-    sortBy: 'weight' | 'receivingDate' | 'updatedAt' | 'both' = 'both',
+    sortBy: 'weight' | 'receivingDate' | 'updatedAt' | 'sequenceNumber' | 'both' = 'both',
     sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const skip = (page - 1) * limit;
@@ -86,10 +86,12 @@ export class PaperRollService {
       weight: -1,
       updatedAt: -1,
       receivingDate: -1,
+      sequenceNumber: -1,
     };
     if (sortBy === 'weight') sortStage = { weight: sortOrder === 'asc' ? 1 : -1 };
     else if (sortBy === 'receivingDate') sortStage = { receivingDate: sortOrder === 'asc' ? 1 : -1 };
     else if (sortBy === 'updatedAt') sortStage = { updatedAt: sortOrder === 'asc' ? 1 : -1 };
+    else if (sortBy === 'sequenceNumber') sortStage = { sequenceNumber: sortOrder === 'asc' ? 1 : -1 }
 
     pipeline.push({ $sort: sortStage });
 
@@ -373,7 +375,7 @@ export class PaperRollService {
   }
 
 
-  async queryInventoryByWarePaperTypeCodes(codes: string[]): Promise<{code: string, weight: number}[]> {
+  async queryInventoryByWarePaperTypeCodes(codes: string[]): Promise<{ code: string, weight: number }[]> {
     const set = new Set(codes?.flat())
     const arr = [...set].filter(p => !check.undefined(p) && !check.null(p))
 
@@ -489,7 +491,7 @@ export class PaperRollService {
       const code = rolls.at(0)?.code
 
       if (!code) return []
-      return [rolls.reduce((acc, item) => ({ code, weight: acc.weight + item.weight }), { code, weight: 0})]
+      return [rolls.reduce((acc, item) => ({ code, weight: acc.weight + item.weight }), { code, weight: 0 })]
     }).flat();
   }
 

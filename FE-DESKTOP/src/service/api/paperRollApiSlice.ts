@@ -10,7 +10,7 @@ export const paperRollApiSlice = apiSlice.injectEndpoints({
       BaseResponse<PaginatedList<any>>, // aggregated documents (paperType, paperSupplier populated)
       { page?: number; limit?: number; search?: string; sortBy?: string; sortOrder?: "asc" | "desc" }
     >({
-      query: ({ page = 1, limit = 100, search = "", sortBy = "both", sortOrder = "desc" }) => ({
+      query: ({ page = 1, limit = 100, search = "", sortBy = "sequenceNumber", sortOrder = "desc" }) => ({
         url: `${PAPER_ROLL_URL}/list`,
         method: "GET",
         params: { page, limit, search, sortBy, sortOrder },

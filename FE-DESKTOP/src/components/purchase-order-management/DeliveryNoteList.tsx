@@ -5,6 +5,7 @@ import {
   useListDeliveryNotesQuery,
   useUpdateDeliveryNoteMutation,
 } from "@/service/api/deliveryNoteApiSlice";
+import { toaster } from "@/components/ui/toaster";
 
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
@@ -136,7 +137,11 @@ export default function DeliveryNoteList() {
         )
       );
       // notify user
-      alert(err?.data?.message ?? err?.message ?? "Failed to update status");
+      toaster.create({
+        description:
+          err?.data?.message ?? err?.message ?? "Failed to update status",
+        type: "error",
+      });
     } finally {
       setUpdatingIds((m) => {
         const copy = { ...m };

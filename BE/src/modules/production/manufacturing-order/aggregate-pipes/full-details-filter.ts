@@ -1,9 +1,22 @@
+import check from "check-types";
 import { PipelineStage } from "mongoose";
+import {
+  CorrugatorProcessStatus,
+  ManufacturingOrderOperativeStatus,
+} from "../../schemas/manufacturing-order.schema";
+import { OrderFinishingProcessStatus } from "../../schemas/order-finishing-process.schema";
+import { CompileMOOperativeStatusPipe } from "./compile-operative-status-pipe";
 
 export function fullDetailsFilterAggregationPipeline({
   filter = {},
   skip = 0,
   limit = 20,
+  sort = [],
+}: {
+  filter: Record<string, unknown>;
+  skip: number;
+  limit: number;
+  sort?: PipelineStage[];
 }) {
   const pipeline: PipelineStage[] = [];
 
@@ -27,6 +40,29 @@ export function fullDetailsFilterAggregationPipeline({
         },
       },
     },
+    {
+      $lookup: {
+        from: "finishedgoods",
+        localField: "_id",
+        foreignField: "manufacturingOrder",
+        as: "finishedGoodRecord",
+      },
+    },
+    {
+      $unwind: {
+        path: "$finishedGoodRecord",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $lookup: {
+        from: "orderfinishingprocesses",
+        localField: "_id",
+        foreignField: "manufacturingOrder",
+        as: "finishingProcesses",
+      },
+    },
+    ...CompileMOOperativeStatusPipe,
 
     // from poi
     {
@@ -209,44 +245,15 @@ export function fullDetailsFilterAggregationPipeline({
         },
       },
     },
-
-    // sort by code
-    {
-      $addFields: {
-        parts: { $split: ["$code", "/"] },
-      },
-    },
-    {
-      $addFields: {
-        n: {
-          $convert: {
-            input: { $arrayElemAt: ["$parts", 0] },
-            to: "int",
-            onError: -1, // fallback value for bad format
-            onNull: -1,
-          },
-        },
-        m: {
-          $convert: {
-            input: { $arrayElemAt: ["$parts", 1] },
-            to: "int",
-            onError: -1,
-            onNull: -1,
-          },
-        },
-      },
-    },
-    {
-      $sort: { m: 1, n: 1 },
-    },
+    ...sort,
   );
 
   const mainFilters: Record<string, unknown> = {};
   const nestedFilters: Record<string, unknown> = {};
 
   for (const key in filter) {
-    if (!key.includes(".")) mainFilters[key] = filter[key] as unknown;
-    else nestedFilters[key] = filter[key] as unknown;
+    if (!key.includes(".")) mainFilters[key] = filter[key];
+    else nestedFilters[key] = filter[key];
   }
 
   if (Object.keys(mainFilters).length > 0) {

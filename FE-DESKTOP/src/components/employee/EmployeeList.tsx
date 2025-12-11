@@ -11,6 +11,8 @@ import {
 import { useGetAllRolesQuery } from "@/service/api/roleApiSlice";
 import EmployeeCreateModal from "./EmployeeCreateModal";
 import EmployeeEditModal from "./EmployeeEditModal";
+import { toaster } from "@/components/ui/toaster";
+import { useConfirm } from "@/components/common/ConfirmModal";
 
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
@@ -113,6 +115,9 @@ const EmployeeList: React.FC = () => {
     setEditOpen(true);
   };
 
+  // confirm hook (make sure ConfirmProvider is mounted above this component)
+  const showConfirm = useConfirm();
+
   // --- new helper: check if a code already exists in the current list ---
   const isCodeTaken = (code: string, excludeId?: string | null) => {
     const norm = String(code ?? "")
@@ -133,15 +138,28 @@ const EmployeeList: React.FC = () => {
   const handleCreateSubmit = async () => {
     try {
       const codeVal = String(createForm.code ?? "").trim();
-      if (!codeVal) return alert("Please provide code");
+      if (!codeVal) {
+        toaster.create({ description: "Please provide code", type: "error" });
+        return;
+      }
 
       // validate uniqueness before creating
-      if (isCodeTaken(codeVal)) return alert("Mã nhân viên đã tồn tại");
+      if (isCodeTaken(codeVal)) {
+        toaster.create({
+          description: "Mã nhân viên đã tồn tại",
+          type: "error",
+        });
+        return;
+      }
 
-      if (!createForm.name || String(createForm.name).trim() === "")
-        return alert("Please provide name");
-      if (!createForm.role || String(createForm.role).trim() === "")
-        return alert("Please choose role");
+      if (!createForm.name || String(createForm.name).trim() === "") {
+        toaster.create({ description: "Please provide name", type: "error" });
+        return;
+      }
+      if (!createForm.role || String(createForm.role).trim() === "") {
+        toaster.create({ description: "Please choose role", type: "error" });
+        return;
+      }
 
       const payload = {
         code: codeVal,
@@ -176,27 +194,48 @@ const EmployeeList: React.FC = () => {
         } catch {}
       }, 600);
 
-      alert(resp?.message ?? "Created");
+      toaster.create({
+        description: resp?.message ?? "Created",
+        type: "success",
+      });
     } catch (err: any) {
       console.error("Create employee failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Create failed");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Create failed",
+        type: "error",
+      });
     }
   };
 
   const handleEditSubmit = async () => {
     try {
-      if (!editForm?.id) return alert("No id");
+      if (!editForm?.id) {
+        toaster.create({ description: "No id", type: "error" });
+        return;
+      }
       const codeVal = String(editForm.code ?? "").trim();
-      if (!codeVal) return alert("Please provide code");
+      if (!codeVal) {
+        toaster.create({ description: "Please provide code", type: "error" });
+        return;
+      }
 
       // validate uniqueness (exclude current record id)
-      if (isCodeTaken(codeVal, editForm.id))
-        return alert("Mã nhân viên đã tồn tại");
+      if (isCodeTaken(codeVal, editForm.id)) {
+        toaster.create({
+          description: "Mã nhân viên đã tồn tại",
+          type: "error",
+        });
+        return;
+      }
 
-      if (!editForm.name || String(editForm.name).trim() === "")
-        return alert("Please provide name");
-      if (!editForm.role || String(editForm.role).trim() === "")
-        return alert("Please choose role");
+      if (!editForm.name || String(editForm.name).trim() === "") {
+        toaster.create({ description: "Please provide name", type: "error" });
+        return;
+      }
+      if (!editForm.role || String(editForm.role).trim() === "") {
+        toaster.create({ description: "Please choose role", type: "error" });
+        return;
+      }
 
       const payload = {
         code: codeVal,
@@ -230,15 +269,29 @@ const EmployeeList: React.FC = () => {
         } catch {}
       }, 600);
 
-      alert(res?.message ?? "Updated");
+      toaster.create({
+        description: res?.message ?? "Updated",
+        type: "success",
+      });
     } catch (err: any) {
       console.error("Update failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Update failed");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Update failed",
+        type: "error",
+      });
     }
   };
 
   const handleSoftDelete = async (e: any) => {
-    if (!confirm(`Delete ${e.code}?`)) return;
+    const ok = await showConfirm({
+      title: "Delete employee",
+      description: `Delete ${e.code}?`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      destructive: true,
+    });
+    if (!ok) return;
+
     try {
       const id = getIdFromDoc(e) ?? e._id ?? e.id;
       const res: any = await deleteEmployee(id).unwrap();
@@ -258,28 +311,48 @@ const EmployeeList: React.FC = () => {
         } catch {}
       }, 600);
 
-      alert(res?.message ?? "Deleted");
+      toaster.create({
+        description: res?.message ?? "Deleted",
+        type: "success",
+      });
     } catch (err: any) {
       console.error("Delete failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Delete failed");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Delete failed",
+        type: "error",
+      });
     }
   };
 
-  // pagination helpers
-  const totalCount =
+  // pagination helpers — robust to different API shapes and missing total
+  const inferredTotal =
     Number(
-      resp?.data?.total ??
+      resp?.data?.totalItems ??
+        resp?.data?.total ??
         resp?.total ??
         resp?.data?.meta?.total ??
         resp?.data?.meta?.count ??
         resp?.meta?.total ??
         0
     ) || 0;
-  const totalPages =
-    totalCount > 0 ? Math.max(1, Math.ceil(totalCount / limit)) : 1;
+
+  // If server doesn't return a total, fall back to the number of items we actually received
+  const totalCount = inferredTotal > 0 ? inferredTotal : employees?.length ?? 0;
+
+  // totalPages: at least 1
+  const totalPages = Math.max(1, Math.ceil((totalCount || 0) / limit));
+
   const goToPage = (p: number) => {
     if (p < 1) p = 1;
-    if (totalCount > 0 && p > totalPages) p = totalPages;
+    // if server provides total, clamp to totalPages
+    if (inferredTotal > 0 && p > totalPages) p = totalPages;
+
+    // if server does NOT provide total, disallow going forward when current page has fewer items than limit
+    if (inferredTotal === 0 && p > page && (employees?.length ?? 0) < limit) {
+      // no more pages
+      return;
+    }
+
     setPage(p);
   };
 
@@ -414,13 +487,18 @@ const EmployeeList: React.FC = () => {
           <button
             className="btn btn-sm btn-outline-secondary"
             onClick={() => goToPage(page + 1)}
-            disabled={totalCount > 0 ? page >= totalPages : false}
+            // if server provided a total -> use page >= totalPages; otherwise, disable when current page has fewer items than limit
+            disabled={
+              inferredTotal > 0
+                ? page >= totalPages
+                : (employees?.length ?? 0) < limit
+            }
             style={{ marginLeft: 8 }}
           >
             Sau
           </button>
           <span style={{ marginLeft: 12 }}>
-            Trang {page} {totalCount > 0 && `trong ${totalPages}`}
+            Trang {page} {inferredTotal > 0 && `trong ${totalPages}`}
           </span>
         </div>
 

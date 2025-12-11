@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import mongoose, { Model, MongooseError, Types } from "mongoose";
+import mongoose, { Model, MongooseError, PipelineStage, Types } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import {
   CorrugatorProcess,
@@ -19,7 +19,7 @@ import {
   UpdateManufacturingOrderRequestDto,
 } from "./dto/update-order-request.dto";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
-import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
+import { FullDetailManufacturingOrderDto, PopulatedPurchaseOrderItem, PopulatedWare } from "./dto/full-details-orders.dto";
 import {
   PurchaseOrderItem,
   PurchaseOrderItemDocument,
@@ -53,6 +53,8 @@ import { UnpopulatedFieldError } from "@/common/errors/unpopulated-field.error";
 import { ProductionRecalculateService } from "../common/recalculate/recalculate.service";
 import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type.schema";
 import { queryAllByPaperTypesUsagePipeline } from "./aggregate-pipes/query-all-by-paper-types-usage";
+import { recalculateWare } from "../ware/business-logics/recalculate-ware";
+import { recalculatePurchaseOrderItem } from "../purchase-order-item/business-logics/recalculate-poi";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -176,10 +178,12 @@ export class ManufacturingOrderService {
     page,
     limit,
     filter = {},
+    sort,
   }: {
     page: number;
     limit: number;
-    filter?: object;
+    filter?: Record<string, unknown>;
+    sort?: PipelineStage[];
   }): Promise<PaginatedList<FullDetailManufacturingOrderDto>> {
     const skip = (page - 1) * limit;
 
@@ -187,6 +191,7 @@ export class ManufacturingOrderService {
       filter,
       skip,
       limit,
+      sort,
     });
 
     const [data, countArr] = await Promise.all([
@@ -251,7 +256,7 @@ export class ManufacturingOrderService {
     const mos: FullDetailManufacturingOrderDto[] = purchaseOrderItems.map(
       (poi, index): FullDetailManufacturingOrderDto => ({
         code: codeGenerator.getCode(index),
-        purchaseOrderItem: poi,
+        purchaseOrderItem: recalculatePurchaseOrderItem({...poi, ware: recalculateWare(poi.ware) as PopulatedWare}) as PopulatedPurchaseOrderItem,
         approvalStatus: ManufacturingOrderApprovalStatus.Draft,
         overallStatus: OrderStatus.NOTSTARTED,
         corrugatorProcess: {
@@ -292,7 +297,7 @@ export class ManufacturingOrderService {
       }),
     );
 
-    return mos;
+    return mos.map((mo) => recalculateManufacturingOrder(mo) as FullDetailManufacturingOrderDto);
   }
 
   // This might not work, just use createMany for everything
@@ -660,10 +665,10 @@ export class ManufacturingOrderService {
     paperTypes: string[];
   }): Promise<FullDetailManufacturingOrderDto[]> {
     const pipeline = queryAllByPaperTypesUsagePipeline({
-      paperTypes
+      paperTypes,
     });
 
-    const data = await this.manufacturingOrderModel.aggregate([...pipeline])
+    const data = await this.manufacturingOrderModel.aggregate([...pipeline]);
 
     const moDocs = (data as ManufacturingOrderDocument[]).map((mo) =>
       this.manufacturingOrderModel.hydrate(mo),

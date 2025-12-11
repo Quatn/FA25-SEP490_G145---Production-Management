@@ -1,20 +1,16 @@
 "use client";
 
-import { useGetMaterialRequirementsQuery } from "@/service/api/materialRequirementApiSlice";
 import { MaterialRequirementDto } from "@/types/DTO/material-requirement-summary/MaterialRequirement";
 import { Box, BoxProps, Center, Spinner, Stack, Table, TableRootProps, TabsRootProps, Text } from "@chakra-ui/react";
-import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { useMemo } from "react";
 import { paperTypesTableColumns } from "./paperTypesTableDefinition";
 import check from "check-types";
-import { useSelectedOrdersState } from "../TabbedContainer";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { Ware } from "@/types/Ware";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
-import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
 import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
-import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 
 export type PaperTypesTableProps = {
   rootProps?: BoxProps;
@@ -93,36 +89,13 @@ export default function PaperTypesTable(
   } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
     ids: selectedPOIsIds,
   });
+  console.log(fullDetailMOsResponse)
 
-  const moPaginatedList = useMemo(() => {
-    if (fullDetailMOsResponse?.data) {
-      const calculatedMoPaginatedList = fullDetailMOsResponse.data.map((mo) => {
-        if (check.string(mo.purchaseOrderItem)) {
-          throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
-        }
+  const tableData: MaterialRequirementDto[] = useMemo(() => accumulateMaterialRequirements(fullDetailMOsResponse?.data ?? [], props.type),
+    [fullDetailMOsResponse?.data, props.type]);
 
-        const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
-        const calculatedPOI = recalculatePurchaseOrderItem({
-          ...mo.purchaseOrderItem!,
-          ware: calculatedWare
-        })
+  console.log(fullDetailMOsResponse)
 
-        return {
-          ...mo,
-          purchaseOrderItem: calculatedPOI,
-        }
-      })
-      return {
-        data: calculatedMoPaginatedList
-      }
-    }
-    else {
-      return undefined
-    }
-  }, [fullDetailMOsResponse?.data])
-
-  const tableData: MaterialRequirementDto[] = useMemo(() => accumulateMaterialRequirements(moPaginatedList?.data ?? [], props.type),
-    [moPaginatedList, props.type]);
 
   const table = useReactTable({
     data: tableData,
@@ -131,7 +104,7 @@ export default function PaperTypesTable(
     getRowId: (row) => row.code,
   });
 
-  if (check.undefined(moPaginatedList?.data) || moPaginatedList?.data.length < 1) {
+  if (check.undefined(fullDetailMOsResponse?.data) || fullDetailMOsResponse?.data.length < 1) {
     return (
       <Center>
         <Box bgColor={"colorPalette.muted"} px={3} py={2} rounded={"md"}>

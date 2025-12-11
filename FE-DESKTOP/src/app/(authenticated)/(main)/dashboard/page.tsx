@@ -1,5 +1,5 @@
-import { ManufacturingOrderMonthlyProductionBarChart } from "@/components/manufacturing-order/dashboard/monthly-production-chart/BarChart";
-import { ManufacturingOrderMonthlyProductionBarChartMonthSelector } from "@/components/manufacturing-order/dashboard/monthly-production-chart/MonthSelector";
+import ManufacturingOrderMonthlyProductionBarChart from "@/components/manufacturing-order/dashboard/monthly-production-chart/BarChart";
+import ManufacturingOrderMonthlyProductionBarChartMonthSelector from "@/components/manufacturing-order/dashboard/monthly-production-chart/MonthSelector";
 import { ManufacturingOrderStatusesPieChart } from "@/components/manufacturing-order/dashboard/quarterly-order-statuses-chart/PieChart";
 import { ManufacturingOrderMonthlyProductionChartProvider } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyProductionChartContext";
 import { Box, GridItem, Heading, HStack, SimpleGrid, Text } from "@chakra-ui/react";

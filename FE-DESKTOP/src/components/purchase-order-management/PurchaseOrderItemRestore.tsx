@@ -5,6 +5,8 @@ import {
   useGetDeletedPurchaseOrderItemsQuery,
   useRestorePurchaseOrderItemMutation,
 } from "@/service/api/purchaseOrderItemApiSlice";
+import { useConfirm } from "@/components/common/ConfirmModal";
+import { toaster } from "@/components/ui/toaster";
 
 const PurchaseOrderItemRestore: React.FC = () => {
   const { data, isLoading, refetch } = useGetDeletedPurchaseOrderItemsQuery({
@@ -14,20 +16,32 @@ const PurchaseOrderItemRestore: React.FC = () => {
   const [restore, { isLoading: restoring }] =
     useRestorePurchaseOrderItemMutation();
 
+  const confirm = useConfirm();
+
   const rows = data?.data ?? data ?? [];
 
   const handleRestore = async (id: string) => {
-    if (!confirm("Khôi phục mã lẻ này?")) return;
+    const ok = await confirm({
+      title: "Restore Item",
+      description: "Khôi phục mã lẻ này?",
+      confirmText: "Restore",
+      cancelText: "Cancel",
+      destructive: false,
+    });
+    if (!ok) return;
+
     try {
       await restore(id).unwrap();
       await refetch();
-      alert("Đã khôi phục");
+      toaster.create({ description: "Đã khôi phục", type: "success" });
     } catch (err: any) {
       console.error(err);
-      alert(
-        "Khôi phục thất bại: " +
-          (err?.data?.message || err?.message || "unknown")
-      );
+      toaster.create({
+        description:
+          "Khôi phục thất bại: " +
+          (err?.data?.message || err?.message || "unknown"),
+        type: "error",
+      });
     }
   };
 
