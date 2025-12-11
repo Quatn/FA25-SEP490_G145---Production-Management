@@ -34,7 +34,8 @@ export class SemiFinishedGoodTransaction extends BaseSchema {
     @Prop({ required: false })
     note?: string;
 
-
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export type SemiFinishedGoodTransactionDocument = HydratedDocument<SemiFinishedGoodTransaction>;

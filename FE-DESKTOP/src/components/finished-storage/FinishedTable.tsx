@@ -79,7 +79,7 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                         </Table.ColumnHeader>
 
                         <Table.ColumnHeader rowSpan={2}>
-                            Số đơn hàng
+                            Mã đơn hàng
                         </Table.ColumnHeader>
 
                         <Table.ColumnHeader rowSpan={2}>

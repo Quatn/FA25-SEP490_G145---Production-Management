@@ -1,6 +1,6 @@
 import { apiSlice } from "./apiSlice";
 import { BaseResponse, PaginatedList } from "@/types/DTO/Response";
-import { SemiFinishedGoodTransaction, SemiFinishedGoodTransactionHistory } from "@/types/SemiFinishedTransaction";
+import { DailyChartResponse, SemiFinishedGoodTransaction, SemiFinishedGoodTransactionHistory } from "@/types/SemiFinishedTransaction";
 import { SEMI_FINISHED_GOOD_TRANSACTION_URL } from "../constants";
 
 export const SemiFinishedGoodTransactionApiSlice = apiSlice.injectEndpoints({
@@ -30,6 +30,17 @@ export const SemiFinishedGoodTransactionApiSlice = apiSlice.injectEndpoints({
                 providesTags: ["SemiFinishedGoodTransaction"],
             }),
 
+        getSemiFinishedGoodVolumeChartData: builder.query<DailyChartResponse, { date: string }>({
+            query: ({ date }) => ({
+                url: `${SEMI_FINISHED_GOOD_TRANSACTION_URL}/chart/daily`,
+                method: "GET",
+                params: { date },
+                credentials: "include",
+            }),
+            providesTags: ["SemiFinishedGoodTransaction"],
+
+        }),
+
         createSemiFinishedGoodTransaction: builder.mutation<BaseResponse<SemiFinishedGoodTransaction>, Partial<SemiFinishedGoodTransaction>>({
             query: (body) => ({
                 url: `${SEMI_FINISHED_GOOD_TRANSACTION_URL}/create`,
@@ -47,4 +58,5 @@ export const {
     useGetSemiFinishedGoodTransactionsQuery,
     useCreateSemiFinishedGoodTransactionMutation,
     useGetSemiFinishedGoodAdjustmentTransactionQuery,
+    useGetSemiFinishedGoodVolumeChartDataQuery,
 } = SemiFinishedGoodTransactionApiSlice;

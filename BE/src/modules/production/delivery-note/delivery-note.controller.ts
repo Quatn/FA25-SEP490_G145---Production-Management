@@ -1,5 +1,5 @@
 // production/delivery-note/delivery-note.controller.ts
-import { Controller, Post, Body, Get, Param, Patch } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Query } from '@nestjs/common';
 import { DeliveryNoteService } from './delivery-note.service';
 import { CreateDeliveryNoteDto } from './dto/create-delivery-note.dto';
 
@@ -16,6 +16,16 @@ export class DeliveryNoteController {
   @Get()
   async list() {
     const res = await this.service.findAll();
+    return { success: true, message: 'Fetch successful', data: res };
+  }
+
+  @Get('list-approved')
+  async listApproved(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('search') search?: string,
+  ) {
+    const res = await this.service.findPaginatedNoteApproved(page, limit, search);
     return { success: true, message: 'Fetch successful', data: res };
   }
 

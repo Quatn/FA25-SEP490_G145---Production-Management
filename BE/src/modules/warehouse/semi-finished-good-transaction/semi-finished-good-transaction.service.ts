@@ -12,7 +12,7 @@ import { ManufacturingOrderSchema } from '@/modules/production/schemas/manufactu
 import { PurchaseOrderItemSchema } from '@/modules/production/schemas/purchase-order-item.schema';
 import { SubPurchaseOrderSchema } from '@/modules/production/schemas/sub-purchase-order.schema';
 import { PurchaseOrderSchema } from '@/modules/production/schemas/purchase-order.schema';
-import { dot } from 'node:test/reporters';
+import { HourlyStockChart } from '@/common/types/semi-finished-good-types';
 
 type SoftSFGTransaction = SemiFinishedGoodTransaction & SoftDeleteDocument;
 
@@ -524,6 +524,76 @@ export class SemiFinishedGoodTransactionService {
     const totalPages = Math.ceil(totalItems / limit);
 
     return { data, page, limit, totalItems, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 };
+  }
+
+  async getDailyStatistics(dateString: string) {
+    const startOfDay = new Date(dateString);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(dateString);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const openingStockResult = await this.sfgTransactionModel.aggregate([
+      {
+        $match: {
+          createdAt: { $lt: startOfDay },
+          isDeleted: false
+        }
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: '$semiFinishedGood',
+          lastQuantity: { $first: '$finalQuantity' }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalOpeningStock: { $sum: '$lastQuantity' }
+        }
+      }
+    ]);
+
+    let currentGlobalStock = openingStockResult[0]?.totalOpeningStock || 0;
+
+    const todayTransactions = await this.sfgTransactionModel
+      .find({
+        createdAt: { $gte: startOfDay, $lte: endOfDay },
+        isDeleted: false,
+      })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const chartData: HourlyStockChart[] = [];
+
+    for (let hour = 0; hour < 24; hour++) {
+      const txInHour = todayTransactions.filter((tx) => {
+        return new Date(tx.createdAt).getHours() === hour;
+      });
+
+      const importVol = txInHour
+        .filter((tx) => tx.transactionType === 'IMPORT')
+        .reduce((sum, tx) => sum + Math.abs(tx.finalQuantity - tx.initialQuantity), 0);
+
+      const exportVol = txInHour
+        .filter((tx) => tx.transactionType === 'EXPORT')
+        .reduce((sum, tx) => sum + Math.abs(tx.finalQuantity - tx.initialQuantity), 0);
+
+      txInHour.forEach(tx => {
+        const netChange = tx.finalQuantity - tx.initialQuantity;
+        currentGlobalStock += netChange;
+      });
+
+      chartData.push({
+        time: `${hour.toString().padStart(2, '0')}:00`,
+        import: importVol,
+        export: exportVol,
+        stock: currentGlobalStock,
+      });
+    }
+
+    return chartData;
   }
 
   async softDelete(id: string) {

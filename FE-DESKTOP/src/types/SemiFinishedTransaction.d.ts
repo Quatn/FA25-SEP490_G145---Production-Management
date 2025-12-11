@@ -37,3 +37,15 @@ export interface CreateSemiFinishedGoodTransactionDTO {
   note?: string;
   employee: string;
 }
+
+export interface DailyChartItem {
+  time: string;    
+  import: number; 
+  export: number; 
+  stock: number;   
+}
+
+export interface DailyChartResponse {
+  success: boolean;
+  data: DailyChartItem[];
+}
