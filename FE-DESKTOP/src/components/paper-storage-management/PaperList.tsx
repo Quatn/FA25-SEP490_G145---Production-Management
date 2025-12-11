@@ -32,6 +32,7 @@ import {
 
 import { toaster } from "@/components/ui/toaster";
 import { useConfirm } from "@/components/common/ConfirmModal";
+import { PaperType } from "@/types/PaperType";
 
 function uniqueIdTimeStamp() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -78,7 +79,7 @@ export const PaperList: React.FC = () => {
   const [createForm, setCreateForm] = useState({
     useNewType: false,
     paperTypeId: "",
-    paperColorId: "",
+    paperColor: "",
     width: "",
     grammage: "",
     paperSupplierId: "",
@@ -91,7 +92,7 @@ export const PaperList: React.FC = () => {
     id: string;
     useNewType: boolean;
     paperTypeId?: string;
-    paperColorId?: string;
+    paperColor?: string;
     width?: string;
     grammage?: string;
     paperSupplierId?: string;
@@ -106,7 +107,7 @@ export const PaperList: React.FC = () => {
       id: String(Date.now()),
       useNewType: false,
       paperTypeId: "",
-      paperColorId: "",
+      paperColor: "",
       width: "",
       grammage: "",
       paperSupplierId: "",
@@ -119,7 +120,7 @@ export const PaperList: React.FC = () => {
   const [updateOpen, setUpdateOpen] = useState(false);
   const [updateForm, setUpdateForm] = useState({
     id: "",
-    paperColorId: "",
+    paperColor: "",
     paperSupplierId: "",
     width: "",
     grammage: "",
@@ -209,11 +210,11 @@ export const PaperList: React.FC = () => {
   const findType = (id?: string) =>
     (allTypes || []).find((t: any) => String(getIdFromDoc(t)) === String(id));
 
-  const getColorIdFromPaperType = (pt: any) => {
+  const getColorIdFromPaperType = (pt: PaperType) => {
     if (!pt) return undefined;
-    if (pt.paperColorId && typeof pt.paperColorId === "object")
-      return getIdFromDoc(pt.paperColorId);
-    return getIdFromDoc(pt.paperColorId) ?? undefined;
+    if (pt.paperColor && typeof pt.paperColor === "object")
+      return getIdFromDoc(pt.paperColor);
+    return getIdFromDoc(pt.paperColor) ?? undefined;
   };
 
   const computePaperRollId = (r: any) => {
@@ -331,7 +332,7 @@ export const PaperList: React.FC = () => {
       let paperTypeId: string | undefined = undefined;
 
       if (createForm.useNewType) {
-        const colorId = createForm.paperColorId;
+        const colorId = createForm.paperColor;
         const widthNum = Number(createForm.width || 0);
         const grammageNum = Number(createForm.grammage || 0);
         if (!colorId || !widthNum || !grammageNum) {
@@ -344,7 +345,7 @@ export const PaperList: React.FC = () => {
         }
 
         const matched = (allTypes || []).find((t: any) => {
-          const tColorId = getIdFromDoc(t.paperColorId);
+          const tColorId = getIdFromDoc(t.paperColor);
           return (
             String(tColorId) === String(colorId) &&
             Number(t.width) === widthNum &&
@@ -354,7 +355,7 @@ export const PaperList: React.FC = () => {
         paperTypeId = matched ? getIdFromDoc(matched) : undefined;
         if (!paperTypeId) {
           const createdResp: any = await addPaperType({
-            paperColorId: String(colorId),
+            paperColor: String(colorId),
             width: widthNum,
             grammage: grammageNum,
           }).unwrap();
@@ -407,7 +408,7 @@ export const PaperList: React.FC = () => {
       setCreateForm({
         useNewType: false,
         paperTypeId: "",
-        paperColorId: "",
+        paperColor: "",
         width: "",
         grammage: "",
         paperSupplierId: "",
@@ -431,7 +432,7 @@ export const PaperList: React.FC = () => {
         id: String(Date.now()) + Math.random().toString(36).slice(2, 7),
         useNewType: false,
         paperTypeId: "",
-        paperColorId: "",
+        paperColor: "",
         width: "",
         grammage: "",
         paperSupplierId: "",
@@ -473,7 +474,7 @@ export const PaperList: React.FC = () => {
 
         let paperTypeId: string | undefined = undefined;
         if (row.useNewType) {
-          const colorId = row.paperColorId;
+          const colorId = row.paperColor;
           const widthNum = Number(row.width || 0);
           const grammageNum = Number(row.grammage || 0);
           if (!colorId || !widthNum || !grammageNum) {
@@ -486,7 +487,7 @@ export const PaperList: React.FC = () => {
           }
 
           const matched = (allTypes || []).find((t: any) => {
-            const tColorId = getIdFromDoc(t.paperColorId);
+            const tColorId = getIdFromDoc(t.paperColor);
             return (
               String(tColorId) === String(colorId) &&
               Number(t.width) === widthNum &&
@@ -497,7 +498,7 @@ export const PaperList: React.FC = () => {
 
           if (!paperTypeId) {
             const createdResp: any = await addPaperType({
-              paperColorId: String(colorId),
+              paperColor: String(colorId),
               width: widthNum,
               grammage: grammageNum,
             }).unwrap();
@@ -555,7 +556,7 @@ export const PaperList: React.FC = () => {
           id: String(Date.now()),
           useNewType: false,
           paperTypeId: "",
-          paperColorId: "",
+          paperColor: "",
           width: "",
           grammage: "",
           paperSupplierId: "",
@@ -580,7 +581,7 @@ export const PaperList: React.FC = () => {
     const supplierId = getIdFromDoc(r.paperSupplier ?? r.paperSupplierId) ?? "";
     setUpdateForm({
       id: getIdFromDoc(r) ?? r.paperRollId ?? "",
-      paperColorId: colorId,
+      paperColor: colorId,
       paperSupplierId: supplierId,
       width: pt?.width ?? r.width ?? "",
       grammage: pt?.grammage ?? r.grammage ?? "",
@@ -598,7 +599,7 @@ export const PaperList: React.FC = () => {
     const grammageNum = Number(updateForm.grammage || 0);
     const weightNum = Number(updateForm.weight ?? 0);
     if (
-      !updateForm.paperColorId ||
+      !updateForm.paperColor ||
       !updateForm.paperSupplierId ||
       !widthNum ||
       !grammageNum ||
@@ -614,9 +615,9 @@ export const PaperList: React.FC = () => {
 
     try {
       const matched = (allTypes || []).find((t: any) => {
-        const tColorId = getIdFromDoc(t.paperColorId);
+        const tColorId = getIdFromDoc(t.paperColor);
         return (
-          String(tColorId) === String(updateForm.paperColorId) &&
+          String(tColorId) === String(updateForm.paperColor) &&
           Number(t.width) === widthNum &&
           Number(t.grammage) === grammageNum
         );
@@ -625,7 +626,7 @@ export const PaperList: React.FC = () => {
       let paperTypeId = matched ? getIdFromDoc(matched) : undefined;
       if (!paperTypeId) {
         const createdResp: any = await addPaperType({
-          paperColorId: String(updateForm.paperColorId),
+          paperColor: String(updateForm.paperColor),
           width: widthNum,
           grammage: grammageNum,
         }).unwrap();

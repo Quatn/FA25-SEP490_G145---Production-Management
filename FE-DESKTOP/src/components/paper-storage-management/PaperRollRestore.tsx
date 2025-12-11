@@ -99,9 +99,9 @@ export const PaperRollRestore: React.FC = () => {
 
   const getColorIdFromPaperType = (pt: any) => {
     if (!pt) return undefined;
-    if (pt.paperColorId && typeof pt.paperColorId === "object")
-      return getIdFromDoc(pt.paperColorId);
-    return getIdFromDoc(pt.paperColorId) ?? undefined;
+    if (pt.paperColor && typeof pt.paperColor === "object")
+      return getIdFromDoc(pt.paperColor);
+    return getIdFromDoc(pt.paperColor) ?? undefined;
   };
 
   const computePaperRollId = (r: any) => {

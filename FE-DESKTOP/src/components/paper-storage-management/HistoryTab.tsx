@@ -7,6 +7,7 @@ import { useGetPaperRollsQuery } from "@/service/api/paperRollApiSlice";
 import { useGetAllPaperColorsQuery } from "@/service/api/paperColorApiSlice";
 import { useGetAllPaperSuppliersQuery } from "@/service/api/paperSupplierApiSlice";
 import { useGetAllPaperTypesQuery } from "@/service/api/paperTypeApiSlice";
+import { PaperType } from "@/types/PaperType";
 
 /** small helper to normalize id shapes */
 function docIdAsString(doc: any) {
@@ -32,11 +33,11 @@ function getIdFromDoc(doc: any): string | undefined {
   return undefined;
 }
 
-const getColorIdFromPaperType = (pt: any) => {
+const getColorIdFromPaperType = (pt: PaperType) => {
   if (!pt) return undefined;
-  if (pt.paperColorId && typeof pt.paperColorId === "object")
-    return getIdFromDoc(pt.paperColorId);
-  return getIdFromDoc(pt.paperColorId) ?? undefined;
+  if (pt.paperColor && typeof pt.paperColor === "object")
+    return getIdFromDoc(pt.paperColor);
+  return getIdFromDoc(pt.paperColor) ?? undefined;
 };
 
 export const HistoryTab: React.FC = () => {
@@ -122,7 +123,7 @@ export const HistoryTab: React.FC = () => {
         String(
           getIdFromDoc(t) ??
             t._id ??
-            `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColorId)}`
+            `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColor)}`
         ),
         t
       )

@@ -328,7 +328,7 @@ export class PaperRollService {
     ]);
 
     const populatedDocs = await this.PaperRollModel.populate(rawDocs, [
-      { path: "paperTypeId", populate: { path: "paperColorId" } },
+      { path: "paperTypeId", populate: { path: "paperColor" } },
       { path: "paperSupplierId" },
     ]);
 
