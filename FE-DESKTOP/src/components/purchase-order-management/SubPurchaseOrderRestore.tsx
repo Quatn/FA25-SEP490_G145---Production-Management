@@ -5,6 +5,8 @@ import {
   useGetDeletedSubPurchaseOrdersQuery,
   useRestoreSubPurchaseOrderMutation,
 } from "@/service/api/subPurchaseOrderApiSlice";
+import { useConfirm } from "@/components/common/ConfirmModal";
+import { toaster } from "@/components/ui/toaster";
 
 const SubPurchaseOrderRestore: React.FC = () => {
   const { data, isLoading, refetch } = useGetDeletedSubPurchaseOrdersQuery({
@@ -14,20 +16,32 @@ const SubPurchaseOrderRestore: React.FC = () => {
   const [restore, { isLoading: restoring }] =
     useRestoreSubPurchaseOrderMutation();
 
+  const confirm = useConfirm();
+
   const rows = data?.data ?? data ?? [];
 
   const handleRestore = async (id: string) => {
-    if (!confirm("Khôi phục Sản phẩm này?")) return;
+    const ok = await confirm({
+      title: "Restore Sub-PO",
+      description: "Khôi phục Sản phẩm này?",
+      confirmText: "Restore",
+      cancelText: "Cancel",
+      destructive: false,
+    });
+    if (!ok) return;
+
     try {
       await restore(id).unwrap();
       await refetch();
-      alert("Đã khôi phục");
+      toaster.create({ description: "Đã khôi phục", type: "success" });
     } catch (err: any) {
       console.error(err);
-      alert(
-        "Khôi phục thất bại: " +
-          (err?.data?.message || err?.message || "unknown")
-      );
+      toaster.create({
+        description:
+          "Khôi phục thất bại: " +
+          (err?.data?.message || err?.message || "unknown"),
+        type: "error",
+      });
     }
   };
 

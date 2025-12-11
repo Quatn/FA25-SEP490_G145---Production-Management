@@ -6,6 +6,8 @@ import {
   useGetDeletedWaresQuery,
   useRestoreWareMutation,
 } from "@/service/api/wareApiSlice";
+import { useConfirm } from "@/components/common/ConfirmModal";
+import { toaster } from "@/components/ui/toaster";
 
 function getIdFromDoc(doc: any): string {
   if (!doc) return "";
@@ -39,6 +41,8 @@ function getCodeLabelForFlute(flute: any, fluteList: any[] = []) {
 }
 
 const WareRestore: React.FC = () => {
+  const confirm = useConfirm();
+
   const [page, setPage] = useState<number>(1);
   const [limit] = useState<number>(10);
   const [search, setSearch] = useState<string>("");
@@ -79,17 +83,28 @@ const WareRestore: React.FC = () => {
   };
 
   const handleRestore = async (id: string) => {
-    if (!confirm("Restore this item?")) return;
+    const ok = await confirm({
+      title: "Khôi phục mã hàng",
+      description: "Khôi phục mục này?",
+      confirmText: "Khôi phục",
+      cancelText: "Hủy",
+      destructive: false,
+    });
+    if (!ok) return;
+
     try {
       await restoreWare(id).unwrap();
-      alert("Restored");
+      toaster.create({ description: "Đã khôi phục", type: "success" });
       // refetch deleted list
       try {
         refetch();
       } catch {}
     } catch (err: any) {
       console.error("restore failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Restore failed");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Khôi phục thất bại",
+        type: "error",
+      });
     }
   };
 
