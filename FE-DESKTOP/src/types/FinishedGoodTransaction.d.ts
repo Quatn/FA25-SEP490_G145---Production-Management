@@ -29,7 +29,7 @@ export interface FinishedGoodTransactionHistory {
 export interface CreateFinishedGoodTransactionDTO {
     manufacturingOrder: string;
     manufacturingOrderCode?: string;
-    transactionType: "IMPORT" | "EXPORT";
+    transactionType: "IMPORT" | "EXPORT" | "ADJUSTMENT";
     quantity: number;
     transactionDate: string;
     note?: string;

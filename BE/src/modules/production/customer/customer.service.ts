@@ -72,7 +72,7 @@ export class CustomerService {
         { name: regex },
         { address: regex },
         { contactNumber: regex },
-        { emmail: regex },
+        { email: regex },
       ];
     }
     const [data, totalItems] = await Promise.all([

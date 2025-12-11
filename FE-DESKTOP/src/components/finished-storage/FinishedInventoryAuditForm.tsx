@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { Button, Combobox, Dialog, Field, Flex, Input, NumberInput, Portal, useFilter, useListCollection } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
-import { CreateSemiFinishedGoodTransactionDTO } from "@/types/SemiFinishedTransaction";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { UserState } from "@/types/UserState";
 import { useAppSelector } from "@/service/hooks";
 import { formatDateForInput } from "@/utils/dateUtils";
-import { useCreateSemiFinishedGoodTransactionMutation } from "@/service/api/semiFinishedGoodTransactionApiSlice";
+import { useCreateFinishedGoodTransactionMutation } from "@/service/api/finishedGoodTransactionApiSlice";
+import { CreateFinishedGoodTransactionDTO } from "@/types/FinishedGoodTransaction";
 
 interface Props {
     isOpen: boolean;
@@ -16,8 +16,8 @@ interface Props {
 }
 
 
-const SemiFinishedInventoryAuditForm: React.FC<Props> = ({ isOpen, onClose, manufacturingOrders }) => {
-    const [createSemiTransaction] = useCreateSemiFinishedGoodTransactionMutation();
+const FinishedInventoryAuditForm: React.FC<Props> = ({ isOpen, onClose, manufacturingOrders }) => {
+    const [createSemiTransaction] = useCreateFinishedGoodTransactionMutation();
 
     const userState: UserState | null = useAppSelector((state) =>
         state.auth.userState
@@ -27,7 +27,7 @@ const SemiFinishedInventoryAuditForm: React.FC<Props> = ({ isOpen, onClose, manu
 
     const [corrugatorProcessAmount, setCorrugatorProcessAmount] = useState(0);
 
-    const [transaction, setTransaction] = useState<CreateSemiFinishedGoodTransactionDTO>({
+    const [transaction, setTransaction] = useState<CreateFinishedGoodTransactionDTO>({
         manufacturingOrder: "",
         manufacturingOrderCode: "",
         transactionType: "ADJUSTMENT",
@@ -90,7 +90,7 @@ const SemiFinishedInventoryAuditForm: React.FC<Props> = ({ isOpen, onClose, manu
             } as any).unwrap();
             toaster.create({
                 title: "Thành công",
-                description: `Tạo phiếu kiểm kê kho phôi lệnh ${transaction.manufacturingOrderCode} thành công`,
+                description: `Tạo phiếu kiểm kê kho thành phẩm lệnh ${transaction.manufacturingOrderCode} thành công`,
                 type: "success",
                 closable: true
             });
@@ -128,7 +128,7 @@ const SemiFinishedInventoryAuditForm: React.FC<Props> = ({ isOpen, onClose, manu
                     <Dialog.Content>
                         <Dialog.Header>
                             <Dialog.Title>
-                                Phiếu Kiểm Kê Kho Phôi
+                                Phiếu Kiểm Kê Kho Thành Phẩm
                             </Dialog.Title>
                         </Dialog.Header>
                         <Dialog.Body>
@@ -257,4 +257,4 @@ const SemiFinishedInventoryAuditForm: React.FC<Props> = ({ isOpen, onClose, manu
     );
 };
 
-export default SemiFinishedInventoryAuditForm;
+export default FinishedInventoryAuditForm;

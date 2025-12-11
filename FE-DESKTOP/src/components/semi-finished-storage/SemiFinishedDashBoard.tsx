@@ -19,6 +19,12 @@ const SemiFinishedDashBoard: React.FC = () => {
 
     const chartData = data?.data || [];
 
+    const handleInvalidDate = (value: string) => {
+        if (value) {
+            setInventoryChartDate(value);
+        } else toaster.create({ title: "Nhắc nhở", description: "Không được phép xóa ngày", type: "error", closable: true });
+    }
+
     if (isLoading) return <Spinner />;
     if (error) {
         toaster.create({ title: "Lỗi", description: "Không thể tải dữ liệu", type: "error", closable: true });
@@ -44,7 +50,7 @@ const SemiFinishedDashBoard: React.FC = () => {
                                 type="date"
                                 onChange={(e) => {
                                     if (e.target.value) {
-                                        setInventoryChartDate(e.target.value);
+                                        handleInvalidDate(e.target.value);
                                     }
                                 }}
                                 required={true}

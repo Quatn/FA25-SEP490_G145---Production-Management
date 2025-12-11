@@ -2,17 +2,17 @@ import React from "react";
 import { Table } from "@chakra-ui/react";
 import { formatDate } from "@/utils/dateUtils";
 import { safeGet } from "@/utils/storagesUtils";
-import { SemiFinishedGoodTransaction } from "@/types/SemiFinishedTransaction";
 import { Employee } from "@/types/Employee";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { FinishedGoodTransaction } from "@/types/FinishedGoodTransaction";
 
 interface Props {
     page: number;
     limit: number;
-    items: SemiFinishedGoodTransaction[];
+    items: FinishedGoodTransaction[];
 }
 
-const SemiFinishedInventoryAuditTable: React.FC<Props> = ({ page, limit, items }) => {
+const FinishedInventoryAuditTable: React.FC<Props> = ({ page, limit, items }) => {
 
     return (
         <Table.ScrollArea borderWidth="1px" rounded="md" mt={5}>
@@ -67,7 +67,7 @@ const SemiFinishedInventoryAuditTable: React.FC<Props> = ({ page, limit, items }
                         <Table.ColumnHeader rowSpan={2}>
                             Ghi chú
                         </Table.ColumnHeader>
-                        
+
 
                     </Table.Row>
                     <Table.Row background={'blue.100'}>
@@ -79,7 +79,7 @@ const SemiFinishedInventoryAuditTable: React.FC<Props> = ({ page, limit, items }
 
                 <Table.Body>
                     {items.map((item, index) => {
-                        const mo = item.semiFinishedGood?.manufacturingOrder as ManufacturingOrder;
+                        const mo = item.finishedGood?.manufacturingOrder as ManufacturingOrder;
                         const poItem = mo?.purchaseOrderItem;
                         const quantityGap = item.finalQuantity - item.initialQuantity;
                         return (
@@ -111,10 +111,10 @@ const SemiFinishedInventoryAuditTable: React.FC<Props> = ({ page, limit, items }
                                     {item.finalQuantity}
                                 </Table.Cell>
 
-                                <Table.Cell 
-                                background={quantityGap < 0 ? 'red' : 'yellow'}
-                                color={quantityGap >= 0 ? 'black' : 'white'}
-                                fontWeight={'bold'}
+                                <Table.Cell
+                                    background={quantityGap < 0 ? 'red' : 'yellow'}
+                                    color={quantityGap >= 0 ? 'black' : 'white'}
+                                    fontWeight={'bold'}
                                 >
                                     {` ${quantityGap < 0 ? 'Thiếu' : 'Thừa'} ${Math.abs(quantityGap)}`}
                                 </Table.Cell>
@@ -137,4 +137,4 @@ const SemiFinishedInventoryAuditTable: React.FC<Props> = ({ page, limit, items }
     );
 };
 
-export default SemiFinishedInventoryAuditTable;
+export default FinishedInventoryAuditTable;
