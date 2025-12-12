@@ -1,8 +1,16 @@
 import { ManufacturingOrderMonthlyProductionBarChart } from "@/components/manufacturing-order/dashboard/monthly-production-chart/BarChart";
 import { ManufacturingOrderMonthlyProductionBarChartMonthSelector } from "@/components/manufacturing-order/dashboard/monthly-production-chart/MonthSelector";
+import POPieChart from "@/components/manufacturing-order/dashboard/purchase-order-status-chart/POPieChart";
 import { ManufacturingOrderStatusesPieChart } from "@/components/manufacturing-order/dashboard/quarterly-order-statuses-chart/PieChart";
 import { ManufacturingOrderMonthlyProductionChartProvider } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyProductionChartContext";
-import { Box, GridItem, Heading, HStack, SimpleGrid, Text } from "@chakra-ui/react";
+import {
+  Box,
+  GridItem,
+  Heading,
+  HStack,
+  SimpleGrid,
+  Text,
+} from "@chakra-ui/react";
 
 export default function Dashboard() {
   return (
@@ -20,11 +28,19 @@ export default function Dashboard() {
       </Text>
       <SimpleGrid columns={{ md: 1, lg: 2 }} gap="40px" mx={5}>
         <GridItem colSpan={{ base: 1 }}>
+          <Box bg="bg" p={2} rounded={"sm"}>
+            <Heading size={"sm"}>
+              Tổng quan trạng thái của các đơn hàng
+            </Heading>
+            <POPieChart />
+          </Box>
         </GridItem>
 
         <GridItem colSpan={{ base: 1 }}>
           <Box bg="bg" p={2} rounded={"sm"}>
-            <Heading size={"sm"}>Tổng quan trạng thái của các lệnh sản xuất theo quý</Heading>
+            <Heading size={"sm"}>
+              Tổng quan trạng thái của các lệnh sản xuất theo quý
+            </Heading>
             <ManufacturingOrderStatusesPieChart />
           </Box>
         </GridItem>
@@ -42,8 +58,7 @@ export default function Dashboard() {
           </ManufacturingOrderMonthlyProductionChartProvider>
         </GridItem>
 
-        <GridItem colSpan={{ base: 1 }}>
-        </GridItem>
+        <GridItem colSpan={{ base: 1 }}></GridItem>
       </SimpleGrid>
     </Box>
   );

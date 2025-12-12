@@ -18,13 +18,6 @@ export enum PurchaseOrderItemStatus {
   Draft = "DRAFT",
   PendingApproval = "PENDINGAPPROVAL",
   Approved = "APPROVED",
-  Scheduled = "SCHEDULED",
-  OnHold = "ONHOLD",
-  Cancelled = "CANCELLED",
-  InProduction = "INPRODUCTION",
-  Paused = "PAUSED",
-  FinishedProduction = "FINISHEDPRODUCTION",
-  QualityCheck = "QUALITYCHECK",
   Completed = "COMPLETED",
 }
 

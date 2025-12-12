@@ -17,14 +17,8 @@ export enum SubPurchaseOrderStatus {
   Draft = "DRAFT",
   PendingApproval = "PENDINGAPPROVAL",
   Approved = "APPROVED",
-  Scheduled = "SCHEDULED",
-  Cancelled = "CANCELLED",
-  InProduction = "INPRODUCTION",
-  Paused = "PAUSED",
   PartiallyCompleted = "PARTIALLYCOMPLETED",
   Completed = "COMPLETED",
-  InDelivery = "INDELIVERY",
-  Delivered = "DELIVERED",
 }
 
 @Schema({ timestamps: true })
