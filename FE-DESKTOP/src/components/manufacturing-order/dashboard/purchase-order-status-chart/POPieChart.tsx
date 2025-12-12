@@ -87,7 +87,6 @@ export default function POPieChart(): JSX.Element {
     ],
   });
 
-  // icon color (string is fine — you can change to a theme value if wanted)
   const iconColor = "gray.600";
 
   // sizing values (as you requested)
@@ -95,12 +94,11 @@ export default function POPieChart(): JSX.Element {
   const PIE_AREA_PX = 260;
   const OUTER_RADIUS = Math.floor(PIE_AREA_PX / 2) - 6;
 
+  const PIE_OFFSET_PX = 100;
+
   return (
-    // card: position relative so icon can be absolutely placed inside top-right corner
     <Box p={2} rounded="sm" position="relative" height={`${CARD_HEIGHT_PX}px`}>
-      {/* icon in top-right corner of this card */}
       <Box position="absolute" top={6} right={6} zIndex={2}>
-        {/* Use a plain anchor/span instead of Chakra's IconButton to avoid prop typing issues */}
         <ChakraLink
           href="/purchase-order"
           aria-label="Open purchase order list"
@@ -143,8 +141,12 @@ export default function POPieChart(): JSX.Element {
           justifyContent="space-between"
           h="100%"
         >
-          {/* Pie area sized to PIE_AREA_PX */}
-          <Box width={`${PIE_AREA_PX}px`} height={`${PIE_AREA_PX}px`}>
+          {/* Pie area sized to PIE_AREA_PX; ml moves it to the right */}
+          <Box
+            width={`${PIE_AREA_PX}px`}
+            height={`${PIE_AREA_PX}px`}
+            ml={`${PIE_OFFSET_PX}px`}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <RechartsTooltip cursor={false} animationDuration={100} />
