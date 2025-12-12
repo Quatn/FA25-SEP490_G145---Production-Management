@@ -105,7 +105,6 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
   }
 
   const setManufacturedAmount = (value: string) => {
-    console.log(value)
     if (value.length < 1) setFormValueWrapped(prev => ({ ...prev, manufacturedAmount: undefined }))
     const val = parseInt(value)
     if (check.number(val)) setFormValueWrapped(prev => ({ ...prev, manufacturedAmount: val }))

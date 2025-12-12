@@ -89,12 +89,9 @@ export default function PaperTypesTable(
   } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
     ids: selectedPOIsIds,
   });
-  console.log(fullDetailMOsResponse)
 
   const tableData: MaterialRequirementDto[] = useMemo(() => accumulateMaterialRequirements(fullDetailMOsResponse?.data ?? [], props.type),
     [fullDetailMOsResponse?.data, props.type]);
-
-  console.log(fullDetailMOsResponse)
 
 
   const table = useReactTable({

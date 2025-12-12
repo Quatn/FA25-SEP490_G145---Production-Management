@@ -157,7 +157,6 @@ export const manufacturingOrderCorrugatorOperatePageTableMergedHeaders = [
 ]
 
 export function manufacturingOrderCorrugatorOperatePageTableColumns(dataVariant: "WAITING" | "RUNNING" | "HISTORY"): (ColumnDef<ManufacturingOrderCorrugatorOperatePageTableData & { isEdited: boolean }>)[] {
-  console.log(dataVariant === "WAITING", corrugatorProcessStatusCol.items)
   return [
     columnHelper.defineDataTableAccessorColumn({
       id: "manufacturingDirective",

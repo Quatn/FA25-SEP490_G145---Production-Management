@@ -6,18 +6,18 @@ import { manufacturingOrderComponentUtils } from "../../utils"
 
 const { OrderStatusNameMap } = manufacturingOrderComponentUtils
 
-export const ManufacturingOrderQuarterlyStatusesPieChart = () => {
+export const ManufacturingOrderMonthlyStatusesPieChart = () => {
   const chart = useChart({
     data: [
-      { name: OrderStatusNameMap.PAUSED, value: 400, color: "yellow.solid" },
-      { name: OrderStatusNameMap.RUNNING, value: 300, color: "blue.solid" },
-      { name: OrderStatusNameMap.CANCELLED, value: 300, color: "red.solid" },
-      { name: OrderStatusNameMap.COMPLETED, value: 200, color: "green.solid" },
+      { name: OrderStatusNameMap.PAUSED, value: 5, color: "yellow.solid" },
+      { name: OrderStatusNameMap.RUNNING, value: 12, color: "blue.solid" },
+      { name: OrderStatusNameMap.CANCELLED, value: 45, color: "red.solid" },
+      { name: OrderStatusNameMap.COMPLETED, value: 124, color: "green.solid" },
     ],
   })
 
   return (
-    <Chart.Root boxSize="320px" mx="auto" chart={chart}>
+    <Chart.Root boxSize="sm" mx="auto" chart={chart}>
       <PieChart>
         <Tooltip
           cursor={false}

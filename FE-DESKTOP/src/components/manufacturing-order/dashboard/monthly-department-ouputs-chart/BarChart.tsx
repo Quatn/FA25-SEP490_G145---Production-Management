@@ -1,6 +1,5 @@
 "use client"
 
-import { ManufacturingOrderMonthlyProductionChartReducerStore } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyProductionChartContext"
 import { Chart, useChart } from "@chakra-ui/charts"
 import {
   Bar,
@@ -12,13 +11,17 @@ import {
   XAxis,
 } from "recharts"
 import { ManufacturingOrderMonthlyProductionBarChartCommons } from "./common"
+import { ManufacturingOrderMonthlyDepartmentOutputsChartReducerStore } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyDepartmentOutputsChartContext"
 
 const { getDaysInMonth } = ManufacturingOrderMonthlyProductionBarChartCommons
 
-const randomList = Array.from({ length: 50 }, () => Math.floor(Math.random() * (100 - 30 + 1)) + 30);
+const randomList = Array.from({ length: 50 }, () => Math.floor(Math.random() * (1000 - 200 + 1)) + 200);
+const randomList2 = Array.from({ length: 50 }, () => Math.floor(Math.random() * (1000 - 200 + 1)) + 200);
+const randomList3 = Array.from({ length: 50 }, () => Math.floor(Math.random() * (1000 - 200 + 1)) + 200);
+const randomList4 = Array.from({ length: 50 }, () => Math.floor(Math.random() * (1000 - 200 + 1)) + 200);
 
-export default function ManufacturingOrderMonthlyProductionBarChart() {
-  const { useSelector } = ManufacturingOrderMonthlyProductionChartReducerStore
+export default function ManufacturingOrderMonthlyDepartmentOutputsBarChart() {
+  const { useSelector } = ManufacturingOrderMonthlyDepartmentOutputsChartReducerStore
   const month = useSelector(s => s.month)
   // Maybe there will also be a year selector, idk
   const year = new Date().getFullYear()
@@ -27,15 +30,20 @@ export default function ManufacturingOrderMonthlyProductionBarChart() {
 
   const mockData = [...Array(numberOfDays).keys()].map(day =>
   ({
-    "Tổng": randomList.at(day) ?? 0,
+    "Bộ phận sóng": randomList.at(day) ?? 0,
+    "Bộ phận in": randomList2.at(day) ?? 0,
+    "Bộ phận chế biến": randomList3.at(day) ?? 0,
+    "Bộ phận ghim dán": randomList4.at(day) ?? 0,
     day: (day + 1) + "/" + (month + 1) + "/" + year
-  })
-  )
+  }))
 
   const chart = useChart({
     data: mockData,
     series: [
-      { name: "Tổng", color: "teal.solid" },
+      { name: "Bộ phận sóng", color: "orange", stackId: "total" },
+      { name: "Bộ phận in", color: "khaki", stackId: "total" },
+      { name: "Bộ phận chế biến", color: "blue.solid", stackId: "total" },
+      { name: "Bộ phận ghim dán", color: "teal.solid", stackId: "total" },
     ],
   })
 
@@ -50,26 +58,19 @@ export default function ManufacturingOrderMonthlyProductionBarChart() {
           tickFormatter={(value) => (value + "").split("/").filter((_v, index) => index < 2).join("/")}
         />
         <Tooltip
-          cursor={{ fill: chart.color("bg.muted") }}
+          cursor={false}
           animationDuration={100}
           content={<Chart.Tooltip />}
         />
-        <Legend content={<Chart.Legend />} />
+        <Legend content={<Chart.Legend interaction="hover"/>} />
         {chart.series.map((item) => (
           <Bar
             isAnimationActive={false}
             key={item.name}
             dataKey={chart.key(item.name)}
             fill={chart.color(item.color)}
-            stroke={chart.color(item.color)}
             stackId={item.stackId}
-          >
-            <LabelList
-              dataKey={chart.key(item.name)}
-              position="top"
-              style={{ fontWeight: "600", fill: chart.color("fg") }}
-            />
-          </Bar>
+          />
         ))}
       </BarChart>
     </Chart.Root>
