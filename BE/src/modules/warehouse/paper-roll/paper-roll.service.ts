@@ -319,37 +319,112 @@ export class PaperRollService {
     return { success: true };
   }
 
-  async findDeleted(page = 1, limit = 10) {
+  async findDeleted(page = 1, limit = 10, search?: string) {
     const skip = (page - 1) * limit;
-    const filter = { isDeleted: true };
 
-    // Use the raw collection to bypass Mongoose `pre('find')` middleware added by the plugin
-    const [rawDocs, totalCount] = await Promise.all([
-      // collection.find returns raw JS objects (no mongoose middleware applied)
-      this.PaperRollModel.collection
-        .find(filter)
-        .skip(skip)
-        .limit(limit)
-        .toArray(),
-      this.PaperRollModel.collection.countDocuments(filter),
-    ]);
+    const pipeline: any[] = [];
 
-    const populatedDocs = await this.PaperRollModel.populate(rawDocs, [
-      { path: "paperTypeId", populate: { path: "paperColor" } },
-      { path: "paperSupplierId" },
-    ]);
+    // match deleted docs
+    pipeline.push({ $match: { isDeleted: true } });
 
-    const totalPages = Math.ceil((totalCount || 0) / limit);
+    // lookup paperType
+    pipeline.push({
+      $lookup: {
+        from: 'papertypes',
+        localField: 'paperTypeId',
+        foreignField: '_id',
+        as: 'paperType',
+      },
+    });
+    pipeline.push({ $unwind: { path: '$paperType', preserveNullAndEmptyArrays: true } });
+
+    // add width/grammage string fields for text search
+    pipeline.push({
+      $addFields: {
+        'paperType.widthStr': {
+          $cond: [
+            { $ifNull: ['$paperType.width', false] },
+            { $toString: '$paperType.width' },
+            null,
+          ],
+        },
+        'paperType.grammageStr': {
+          $cond: [
+            { $ifNull: ['$paperType.grammage', false] },
+            { $toString: '$paperType.grammage' },
+            null,
+          ],
+        },
+      },
+    });
+
+    // lookup paperColor for paperType
+    pipeline.push({
+      $lookup: {
+        from: 'papercolors',
+        localField: 'paperType.paperColor',
+        foreignField: '_id',
+        as: 'paperType.paperColor',
+      },
+    });
+    pipeline.push({ $unwind: { path: '$paperType.paperColor', preserveNullAndEmptyArrays: true } });
+
+    // lookup supplier
+    pipeline.push({
+      $lookup: {
+        from: 'papersuppliers',
+        localField: 'paperSupplierId',
+        foreignField: '_id',
+        as: 'paperSupplier',
+      },
+    });
+    pipeline.push({ $unwind: { path: '$paperSupplier', preserveNullAndEmptyArrays: true } });
+
+    // optional search
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      const regex = new RegExp(search.trim(), 'i');
+      pipeline.push({
+        $match: {
+          $or: [
+            { 'paperType.widthStr': { $regex: regex } },
+            { 'paperType.grammageStr': { $regex: regex } },
+            { 'paperSupplier.name': regex },
+            { 'paperSupplier.code': regex },
+            { 'paperType.paperColor.code': regex },
+            { 'paperType.paperColor.title': regex },
+            { note: regex },
+          ],
+        },
+      });
+    }
+
+    // sort by updatedAt desc by default
+    pipeline.push({ $sort: { updatedAt: -1 } });
+
+    pipeline.push({
+      $facet: {
+        data: [{ $skip: skip }, { $limit: limit }],
+        totalCount: [{ $count: 'count' }],
+      },
+    });
+
+    const result = await this.PaperRollModel.collection.aggregate(pipeline).toArray();
+
+    const data = result?.[0]?.data || [];
+    const totalItems = result?.[0]?.totalCount?.[0]?.count || 0;
+    const totalPages = totalItems > 0 ? Math.ceil(totalItems / limit) : 0;
+
     return {
-      data: populatedDocs,
+      data,
       page,
       limit,
-      totalItems: totalCount,
+      totalItems,
       totalPages,
       hasNextPage: page < totalPages,
       hasPrevPage: page > 1,
     };
   }
+
 
   async findByPaperRollId(paperRollId: string): Promise<any> {
     const populatedRoll = await this.PaperRollModel.aggregate([

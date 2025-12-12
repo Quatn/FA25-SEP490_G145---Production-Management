@@ -146,11 +146,13 @@ export class PaperRollController {
   async findDeleted(
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10,
+    @Query("search") search?: string,
   ): Promise<BaseResponse<PaginatedList<any>>> {
     // call a service method that directly queries the collection with { isDeleted: true }
-    const docs = await this.prService.findDeleted(page, limit);
+    const docs = await this.prService.findDeleted(page, limit, search);
     return { success: true, message: "Fetch deleted", data: docs };
   }
+
 
   @Get('detail-by-paper-roll')
   @ApiOperation({ summary: 'Paper roll detail by paperRollId' })

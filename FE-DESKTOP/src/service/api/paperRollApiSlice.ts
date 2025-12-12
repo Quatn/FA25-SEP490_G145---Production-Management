@@ -83,17 +83,18 @@ export const paperRollApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ["PaperRoll"],
     }),
 
-    getDeletedPaperRolls: builder.query<BaseResponse<PaginatedList<any>>, { page?: number; limit?: number }>(
-      {
-        query: ({ page = 1, limit = 100 }) => ({
-          url: `${PAPER_ROLL_URL}/list-deleted`,
-          method: "GET",
-          params: { page, limit },
-          credentials: "include",
-        }),
-        providesTags: ["PaperRoll"],
-      }
-    ),
+    getDeletedPaperRolls: builder.query<
+      BaseResponse<PaginatedList<any>>,
+      { page?: number; limit?: number; search?: string }
+    >({
+      query: ({ page = 1, limit = 100, search = "" }) => ({
+        url: `${PAPER_ROLL_URL}/list-deleted`,
+        method: "GET",
+        params: { page, limit, search },
+        credentials: "include",
+      }),
+      providesTags: ["PaperRoll"],
+    }),
 
     restorePaperRoll: builder.mutation<BaseResponse<any>, { id: string }>({
       query: ({ id }) => ({
