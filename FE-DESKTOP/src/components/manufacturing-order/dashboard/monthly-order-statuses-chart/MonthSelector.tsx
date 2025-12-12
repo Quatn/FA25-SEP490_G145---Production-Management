@@ -1,11 +1,11 @@
 "use client"
 
 import { Portal, Select } from "@chakra-ui/react"
-import { ManufacturingOrderMonthlyProductionBarChartCommons } from "./common"
 import check from "check-types"
 import { ManufacturingOrderMonthlyOrderStatusesChartReducerStore } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyStatusesPieChartContext"
+import { ManufacturingOrderDashBoardUtils } from "../utils"
 
-const { monthValueArray, monthCollection } = ManufacturingOrderMonthlyProductionBarChartCommons
+const { monthValueArray, monthCollection } = ManufacturingOrderDashBoardUtils
 
 
 export default function ManufacturingOrderMonthlyStatusesPieChartMonthSelector() {

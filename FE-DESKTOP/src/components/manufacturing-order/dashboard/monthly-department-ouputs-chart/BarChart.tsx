@@ -10,10 +10,10 @@ import {
   Tooltip,
   XAxis,
 } from "recharts"
-import { ManufacturingOrderMonthlyProductionBarChartCommons } from "./common"
 import { ManufacturingOrderMonthlyDepartmentOutputsChartReducerStore } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyDepartmentOutputsChartContext"
+import { ManufacturingOrderDashBoardUtils } from "../utils"
 
-const { getDaysInMonth } = ManufacturingOrderMonthlyProductionBarChartCommons
+const { getDaysInMonth } = ManufacturingOrderDashBoardUtils
 
 const randomList = Array.from({ length: 50 }, () => Math.floor(Math.random() * (1000 - 200 + 1)) + 200);
 const randomList2 = Array.from({ length: 50 }, () => Math.floor(Math.random() * (1000 - 200 + 1)) + 200);

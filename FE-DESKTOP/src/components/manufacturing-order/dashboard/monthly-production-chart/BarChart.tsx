@@ -11,9 +11,9 @@ import {
   Tooltip,
   XAxis,
 } from "recharts"
-import { ManufacturingOrderMonthlyProductionBarChartCommons } from "./common"
+import { ManufacturingOrderDashBoardUtils } from "../utils"
 
-const { getDaysInMonth } = ManufacturingOrderMonthlyProductionBarChartCommons
+const { getDaysInMonth } = ManufacturingOrderDashBoardUtils
 
 const randomList = Array.from({ length: 50 }, () => Math.floor(Math.random() * (100 - 30 + 1)) + 30);
 

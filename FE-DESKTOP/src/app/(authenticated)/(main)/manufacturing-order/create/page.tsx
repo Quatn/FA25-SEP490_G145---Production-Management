@@ -39,7 +39,7 @@ export default function PurchaseOrderCreatePage() {
                 maxH={"95vh"}
               >
                 <Text fontWeight={"semibold"} color={"fg"} mb={2}>
-                  PO Picker
+                  Chọn lệnh
                 </Text>
                 <Box mb={2}>
                   <CreatePage.SearchBar />
