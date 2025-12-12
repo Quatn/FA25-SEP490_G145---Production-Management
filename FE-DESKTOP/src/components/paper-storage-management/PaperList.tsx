@@ -333,12 +333,31 @@ export const PaperList: React.FC = () => {
 
       if (createForm.useNewType) {
         const colorId = createForm.paperColor;
-        const widthNum = Number(createForm.width || 0);
-        const grammageNum = Number(createForm.grammage || 0);
-        if (!colorId || !widthNum || !grammageNum) {
+        const widthStr = String(createForm.width ?? "").trim();
+        const grammageStr = String(createForm.grammage ?? "").trim();
+
+        // cannot be empty
+        if (!colorId || widthStr === "" || grammageStr === "") {
           toaster.create({
             description:
               "Please provide color, width and grammage for new type",
+            type: "error",
+          });
+          return;
+        }
+
+        const widthNum = Number(widthStr);
+        const grammageNum = Number(grammageStr);
+
+        // must be numeric and >= 0
+        if (
+          !Number.isFinite(widthNum) ||
+          widthNum < 0 ||
+          !Number.isFinite(grammageNum) ||
+          grammageNum < 0
+        ) {
+          toaster.create({
+            description: "Width and grammage must be numbers >= 0",
             type: "error",
           });
           return;
@@ -374,15 +393,25 @@ export const PaperList: React.FC = () => {
         return;
       }
 
-      const weight = Number(createForm.weight || 0);
-      const receivingDate = createForm.receivingDate;
-      if (!Number.isFinite(weight) || weight <= 0) {
+      // weight: cannot be empty and must be numeric >= 0
+      const weightStr = String(createForm.weight ?? "").trim();
+      if (weightStr === "") {
         toaster.create({
-          description: "Provide valid weight (>0)",
+          description: "Please provide weight (>= 0)",
           type: "error",
         });
         return;
       }
+      const weight = Number(weightStr);
+      if (!Number.isFinite(weight) || weight < 0) {
+        toaster.create({
+          description: "Provide valid weight (>= 0)",
+          type: "error",
+        });
+        return;
+      }
+
+      const receivingDate = createForm.receivingDate;
       if (!receivingDate) {
         toaster.create({
           description: "Please provide receiving date",
@@ -475,12 +504,30 @@ export const PaperList: React.FC = () => {
         let paperTypeId: string | undefined = undefined;
         if (row.useNewType) {
           const colorId = row.paperColor;
-          const widthNum = Number(row.width || 0);
-          const grammageNum = Number(row.grammage || 0);
-          if (!colorId || !widthNum || !grammageNum) {
+          const widthStr = String(row.width ?? "").trim();
+          const grammageStr = String(row.grammage ?? "").trim();
+
+          if (!colorId || widthStr === "" || grammageStr === "") {
             toaster.create({
               description:
                 "Please provide color, width and grammage for every new-type row",
+              type: "error",
+            });
+            return;
+          }
+
+          const widthNum = Number(widthStr);
+          const grammageNum = Number(grammageStr);
+
+          if (
+            !Number.isFinite(widthNum) ||
+            widthNum < 0 ||
+            !Number.isFinite(grammageNum) ||
+            grammageNum < 0
+          ) {
+            toaster.create({
+              description:
+                "Width and grammage must be numbers >= 0 for every new-type row",
               type: "error",
             });
             return;
@@ -517,15 +564,24 @@ export const PaperList: React.FC = () => {
           return;
         }
 
-        const weight = Number(row.weight || 0);
+        const weightStr = String(row.weight ?? "").trim();
         const receivingDate = row.receivingDate;
-        if (!Number.isFinite(weight) || weight <= 0) {
+        if (weightStr === "") {
           toaster.create({
-            description: "Provide valid weight (>0) for every row",
+            description: "Provide valid weight (>= 0) for every row",
             type: "error",
           });
           return;
         }
+        const weight = Number(weightStr);
+        if (!Number.isFinite(weight) || weight < 0) {
+          toaster.create({
+            description: "Provide valid weight (>= 0) for every row",
+            type: "error",
+          });
+          return;
+        }
+
         if (!receivingDate) {
           toaster.create({
             description: "Please provide receiving date for every row",
@@ -595,19 +651,45 @@ export const PaperList: React.FC = () => {
   };
 
   const handleUpdateSubmit = async () => {
-    const widthNum = Number(updateForm.width || 0);
-    const grammageNum = Number(updateForm.grammage || 0);
-    const weightNum = Number(updateForm.weight ?? 0);
+    const widthStr = String(updateForm.width ?? "").trim();
+    const grammageStr = String(updateForm.grammage ?? "").trim();
+    const weightStr = String(updateForm.weight ?? "").trim();
+
+    // required checks for update: color, supplier, width, grammage, receivingDate
     if (
       !updateForm.paperColor ||
       !updateForm.paperSupplierId ||
-      !widthNum ||
-      !grammageNum ||
-      isNaN(weightNum) ||
+      widthStr === "" ||
+      grammageStr === "" ||
       !updateForm.receivingDate
     ) {
       toaster.create({
         description: "Please fill required fields",
+        type: "error",
+      });
+      return;
+    }
+
+    const widthNum = Number(widthStr);
+    const grammageNum = Number(grammageStr);
+    const weightNum = Number(weightStr);
+
+    if (
+      !Number.isFinite(widthNum) ||
+      widthNum < 0 ||
+      !Number.isFinite(grammageNum) ||
+      grammageNum < 0
+    ) {
+      toaster.create({
+        description: "Width and grammage must be numbers >= 0",
+        type: "error",
+      });
+      return;
+    }
+
+    if (!Number.isFinite(weightNum) || weightNum < 0) {
+      toaster.create({
+        description: "Weight must be a number >= 0",
         type: "error",
       });
       return;
@@ -1062,8 +1144,8 @@ export const PaperList: React.FC = () => {
               <th>Mã cuộn</th>
               <th>Màu</th>
               <th>Nhà cung cấp</th>
-              <th style={{ textAlign: "right" }}>Rộng</th>
               <th style={{ textAlign: "right" }}>Khổ</th>
+              <th style={{ textAlign: "right" }}>Định lượng</th>
               <th style={{ textAlign: "right" }}>Trọng lượng</th>
               <th>Ngày nhập</th>
               <th style={{ width: 360 }}>Actions</th>

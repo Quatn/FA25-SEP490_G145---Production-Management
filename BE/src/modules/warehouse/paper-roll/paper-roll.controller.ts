@@ -21,14 +21,19 @@ export class PaperRollController {
     @Query('search') search?: string,
     @Query('sortBy') sortBy: 'weight' | 'receivingDate' | 'updatedAt' | 'both' = 'both',
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
+    @Query('includeDeleted') includeDeletedRaw?: string,
   ): Promise<BaseResponse<PaginatedList<PaperRollDocument>>> {
-    const docs = await this.prService.findPaginated(page, limit, search, sortBy, sortOrder);
+
+    const includeDeleted = includeDeletedRaw === 'true' || includeDeletedRaw === '1';
+
+    const docs = await this.prService.findPaginated(page, limit, search, sortBy as any, sortOrder as any, includeDeleted);
     return {
       success: true,
       message: 'Fetch successful',
       data: docs,
     };
   }
+
 
   // @UseGuards(JwtAuthGuard)
   @Get('detail/:id')
@@ -182,7 +187,7 @@ export class PaperRollController {
   @ApiOperation({ summary: "Query using the codes from ware's paper types field" })
   async queryInventoryByWarePaperTypeCodes(
     @Query() query: QueryByWarePaperTypeCodesRequestDto,
-  ): Promise<BaseResponse<{code: string, weight: number}[]>> {
+  ): Promise<BaseResponse<{ code: string, weight: number }[]>> {
     const docs = await this.prService.queryInventoryByWarePaperTypeCodes(query.codes);
 
     return {

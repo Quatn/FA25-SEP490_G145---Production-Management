@@ -189,7 +189,7 @@ export const PaperRollRestore: React.FC = () => {
         <div>
           <strong>Cuộn đã xóa</strong>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        {/* <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
             className="form-control"
             placeholder="Search (optional)"
@@ -200,7 +200,7 @@ export const PaperRollRestore: React.FC = () => {
             }}
             style={{ minWidth: 320 }}
           />
-        </div>
+        </div> */}
       </div>
 
       <div style={{ overflowX: "auto" }}>

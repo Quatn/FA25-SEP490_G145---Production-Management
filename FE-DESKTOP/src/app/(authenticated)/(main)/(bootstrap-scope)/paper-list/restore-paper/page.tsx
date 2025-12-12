@@ -4,6 +4,7 @@ import PaperRollRestore from "@/components/paper-storage-management/PaperRollRes
 export default function Page() {
   return (
     <div style={{ padding: 16 }}>
+      <h2>Các cuộn giấy đã xóa</h2>
       <ConfirmProvider>
         <PaperRollRestore />
       </ConfirmProvider>

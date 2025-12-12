@@ -1,8 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { toaster } from "@/components/ui/toaster";
 
 type CreateForm = any;
+
+type SubmitResult =
+  | { success: true; message?: string }
+  | { success: false; errors?: any; message?: string };
 
 type Props = {
   show: boolean;
@@ -10,7 +15,7 @@ type Props = {
   createForm: CreateForm;
   setCreateForm: (updater: any) => void;
   roleList: any[];
-  handleCreateSubmit: () => Promise<void>;
+  handleCreateSubmit: () => Promise<SubmitResult>;
   creating?: boolean;
 };
 
@@ -47,7 +52,47 @@ const EmployeeCreateModal: React.FC<Props> = ({
   handleCreateSubmit,
   creating,
 }) => {
+  const [submitting, setSubmitting] = useState(false);
+
   if (!show) return null;
+
+  const onCreateClicked = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const res = await handleCreateSubmit();
+      if (res && res.success) {
+        toaster.create({
+          description: res.message ?? "Tạo nhân viên thành công",
+          type: "success",
+        });
+        onClose();
+      } else {
+        // Build a helpful error message (prefer res.message, but include field hints if present)
+        const parts: string[] = [];
+        if (res?.errors) {
+          if (res.errors.codeRequired)
+            parts.push("Mã nhân viên (Code) là bắt buộc.");
+          if (res.errors.nameRequired) parts.push("Tên là bắt buộc.");
+          if (res.errors.roleRequired)
+            parts.push("Vui lòng chọn vai trò (Role).");
+          if (res.errors.codeDuplicate) parts.push("Mã nhân viên đã tồn tại.");
+        }
+        if (res?.message) parts.push(String(res.message));
+        const message = parts.length > 0 ? parts.join(" ") : "Tạo thất bại";
+        toaster.create({ description: message, type: "error" });
+        // keep modal open for correction
+      }
+    } catch (err: any) {
+      console.error("onCreateClicked failed", err);
+      toaster.create({
+        description: err?.message ?? "Tạo thất bại",
+        type: "error",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="modal-backdrop" style={{ display: "block" }}>
@@ -173,15 +218,19 @@ const EmployeeCreateModal: React.FC<Props> = ({
               className="modal-footer"
               style={{ borderTop: "1px solid #e9ecef" }}
             >
-              <button className="btn btn-secondary" onClick={onClose}>
+              <button
+                className="btn btn-secondary"
+                onClick={onClose}
+                disabled={submitting}
+              >
                 Close
               </button>
               <button
                 className="btn btn-primary"
-                onClick={handleCreateSubmit}
-                disabled={creating}
+                onClick={onCreateClicked}
+                disabled={creating || submitting}
               >
-                {creating ? "Creating..." : "Create"}
+                {creating || submitting ? "Creating..." : "Create"}
               </button>
             </div>
           </div>

@@ -1,14 +1,29 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import type { PurchaseOrder, SubPO, POItem } from "@/types/PurchaseOrderTypes";
+import type { PurchaseOrder, SubPO } from "@/types/PurchaseOrderTypes";
 import { useGetAllCustomersQuery } from "@/service/api/customerApiSlice";
 import { useGetPurchaseOrderWithSubsQuery } from "@/service/api/purchaseOrderApiSlice";
+import { toaster } from "@/components/ui/toaster";
+
+type SaveResult =
+  | { success: true }
+  | {
+      success: false;
+      errors?: {
+        poNumberRequired?: boolean;
+        customerRequired?: boolean;
+        taxTemplateRequired?: boolean;
+        poNumberDuplicate?: boolean;
+      };
+      message?: string;
+    };
 
 type Props = {
   po: PurchaseOrder | null;
   onClose: () => void;
-  onSave?: (updated: PurchaseOrder) => void;
+  // onSave now returns a Promise-like result that indicates success/errors
+  onSave?: (updated: PurchaseOrder) => Promise<SaveResult> | SaveResult | void;
   onOpenSubPOSelector?: (poId: string | undefined, subPOId?: string) => void;
 };
 
@@ -23,6 +38,13 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
   onOpenSubPOSelector,
 }) => {
   const [local, setLocal] = useState<PurchaseOrder | null>(null);
+
+  // local validation flags (now includes poNumberRequired)
+  const [validation, setValidation] = useState({
+    poNumberRequired: false,
+    customerRequired: false,
+    taxTemplateRequired: false,
+  });
 
   // customers list
   const { data: customerResp } = useGetAllCustomersQuery();
@@ -39,6 +61,14 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
   const { data: fullResp } = useGetPurchaseOrderWithSubsQuery(serverId, {
     skip: !serverId,
   });
+
+  useEffect(() => {
+    setValidation({
+      poNumberRequired: false,
+      customerRequired: false,
+      taxTemplateRequired: false,
+    });
+  }, [po]);
 
   useEffect(() => {
     if (!po) {
@@ -192,13 +222,18 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
       copy.address = c?.address ?? copy.address ?? "";
       return copy;
     });
+
+    // clear customer validation when user picks one
+    setValidation((v) => ({ ...v, customerRequired: false }));
   };
 
-  const handleSave = () => {
+  // Save handler in modal now awaits parent's onSave result and acts on it (show inline messages & keep modal open on validation errors)
+  const handleSave = async () => {
     if (!local) {
       onClose();
       return;
     }
+
     // compute totals
     const clone = JSON.parse(JSON.stringify(local)) as PurchaseOrder;
     let items = 0;
@@ -217,8 +252,42 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
     clone.totalItems = items;
     clone.totalValue = value;
 
-    if (onSave) onSave(clone);
-    onClose();
+    if (!onSave) {
+      // fallback: close if no parent handler provided
+      onClose();
+      return;
+    }
+
+    try {
+      const res = await onSave(clone);
+      // if parent didn't return a structured result, assume success
+      if (res === undefined) {
+        onClose();
+        return;
+      }
+      if ((res as any).success) {
+        onClose();
+        return;
+      }
+      // failure -> set inline validation flags (if provided)
+      const err = (res as any) ?? {};
+      setValidation({
+        poNumberRequired:
+          !!err.errors?.poNumberRequired || !!err.errors?.poNumberDuplicate,
+        customerRequired: !!err.errors?.customerRequired,
+        taxTemplateRequired: !!err.errors?.taxTemplateRequired,
+      });
+      // also show message when available (non-field error)
+      if (err.message) {
+        toaster.create({ description: err.message, type: "error" });
+      }
+    } catch (e: any) {
+      console.error("onSave threw", e);
+      toaster.create({
+        description: "Save failed: " + (e?.message ?? "unknown"),
+        type: "error",
+      });
+    }
   };
 
   const handleOpenSubPOSelector = (subId?: string) => {
@@ -249,7 +318,9 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
         <div className="modal-dialog modal-xl">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title">Purchase Order: {local.poNumber || "mới"}</h5>
+              <h5 className="modal-title">
+                Purchase Order: {local.poNumber || "mới"}
+              </h5>
               <button className="btn-close" onClick={onClose} />
             </div>
 
@@ -266,11 +337,25 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                         <input
                           className="form-control"
                           value={local.poNumber ?? ""}
-                          onChange={(e) =>
-                            onFieldChange("poNumber" as any, e.target.value)
-                          }
+                          onChange={(e) => {
+                            onFieldChange("poNumber" as any, e.target.value);
+                            if (
+                              validation.poNumberRequired &&
+                              String(e.target.value).trim()
+                            ) {
+                              setValidation((v) => ({
+                                ...v,
+                                poNumberRequired: false,
+                              }));
+                            }
+                          }}
                           aria-required={true}
                         />
+                        {validation.poNumberRequired && (
+                          <div className="text-danger small mt-1">
+                            Mã PO là bắt buộc hoặc đã bị trùng.
+                          </div>
+                        )}
                       </td>
 
                       <th style={{ width: 180 }}>
@@ -298,7 +383,9 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                     </tr>
 
                     <tr>
-                      <th>Khách hàng <span className="text-danger">*</span></th>
+                      <th>
+                        Khách hàng <span className="text-danger">*</span>
+                      </th>
                       <td>
                         <select
                           className="form-select"
@@ -316,6 +403,11 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                             );
                           })}
                         </select>
+                        {validation.customerRequired && (
+                          <div className="text-danger small mt-1">
+                            Khách hàng là bắt buộc.
+                          </div>
+                        )}
                       </td>
 
                       <th>Điện thoại / Email</th>
@@ -327,7 +419,6 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                             value={local.phone ?? ""}
                             readOnly={readOnlyWhenCustomer}
                             onChange={(e) =>
-                              // only allow edits when no customer selected
                               onFieldChange("phone" as any, e.target.value)
                             }
                             aria-required={false}
@@ -347,9 +438,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                     </tr>
 
                     <tr>
-                      <th>
-                        Địa chỉ giao hàng <span className="text-danger">*</span>
-                      </th>
+                      <th>Địa chỉ giao hàng</th>
                       <td>
                         <input
                           className="form-control"
@@ -358,19 +447,37 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                           onChange={(e) =>
                             onFieldChange("address" as any, e.target.value)
                           }
-                          aria-required={true}
+                          aria-required={false}
                         />
                       </td>
 
-                      <th>Phương thức thanh toán</th>
+                      <th>
+                        Phương thức thanh toán{" "}
+                        <span className="text-danger">*</span>
+                      </th>
                       <td>
                         <input
                           className="form-control"
                           value={local.taxTemplate ?? ""}
-                          onChange={(e) =>
-                            onFieldChange("taxTemplate" as any, e.target.value)
-                          }
+                          onChange={(e) => {
+                            onFieldChange("taxTemplate" as any, e.target.value);
+                            if (
+                              validation.taxTemplateRequired &&
+                              String(e.target.value).trim()
+                            ) {
+                              setValidation((v) => ({
+                                ...v,
+                                taxTemplateRequired: false,
+                              }));
+                            }
+                          }}
+                          aria-required={true}
                         />
+                        {validation.taxTemplateRequired && (
+                          <div className="text-danger small mt-1">
+                            Phương thức thanh toán là bắt buộc.
+                          </div>
+                        )}
                       </td>
                     </tr>
 

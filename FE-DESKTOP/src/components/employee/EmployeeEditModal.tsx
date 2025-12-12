@@ -1,8 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { toaster } from "@/components/ui/toaster";
 
 type EditForm = any;
+
+type SubmitResult =
+  | { success: true; message?: string }
+  | { success: false; errors?: any; message?: string };
 
 type Props = {
   show: boolean;
@@ -10,7 +15,7 @@ type Props = {
   editForm: EditForm | null;
   setEditForm: (updater: any) => void;
   roleList: any[];
-  handleEditSubmit: () => Promise<void>;
+  handleEditSubmit: () => Promise<SubmitResult>;
   updating?: boolean;
 };
 
@@ -47,7 +52,47 @@ const EmployeeEditModal: React.FC<Props> = ({
   handleEditSubmit,
   updating,
 }) => {
+  const [submitting, setSubmitting] = useState(false);
+
   if (!show || !editForm) return null;
+
+  const onSaveClicked = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const res = await handleEditSubmit();
+      if (res && res.success) {
+        toaster.create({
+          description: res.message ?? "Cập nhật thành công",
+          type: "success",
+        });
+        onClose();
+      } else {
+        const parts: string[] = [];
+        if (res?.errors) {
+          if (res.errors.codeRequired)
+            parts.push("Mã nhân viên (Code) là bắt buộc.");
+          if (res.errors.nameRequired) parts.push("Tên là bắt buộc.");
+          if (res.errors.roleRequired)
+            parts.push("Vui lòng chọn vai trò (Role).");
+          if (res.errors.codeDuplicate) parts.push("Mã nhân viên đã tồn tại.");
+        }
+        if (res?.message) parts.push(String(res.message));
+        const message =
+          parts.length > 0 ? parts.join(" ") : "Cập nhật thất bại";
+        toaster.create({ description: message, type: "error" });
+        // keep modal open
+      }
+    } catch (err: any) {
+      console.error("onSaveClicked failed", err);
+      toaster.create({
+        description: err?.message ?? "Cập nhật thất bại",
+        type: "error",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="modal-backdrop" style={{ display: "block" }}>
@@ -171,15 +216,19 @@ const EmployeeEditModal: React.FC<Props> = ({
               className="modal-footer"
               style={{ borderTop: "1px solid #e9ecef" }}
             >
-              <button className="btn btn-secondary" onClick={onClose}>
+              <button
+                className="btn btn-secondary"
+                onClick={onClose}
+                disabled={submitting}
+              >
                 Close
               </button>
               <button
                 className="btn btn-primary"
-                onClick={handleEditSubmit}
-                disabled={updating}
+                onClick={onSaveClicked}
+                disabled={updating || submitting}
               >
-                {updating ? "Saving..." : "Save"}
+                {updating || submitting ? "Saving..." : "Save"}
               </button>
             </div>
           </div>

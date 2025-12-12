@@ -23,6 +23,7 @@ export class PaperRollService {
     search?: string,
     sortBy: 'weight' | 'receivingDate' | 'updatedAt' | 'sequenceNumber' | 'both' = 'both',
     sortOrder: 'asc' | 'desc' = 'desc',
+    includeDeleted = false, // <-- new flag, default false
   ) {
     const skip = (page - 1) * limit;
 
@@ -102,11 +103,16 @@ export class PaperRollService {
       },
     });
 
-    const result = await this.PaperRollModel.aggregate(pipeline).exec();
+    // IMPORTANT:
+    // - Use model.aggregate (respects plugin) when includeDeleted is false (default)
+    // - Use collection.aggregate (bypasses plugin) when includeDeleted is true
+    const result = includeDeleted
+      ? await this.PaperRollModel.collection.aggregate(pipeline).toArray()
+      : await this.PaperRollModel.aggregate(pipeline).exec();
 
-    const data = result[0]?.data || [];
-    const totalItems = result[0]?.totalCount[0]?.count || 0;
-    const totalPages = Math.ceil(totalItems / limit);
+    const data = result?.[0]?.data || [];
+    const totalItems = result?.[0]?.totalCount?.[0]?.count || 0;
+    const totalPages = totalItems > 0 ? Math.ceil(totalItems / limit) : 0;
 
     return {
       data,
@@ -118,6 +124,7 @@ export class PaperRollService {
       hasPrevPage: page > 1,
     };
   }
+
 
   async create(dto: CreatePaperRollDto): Promise<any> {
     const sequence = await this.SequenceModel.findOneAndUpdate(

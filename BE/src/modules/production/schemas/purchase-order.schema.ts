@@ -43,7 +43,7 @@ export class PurchaseOrder extends BaseSchema {
   orderDate: Date;
 
   @ApiProperty()
-  @Prop({ required: true })
+  @Prop({ required: false })
   @IsString()
   deliveryAddress: string;
 

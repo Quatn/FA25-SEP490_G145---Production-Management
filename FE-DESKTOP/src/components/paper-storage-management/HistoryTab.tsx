@@ -1,4 +1,4 @@
-// src/components/paper-storage-management/HistoryTab.tsx
+// File: src/components/paper-storage-management/HistoryTab.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -82,11 +82,12 @@ export const HistoryTab: React.FC = () => {
   };
 
   // fetch paper rolls (we keep this large-ish so we can compute roll display id; you can optimize later)
+  // NOTE: includeDeleted: true so HistoryTab can resolve names for transactions referencing soft-deleted rolls
   const {
     data: rollsResp,
     isLoading: rollsLoading,
     error: rollsError,
-  } = useGetPaperRollsQuery({ page: 1, limit: 1000 });
+  } = useGetPaperRollsQuery({ page: 1, limit: 1000, includeDeleted: true });
   const rollsRaw: any[] = rollsResp?.data?.data ?? [];
 
   // reference lists
@@ -235,9 +236,33 @@ export const HistoryTab: React.FC = () => {
     );
   }, [transactions, selectedDate]);
 
-  // find computed roll name by db id or fall back to incoming id
-  const findRollName = (id: string) =>
-    rolls.find((r) => r.paperRollDbId === id)?.paperRollId ?? id;
+  // improved findRollName: accept doc or id, prefer precomputed `rolls`, but if missing compute from doc (handles soft-deleted inline docs)
+  const findRollName = (idOrDoc: any) => {
+    if (!idOrDoc && idOrDoc !== 0) return "-";
+
+    // if it's an object/doc, try to resolve
+    if (typeof idOrDoc === "object") {
+      const dbId =
+        docIdAsString(idOrDoc) ?? getIdFromDoc(idOrDoc) ?? idOrDoc.paperRollId;
+      const found = rolls.find((r) => r.paperRollDbId === dbId);
+      if (found) return found.paperRollId;
+
+      // compute fallback from the inline doc
+      try {
+        const computed = computePaperRollId(idOrDoc);
+        if (computed && computed !== "-") return computed;
+      } catch (e) {
+        // ignore and fallback
+      }
+
+      return dbId ?? "-";
+    }
+
+    // otherwise assume string id
+    const found = rolls.find((r) => r.paperRollDbId === String(idOrDoc));
+    if (found) return found.paperRollId;
+    return String(idOrDoc ?? "-");
+  };
 
   return (
     <div>
@@ -311,8 +336,9 @@ export const HistoryTab: React.FC = () => {
                   >
                     <td>{String(tx.timeStamp ?? "").slice(11, 19)}</td>
                     <td>
-                      {findRollName(tx.paperRollDbId)}{" "}
-                      {findRollName(tx.paperRollId)}
+                      {findRollName(
+                        tx.paperRoll ?? tx.paperRollId ?? tx.paperRollDbId
+                      )}
                     </td>
                     <td>{tx.transactionType}</td>
                     <td style={{ textAlign: "right" }}>{tx.initialWeight}</td>

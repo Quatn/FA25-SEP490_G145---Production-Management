@@ -1,4 +1,3 @@
-// src/components/purchase-order-management/PurchaseOrderList.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -252,17 +251,32 @@ const PurchaseOrderList: React.FC = () => {
 
   const handleSaveFromModal = async (updated: PurchaseOrder) => {
     try {
-      // Basic client-side validation for PO number uniqueness
+      // Basic client-side validation performed here and returned to caller as structured result
       const trimmedPoNumber = (updated.poNumber || "").trim();
-      // require PO number for creation or update (adjust if empty allowed in your business logic)
+
+      // build errors object
+      const errors: any = {};
+
       if (!trimmedPoNumber) {
-        toaster.create({
-          description: "PO number is required.",
-          type: "error",
-        });
-        return;
+        errors.poNumberRequired = true;
       }
 
+      const customerId = (updated as any).customerId ?? undefined;
+      if (!customerId || String(customerId).trim() === "") {
+        errors.customerRequired = true;
+      }
+
+      const paymentTerms = String((updated as any).taxTemplate ?? "").trim();
+      if (!paymentTerms) {
+        errors.taxTemplateRequired = true;
+      }
+
+      if (Object.keys(errors).length > 0) {
+        // return structured validation result (modal will display inline errors and stay open)
+        return { success: false, errors };
+      }
+
+      // uniqueness check (client-side)
       const conflict = orders.find(
         (o) =>
           (o.poNumber || "").trim().toLowerCase() ===
@@ -270,11 +284,11 @@ const PurchaseOrderList: React.FC = () => {
       );
 
       if (conflict) {
-        toaster.create({
-          description: `PO number "${trimmedPoNumber}" already exists (PO id: ${conflict.id}). Please use a different PO number.`,
-          type: "error",
-        });
-        return;
+        return {
+          success: false,
+          errors: { poNumberDuplicate: true },
+          message: `PO number "${trimmedPoNumber}" already exists (PO id: ${conflict.id}). Please use a different PO number.`,
+        };
       }
 
       const payload: any = {
@@ -287,24 +301,29 @@ const PurchaseOrderList: React.FC = () => {
       if ((updated as any).customerId) {
         payload.customer = (updated as any).customerId;
       }
+
       if (!updated.id || String(updated.id).startsWith("local-")) {
         await createPo(payload).unwrap();
       } else {
         await updatePo({ id: updated.id, body: payload }).unwrap();
       }
+
       try {
         if (typeof refetch === "function") await refetch();
       } catch (e) {
         console.warn("refetch purchase orders failed", e);
       }
+
+      // success -> parent returns success to modal, which will close
       setSelected(null);
+      return { success: true };
     } catch (err: any) {
       console.error("Save PO failed", err);
-      toaster.create({
-        description:
-          "Save failed: " + (err?.data?.message || err?.message || "unknown"),
-        type: "error",
-      });
+      // return failure with message (modal will stay open; we also show toaster)
+      const message =
+        "Save failed: " + (err?.data?.message || err?.message || "unknown");
+      toaster.create({ description: message, type: "error" });
+      return { success: false, message };
     }
   };
 
@@ -493,6 +512,19 @@ const PurchaseOrderList: React.FC = () => {
       if (!ok) {
         return;
       }
+    }
+
+    // If changing to APPROVED, ask confirm as well
+    if (newStatus === "APPROVED") {
+      const ok = await confirm({
+        title: "Confirm approve item",
+        description:
+          "Xác nhận duyệt item này (APPROVED)? Sau khi duyệt, không thể chỉnh sửa.",
+        confirmText: "Confirm",
+        cancelText: "Cancel",
+        destructive: true,
+      });
+      if (!ok) return;
     }
 
     // optimistic update
@@ -770,7 +802,20 @@ const PurchaseOrderList: React.FC = () => {
         });
       }
     } else {
-      // Allow update to APPROVED directly (no propagation) from DRAFT
+      // APPROVED allowed directly from DRAFT (no propagation)
+      // Ask confirm before approving
+      if (newStatus === "APPROVED") {
+        const ok = await confirm({
+          title: "Confirm approve PO",
+          description:
+            "Xác nhận chuyển PO này sang APPROVED? Sau khi xác nhận, PO sẽ được khoá và không thể chỉnh sửa.",
+          confirmText: "Confirm",
+          cancelText: "Cancel",
+          destructive: true,
+        });
+        if (!ok) return;
+      }
+
       try {
         await updatePo({ id: poId, body: { status: newStatus } }).unwrap();
         try {
@@ -872,6 +917,19 @@ const PurchaseOrderList: React.FC = () => {
       }
     } else {
       // APPROVED allowed directly from DRAFT (no propagation)
+      // Ask confirm before approving sub
+      if (newStatus === "APPROVED") {
+        const ok = await confirm({
+          title: "Confirm approve Sub-PO",
+          description:
+            "Xác nhận duyệt Sub-PO này (APPROVED)? Sau khi xác nhận, Sub-PO sẽ được khoá và không thể chỉnh sửa.",
+          confirmText: "Confirm",
+          cancelText: "Cancel",
+          destructive: true,
+        });
+        if (!ok) return;
+      }
+
       try {
         await updateSub({ id: subId, body: { status: newStatus } }).unwrap();
         await safeRefetchSubs();
