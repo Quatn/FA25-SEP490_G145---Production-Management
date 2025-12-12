@@ -31,7 +31,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsAddit
       ],
       [
         {
-          label: "Khối", value: numToFixedBounded(props.order.totalVolume) + (check.number(props.order.totalVolume) ? " m^3" : "")
+          label: "Khối", value: numToFixedBounded(props.order.totalVolume) + (check.number(props.order.totalVolume) ? " m3" : "")
         },
         {
           label: "Tổng lượng", value: numToFixedBounded(props.order.totalWeight) + (check.number(props.order.totalWeight) ? " kg" : "")

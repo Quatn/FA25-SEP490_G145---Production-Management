@@ -13,6 +13,7 @@ import { useState } from "react";
 import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { ManufacturingOrderOperativeStatus } from "@/types/enums/ManufacturingOrderOperativeStatus";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
+import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";
 
 const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, getOrderStatus, OrderStatusNameMap } = manufacturingOrderComponentUtils
 
@@ -147,7 +148,14 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
                 {processes.map(proc => (
                   <Card.Root size="sm" key={proc._id}>
                     <Card.Header>
-                      <Heading size="md">{check.string(proc.wareFinishingProcessType) ? proc.wareFinishingProcessType : proc.wareFinishingProcessType.name}</Heading>
+                      <Heading size="md">
+                        {
+                          check.string(proc.wareFinishingProcessType) ?
+                            ((manufacturingOrderComponentUtils.getPopulatedWare(props.mo)?.finishingProcesses.find(p => (p as WareFinishingProcessType)._id === (proc.wareFinishingProcessType as unknown as string))) as WareFinishingProcessType).name
+                            :
+                            proc.wareFinishingProcessType.name
+                        }
+                      </Heading>
                     </Card.Header>
                     <Card.Body color="fg.muted">
                       <Progress.Root value={proc.completedAmount} max={proc.requiredAmount} flexGrow={1} colorPalette={OrderFinishingProcessProcessProgressColorMap[proc.status]}>

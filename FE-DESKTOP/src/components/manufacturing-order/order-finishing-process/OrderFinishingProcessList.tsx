@@ -12,6 +12,8 @@ import { VscRunAll } from "react-icons/vsc";
 import OrderFinishingProcessDialog from "./OrderFinishingProcessDialog";
 import { UserState } from "@/types/UserState";
 import { useAppSelector } from "@/service/hooks";
+import { ManufacturingOrderDialogProvider } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
+import ManufacturingOrderDetailsDialog from "../order-details-dialog/Dialog";
 
 const OrderFinishingProcessList: React.FC = () => {
 
@@ -197,6 +199,7 @@ const OrderFinishingProcessList: React.FC = () => {
                 </InputGroup>
             </Flex>
 
+      <ManufacturingOrderDialogProvider>
             <Tabs.Root
                 lazyMount
                 unmountOnExit
@@ -245,6 +248,9 @@ const OrderFinishingProcessList: React.FC = () => {
                         handleUpdate={handleOpenAlertDialog} />
                 </Tabs.Content>
             </Tabs.Root>
+
+        <ManufacturingOrderDetailsDialog/>
+      </ManufacturingOrderDialogProvider>
 
         </>
     );

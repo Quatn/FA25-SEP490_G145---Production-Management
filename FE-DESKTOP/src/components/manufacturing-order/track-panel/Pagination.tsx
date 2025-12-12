@@ -71,7 +71,7 @@ export default function ManufacturingOrderTrackPanelPagination() {
 
           <Pagination.Items
             render={(page) => (
-              <IconButton variant={{ base: "ghost", _selected: "outline" }}>
+              <IconButton bg={{ base: "none", _selected: "colorPalette.solid" }} colorPalette={{ base: "current", _selected: "blue" }} variant={{ base: "ghost", _selected: "solid" }}>
                 {page.value}
               </IconButton>
             )}
@@ -87,7 +87,7 @@ export default function ManufacturingOrderTrackPanelPagination() {
 
       <Group attached>
         <Input flex="1" bg="bg" placeholder="Nhập trang" w={"100px"} size="sm" value={_page ?? ""} onChange={(e) => handleSetPageInput(e.target.value)} />
-        <Button colorPalette={"teal"} variant="solid" size="sm" onClick={handleJumpToPage}>
+        <Button colorPalette={"blue"} variant="solid" size="sm" onClick={handleJumpToPage}>
           <LuArrowRight />
         </Button>
       </Group>

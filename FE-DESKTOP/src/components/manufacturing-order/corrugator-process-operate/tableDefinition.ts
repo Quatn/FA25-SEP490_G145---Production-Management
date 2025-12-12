@@ -11,6 +11,7 @@ import { CorrugatorProcess } from "@/types/CorrugatorProcess";
 import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
 import { createListCollection } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
+import ManufacturingOrderCorrugatorOperatePageTableActionColumn from "./ActionColumn";
 
 const { getPopulatedPo, getPopulatedWare, getPopulatedSubPo, corrugatorProcessStatusNameMap } = utils
 
@@ -326,12 +327,10 @@ export function manufacturingOrderCorrugatorOperatePageTableColumns(dataVariant:
       ...colSize.md,
     }),
 
-    /*
     columnHelper.defineDataTableDisplayColumn({
       id: "actions-column",
       header: undefined,
-      cell: ({ cell, table }) => ManufacturingOrderTableActionColumn({ rowId: cell.row.id, isEdited: cell.row.original.isEdited, getOrder: cell.row.original.getOrder, meta: table.options.meta })
+      cell: ({ cell, table }) => ManufacturingOrderCorrugatorOperatePageTableActionColumn({ rowId: cell.row.id, isEdited: cell.row.original.isEdited, getOrder: cell.row.original.getOrder, meta: table.options.meta })
     }),
-    */
   ]
 };

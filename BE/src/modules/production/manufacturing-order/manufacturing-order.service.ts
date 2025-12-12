@@ -498,19 +498,6 @@ export class ManufacturingOrderService {
       const doc = items.find((x) => x.id === dto.id);
       if (!doc) continue;
 
-      if (doc.approvalStatus !== ManufacturingOrderApprovalStatus.Draft) {
-        if (dto.manufacturingDirective) {
-          doc.manufacturingDirective = dto.manufacturingDirective;
-          const res = await doc.save();
-
-          accRes.push({
-            updatedAmount: 1,
-            code: res.code,
-          });
-        }
-        continue;
-      }
-
       const poi = doc.purchaseOrderItem as FullDetailPurchaseOrderItemDto;
 
       doc.manufacturingDate = getManufacturingDate(
@@ -604,6 +591,34 @@ export class ManufacturingOrderService {
 
         doc.set("corrugatorProcess", dto.corrugatorProcess);
       }
+
+      /*
+      if (doc.approvalStatus !== ManufacturingOrderApprovalStatus.Draft) {
+        let updated = false;
+
+        if (dto.manufacturingDirective) {
+          doc.manufacturingDirective = dto.manufacturingDirective;
+          updated = true;
+        }
+
+        if (dto.note) {
+          doc.note = dto.note;
+          updated = true;
+        }
+
+        if (updated) {
+          const res = await doc.save();
+
+          accRes.push({
+            updatedAmount: 1,
+            code: res.code,
+          });
+        }
+        continue;
+      }
+      */
+
+
       const { corrugatorProcess: _, ...dtoWOCorruProgress } = dto;
       Object.assign(doc, dtoWOCorruProgress);
 

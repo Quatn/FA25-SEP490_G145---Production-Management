@@ -1,4 +1,5 @@
 import { ManufacturingOrderCorrugatorOperatePageComponents } from "@/components/manufacturing-order/corrugator-process-operate/components";
+import { ManufacturingOrderTableComponents } from "@/components/manufacturing-order/full-detail-table/components";
 import ManufacturingOrderOrderDetailsConfirmDialog from "@/components/manufacturing-order/order-details-dialog/ConfirmDialog";
 import { DataTableProvider } from "@/components/ui/data-table/Provider";
 import { ManufacturingOrderCorrugatorProcessOperateProvider } from "@/context/manufacturing-order/manufacturingOrderCorrugatorProcessOperateContext";
@@ -74,6 +75,7 @@ export default function ManufacturingOrderCorrugatorProcessOperate() {
           </Stack>
 
           <ManufacturingOrderCorrugatorOperatePageComponents.ConfirmDialog />
+          <ManufacturingOrderTableComponents.DetailsDialog />
           <ManufacturingOrderOrderDetailsConfirmDialog />
         </ManufacturingOrderDialogProvider>
       </ManufacturingOrderCorrugatorProcessOperateProvider>
