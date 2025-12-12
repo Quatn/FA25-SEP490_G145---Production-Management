@@ -22,7 +22,10 @@ export type CellOptions<RowData> = {
   nullIfNumLessOrEqual?: number,
   boundFloat?: boolean,
   parseDate?: boolean,
-  getDisabled?: (data: RowData) => boolean
+  forBiddenIfNumValIsLessThan?: number,
+  getDisabled?: (data: RowData) => boolean,
+  onForbidden?: () => void,
+  onWarning?: () => void,
 }
 
 type CellProps<RowData, TValue> = {
@@ -108,7 +111,7 @@ function TextCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueT
   }, [initialValue]);
 
   const allowEdit = useDataTableSelector((state) => state.allowEdit)
-  const disabled = (props.options?.getDisabled)? props.options.getDisabled(row.original) : false
+  const disabled = (props.options?.getDisabled) ? props.options.getDisabled(row.original) : false
 
   if (allowEdit) {
     if (meta?.editableCellNode) {
@@ -152,7 +155,7 @@ function SelectCell<RowData>(props: CellProps<RowData, DataTableEditableCellValu
   }, [initialValue]);
 
   const allowEdit = useDataTableSelector((state) => state.allowEdit)
-  const disabled = (props.options?.getDisabled)? props.options.getDisabled(row.original) : false
+  const disabled = (props.options?.getDisabled) ? props.options.getDisabled(row.original) : false
 
   if (allowEdit) {
     if (meta?.editableCellNode) {
@@ -199,7 +202,7 @@ function DateCell<RowData>(props: CellProps<RowData, DataTableEditableCellValueT
   }, [initialValue]);
 
   const allowEdit = useDataTableSelector((state) => state.allowEdit)
-  const disabled = (props.options?.getDisabled)? props.options.getDisabled(row.original) : false
+  const disabled = (props.options?.getDisabled) ? props.options.getDisabled(row.original) : false
 
   if (allowEdit) {
     if (meta?.editableCellNode) {
@@ -228,6 +231,16 @@ function NumberCell<RowData>(props: CellProps<RowData, DataTableEditableCellValu
   }
 
   const onBlur = (value: DataTableEditableCellValueTypes) => {
+    if (props.options?.onForbidden) {
+      if (check.number(props.options?.forBiddenIfNumValIsLessThan)) {
+        const num = parseFloat(value + "")
+        if (check.number(num) && num < props.options.forBiddenIfNumValIsLessThan) {
+          props.options.onForbidden()
+          setValue(initialValue)
+          return;
+        }
+      }
+    }
     updateTableData(value)
   };
 
@@ -236,7 +249,7 @@ function NumberCell<RowData>(props: CellProps<RowData, DataTableEditableCellValu
   }, [initialValue]);
 
   const allowEdit = useDataTableSelector((state) => state.allowEdit)
-  const disabled = (props.options?.getDisabled)? props.options.getDisabled(row.original) : false
+  const disabled = (props.options?.getDisabled) ? props.options.getDisabled(row.original) : false
 
   if (allowEdit) {
     if (meta?.editableCellNode) {

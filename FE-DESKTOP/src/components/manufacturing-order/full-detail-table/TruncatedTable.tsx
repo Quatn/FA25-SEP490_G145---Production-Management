@@ -34,6 +34,7 @@ import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import { ManufacturingOrderTableProps } from "./TablePicker";
 import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
 import { QueryListFullDetailsManufacturingOrderRequestSortOptions } from "@/types/enums/QueryListFullDetailsManufacturingOrderRequestSortOptions";
+import DataEmpty from "@/components/common/DataEmpty";
 
 export default function TruncatedManufacturingOrderTable(
   props: ManufacturingOrderTableProps,
@@ -124,6 +125,10 @@ export default function TruncatedManufacturingOrderTable(
 
   if (check.undefined(fullDetailMOPaginatedResponse?.data)) {
     return <DataFetchError h={"full"} flexGrow={1} refetch={refetchTable} />;
+  }
+
+  if (fullDetailMOPaginatedResponse?.data.totalItems < 1) {
+    return <DataEmpty h={"full"} flexGrow={1} />;
   }
 
   const editedItemsNum = tableData.filter(row => row.isEdited).length

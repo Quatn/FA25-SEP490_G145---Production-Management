@@ -4,50 +4,79 @@ import { DataTableProvider } from "@/components/ui/data-table/Provider";
 import { ManufacturingOrderCorrugatorProcessOperateProvider } from "@/context/manufacturing-order/manufacturingOrderCorrugatorProcessOperateContext";
 import { ManufacturingOrderDialogProvider } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
-import { Box, Heading } from "@chakra-ui/react";
+import { Box, Heading, Stack } from "@chakra-ui/react";
 
 export default function ManufacturingOrderCorrugatorProcessOperate() {
   return (
-    <ManufacturingOrderCorrugatorProcessOperateProvider>
-      <ManufacturingOrderDialogProvider>
-        <Box mt={5}>
-          <Heading size="2xl">Chi tiết quy trình sóng</Heading>
-        </Box>
-
-        <ManufacturingOrderCorrugatorOperatePageComponents.CorrugatorLineSwitcher />
-
-        <Box mt={5} mx={5}>
-          <Box my={5}>
-            <DataTableProvider initialState={{ allowEdit: true }}>
-              <Heading size="md">Danh sách chạy</Heading>
-              <ManufacturingOrderCorrugatorOperatePageComponents.SearchBar />
-              <ManufacturingOrderCorrugatorOperatePageComponents.Table corrugatorProcessStatuses={[CorrugatorProcessStatus.RUNNING, CorrugatorProcessStatus.PAUSED]} />
-              <ManufacturingOrderCorrugatorOperatePageComponents.Pagination />
-            </DataTableProvider>
+    <Box>
+      <ManufacturingOrderCorrugatorProcessOperateProvider>
+        <ManufacturingOrderDialogProvider>
+          <Box m={5}>
+            <Heading size="2xl">Chi tiết quy trình sóng</Heading>
           </Box>
 
-          <Box my={5}>
-            <DataTableProvider initialState={{ allowEdit: true }}>
-              <Heading size="md">Danh sách chờ</Heading>
-              <ManufacturingOrderCorrugatorOperatePageComponents.SearchBar />
-              <ManufacturingOrderCorrugatorOperatePageComponents.Table corrugatorProcessStatuses={[CorrugatorProcessStatus.NOTSTARTED]} />
-              <ManufacturingOrderCorrugatorOperatePageComponents.Pagination />
-            </DataTableProvider>
+          <Box mt={5}>
+            <ManufacturingOrderCorrugatorOperatePageComponents.CorrugatorLineSwitcher />
           </Box>
 
-          <Box my={5}>
-            <DataTableProvider initialState={{ allowEdit: false }}>
-              <Heading size="md">Lịch sử</Heading>
-              <ManufacturingOrderCorrugatorOperatePageComponents.SearchBar />
-              <ManufacturingOrderCorrugatorOperatePageComponents.Table corrugatorProcessStatuses={[CorrugatorProcessStatus.COMPLETED, CorrugatorProcessStatus.OVERCOMPLETED, CorrugatorProcessStatus.CANCELLED]} />
-              <ManufacturingOrderCorrugatorOperatePageComponents.Pagination />
-            </DataTableProvider>
-          </Box>
-        </Box>
+          <Stack my={5} mx={5} gap={5}>
+            <Box p={3} rounded={"md"} bg={"bg.muted"}>
+              <DataTableProvider initialState={{ allowEdit: true }}>
+                <Stack>
+                  <Heading size="md">Danh sách chạy</Heading>
+                  <ManufacturingOrderCorrugatorOperatePageComponents.SearchBar />
+                  <ManufacturingOrderCorrugatorOperatePageComponents.Table
+                    dataVariant="RUNNING"
+                    corrugatorProcessStatuses={[CorrugatorProcessStatus.RUNNING, CorrugatorProcessStatus.PAUSED]}
+                    tableHeaderProps={{ colorPalette: "yellow", bgColor: "colorPalette.muted" }}
+                    tableColumnHeaderProps={{ colorPalette: "yellow", bgColor: "colorPalette.muted" }}
+                  />
+                  <Box mt={3}>
+                    <ManufacturingOrderCorrugatorOperatePageComponents.Pagination />
+                  </Box>
+                </Stack>
+              </DataTableProvider>
+            </Box>
 
-        <ManufacturingOrderCorrugatorOperatePageComponents.ConfirmDialog />
-        <ManufacturingOrderOrderDetailsConfirmDialog />
-      </ManufacturingOrderDialogProvider>
-    </ManufacturingOrderCorrugatorProcessOperateProvider>
+            <Box p={3} rounded={"md"} bg={"bg.muted"}>
+              <DataTableProvider initialState={{ allowEdit: true }}>
+                <Stack>
+                  <Heading size="md">Danh sách chờ</Heading>
+                  <ManufacturingOrderCorrugatorOperatePageComponents.SearchBar />
+                  <ManufacturingOrderCorrugatorOperatePageComponents.Table
+                    dataVariant="WAITING"
+                    corrugatorProcessStatuses={[CorrugatorProcessStatus.NOTSTARTED]}
+                  />
+                  <Box mt={3}>
+                    <ManufacturingOrderCorrugatorOperatePageComponents.Pagination />
+                  </Box>
+                </Stack>
+              </DataTableProvider>
+            </Box>
+
+            <Box p={3} rounded={"md"} bg={"bg.muted"}>
+              <DataTableProvider initialState={{ allowEdit: false }}>
+                <Stack>
+                  <Heading size="md">Lịch sử</Heading>
+                  <ManufacturingOrderCorrugatorOperatePageComponents.SearchBar />
+                  <ManufacturingOrderCorrugatorOperatePageComponents.Table
+                    dataVariant="HISTORY"
+                    corrugatorProcessStatuses={[CorrugatorProcessStatus.COMPLETED, CorrugatorProcessStatus.OVERCOMPLETED, CorrugatorProcessStatus.CANCELLED]}
+                    tableHeaderProps={{ colorPalette: "gray", bgColor: "colorPalette.muted" }}
+                    tableColumnHeaderProps={{ colorPalette: "gray", bgColor: "colorPalette.muted" }}
+                  />
+                  <Box mt={3}>
+                    <ManufacturingOrderCorrugatorOperatePageComponents.Pagination />
+                  </Box>
+                </Stack>
+              </DataTableProvider>
+            </Box>
+          </Stack>
+
+          <ManufacturingOrderCorrugatorOperatePageComponents.ConfirmDialog />
+          <ManufacturingOrderOrderDetailsConfirmDialog />
+        </ManufacturingOrderDialogProvider>
+      </ManufacturingOrderCorrugatorProcessOperateProvider>
+    </Box>
   );
 }

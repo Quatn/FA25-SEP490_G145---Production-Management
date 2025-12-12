@@ -160,6 +160,7 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
   columnHelper.defineHeaderGroup({
     id: "wareSize",
     header: () => "Kích thước sản phẩm",
+    size: 250,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "wareWidth",
@@ -189,6 +190,9 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         header: "Cao",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          nullIfNumLessOrEqual: 0
+        },
         ...colSize.sm,
       }),
     ],
@@ -206,6 +210,7 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
   columnHelper.defineHeaderGroup({
     id: "orderDates",
     header: () => "Ngày",
+    size: 300,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "orderDate",
@@ -215,6 +220,9 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         header: "Nhận đơn",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          parseDate: true
+        },
         ...colSize.sm,
       }),
       columnHelper.defineDataTableAccessorColumn({
@@ -225,6 +233,9 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         header: "Giao đơn",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          parseDate: true
+        },
         ...colSize.sm,
       }),
     ]
@@ -244,7 +255,7 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
   columnHelper.defineHeaderGroup({
     id: "blankSize",
     header: () => "Kích thước gia công",
-    size: 500,
+    size: 300,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "blankWidth",
@@ -496,7 +507,7 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
   columnHelper.defineHeaderGroup({
     id: "paperWeights",
     header: () => "Trọng lượng",
-    size: 500,
+    size: 700,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "faceLayerPaperWeight",
@@ -504,6 +515,9 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         header: "Mặt SP",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          boundFloat: true
+        },
         ...colSize.sm,
       }),
 
@@ -513,6 +527,9 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         header: "Sóng E",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          boundFloat: true
+        },
         ...colSize.sm,
       }),
 
@@ -522,6 +539,9 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         header: "Lớp giữa",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          boundFloat: true
+        },
         ...colSize.sm,
       }),
 
@@ -531,6 +551,9 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         header: "Sóng B",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          boundFloat: true
+        },
         ...colSize.sm,
       }),
 
@@ -540,6 +563,9 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         header: "Lớp giữa",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          boundFloat: true
+        },
         ...colSize.sm,
       }),
 
@@ -549,6 +575,9 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         header: "Sóng A/C",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          boundFloat: true
+        },
         ...colSize.sm,
       }),
 
@@ -558,6 +587,9 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         header: "Mặt trong",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          boundFloat: true
+        },
         ...colSize.sm,
       }),
 
@@ -567,6 +599,9 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         header: "Khối",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          boundFloat: true
+        },
         ...colSize.sm,
       }),
 
@@ -576,6 +611,9 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
         header: "Tổng trọng lượng",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          boundFloat: true
+        },
         ...colSize.sm,
       }),
     ]

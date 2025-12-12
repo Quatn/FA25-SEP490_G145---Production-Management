@@ -7,7 +7,7 @@ import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { useGetFullDetailManufacturingOrdersQuery, useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice";
 import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
-import { ActionBar, Box, BoxProps, Button, Center, HStack, Kbd, Portal, Spinner, Stack, Table, TableRootProps, Text } from "@chakra-ui/react";
+import { ActionBar, Box, BoxProps, Button, Center, HStack, Kbd, Portal, Spinner, Stack, Table, TableCellProps, TableColumnHeaderProps, TableHeaderProps, TableRootProps, Text } from "@chakra-ui/react";
 import check from "check-types";
 import { useCallback, useEffect, useMemo } from "react";
 import { convertSerializedMOToManufacturingOrderCorrugatorOperatePageTableData, manufacturingOrderCorrugatorOperatePageTableColumns, ManufacturingOrderCorrugatorOperatePageTableData, manufacturingOrderCorrugatorOperatePageTableMergedHeaders } from "./tableDefinition";
@@ -18,11 +18,15 @@ import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturi
 import { toaster } from "@/components/ui/toaster";
 import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
+import DataEmpty from "@/components/common/DataEmpty";
 
 export type ManufacturingOrderCorrugatorOperatePageTableProps = {
   rootProps?: BoxProps;
   tableRootProps?: TableRootProps;
+  tableHeaderProps?: TableHeaderProps,
+  tableColumnHeaderProps?: TableCellProps,
   corrugatorProcessStatuses?: CorrugatorProcessStatus[],
+  dataVariant: "WAITING" | "RUNNING" | "HISTORY"
 };
 
 export default function ManufacturingOrderCorrugatorOperatePageTable(
@@ -67,7 +71,7 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
 
   const { tableComponent, tableData, resetTable } = useDataTable({
     data: rawTableData,
-    columns: manufacturingOrderCorrugatorOperatePageTableColumns,
+    columns: manufacturingOrderCorrugatorOperatePageTableColumns(props.dataVariant),
     getCoreRowModel: getCoreRowModel(),
     getRowId: (mo) => mo._id,
     bodyPropsStack: {
@@ -85,6 +89,10 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
         colorPalette: "yellow",
         bg: { base: "colorPalette.muted" }
       },
+    },
+    headerPropsStack: {
+      tableHeaderProps: props.tableHeaderProps,
+      tableHeaderCellProps: props.tableColumnHeaderProps,
     },
     mergedHeadersIds: manufacturingOrderCorrugatorOperatePageTableMergedHeaders,
     initialState: {
@@ -120,6 +128,10 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
 
   if (check.undefined(fullDetailMOPaginatedResponse?.data)) {
     return <DataFetchError h={"full"} flexGrow={1} refetch={refetchTable} />;
+  }
+
+  if (fullDetailMOPaginatedResponse?.data.totalItems < 1) {
+    return <DataEmpty h={"full"} flexGrow={1} text={"Không có lệnh"} />;
   }
 
   const editedItemsNum = tableData.filter(row => row.isEdited).length
