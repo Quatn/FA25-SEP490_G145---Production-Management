@@ -7,7 +7,10 @@ import ManufacturingOrderMonthlyProductionBarChartMonthSelector from "@/componen
 import { ManufacturingOrderMonthlyDepartmentOutputsChartProvider } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyDepartmentOutputsChartContext";
 import { ManufacturingOrderMonthlyProductionChartProvider } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyProductionChartContext";
 import { ManufacturingOrderMonthlyOrderStatusesChartProvider } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyStatusesPieChartContext";
-import { Box, GridItem, Heading, HStack, SimpleGrid, Text } from "@chakra-ui/react";
+import { Box, Center, GridItem, Heading, HStack, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+import POPieChart from "@/components/manufacturing-order/dashboard/purchase-order-status-chart/POPieChart";
+import Link from "next/link";
+import { FiExternalLink } from "react-icons/fi";
 
 export default function Dashboard() {
   return (
@@ -23,13 +26,31 @@ export default function Dashboard() {
       <Text fontWeight={"semibold"} color={"fg"}>
         Dashboard
       </Text>
-      <SimpleGrid columns={{ md: 1, lg: 2 }} gap="40px" mx={5}>
+      <SimpleGrid columns={{ md: 1, lg: 2 }} gap="40px" mx={5} alignItems={"stretch"}>
         <GridItem colSpan={{ base: 1 }}>
+          <Box bg="bg" p={2} rounded={"sm"} h={"full"}>
+            <HStack justifyContent={"space-between"}>
+              <Heading size={"sm"}>
+                Tổng quan trạng thái của các đơn hàng
+              </Heading>
+              <Link
+                href="/purchase-order"
+                aria-label="Open purchase order list"
+                title="Open purchase order list"
+              >
+                <FiExternalLink />
+              </Link>
+            </HStack>
+
+            <Center h={"full"}>
+              <POPieChart />
+            </Center>
+          </Box>
         </GridItem>
 
         <GridItem colSpan={{ base: 1 }}>
           <ManufacturingOrderMonthlyOrderStatusesChartProvider>
-            <Box bg="bg" p={2} rounded={"sm"}>
+            <Box bg="bg" p={2} rounded={"sm"} h={"full"}>
               <HStack mb={5} justifyContent={"space-between"}>
                 <Heading size={"sm"}>Tổng quan trạng thái của các lệnh sản xuất theo tháng</Heading>
                 <ManufacturingOrderMonthlyStatusesPieChartMonthSelector />
@@ -42,7 +63,7 @@ export default function Dashboard() {
 
         <GridItem colSpan={{ base: 1, lg: 2 }}>
           <ManufacturingOrderMonthlyProductionChartProvider>
-            <Box bg="bg" p={2} rounded={"sm"}>
+            <Box bg="bg" p={2} rounded={"sm"} h={"full"}>
               <HStack mb={5} justifyContent={"space-between"}>
                 <Heading size={"sm"}>Số lượng lệnh sản xuất theo tháng</Heading>
                 <ManufacturingOrderMonthlyProductionBarChartMonthSelector />
@@ -55,7 +76,7 @@ export default function Dashboard() {
 
         <GridItem colSpan={{ base: 1, lg: 2 }}>
           <ManufacturingOrderMonthlyDepartmentOutputsChartProvider>
-            <Box bg="bg" p={2} rounded={"sm"}>
+            <Box bg="bg" p={2} rounded={"sm"} h={"full"}>
               <HStack mb={5} justifyContent={"space-between"}>
                 <Heading size={"sm"}>Sản lượng các bộ phân gia công theo tháng</Heading>
                 <ManufacturingOrderMonthlyDepartmentOutputsBarChartMonthSelector />

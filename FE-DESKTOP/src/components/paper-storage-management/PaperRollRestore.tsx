@@ -1,4 +1,3 @@
-// src/components/paper-storage-management/PaperRollRestore.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -31,7 +30,7 @@ export const PaperRollRestore: React.FC = () => {
   // pagination state
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
-  const [search, setSearch] = useState<string>(""); // optional search (unused by backend if not supported)
+  const [search, setSearch] = useState<string>(""); // optional search
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [detailOpen, setDetailOpen] = useState<{ open: boolean; roll?: any }>({
@@ -192,7 +191,7 @@ export const PaperRollRestore: React.FC = () => {
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
             className="form-control"
-            placeholder="Search (optional)"
+            placeholder="Search (color code, supplier, width, grammage...)"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
