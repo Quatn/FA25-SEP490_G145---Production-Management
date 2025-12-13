@@ -42,7 +42,7 @@ const OrderFinishingProcessDialog: React.FC<OrderFinishingProcessAlertDialogProp
 
                             {updateToStatus == OrderFinishingProcessStatus.FinishedProduction &&
 
-                                <Field.Root invalid={quantity <= 0} orientation="vertical">
+                                <Field.Root invalid={quantity < Math.max(0, initialData?.requiredAmount ?? 0)} orientation="vertical">
                                     <Text>
                                         Hoàn thành kế hoạch {initialData?.code} ?
                                     </Text>
@@ -86,6 +86,10 @@ const OrderFinishingProcessDialog: React.FC<OrderFinishingProcessAlertDialogProp
 
                                         <NumberInput.Control />
                                     </NumberInput.Root>
+ 
+                                    <Field.HelperText color={'red'} fontWeight={'bold'}>
+                                        Sản lượng không được phép nhỏ hơn số lượng yêu cầu: ({initialData?.requiredAmount})
+                                    </Field.HelperText>
                                 </Field.Root>
                             }
                         </Dialog.Body>
@@ -93,7 +97,13 @@ const OrderFinishingProcessDialog: React.FC<OrderFinishingProcessAlertDialogProp
                             <Dialog.ActionTrigger asChild>
                                 <Button variant="outline">Hủy</Button>
                             </Dialog.ActionTrigger>
-                            <Button colorPalette="red" onClick={() => handleSubmit()}>Xác nhận</Button>
+                            <Button
+                                colorPalette="red"
+                                onClick={() => handleSubmit()}
+                                disabled={quantity < Math.max(0, initialData?.requiredAmount ?? 0)}
+                            >
+                                Xác nhận
+                            </Button>
                         </Dialog.Footer>
                         <Dialog.CloseTrigger asChild>
                             <CloseButton size="sm" />
