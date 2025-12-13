@@ -231,9 +231,10 @@ function NumberCell<RowData>(props: CellProps<RowData, DataTableEditableCellValu
   }
 
   const onBlur = (value: DataTableEditableCellValueTypes) => {
+    const num = parseFloat(value + "")
+    if (!check.number(num)) return;
     if (props.options?.onForbidden) {
       if (check.number(props.options?.forBiddenIfNumValIsLessThan)) {
-        const num = parseFloat(value + "")
         if (check.number(num) && num < props.options.forBiddenIfNumValIsLessThan) {
           props.options.onForbidden()
           setValue(initialValue)
@@ -241,7 +242,7 @@ function NumberCell<RowData>(props: CellProps<RowData, DataTableEditableCellValu
         }
       }
     }
-    updateTableData(value)
+    updateTableData(num)
   };
 
   useEffect(() => {

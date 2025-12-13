@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, UseGuards } from "@nestjs/common";
 import { ProductionDevController } from "./dev.controller";
 import { ManufacturingOrderModule } from "../manufacturing-order/manufacturing-order.module";
 import { ProductionDevService } from "./dev.service";
@@ -35,11 +35,9 @@ import {
   PurchaseOrderItem,
   PurchaseOrderItemSchema,
 } from "../schemas/purchase-order-item.schema";
-import { APP_GUARD } from "@nestjs/core";
-import { DevOnlyGuard } from "@/common/guards/dev.guard";
 
 // IMPORTANT: This module is only available in development mode and should only be imported conditionally.
-// It does use a guard that blocks access in non-development mode, but the best practice would be to not import it in the first place.
+// Its controller does use a guard that blocks access in non-development mode, but the best practice would be to not import it in the first place.
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -64,9 +62,6 @@ import { DevOnlyGuard } from "@/common/guards/dev.guard";
     ManufacturingOrderModule,
   ],
   controllers: [ProductionDevController],
-  providers: [ProductionDevService, {
-    provide: APP_GUARD,
-    useClass: DevOnlyGuard,
-  }],
+  providers: [ProductionDevService],
 })
-export class ProductionDevModule {}
+export class ProductionDevModule { }

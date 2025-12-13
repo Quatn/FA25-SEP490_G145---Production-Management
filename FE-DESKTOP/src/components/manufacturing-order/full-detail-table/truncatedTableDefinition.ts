@@ -226,7 +226,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     cellType: DataTableCellType.Select,
     selectCollection: approvalStatusesCol,
     options: {
-      getDisabled: (mo) => mo.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
+      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
     },
     ...colSize.md,
   }),
@@ -355,7 +355,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     enablePinning: true,
     cellType: DataTableCellType.Text,
     options: {
-      getDisabled: (mo) => mo.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
+      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
     },
     ...colSize.lg,
   }),
@@ -369,7 +369,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     enablePinning: true,
     cellType: DataTableCellType.Date,
     options: {
-      getDisabled: (mo) => mo.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
+      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
     },
     ...colSize.md,
   }),
@@ -381,7 +381,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     enablePinning: true,
     cellType: DataTableCellType.Date,
     options: {
-      getDisabled: (mo) => mo.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
+      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
     },
     ...colSize.md,
   }),
@@ -397,7 +397,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     cellType: DataTableCellType.Select,
     selectCollection: corrugatorLinesCol,
     options: {
-      getDisabled: (mo) => mo.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
+      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
     },
     ...colSize.md,
   }),

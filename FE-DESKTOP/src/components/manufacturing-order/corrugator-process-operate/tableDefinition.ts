@@ -230,9 +230,7 @@ export function manufacturingOrderCorrugatorOperatePageTableColumns(dataVariant:
 
     columnHelper.defineDataTableAccessorColumn({
       id: "manufacturedAmount",
-      accessorFn: (mo) => {
-        return mo.corrugatorProcess.manufacturedAmount
-      },
+      accessorKey: "manufacturedAmount",
       header: "Số lượng đã sản xuất",
       enablePinning: true,
       cellType: DataTableCellType.Number,

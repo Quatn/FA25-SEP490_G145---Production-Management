@@ -27,8 +27,6 @@ import { ProductionCommonModule } from "./common/common.module";
     PurchaseOrderItemModule,
     WareManufacturingProcessTypeModule,
     WareFinishingProcessTypeModule,
-    ProductionDevModule,
-    ...(process.env.NODE_ENV === "development" ? [ProductionDevModule] : []),
     CustomerModule,
     ProductTypeModule,
     FluteCombinationModule,
@@ -37,6 +35,7 @@ import { ProductionCommonModule } from "./common/common.module";
     DeliveryNoteModule,
     OrderFinishingProcessModule,
     ProductionCommonModule,
+    ...(process.env.NODE_ENV === "development" ? [ProductionDevModule] : []),
   ],
 })
 export class ProductionModule { }
