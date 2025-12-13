@@ -1,22 +1,18 @@
 "use client";
 
-import { useGetMaterialRequirementsQuery } from "@/service/api/materialRequirementApiSlice";
 import { MaterialRequirementDto } from "@/types/DTO/material-requirement-summary/MaterialRequirement";
 import { Box, BoxProps, Center, Spinner, Stack, Table, TableRootProps, TabsRootProps, Text } from "@chakra-ui/react";
-import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { useEffect, useMemo, useReducer, useState } from "react";
-import { materialRequirementColumns } from "./materialTableDefinition";
+import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { useMemo } from "react";
+import { paperTypesTableColumns } from "./paperTypesTableDefinition";
 import check from "check-types";
-import { useSelectedOrdersState } from "../TabbedContainer";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { Ware } from "@/types/Ware";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
-import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
 import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
-import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 
-export type MaterialRequirementTableProps = {
+export type PaperTypesTableProps = {
   rootProps?: BoxProps;
   tabsRootProps?: TabsRootProps;
   tableRootProps?: TableRootProps;
@@ -80,8 +76,8 @@ function accumulateMaterialRequirements(
   return result;
 }
 
-export default function MaterialRequirementTable(
-  props: MaterialRequirementTableProps,
+export default function PaperTypesTable(
+  props: PaperTypesTableProps,
 ) {
   const { useSelector } = ManufacturingOrderCreatePageReducerStore;
   const selectedPOIsIds = useSelector(s => s.selectedPOIsIds);
@@ -94,47 +90,21 @@ export default function MaterialRequirementTable(
     ids: selectedPOIsIds,
   });
 
-  const moPaginatedList = useMemo(() => {
-    if (fullDetailMOsResponse?.data) {
-      const calculatedMoPaginatedList = fullDetailMOsResponse.data.map((mo) => {
-        if (check.string(mo.purchaseOrderItem)) {
-          throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
-        }
+  const tableData: MaterialRequirementDto[] = useMemo(() => accumulateMaterialRequirements(fullDetailMOsResponse?.data ?? [], props.type),
+    [fullDetailMOsResponse?.data, props.type]);
 
-        const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
-        const calculatedPOI = recalculatePurchaseOrderItem({
-          ...mo.purchaseOrderItem!,
-          ware: calculatedWare
-        })
-
-        return {
-          ...mo,
-          purchaseOrderItem: calculatedPOI,
-        }
-      })
-      return {
-        data: calculatedMoPaginatedList
-      }
-    }
-    else {
-      return undefined
-    }
-  }, [fullDetailMOsResponse?.data])
-
-  const tableData: MaterialRequirementDto[] = useMemo(() => accumulateMaterialRequirements(moPaginatedList?.data ?? [], props.type),
-    [moPaginatedList, props.type]);
 
   const table = useReactTable({
     data: tableData,
-    columns: materialRequirementColumns(props.header),
+    columns: paperTypesTableColumns(props.header),
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.code,
   });
 
-  if (check.undefined(moPaginatedList?.data) || moPaginatedList?.data.length < 1) {
+  if (check.undefined(fullDetailMOsResponse?.data) || fullDetailMOsResponse?.data.length < 1) {
     return (
       <Center>
-        <Box bgColor={"gray.200"} px={3} py={2} rounded={"md"}>
+        <Box bgColor={"colorPalette.muted"} px={3} py={2} rounded={"md"}>
           <Stack alignItems={"center"}>
             <Text>Các lệnh sẽ được tạo sẽ được hiển thị ở đây</Text>
             <Text>Hãy chọn PO Item bên trên</Text>

@@ -1,4 +1,3 @@
-// src/components/paper-storage-management/PaperRollRestore.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -10,6 +9,8 @@ import {
 import { useGetAllPaperColorsQuery } from "@/service/api/paperColorApiSlice";
 import { useGetAllPaperSuppliersQuery } from "@/service/api/paperSupplierApiSlice";
 import { useGetAllPaperTypesQuery } from "@/service/api/paperTypeApiSlice";
+import { toaster } from "@/components/ui/toaster";
+import { useConfirm } from "@/components/common/ConfirmModal";
 
 function getIdFromDoc(doc: any) {
   if (!doc) return undefined;
@@ -29,7 +30,7 @@ export const PaperRollRestore: React.FC = () => {
   // pagination state
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
-  const [search, setSearch] = useState<string>(""); // optional search (unused by backend if not supported)
+  const [search, setSearch] = useState<string>(""); // optional search
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [detailOpen, setDetailOpen] = useState<{ open: boolean; roll?: any }>({
@@ -97,9 +98,9 @@ export const PaperRollRestore: React.FC = () => {
 
   const getColorIdFromPaperType = (pt: any) => {
     if (!pt) return undefined;
-    if (pt.paperColorId && typeof pt.paperColorId === "object")
-      return getIdFromDoc(pt.paperColorId);
-    return getIdFromDoc(pt.paperColorId) ?? undefined;
+    if (pt.paperColor && typeof pt.paperColor === "object")
+      return getIdFromDoc(pt.paperColor);
+    return getIdFromDoc(pt.paperColor) ?? undefined;
   };
 
   const computePaperRollId = (r: any) => {
@@ -138,18 +139,39 @@ export const PaperRollRestore: React.FC = () => {
     return r.paperRollId ?? "-";
   };
 
+  // confirm hook (make sure ConfirmProvider is mounted above this component)
+  const showConfirm = useConfirm();
+
   const handleRestore = async (r: any) => {
     const id = getIdFromDoc(r) ?? r.paperRollId;
-    if (!id) return alert("No id");
-    if (!confirm(`Restore ${computePaperRollId(r)}?`)) return;
+    if (!id) {
+      toaster.create({ description: "No id", type: "error" });
+      return;
+    }
+
+    const ok = await showConfirm({
+      title: "Restore roll",
+      description: `Restore ${computePaperRollId(r)}?`,
+      confirmText: "Restore",
+      cancelText: "Cancel",
+      destructive: false,
+    });
+    if (!ok) return;
+
     try {
       const res: any = await restorePaperRoll({ id }).unwrap();
-      alert(res?.message ?? "Restored");
+      toaster.create({
+        description: res?.message ?? "Restored",
+        type: "success",
+      });
       // naive page refresh by re-setting page (RTK query will refetch automatically)
       setPage(1);
     } catch (err: any) {
       console.error(err);
-      alert(err?.data?.message ?? err?.message ?? "Restore failed");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Restore failed",
+        type: "error",
+      });
     }
   };
 
@@ -169,7 +191,7 @@ export const PaperRollRestore: React.FC = () => {
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
             className="form-control"
-            placeholder="Search (optional)"
+            placeholder="Search (color code, supplier, width, grammage...)"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -229,12 +251,6 @@ export const PaperRollRestore: React.FC = () => {
                   </td>
                   <td>
                     <div style={{ display: "flex", gap: 8 }}>
-                      {/* <button
-                        className="btn btn-outline-secondary btn-sm"
-                        onClick={() => setDetailOpen({ open: true, roll: r })}
-                      >
-                        Xem
-                      </button> */}
                       <button
                         className="btn btn-outline-primary btn-sm"
                         onClick={() => handleRestore(r)}

@@ -66,7 +66,7 @@ const FinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
                                         w="100%"
                                     >
                                         <Table.Header>
-                                            <Table.Row>
+                                            <Table.Row background={'blue.100'}>
                                                 <Table.ColumnHeader colSpan={4} textAlign="center">
                                                     THÔNG TIN CƠ BẢN
                                                 </Table.ColumnHeader>
@@ -79,7 +79,7 @@ const FinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
                                                 <Table.ColumnHeader colSpan={2} textAlign="center">
                                                     SẢN LƯỢNG XUẤT
                                                 </Table.ColumnHeader>
-                                                <Table.ColumnHeader colSpan={3} textAlign="center">
+                                                <Table.ColumnHeader colSpan={2} textAlign="center">
                                                     SẢN LƯỢNG TỒN
                                                 </Table.ColumnHeader>
                                             </Table.Row>
@@ -114,10 +114,10 @@ const FinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
                                                 <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tình trạng xuất hàng</Table.ColumnHeader>
                                                 <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Số ngày tồn kho</Table.ColumnHeader>
                                                 <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tồn kho</Table.ColumnHeader>
-                                                <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Điều kiện</Table.ColumnHeader>
+                                                {/* <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Điều kiện</Table.ColumnHeader> */}
 
                                             </Table.Row>
-                                            <Table.Row >
+                                            <Table.Row background={'blue.100'}>
                                                 <Table.ColumnHeader colSpan={1}>Dài</Table.ColumnHeader>
                                                 <Table.ColumnHeader colSpan={1}>Rộng</Table.ColumnHeader>
                                                 <Table.ColumnHeader colSpan={1}> Cao</Table.ColumnHeader>
@@ -177,7 +177,7 @@ const FinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
                                                     fontWeight={"bold"}
                                                     textAlign={"center"}>{daysInStock}</Table.Cell>
                                                 <Table.Cell>{item.currentQuantity}</Table.Cell>
-                                                <Table.Cell
+                                                {/* <Table.Cell
                                                     backgroundColor={
                                                         item.currentStatus == 'SAVE' ? "" : "yellow"
                                                     }
@@ -185,7 +185,7 @@ const FinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) => {
                                                     fontWeight={"bold"}
                                                 >
                                                     {item.currentStatus == 'SAVE' ? "Lưu" : "Hủy"}
-                                                </Table.Cell>
+                                                </Table.Cell> */}
                                             </Table.Row>
                                         </Table.Body>
                                     </Table.Root>

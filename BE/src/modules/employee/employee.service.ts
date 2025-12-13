@@ -150,7 +150,10 @@ export class EmployeeService {
   }
 
   async restore(id: string) {
-    const doc: any = await this.employeeModel.findById(id);
+    const doc: any = await this.employeeModel.findOne({
+      _id: id,
+      isDeleted: true
+    });
     if (!doc) throw new NotFoundException("Không tìm thấy nhân viên");
     if (typeof doc.restore !== "function") {
       doc.isDeleted = false;

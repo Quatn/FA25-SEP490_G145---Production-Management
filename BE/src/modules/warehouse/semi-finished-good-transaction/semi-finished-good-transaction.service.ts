@@ -5,9 +5,10 @@ import { Model, PipelineStage, Types } from 'mongoose';
 import { CreateSemiFinishedGoodTransactionDto } from './dto/create-semi-finished-good-transaction.dto';
 import { UpdateSemiFinishedGoodTransactionDto } from './dto/update-semi-finished-good-transaction.dto';
 import { SoftDeleteDocument } from '@/common/types/soft-delete-document';
-import { SemiFinishedGood, SemiFinishedGoodDocument, SemiFinishedGoodSchema } from '../schemas/semi-finished-good.schema';
+import { SemiFinishedGood, SemiFinishedGoodDocument } from '../schemas/semi-finished-good.schema';
 import { TransactionType } from '../enums/transaction-type.enum';
 import { GetSemiFinishedGoodTransactionsDto } from './dto/get-semi-finished-good-transaction.dto';
+import { HourlyStockChart } from '@/common/types/semi-finished-good-types';
 
 type SoftSFGTransaction = SemiFinishedGoodTransaction & SoftDeleteDocument;
 
@@ -17,6 +18,132 @@ export class SemiFinishedGoodTransactionService {
     @InjectModel(SemiFinishedGoodTransaction.name) private readonly sfgTransactionModel: Model<SemiFinishedGoodTransactionDocument>,
     @InjectModel(SemiFinishedGood.name) private readonly semiModel: Model<SemiFinishedGoodDocument>,
   ) { }
+
+  async findAdjustmentTransaction(page: number = 1, limit: number = 10, search?: string) {
+    const skip = (page - 1) * limit;
+
+    const populateOptions = [
+      {
+        path: 'semiFinishedGood',
+        populate: {
+          path: 'manufacturingOrder',
+          populate: [
+            {
+              path: 'purchaseOrderItem',
+              populate: [
+                { path: 'ware' },
+                {
+                  path: 'subPurchaseOrder',
+                  populate: {
+                    path: 'purchaseOrder',
+                    populate: { path: 'customer' }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      { path: 'employee' }
+    ];
+
+    let data: any = [];
+    let totalItems = 0;
+
+    if (search && search.trim()) {
+      const regex = new RegExp(search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+      const aggregateResult = await this.sfgTransactionModel.aggregate([
+        { $match: { transactionType: 'ADJUSTMENT' } },
+
+        { $lookup: { from: 'employees', localField: 'employee', foreignField: '_id', as: 'emp' } },
+        { $unwind: { path: '$emp', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'semifinishedgoods', localField: 'semiFinishedGood', foreignField: '_id', as: 'sfg' } },
+        { $unwind: { path: '$sfg', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'manufacturingorders', localField: 'sfg.manufacturingOrder', foreignField: '_id', as: 'mo' } },
+        { $unwind: { path: '$mo', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'purchaseorderitems', localField: 'mo.purchaseOrderItem', foreignField: '_id', as: 'poi' } },
+        { $unwind: { path: '$poi', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'wares', localField: 'poi.ware', foreignField: '_id', as: 'ware' } },
+        { $unwind: { path: '$ware', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'subpurchaseorders', localField: 'poi.subPurchaseOrder', foreignField: '_id', as: 'subpo' } },
+        { $unwind: { path: '$subpo', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'purchaseorders', localField: 'subpo.purchaseOrder', foreignField: '_id', as: 'po' } },
+        { $unwind: { path: '$po', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'customers', localField: 'po.customer', foreignField: '_id', as: 'customer' } },
+        { $unwind: { path: '$customer', preserveNullAndEmptyArrays: true } },
+
+        {
+          $match: {
+            $or: [
+              { 'mo.code': regex },
+              { 'ware.code': regex },
+              { 'po.code': regex },
+              { 'customer.code': regex },
+              { 'emp.code': regex }
+            ]
+          }
+        },
+
+        {
+          $facet: {
+            metadata: [{ $count: 'total' }],
+            data: [
+              { $sort: { updatedAt: -1 } },
+              { $skip: skip },
+              { $limit: limit },
+              { $project: { _id: 1 } }
+            ]
+          }
+        }
+      ]);
+
+      const result = aggregateResult[0];
+      totalItems = result.metadata[0]?.total || 0;
+      const ids = result.data.map((item: any) => item._id);
+
+      if (ids.length > 0) {
+        data = await this.sfgTransactionModel
+          .find({ _id: { $in: ids } })
+          .populate(populateOptions)
+          .sort({ updatedAt: -1 });
+      }
+
+    } else {
+
+      const query = { transactionType: 'ADJUSTMENT' };
+
+      [data, totalItems] = await Promise.all([
+        this.sfgTransactionModel
+          .find(query)
+          .skip(skip)
+          .limit(limit)
+          .populate(populateOptions)
+          .sort({ updatedAt: -1 })
+          .exec(),
+        this.sfgTransactionModel.countDocuments(query),
+      ]);
+    }
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+      data,
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
 
   async findPaginated(dto: GetSemiFinishedGoodTransactionsDto) {
     const {
@@ -88,6 +215,8 @@ export class SemiFinishedGoodTransactionService {
 
     if (transactionType) {
       filterQuery.transactionType = transactionType;
+    } else {
+      filterQuery.transactionType = { $in: ["IMPORT", "EXPORT"] };
     }
 
     if (startDate && endDate) {
@@ -226,11 +355,15 @@ export class SemiFinishedGoodTransactionService {
     else if (dto.transactionType === 'EXPORT') {
       finalQuantity = initialQuantity - dto.quantity;
       semi.exportedQuantity += dto.quantity;
+    } else if (dto.transactionType === 'ADJUSTMENT') {
+      finalQuantity = dto.quantity;
     }
-    else if (dto.transactionType === 'ADJUSTMENT') finalQuantity = dto.quantity;
+    // else if (dto.transactionType === 'ADJUSTMENT') finalQuantity = dto.quantity;
 
-    semi.currentQuantity = finalQuantity;
-    await semi.save();
+    if (dto.transactionType != 'ADJUSTMENT') {
+      semi.currentQuantity = finalQuantity;
+      await semi.save();
+    }
 
     const doc = new this.sfgTransactionModel({
       semiFinishedGood: semi._id,
@@ -448,6 +581,76 @@ export class SemiFinishedGoodTransactionService {
     return { data, page, limit, totalItems, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 };
   }
 
+  async getDailyStatistics(dateString: string) {
+    const startOfDay = new Date(dateString);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(dateString);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const openingStockResult = await this.sfgTransactionModel.aggregate([
+      {
+        $match: {
+          createdAt: { $lt: startOfDay },
+          isDeleted: false
+        }
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: '$semiFinishedGood',
+          lastQuantity: { $first: '$finalQuantity' }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalOpeningStock: { $sum: '$lastQuantity' }
+        }
+      }
+    ]);
+
+    let currentGlobalStock = openingStockResult[0]?.totalOpeningStock || 0;
+
+    const todayTransactions = await this.sfgTransactionModel
+      .find({
+        createdAt: { $gte: startOfDay, $lte: endOfDay },
+        isDeleted: false,
+      })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const chartData: HourlyStockChart[] = [];
+
+    for (let hour = 0; hour < 24; hour++) {
+      const txInHour = todayTransactions.filter((tx) => {
+        return new Date(tx.createdAt).getHours() === hour;
+      });
+
+      const importVol = txInHour
+        .filter((tx) => tx.transactionType === 'IMPORT')
+        .reduce((sum, tx) => sum + Math.abs(tx.finalQuantity - tx.initialQuantity), 0);
+
+      const exportVol = txInHour
+        .filter((tx) => tx.transactionType === 'EXPORT')
+        .reduce((sum, tx) => sum + Math.abs(tx.finalQuantity - tx.initialQuantity), 0);
+
+      txInHour.forEach(tx => {
+        const netChange = tx.finalQuantity - tx.initialQuantity;
+        currentGlobalStock += netChange;
+      });
+
+      chartData.push({
+        time: `${hour.toString().padStart(2, '0')}:00`,
+        import: importVol,
+        export: exportVol,
+        stock: currentGlobalStock,
+      });
+    }
+
+    return chartData;
+  }
+
   async softDelete(id: string) {
     const doc = await this.sfgTransactionModel.findById(id) as SoftSFGTransaction;
     if (!doc) throw new NotFoundException('Transaction not found');
@@ -456,14 +659,20 @@ export class SemiFinishedGoodTransactionService {
   }
 
   async restore(id: string) {
-    const doc = await this.sfgTransactionModel.findById(id) as SoftSFGTransaction;
+    const doc = await this.sfgTransactionModel.findOne({
+      _id: id,
+      isDeleted: true
+    }) as SoftSFGTransaction;
     if (!doc) throw new NotFoundException('Transaction not found');
     await doc.restore();
     return { success: true };
   }
 
   async removeHard(id: string) {
-    const res = await this.sfgTransactionModel.findByIdAndDelete(id);
+    const res = await this.sfgTransactionModel.findOne({
+      _id: id,
+      isDeleted: true
+    });
     if (!res) throw new NotFoundException('Transaction not found');
     return { success: true };
   }

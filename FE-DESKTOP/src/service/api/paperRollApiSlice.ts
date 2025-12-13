@@ -8,12 +8,26 @@ export const paperRollApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getPaperRolls: builder.query<
       BaseResponse<PaginatedList<any>>, // aggregated documents (paperType, paperSupplier populated)
-      { page?: number; limit?: number; search?: string; sortBy?: string; sortOrder?: "asc" | "desc" }
+      {
+        page?: number;
+        limit?: number;
+        search?: string;
+        sortBy?: string;
+        sortOrder?: "asc" | "desc";
+        includeDeleted?: boolean;
+      }
     >({
-      query: ({ page = 1, limit = 100, search = "", sortBy = "both", sortOrder = "desc" }) => ({
+      query: ({
+        page = 1,
+        limit = 100,
+        search = "",
+        sortBy = "sequenceNumber",
+        sortOrder = "desc",
+        includeDeleted = false,
+      }) => ({
         url: `${PAPER_ROLL_URL}/list`,
         method: "GET",
-        params: { page, limit, search, sortBy, sortOrder },
+        params: { page, limit, search, sortBy, sortOrder, includeDeleted },
         credentials: "include",
       }),
       providesTags: ["PaperRoll"],
@@ -48,15 +62,17 @@ export const paperRollApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ["PaperRoll"],
     }),
 
-    updatePaperRoll: builder.mutation<BaseResponse<any>, { id: string; data: Partial<PaperRoll> }>({
-      query: ({ id, data }) => ({
-        url: `${PAPER_ROLL_URL}/update/${id}`,
-        method: "PATCH",
-        body: data,
-        credentials: "include",
-      }),
-      invalidatesTags: ["PaperRoll"],
-    }),
+    updatePaperRoll: builder.mutation<BaseResponse<any>, { id: string; data: Partial<PaperRoll> }>(
+      {
+        query: ({ id, data }) => ({
+          url: `${PAPER_ROLL_URL}/update/${id}`,
+          method: "PATCH",
+          body: data,
+          credentials: "include",
+        }),
+        invalidatesTags: ["PaperRoll"],
+      }
+    ),
 
     deletePaperRoll: builder.mutation<BaseResponse<any>, { id: string }>({
       query: ({ id }) => ({
@@ -67,11 +83,14 @@ export const paperRollApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ["PaperRoll"],
     }),
 
-    getDeletedPaperRolls: builder.query<BaseResponse<PaginatedList<any>>, { page?: number; limit?: number }>({
-      query: ({ page = 1, limit = 100 }) => ({
+    getDeletedPaperRolls: builder.query<
+      BaseResponse<PaginatedList<any>>,
+      { page?: number; limit?: number; search?: string }
+    >({
+      query: ({ page = 1, limit = 100, search = "" }) => ({
         url: `${PAPER_ROLL_URL}/list-deleted`,
         method: "GET",
-        params: { page, limit },
+        params: { page, limit, search },
         credentials: "include",
       }),
       providesTags: ["PaperRoll"],
@@ -85,6 +104,19 @@ export const paperRollApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["PaperRoll"],
     }),
+
+    getInventoryByWarePaperTypeCodes: builder.query<
+      BaseResponse<{ code: string; weight: number }[]>,
+      { codes: string[] }
+    >({
+      query: ({ codes }) => ({
+        url: `${PAPER_ROLL_URL}/inventory/by-ware-paper-type-codes`,
+        method: "GET",
+        params: { codes },
+        credentials: "include",
+      }),
+      providesTags: ["PaperRoll"],
+    }),
   }),
 });
 
@@ -97,4 +129,5 @@ export const {
   useDeletePaperRollMutation,
   useGetDeletedPaperRollsQuery,
   useRestorePaperRollMutation,
+  useGetInventoryByWarePaperTypeCodesQuery,
 } = paperRollApiSlice;

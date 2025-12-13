@@ -1,18 +1,25 @@
-import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
-import { FaEdit } from "react-icons/fa";
+import { Table, Group, Button, Icon } from "@chakra-ui/react";
+import { FaEdit, FaEye } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
 import { ProductType } from "@/types/ProductType";
-import ProductTypeDetailDialog from "./ProductTypeDetailDialog";
 
 interface Props {
     page: number;
     limit: number;
     items: ProductType[];
     onEdit: (item: ProductType) => void;
+    onDetail: (item: ProductType) => void;
     onDelete: (item: ProductType) => void;
 }
 
-const ProductTypeTable = ({ page, limit, items, onEdit, onDelete }: Props) => {
+const ProductTypeTable = ({
+    page,
+    limit,
+    items,
+    onEdit,
+    onDetail,
+    onDelete
+}: Props) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
@@ -30,12 +37,12 @@ const ProductTypeTable = ({ page, limit, items, onEdit, onDelete }: Props) => {
                 w="100%"
             >
                 <Table.Header>
-                    <Table.Row>
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
-                        <Table.ColumnHeader>Mã</Table.ColumnHeader>
-                        <Table.ColumnHeader>Tên</Table.ColumnHeader>
+                        <Table.ColumnHeader>Mã loại sản phẩm</Table.ColumnHeader>
+                        <Table.ColumnHeader>Tên loại sản phẩm</Table.ColumnHeader>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             Thao tác
                         </Table.ColumnHeader>
@@ -51,9 +58,16 @@ const ProductTypeTable = ({ page, limit, items, onEdit, onDelete }: Props) => {
 
                             <Table.Cell>
                                 <Group gap={5}>
-                                    <ProductTypeDetailDialog
-                                        item={item}
-                                    />
+                                    <Button
+                                        variant="surface"
+                                        colorPalette="blue"
+                                        onClick={() => onDetail(item)}
+                                    >
+                                        <Icon>
+                                            <FaEye />
+                                        </Icon>
+                                        Chi tiết
+                                    </Button>
                                     <Button
                                         variant="surface"
                                         colorPalette="yellow"

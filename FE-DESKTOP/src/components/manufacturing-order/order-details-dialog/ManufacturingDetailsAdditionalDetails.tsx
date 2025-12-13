@@ -3,7 +3,8 @@ import { ManufacturingOrder } from "@/types/ManufacturingOrder"
 import { manufacturingOrderComponentUtils as utils } from "../utils"
 import { useMemo } from "react"
 import check from "check-types"
-import { Heading, HStack, SimpleGrid, Stack, Text } from "@chakra-ui/react"
+import { Heading, HStack, Stack, Text } from "@chakra-ui/react"
+import { numToFixedBounded } from "@/utils/numToFixedBounded"
 
 export type ManufacturingOrderDetailsDialogManufacturingDetailsAdditionalDetailsProps = {
   order: Serialized<ManufacturingOrder>
@@ -17,18 +18,24 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsAddit
 
     return [
       [
-        { label: "Số sản phẩm trên phôi", value: (check.greater(ware?.warePerBlankAdjustment as number, 0) ? ware?.warePerBlankAdjustment : ware?.warePerBlank ?? "?") + "" },
-        { label: "Số phôi", value: (props.order.numberOfBlanks ?? 0) + "" },
-        { label: "Khổ giấy", value: (ware?.paperWidth ?? "?") + "" },
-        { label: "Khổ phôi", value: (ware?.blankWidth ?? "?") + "" },
-        { label: "Chia khổ", value: (check.greater(ware?.crossCutCountAdjustment as number, 0) ? ware?.crossCutCountAdjustment : ware?.crossCutCount ?? "?") + "" },
-        { label: "Số tấm chặt", value: (props.order.longitudinalCutCount ?? 0) + "" },
-        { label: "Độ dài phôi", value: (ware?.blankWidth ?? "?") + "" },
-        { label: "Mét dài", value: (props.order.runningLength ?? 0) + "" },
+        { label: "Số sản phẩm/phôi", value: (check.greater(ware?.warePerBlankAdjustment as number, 0) ? ware?.warePerBlankAdjustment : ware?.warePerBlank ?? "?") + " sp" },
+        { label: "Số phôi", value: (props.order.numberOfBlanks ?? 0) + " tấm" },
+        { label: "Khổ giấy", value: (ware?.paperWidth ?? "?") + " mm" },
+        { label: "Khổ phôi", value: (ware?.blankWidth ?? "?") + " mm" },
+        { label: "Số phần cắt ngang", value: (check.greater(ware?.crossCutCountAdjustment as number, 0) ? ware?.crossCutCountAdjustment : ware?.crossCutCount ?? "?") + "" },
+        { label: "Số phần cắt dọc", value: (props.order.longitudinalCutCount ?? 0) + "" },
+        { label: "Chiều dài phôi", value: (ware?.blankWidth ?? "?") + " mm" },
+        {
+          label: "Mét dài", value: numToFixedBounded(props.order.runningLength) + (check.number(props.order.runningLength) ? " m" : "")
+        },
       ],
       [
-        { label: "Khối", value: (props.order.totalVolume ?? 0) + "" },
-        { label: "Tổng lượng", value: (props.order.totalWeight ?? 0) + "" },
+        {
+          label: "Khối", value: numToFixedBounded(props.order.totalVolume) + (check.number(props.order.totalVolume) ? " m3" : "")
+        },
+        {
+          label: "Tổng lượng", value: numToFixedBounded(props.order.totalWeight) + (check.number(props.order.totalWeight) ? " kg" : "")
+        },
       ],
     ]
   }, [props.order])

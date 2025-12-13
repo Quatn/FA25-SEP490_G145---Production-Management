@@ -27,7 +27,7 @@ export default function ManufacturingOrderList() {
                 gapY={2}
                 minHeight={"80vh"}
               >
-                <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
+                <Text fontWeight={"semibold"} color={"fg"}>
                   Danh sách lệnh
                 </Text>
                 <HStack justifyContent={"space-between"}>

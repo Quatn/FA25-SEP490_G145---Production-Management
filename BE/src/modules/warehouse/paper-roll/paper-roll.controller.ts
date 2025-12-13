@@ -2,10 +2,11 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { PaperRollService } from './paper-roll.service';
 import { CreatePaperRollDto, CreateMultiplePaperRollDto } from './dto/create-paper-roll.dto';
 import { UpdatePaperRollDto } from './dto/update-paper-roll.dto';
-import { PaperRollDocument } from '../schemas/paper-roll.schema';
+import { PaperRoll, PaperRollDocument } from '../schemas/paper-roll.schema';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
+import { QueryByWarePaperTypeCodesRequestDto } from './dto/query-by-ware-paper-type-codes.dto';
 
 @Controller('paper-roll')
 export class PaperRollController {
@@ -20,14 +21,19 @@ export class PaperRollController {
     @Query('search') search?: string,
     @Query('sortBy') sortBy: 'weight' | 'receivingDate' | 'updatedAt' | 'both' = 'both',
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
+    @Query('includeDeleted') includeDeletedRaw?: string,
   ): Promise<BaseResponse<PaginatedList<PaperRollDocument>>> {
-    const docs = await this.prService.findPaginated(page, limit, search, sortBy, sortOrder);
+
+    const includeDeleted = includeDeletedRaw === 'true' || includeDeletedRaw === '1';
+
+    const docs = await this.prService.findPaginated(page, limit, search, sortBy as any, sortOrder as any, includeDeleted);
     return {
       success: true,
       message: 'Fetch successful',
       data: docs,
     };
   }
+
 
   // @UseGuards(JwtAuthGuard)
   @Get('detail/:id')
@@ -140,11 +146,13 @@ export class PaperRollController {
   async findDeleted(
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10,
+    @Query("search") search?: string,
   ): Promise<BaseResponse<PaginatedList<any>>> {
     // call a service method that directly queries the collection with { isDeleted: true }
-    const docs = await this.prService.findDeleted(page, limit);
+    const docs = await this.prService.findDeleted(page, limit, search);
     return { success: true, message: "Fetch deleted", data: docs };
   }
+
 
   @Get('detail-by-paper-roll')
   @ApiOperation({ summary: 'Paper roll detail by paperRollId' })
@@ -173,6 +181,21 @@ export class PaperRollController {
       success: true,
       message: 'Fetch successful',
       data: doc,
+    };
+  }
+
+
+  @Get("inventory/by-ware-paper-type-codes")
+  @ApiOperation({ summary: "Query using the codes from ware's paper types field" })
+  async queryInventoryByWarePaperTypeCodes(
+    @Query() query: QueryByWarePaperTypeCodesRequestDto,
+  ): Promise<BaseResponse<{ code: string, weight: number }[]>> {
+    const docs = await this.prService.queryInventoryByWarePaperTypeCodes(query.codes);
+
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
     };
   }
 }

@@ -18,6 +18,132 @@ export class FinishedGoodTransactionService {
     @InjectModel(FinishedGood.name) private readonly finishedModel: Model<FinishedGoodDocument>,
   ) { }
 
+  async findAdjustmentTransaction(page: number = 1, limit: number = 10, search?: string) {
+    const skip = (page - 1) * limit;
+
+    const populateOptions = [
+      {
+        path: 'finishedGood',
+        populate: {
+          path: 'manufacturingOrder',
+          populate: [
+            {
+              path: 'purchaseOrderItem',
+              populate: [
+                { path: 'ware' },
+                {
+                  path: 'subPurchaseOrder',
+                  populate: {
+                    path: 'purchaseOrder',
+                    populate: { path: 'customer' }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      { path: 'employee' }
+    ];
+
+    let data: any = [];
+    let totalItems = 0;
+
+    if (search && search.trim()) {
+      const regex = new RegExp(search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+      const aggregateResult = await this.fgTransactionModel.aggregate([
+        { $match: { transactionType: 'ADJUSTMENT' } },
+
+        { $lookup: { from: 'employees', localField: 'employee', foreignField: '_id', as: 'emp' } },
+        { $unwind: { path: '$emp', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'finishedGoods', localField: 'finishedGood', foreignField: '_id', as: 'fg' } },
+        { $unwind: { path: '$fg', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'manufacturingorders', localField: 'fg.manufacturingOrder', foreignField: '_id', as: 'mo' } },
+        { $unwind: { path: '$mo', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'purchaseorderitems', localField: 'mo.purchaseOrderItem', foreignField: '_id', as: 'poi' } },
+        { $unwind: { path: '$poi', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'wares', localField: 'poi.ware', foreignField: '_id', as: 'ware' } },
+        { $unwind: { path: '$ware', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'subpurchaseorders', localField: 'poi.subPurchaseOrder', foreignField: '_id', as: 'subpo' } },
+        { $unwind: { path: '$subpo', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'purchaseorders', localField: 'subpo.purchaseOrder', foreignField: '_id', as: 'po' } },
+        { $unwind: { path: '$po', preserveNullAndEmptyArrays: true } },
+
+        { $lookup: { from: 'customers', localField: 'po.customer', foreignField: '_id', as: 'customer' } },
+        { $unwind: { path: '$customer', preserveNullAndEmptyArrays: true } },
+
+        {
+          $match: {
+            $or: [
+              { 'mo.code': regex },
+              { 'ware.code': regex },
+              { 'po.code': regex },
+              { 'customer.code': regex },
+              { 'emp.code': regex }
+            ]
+          }
+        },
+
+        {
+          $facet: {
+            metadata: [{ $count: 'total' }],
+            data: [
+              { $sort: { updatedAt: -1 } },
+              { $skip: skip },
+              { $limit: limit },
+              { $project: { _id: 1 } }
+            ]
+          }
+        }
+      ]);
+
+      const result = aggregateResult[0];
+      totalItems = result.metadata[0]?.total || 0;
+      const ids = result.data.map((item: any) => item._id);
+
+      if (ids.length > 0) {
+        data = await this.fgTransactionModel
+          .find({ _id: { $in: ids } })
+          .populate(populateOptions)
+          .sort({ updatedAt: -1 });
+      }
+
+    } else {
+
+      const query = { transactionType: 'ADJUSTMENT' };
+
+      [data, totalItems] = await Promise.all([
+        this.fgTransactionModel
+          .find(query)
+          .skip(skip)
+          .limit(limit)
+          .populate(populateOptions)
+          .sort({ updatedAt: -1 })
+          .exec(),
+        this.fgTransactionModel.countDocuments(query),
+      ]);
+    }
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+      data,
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
+
   async findPaginated(dto: GetFinishedGoodTransactionsDto) {
     const {
       page = 1,
@@ -88,6 +214,8 @@ export class FinishedGoodTransactionService {
 
     if (transactionType) {
       filterQuery.transactionType = transactionType;
+    } else {
+      filterQuery.transactionType = { $in: ["IMPORT", "EXPORT"] };
     }
 
     if (startDate && endDate) {
@@ -265,10 +393,14 @@ export class FinishedGoodTransactionService {
     } else if (dto.transactionType === 'EXPORT') {
       finalQuantity -= dto.quantity;
       finishedGood!.exportedQuantity += dto.quantity;
+    } else if (dto.transactionType === 'ADJUSTMENT') {
+      finalQuantity = dto.quantity;
     }
 
-    finishedGood!.currentQuantity = finalQuantity;
-    await finishedGood!.save({ session });
+    if (dto.transactionType != 'ADJUSTMENT' && finishedGood) {
+      finishedGood.currentQuantity = finalQuantity;
+      await finishedGood.save();
+    }
 
     const transaction = await this.fgTransactionModel.create(
       [{
@@ -519,14 +651,20 @@ export class FinishedGoodTransactionService {
   }
 
   async restore(id: string) {
-    const doc = await this.fgTransactionModel.findById(id) as SoftFGTransaction;
+    const doc = await this.fgTransactionModel.findOne({
+      _id: id,
+      isDeleted: true
+    }) as SoftFGTransaction;
     if (!doc) throw new NotFoundException('Transaction not found');
     await doc.restore();
     return { success: true };
   }
 
   async removeHard(id: string) {
-    const res = await this.fgTransactionModel.findByIdAndDelete(id);
+    const res = await this.fgTransactionModel.findOne({
+      _id: id,
+      isDeleted: true
+    });
     if (!res) throw new NotFoundException('Transaction not found');
     return { success: true };
   }

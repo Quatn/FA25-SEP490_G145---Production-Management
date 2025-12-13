@@ -29,6 +29,24 @@ const initialCollection = createTreeCollection<Node>({
         children: [],
       },
       {
+        id: "customer",
+        name: "Customer",
+        children: [
+          {
+            id: "customer-list",
+            name: "Customer List",
+            href: "/customer/list",
+            children: [],
+          },
+          {
+            id: "customer-restore-list",
+            name: "Customer Restore List",
+            href: "/customer/restore-list",
+            children: [],
+          },
+        ],
+      },
+      {
         id: "purchase-order",
         name: "Purchase Order",
         children: [
@@ -36,6 +54,12 @@ const initialCollection = createTreeCollection<Node>({
             id: "purchase-order-list",
             name: "Purchase Order List",
             href: "/purchase-order",
+            children: [],
+          },
+          {
+            id: "delivery-note-list",
+            name: "Delivery Note List",
+            href: "/purchase-order/delivery-note-list",
             children: [],
           },
           {
@@ -64,7 +88,24 @@ const initialCollection = createTreeCollection<Node>({
           },
         ],
       },
-
+      {
+        id: "print-color",
+        name: "Print Color",
+        children: [
+          {
+            id: "print-color-list",
+            name: "Print Color List",
+            href: "/print-color/list",
+            children: [],
+          },
+          {
+            id: "print-color-restore-list",
+            name: "Print Color Restore List",
+            href: "/print-color/restore-list",
+            children: [],
+          },
+        ],
+      },
       {
         id: "manufacturing-order",
         name: "Manufacturing Order",
@@ -93,6 +134,12 @@ const initialCollection = createTreeCollection<Node>({
             href: "/manufacturing-order/corrugator-process-operate",
             children: [],
           },
+          {
+            id: "order-finishing-process",
+            name: "Order Finishing Process",
+            href: "/order-finishing-process",
+            children: [],
+          },
         ],
       },
       {
@@ -103,6 +150,12 @@ const initialCollection = createTreeCollection<Node>({
             id: "product-list",
             name: "Product List",
             href: "/products",
+            children: [],
+          },
+          {
+            id: "product-restore",
+            name: "Restore Product",
+            href: "/products/restore-product",
             children: [],
           },
         ],
@@ -198,7 +251,13 @@ const initialCollection = createTreeCollection<Node>({
           {
             id: "ware-manufacturing-process-type-list",
             name: "Ware Manufacturing Process Type List",
-            href: "/ware-manufacturing-process-type",
+            href: "/ware-manufacturing-process-type/list",
+            children: [],
+          },
+          {
+            id: "ware-manufacturing-process-type-restore-list",
+            name: "Ware Manufacturing Process Type Restore List",
+            href: "/ware-manufacturing-process-type/restore-list",
             children: [],
           },
         ],
@@ -210,7 +269,13 @@ const initialCollection = createTreeCollection<Node>({
           {
             id: "ware-finishing-process-type-list",
             name: "Ware Finishing Process Type List",
-            href: "/ware-finishing-process-type",
+            href: "/ware-finishing-process-type/list",
+            children: [],
+          },
+          {
+            id: "ware-finishing-process-type-restore-list",
+            name: "Ware Finishing Process Type Restore List",
+            href: "/ware-finishing-process-type/restore-list",
             children: [],
           },
         ],
@@ -222,7 +287,13 @@ const initialCollection = createTreeCollection<Node>({
           {
             id: "product-type-list",
             name: "Product Type List",
-            href: "/product-type",
+            href: "/product-type/list",
+            children: [],
+          },
+          {
+            id: "product-type-restore-list",
+            name: "Product Type Restore List",
+            href: "/product-type/restore-list",
             children: [],
           },
         ],
@@ -250,9 +321,21 @@ const initialCollection = createTreeCollection<Node>({
         name: "Semi Finished Good",
         children: [
           {
+            id: "semi-finished-good-dashboard",
+            name: "Semi Finished Good Dashboard",
+            href: "/semi-finished-good/dashboard",
+            children: [],
+          },
+          {
             id: "semi-finished-good-list",
             name: "Semi Finished Good List",
-            href: "/semi-finished-good",
+            href: "/semi-finished-good/list",
+            children: [],
+          },
+          {
+            id: "semi-finished-good-inventory-audit-list",
+            name: "Semi Finished Good Inventory Audit List",
+            href: "/semi-finished-good/inventory-audit-list",
             children: [],
           },
         ],
@@ -264,13 +347,19 @@ const initialCollection = createTreeCollection<Node>({
           {
             id: "finished-good-list",
             name: "Finished Good List",
-            href: "/finished-good",
+            href: "/finished-good/list",
             children: [],
           },
           {
             id: "finished-good-daily-report",
             name: "Finished Good Daily Report",
             href: "/finished-good/daily-report",
+            children: [],
+          },
+          {
+            id: "finished-good-inventory-audit-list",
+            name: "Finished Good Inventory Audit List",
+            href: "/finished-good/inventory-audit-list",
             children: [],
           },
         ],

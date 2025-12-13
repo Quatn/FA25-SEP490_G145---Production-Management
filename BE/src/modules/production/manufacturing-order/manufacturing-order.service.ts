@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import mongoose, { Model, MongooseError, Types } from "mongoose";
+import mongoose, { Model, MongooseError, PipelineStage, Types } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import {
   CorrugatorProcess,
@@ -19,13 +19,20 @@ import {
   UpdateManufacturingOrderRequestDto,
 } from "./dto/update-order-request.dto";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
-import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
+import {
+  FullDetailManufacturingOrderDto,
+  PopulatedPurchaseOrderItem,
+  PopulatedWare,
+} from "./dto/full-details-orders.dto";
 import {
   PurchaseOrderItem,
   PurchaseOrderItemDocument,
   PurchaseOrderItemSchema,
 } from "../schemas/purchase-order-item.schema";
-import { SubPurchaseOrderDocument, SubPurchaseOrderSchema } from "../schemas/sub-purchase-order.schema";
+import {
+  SubPurchaseOrderDocument,
+  SubPurchaseOrderSchema,
+} from "../schemas/sub-purchase-order.schema";
 import { PurchaseOrderSchema } from "../schemas/purchase-order.schema";
 import { Ware, WareDocument, WareSchema } from "../schemas/ware.schema";
 import { MOCodeGenerator } from "./business-logics/mo-code-generator";
@@ -49,6 +56,9 @@ import { isRefPopulated } from "@/common/utils/populate-check";
 import { UnpopulatedFieldError } from "@/common/errors/unpopulated-field.error";
 import { ProductionRecalculateService } from "../common/recalculate/recalculate.service";
 import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type.schema";
+import { queryAllByPaperTypesUsagePipeline } from "./aggregate-pipes/query-all-by-paper-types-usage";
+import { recalculateWare } from "../ware/business-logics/recalculate-ware";
+import { recalculatePurchaseOrderItem } from "../purchase-order-item/business-logics/recalculate-poi";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -65,16 +75,19 @@ export class ManufacturingOrderService {
   ) { }
 
   async recalCheckDocs(docs: ManufacturingOrderDocument[]) {
-      // Record of resulting docs after the would check and recalc process
+    // Record of resulting docs after the would check and recalc process
     const resultRocs: ManufacturingOrderDocument[] = [];
-      // Record of ids of pois that will be recalculated 
+    // Record of ids of pois that will be recalculated
     const previouslyRecalcPOIs: string[] = [];
 
     for (const moDoc of docs) {
-      const poi = moDoc.purchaseOrderItem as PurchaseOrderItemDocument
-      const ware = poi.ware as WareDocument
-      if (!previouslyRecalcPOIs.includes(poi._id.toString()) && poi.recalculateFlag && ware.recalculateFlag) {
-        previouslyRecalcPOIs.push(poi._id.toString())
+      const poi = moDoc.purchaseOrderItem as PurchaseOrderItemDocument;
+      const ware = poi.ware as WareDocument;
+      if (
+        !previouslyRecalcPOIs.includes(poi._id.toString()) &&
+        (poi.recalculateFlag || ware.recalculateFlag)
+      ) {
+        previouslyRecalcPOIs.push(poi._id.toString());
       }
 
       const alreadyRecalcedPOI = resultRocs.find((co) =>
@@ -87,7 +100,7 @@ export class ManufacturingOrderService {
       if (alreadyRecalcedPOI) {
         moDoc.purchaseOrderItem = alreadyRecalcedPOI.purchaseOrderItem;
       } else {
-      // If not then check the wares to see which can be reused from a previously recalculated MO, similar to the poi check
+        // If not then check the wares to see which can be reused from a previously recalculated MO, similar to the poi check
         const moDocWithSameWare = resultRocs.find((co) => {
           return (
             (co.purchaseOrderItem as PurchaseOrderItemDocument)
@@ -110,9 +123,8 @@ export class ManufacturingOrderService {
       }
 
       // By now all pois or wares should have been recalculated or reused from the resultRocs array, however if the poi or ware recalculated then the mo must also be recalculated, so if the current mo's poi or ware have just been recalculated or was reused from the resultRocs array, set the mo's recalculateFlag to true.
-      // console.log("AHHHHHHHHHHHH", previouslyRecalcPOIs)
       if (previouslyRecalcPOIs.includes(poi._id.toString())) {
-        moDoc.set("recalculateFlag", true)
+        moDoc.set("recalculateFlag", true);
       }
       const recaledMoDoc =
         await this.recalcService.checkAndRecalculateManufacturingOrderDoc(
@@ -146,7 +158,11 @@ export class ManufacturingOrderService {
       ],
     };
 
-    return await this.manufacturingOrderModel.find().populate(populate);
+    return await this.manufacturingOrderModel
+      .find({
+        "corrugatorProcess.manufacturedAmount": { $gt: 0 },
+      })
+      .populate(populate);
   }
 
   async getLastOrder() {
@@ -166,10 +182,12 @@ export class ManufacturingOrderService {
     page,
     limit,
     filter = {},
+    sort,
   }: {
     page: number;
     limit: number;
-    filter?: object;
+    filter?: Record<string, unknown>;
+    sort?: PipelineStage[];
   }): Promise<PaginatedList<FullDetailManufacturingOrderDto>> {
     const skip = (page - 1) * limit;
 
@@ -177,6 +195,7 @@ export class ManufacturingOrderService {
       filter,
       skip,
       limit,
+      sort,
     });
 
     const [data, countArr] = await Promise.all([
@@ -241,7 +260,10 @@ export class ManufacturingOrderService {
     const mos: FullDetailManufacturingOrderDto[] = purchaseOrderItems.map(
       (poi, index): FullDetailManufacturingOrderDto => ({
         code: codeGenerator.getCode(index),
-        purchaseOrderItem: poi,
+        purchaseOrderItem: recalculatePurchaseOrderItem({
+          ...poi,
+          ware: recalculateWare(poi.ware) as PopulatedWare,
+        }) as PopulatedPurchaseOrderItem,
         approvalStatus: ManufacturingOrderApprovalStatus.Draft,
         overallStatus: OrderStatus.NOTSTARTED,
         corrugatorProcess: {
@@ -282,7 +304,10 @@ export class ManufacturingOrderService {
       }),
     );
 
-    return mos;
+    return mos.map(
+      (mo) =>
+        recalculateManufacturingOrder(mo) as FullDetailManufacturingOrderDto,
+    );
   }
 
   // This might not work, just use createMany for everything
@@ -467,6 +492,8 @@ export class ManufacturingOrderService {
       })
       .populate(populate);
 
+    const accRes: { updatedAmount: number; code: string }[] = [];
+
     for (const dto of dtos) {
       const doc = items.find((x) => x.id === dto.id);
       if (!doc) continue;
@@ -482,7 +509,10 @@ export class ManufacturingOrderService {
         poi.subPurchaseOrder.purchaseOrder.customer.code,
       );
 
-      if (dto.approvalStatus === ManufacturingOrderApprovalStatus.Approved) {
+      if (
+        doc.approvalStatus !== dto.approvalStatus &&
+        dto.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+      ) {
         const currentCount =
           await this.orderFinishingProcessModel.countDocuments({
             manufacturingOrder: doc._id,
@@ -561,6 +591,34 @@ export class ManufacturingOrderService {
 
         doc.set("corrugatorProcess", dto.corrugatorProcess);
       }
+
+      /*
+      if (doc.approvalStatus !== ManufacturingOrderApprovalStatus.Draft) {
+        let updated = false;
+
+        if (dto.manufacturingDirective) {
+          doc.manufacturingDirective = dto.manufacturingDirective;
+          updated = true;
+        }
+
+        if (dto.note) {
+          doc.note = dto.note;
+          updated = true;
+        }
+
+        if (updated) {
+          const res = await doc.save();
+
+          accRes.push({
+            updatedAmount: 1,
+            code: res.code,
+          });
+        }
+        continue;
+      }
+      */
+
+
       const { corrugatorProcess: _, ...dtoWOCorruProgress } = dto;
       Object.assign(doc, dtoWOCorruProgress);
 
@@ -571,14 +629,18 @@ export class ManufacturingOrderService {
         },
       );
 
-      await doc.save();
+      const res = await doc.save();
+      accRes.push({
+        updatedAmount: 1,
+        code: res.code,
+      });
     }
 
     return {
       requestedAmount: dtos.length,
-      patchedAmount: items.length,
+      patchedAmount: accRes.reduce((acc, i) => acc + i.updatedAmount, 0),
       echo: {
-        codes: items.map((item) => item.code),
+        codes: accRes.map((item) => item.code),
       },
     };
   }
@@ -642,5 +704,41 @@ export class ManufacturingOrderService {
         requestedAmount: 1,
       };
     }
+  }
+
+  async queryAllByPaperTypesUsage({
+    paperTypes,
+  }: {
+    paperTypes: string[];
+  }): Promise<FullDetailManufacturingOrderDto[]> {
+    const pipeline = queryAllByPaperTypesUsagePipeline({
+      paperTypes,
+    });
+
+    const data = await this.manufacturingOrderModel.aggregate([...pipeline]);
+
+    const moDocs = (data as ManufacturingOrderDocument[]).map((mo) =>
+      this.manufacturingOrderModel.hydrate(mo),
+    );
+
+    const recalCheckedOrders = await this.recalCheckDocs(moDocs);
+
+    const ids = recalCheckedOrders.map((mo) => mo._id);
+
+    const finishedGoodRecords = await this.finishedGoodProcessModel.find({
+      manufacturingOrder: { $in: ids },
+    });
+
+    const mappedData: FullDetailManufacturingOrderDto[] =
+      recalCheckedOrders.map((mo) => {
+        return new FullDetailManufacturingOrderDto({
+          ...mo.toJSON(),
+          finishedGoodRecord: finishedGoodRecords.find((record) =>
+            (record.manufacturingOrder as Types.ObjectId).equals(mo._id),
+          ),
+        });
+      });
+
+    return mappedData;
   }
 }

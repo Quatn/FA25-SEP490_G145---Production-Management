@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Button, ButtonGroup, Flex, IconButton, Input, InputGroup, Pagination, Spacer, Spinner, Icon, Stack } from "@chakra-ui/react";
 import { FaPlus } from "react-icons/fa";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
-import { useGetSemiFinishedGoodsQuery } from "@/service/api/semiFinishedGoodApiSlice";
+import { useGetAllSemiFinishedGoodsQuery, useGetSemiFinishedGoodsQuery } from "@/service/api/semiFinishedGoodApiSlice";
 import { SemiFinishedGood } from "@/types/SemiFinishedGood";
 import SemiFinishedTable from "./SemiFinishedTable";
 import SemiFinishedDetailDialog from "./SemiFinishedDetailDialog";
@@ -26,8 +26,10 @@ const SemiFinishedList: React.FC = () => {
 
     const { data: sfData, error: sfError, isLoading: sfLoading } = useGetSemiFinishedGoodsQuery({ page, limit, search: debouncedSearch });
     const { data: moData, error: moError, isLoading: moLoading } = useGetAllManufacturingOrdersQuery();
+    const { data: allSFData, error: allSFError, isLoading: allSFLoading} = useGetAllSemiFinishedGoodsQuery();
     const sfGoods: SemiFinishedGood[] = sfData?.data?.data ?? [];
     const mos: ManufacturingOrder[] = moData?.data ?? [];
+    const allSFGoods: SemiFinishedGood[] = allSFData?.data ?? [];
     const totalPages = (sfData as any)?.data?.totalPages ?? 1;
 
     const [detailOpen, setDetailOpen] = useState(false);
@@ -59,8 +61,8 @@ const SemiFinishedList: React.FC = () => {
         setSelected(undefined);
     };
 
-    if (sfLoading || moLoading) return <Spinner />;
-    if (sfError || moError) {
+    if (sfLoading || moLoading || allSFLoading) return <Spinner />;
+    if (sfError || moError || allSFError) {
         toaster.create({ title: "Lỗi", description: "Không thể tải dữ liệu", type: "error", closable: true });
         return <div>Không thể tải dữ liệu.</div>;
     }
@@ -72,6 +74,7 @@ const SemiFinishedList: React.FC = () => {
                 onClose={handleCloseTx}
                 initialData={selected}
                 transactionType={txType}
+                semiFinishedGoods={allSFGoods}
                 manufacturingOrders={mos}
             />
             <SemiFinishedDetailDialog isOpen={detailOpen} onClose={handleCloseDetail} item={selected} />

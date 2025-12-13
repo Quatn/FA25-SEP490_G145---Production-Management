@@ -22,6 +22,10 @@ import { Role } from "../employee/schemas/role.schema";
 import { LogoutResponseDto } from "./dto/logout.dto";
 import { OptionalJwtAuthGuard } from "@/common/guards/optional-jwt-auth.guard";
 import { UserService } from "../user/user.service";
+import {
+  Employee,
+  EmployeeDocument,
+} from "../employee/schemas/employee.schema";
 
 @Controller("auth")
 @ApiBearerAuth("access-token") // IMPORTANT: Include this or else Swagger wont include the access token when testing
@@ -78,6 +82,7 @@ export class AuthController {
         contactNumber: user.employee.contactNumber,
         email: user.employee.email,
         employeeCode: user.employee.code,
+        employeeId: (user.employee as EmployeeDocument)._id.toString(),
         role: (user.employee.role as Role).code,
       },
     };

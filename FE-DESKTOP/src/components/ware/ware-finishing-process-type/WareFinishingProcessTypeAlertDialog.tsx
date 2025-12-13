@@ -1,25 +1,25 @@
-import { useState, useEffect } from "react";
-import { Box, Button, CloseButton, Dialog, Portal } from "@chakra-ui/react"
+import { Button, CloseButton, Dialog, Portal } from "@chakra-ui/react"
 import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: WareFinishingProcessType;
-    onDelete: (data: WareFinishingProcessType) => void;
+    initialData: WareFinishingProcessType | undefined;
+    onDelete: (data: WareFinishingProcessType) => Promise<boolean>;
 }
 
 const WareFinishingProcessTypeAlertDialog: React.FC<Props> = ({ isOpen, onClose, initialData, onDelete }) => {
-    const [item, setItem] = useState<WareFinishingProcessType>({ _id: "", code: "", name: "", description: "", note: "", createdAt: new Date(), updatedAt: new Date() } as WareFinishingProcessType);
 
-    const handleSubmit = () => {
-        onDelete(item);
-        onClose();
+    const handleSubmit = async () => {
+        let isSuccess = false;
+        if (!!initialData) {
+            isSuccess = await onDelete(initialData);
+        }
+
+        if (isSuccess) {
+            onClose();
+        }
     };
-
-    useEffect(() => {
-        if (isOpen) setItem(initialData ?? { _id: "", code: "", name: "", description: "", note: "", createdAt: new Date(), updatedAt: new Date() } as WareFinishingProcessType);
-    }, [isOpen, initialData]);
 
     return (
         <Dialog.Root role="alertdialog" open={isOpen} onOpenChange={onClose}>
@@ -32,7 +32,7 @@ const WareFinishingProcessTypeAlertDialog: React.FC<Props> = ({ isOpen, onClose,
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
-                                Xóa loại hoàn thiện {item.code} - {item.name}?
+                                Xóa loại hoàn thiện mã hàng {initialData?.code} - {initialData?.name}?
                             </p>
                         </Dialog.Body>
                         <Dialog.Footer>

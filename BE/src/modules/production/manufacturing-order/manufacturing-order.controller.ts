@@ -24,7 +24,6 @@ import {
 import { QueryListManufacturingOrderResponseDto } from "./dto/query-list.dto";
 import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
 import { ApiResponseWith } from "@/common/decorators/swagger-response-docs";
-import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { PurchaseOrderItemService } from "../purchase-order-item/purchase-order-item.service";
 import { QueryListFullDetailsPurchaseOrderItemByIdsRequestDto } from "../purchase-order-item/dto/query-list-full-details-by-ids.dto";
 import {
@@ -40,10 +39,12 @@ import {
 } from "./dto/update-many-orders.dto";
 import { AssembledUpdateManufacturingOrderRequestDto } from "./dto/update-order-request.dto";
 import { QueryListFullDetailsManufacturingOrderRequestDto } from "./dto/query-list-full-details.dto";
-import check from "check-types";
 import { PrivilegedJwtAuthGuard } from "@/common/guards/privileged-jwt-auth.guard";
 import { manufacturingOrderGetPrivileges } from "./manufacturing-order-module-access-privileges";
 import { buildFullDetailsMOFilterFromDto } from "./utils/buildFullDetailsFilterFromDto";
+import { QueryAllByPaperTypesUsageRequestDto } from "./dto/query-all-by-paper-types-usage.dto";
+import { buildFullDetailsMOSortPipesFromDto } from "./utils/buildFullDetailsSortPipesFromDto";
+import check from "check-types";
 
 const ManufacturingOrderGetRequestGuard = PrivilegedJwtAuthGuard({
   requiredPrivileges: manufacturingOrderGetPrivileges,
@@ -85,6 +86,9 @@ export class ManufacturingOrderController {
     const docs = await this.moService.queryListFullDetails({
       ...query,
       filter: buildFullDetailsMOFilterFromDto(query),
+      sort: check.undefined(query.sort)
+        ? undefined
+        : buildFullDetailsMOSortPipesFromDto(query.sort),
     });
     return {
       success: true,
@@ -203,6 +207,24 @@ export class ManufacturingOrderController {
       success: true,
       message: "Restore successful",
       data: result,
+    };
+  }
+
+  @Get("query/all-by-paper-types-usage")
+  @ApiOperation({ summary: "Query fully populated manufacturing orders" })
+  async queryAllByPaperTypesUsage(
+    @Query() query: QueryAllByPaperTypesUsageRequestDto,
+  ): Promise<BaseResponse<FullDetailManufacturingOrderDto[]>> {
+    const docs = query.paperTypes
+      ? await this.moService.queryAllByPaperTypesUsage({
+        paperTypes: query.paperTypes,
+      })
+      : [];
+
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
     };
   }
 }

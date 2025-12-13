@@ -1,7 +1,10 @@
-import { Box, Collapsible, Combobox, createListCollection, Field, Flex, HStack, Input, Portal, RadioGroup, Select } from "@chakra-ui/react";
+import { formatDateForInput, minDate } from "@/utils/dateUtils";
+import { Box, Collapsible, createListCollection, Field, Flex, HStack, Input, RadioGroup, Select } from "@chakra-ui/react";
 
 interface FilterProps {
     collapsible: any;
+    startDate: string;
+    endDate: string;
     setStartDate: (startDate: string) => void;
     setEndDate: (endDate: string) => void;
     setSort: (sort: string) => void;
@@ -10,6 +13,8 @@ interface FilterProps {
 
 export const SemiFinishedTransactionHistoryFilter: React.FC<FilterProps> = (
     {
+        startDate,
+        endDate,
         collapsible,
         setStartDate,
         setEndDate,
@@ -18,7 +23,7 @@ export const SemiFinishedTransactionHistoryFilter: React.FC<FilterProps> = (
     }
 ) => {
     const today = new Date();
-    const localDate = today.toLocaleDateString('vi-VN');
+    const localDate = formatDateForInput(today);
     const transactionTypeCollection = createListCollection({
         items: [
             { label: "Nhập", value: "IMPORT" },
@@ -36,7 +41,7 @@ export const SemiFinishedTransactionHistoryFilter: React.FC<FilterProps> = (
                             <Input
                                 type="date"
                                 onChange={(e) => setStartDate(e.target.value)}
-                                max={localDate}
+                                max={minDate(localDate, endDate)}
                                 width="200px"
                             />
                         </Field.Root>
@@ -46,6 +51,7 @@ export const SemiFinishedTransactionHistoryFilter: React.FC<FilterProps> = (
                             <Input
                                 type="date"
                                 onChange={(e) => setEndDate(e.target.value)}
+                                min={startDate}
                                 max={localDate}
                                 width="200px"
                             />

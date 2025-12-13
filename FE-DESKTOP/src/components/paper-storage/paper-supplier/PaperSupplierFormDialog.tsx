@@ -64,10 +64,16 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                 break;
 
             case "address":
+                if (value && value.length > 100)
+                    errorMsg = `Địa chỉ không được quá 100 ký tự`;
+                break;
             case "bank":
+                if (value && value.length > 100)
+                    errorMsg = `Ngân hàng không được quá 100 ký tự`;
+                break;
             case "note":
                 if (value && value.length > 100)
-                    errorMsg = `${field} không được quá 100 ký tự`;
+                    errorMsg = `Ghi chú không được quá 100 ký tự`;
                 break;
         }
 

@@ -6,8 +6,10 @@ import { DataTableEditableCell } from "./DefaultEditableCell";
 import { DataTable } from "./Table";
 import { DataTableBodyPropsStack } from "./Body";
 import { devlog } from "@/utils/devlog";
+import { DataTableHeaderPropsStack } from "./Header";
 
 export type DataTableOptions<TData> = Omit<TableOptions<TData>, "columns"> & {
+  headerPropsStack?: DataTableHeaderPropsStack;
   bodyPropsStack?: DataTableBodyPropsStack;
   mergedHeadersIds?: string[][],
   getRowId: (row: TData) => string;
@@ -89,7 +91,7 @@ export default function useDataTable<TData>(o: DataTableOptions<TData>): {
   return {
     table: table as Table<TRowData>,
     tableData,
-    tableComponent: DataTable({ table, bodyPropsStack: o.bodyPropsStack, mergedHeadersIds: o.mergedHeadersIds }),
+    tableComponent: DataTable({ table, bodyPropsStack: o.bodyPropsStack, headerPropsStack: o.headerPropsStack, mergedHeadersIds: o.mergedHeadersIds }),
     updateTableData: handleUpdateData,
     resetRow: handleResetRow,
     resetTable: handleResetTable,

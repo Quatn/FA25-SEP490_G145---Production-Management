@@ -17,7 +17,7 @@ import { ProductService } from "./product.service";
 @ApiTags("Product")
 // @ApiBearerAuth("access-token")
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(private readonly productService: ProductService) { }
 
   @Post()
   @ApiOperation({ summary: "Create a new product" })
@@ -46,6 +46,19 @@ export class ProductController {
     });
   }
 
+
+  @Get("deleted")
+  @ApiOperation({ summary: "List soft-deleted products (paginated)" })
+  async findDeleted(
+    @Query("page") page?: string,
+    @Query("limit") limit?: string
+  ) {
+    return this.productService.findDeleted(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10
+    );
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Get a product by Mongo _id" })
   findOne(@Param("id") id: string) {
@@ -63,6 +76,13 @@ export class ProductController {
   remove(@Param("id") id: string) {
     return this.productService.remove(id);
   }
+
+  @Post(":id/restore")
+  @ApiOperation({ summary: "Restore a soft-deleted product by Mongo _id" })
+  async restore(@Param("id") id: string) {
+    return this.productService.restore(id);
+  }
+
 }
 
 

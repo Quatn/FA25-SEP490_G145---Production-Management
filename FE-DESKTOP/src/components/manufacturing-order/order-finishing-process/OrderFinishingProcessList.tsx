@@ -10,8 +10,16 @@ import { OrderFinishingProcessStatus } from "@/types/enums/OrderFinishingProcess
 import { LuSquareCheck } from "react-icons/lu";
 import { VscRunAll } from "react-icons/vsc";
 import OrderFinishingProcessDialog from "./OrderFinishingProcessDialog";
+import { UserState } from "@/types/UserState";
+import { useAppSelector } from "@/service/hooks";
+import { ManufacturingOrderDialogProvider } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
+import ManufacturingOrderDetailsDialog from "../order-details-dialog/Dialog";
 
 const OrderFinishingProcessList: React.FC = () => {
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
 
     const [scheduledPage, setScheduledPage] = useState(1);
     const [inProductionPage, setInProductionPage] = useState(1);
@@ -111,7 +119,7 @@ const OrderFinishingProcessList: React.FC = () => {
             updateData.status = updateStatus;
 
             if (updateStatus == OrderFinishingProcessStatus.InProduction) {
-                updateData.employee = '6926c834c0637050c69dc2a3'; //TODO: hardcode employee id
+                updateData.employee = userState?.employeeId ?? "";
                 updateData.startedAt = localDate;
             }
 
@@ -191,6 +199,7 @@ const OrderFinishingProcessList: React.FC = () => {
                 </InputGroup>
             </Flex>
 
+      <ManufacturingOrderDialogProvider>
             <Tabs.Root
                 lazyMount
                 unmountOnExit
@@ -239,6 +248,9 @@ const OrderFinishingProcessList: React.FC = () => {
                         handleUpdate={handleOpenAlertDialog} />
                 </Tabs.Content>
             </Tabs.Root>
+
+        <ManufacturingOrderDetailsDialog/>
+      </ManufacturingOrderDialogProvider>
 
         </>
     );

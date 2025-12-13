@@ -1,5 +1,7 @@
 import { MaterialRequirementDto } from "@/types/DTO/material-requirement-summary/MaterialRequirement";
+import { numToFixedBounded } from "@/utils/numToFixedBounded";
 import { createColumnHelper } from "@tanstack/react-table";
+import check from "check-types";
 
 const columnHelper = createColumnHelper<Serialized<MaterialRequirementDto>>();
 
@@ -21,7 +23,7 @@ const colSize = {
   },
 }
 
-export const materialRequirementColumns = (header: string) => [
+export const paperTypesTableColumns = (header: string) => [
   columnHelper.group({
     id: "table",
     header: header,
@@ -35,10 +37,10 @@ export const materialRequirementColumns = (header: string) => [
       }),
       columnHelper.display({
         id: "requirementWeight",
-        header: "Trọng lượng sử dựng (kg)",
+        header: "Trọng lượng sử dụng (kg)",
         ...colSize.sm,
         cell: ({ row }) =>
-          row.original.requirementWeight.toFixed(4),
+          numToFixedBounded(row.original.requirementWeight),
       }),
       columnHelper.display({
         id: "inventoryWeight",
@@ -46,13 +48,6 @@ export const materialRequirementColumns = (header: string) => [
         ...colSize.sm,
         cell: ({ row }) =>
           row.original.inventoryWeight.toFixed(4),
-      }),
-      columnHelper.display({
-        id: "status",
-        header: "Trạng thái",
-        ...colSize.sm,
-        cell: ({ row }) =>
-          row.original.status,
       }),
     ]
   })

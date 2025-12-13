@@ -2,6 +2,7 @@ import React from "react";
 import PurchaseOrderRestore from "@/components/purchase-order-management/PurchaseOrderRestore";
 import Link from "next/link";
 import DeliveryNoteCreator from "@/components/purchase-order-management/DeliveryNoteCreator";
+import ConfirmProvider from "@/components/common/ConfirmModal";
 
 export default function Page() {
   return (
@@ -12,7 +13,9 @@ export default function Page() {
           <button type="button">Quay lại danh sách PO</button>
         </Link>
       </nav>
-      <DeliveryNoteCreator />
+      <ConfirmProvider>
+        <DeliveryNoteCreator />
+      </ConfirmProvider>
     </div>
   );
 }

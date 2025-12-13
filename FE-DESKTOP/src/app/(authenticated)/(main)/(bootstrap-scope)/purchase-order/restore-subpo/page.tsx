@@ -1,6 +1,7 @@
 import React from "react";
 import SubPurchaseOrderRestore from "@/components/purchase-order-management/SubPurchaseOrderRestore";
 import Link from "next/link";
+import ConfirmProvider from "@/components/common/ConfirmModal";
 
 export default function Page() {
   return (
@@ -11,7 +12,9 @@ export default function Page() {
           <button type="button">Quay lại danh sách PO</button>
         </Link>
       </nav>
-      <SubPurchaseOrderRestore />
+      <ConfirmProvider>
+        <SubPurchaseOrderRestore />
+      </ConfirmProvider>
     </div>
   );
 }

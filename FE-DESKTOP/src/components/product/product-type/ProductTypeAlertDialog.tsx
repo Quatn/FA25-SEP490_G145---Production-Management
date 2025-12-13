@@ -1,25 +1,25 @@
-import { useState, useEffect } from "react";
 import { Box, Button, CloseButton, Dialog, Portal } from "@chakra-ui/react"
 import { ProductType } from "@/types/ProductType";
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    initialData?: ProductType;
-    onDelete: (data: ProductType) => void;
+    initialData: ProductType | undefined;
+    onDelete: (data: ProductType) => Promise<boolean>;
 }
 
 const ProductTypeAlertDialog: React.FC<Props> = ({ isOpen, onClose, initialData, onDelete }) => {
-    const [item, setItem] = useState<ProductType>({ _id: "", code: "", name: "", description: "", note: "", createdAt: new Date(), updatedAt: new Date() } as ProductType);
 
-    const handleSubmit = () => {
-        onDelete(item);
-        onClose();
+    const handleSubmit = async () => {
+        let isSuccess = false;
+        if (!!initialData) {
+            isSuccess = await onDelete(initialData);
+        }
+
+        if (isSuccess) {
+            onClose();
+        }
     };
-
-    useEffect(() => {
-        if (isOpen) setItem(initialData ?? { _id: "", code: "", name: "", description: "", note: "", createdAt: new Date(), updatedAt: new Date() } as ProductType);
-    }, [isOpen, initialData]);
 
     return (
         <Dialog.Root role="alertdialog" open={isOpen} onOpenChange={onClose}>
@@ -32,7 +32,7 @@ const ProductTypeAlertDialog: React.FC<Props> = ({ isOpen, onClose, initialData,
                         </Dialog.Header>
                         <Dialog.Body>
                             <p>
-                                Xóa loại sản phẩm {item.code} - {item.name}?
+                                Xóa loại sản phẩm {initialData?.code} - {initialData?.name}?
                             </p>
                         </Dialog.Body>
                         <Dialog.Footer>

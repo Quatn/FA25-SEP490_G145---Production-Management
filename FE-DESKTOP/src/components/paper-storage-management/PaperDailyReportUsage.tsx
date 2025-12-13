@@ -41,12 +41,10 @@ const getColorIdFromPaperType = (pt: any, findType?: (id?: string) => any) => {
     ptObj = findType(pt) ?? ptObj;
   }
   if (!ptObj) return undefined;
-  if (ptObj.paperColorId && typeof ptObj.paperColorId === "object")
-    return getIdFromDoc(ptObj.paperColorId);
   if (ptObj.paperColor && typeof ptObj.paperColor === "object")
     return getIdFromDoc(ptObj.paperColor);
   return (
-    getIdFromDoc(ptObj.paperColorId) ?? getIdFromDoc(ptObj.paperColor) ?? undefined
+    getIdFromDoc(ptObj.paperColor) ?? getIdFromDoc(ptObj.paperColor) ?? undefined
   );
 };
 
@@ -168,7 +166,7 @@ export const PaperDailyUsageReport: React.FC = () => {
     const m = new Map<string, any>();
     (allTypes || []).forEach((t: any) =>
       m.set(
-        String(getIdFromDoc(t) ?? t._id ?? `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColorId)}`),
+        String(getIdFromDoc(t) ?? t._id ?? `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColor)}`),
         t
       )
     );

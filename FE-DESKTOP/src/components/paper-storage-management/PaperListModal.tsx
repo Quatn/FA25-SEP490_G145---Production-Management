@@ -71,7 +71,7 @@ export const CreateModal: React.FC<any> = ({
                       >
                         {`${
                           t.paperColor?.title ??
-                          colorMap.get(String(getIdFromDoc(t.paperColorId)))
+                          colorMap.get(String(getIdFromDoc(t.paperColor)))
                             ?.title ??
                           ""
                         } — ${t.width} x ${t.grammage}`}
@@ -89,7 +89,7 @@ export const CreateModal: React.FC<any> = ({
                           colorMap.get(
                             String(
                               getIdFromDoc(
-                                findType(createForm.paperTypeId)?.paperColorId
+                                findType(createForm.paperTypeId)?.paperColor
                               )
                             )
                           )?.title ??
@@ -104,11 +104,11 @@ export const CreateModal: React.FC<any> = ({
                     Màu
                     <select
                       className="form-control"
-                      value={createForm.paperColorId}
+                      value={createForm.paperColor}
                       onChange={(e) =>
                         setCreateForm((f: any) => ({
                           ...f,
-                          paperColorId: e.target.value,
+                          paperColor: e.target.value,
                         }))
                       }
                     >
@@ -389,7 +389,7 @@ export const CreateMultipleModal: React.FC<any> = ({
                                   ? `${
                                       st.paperColor?.title ??
                                       colorMap.get(
-                                        String(getIdFromDoc(st.paperColorId))
+                                        String(getIdFromDoc(st.paperColor))
                                       )?.title ??
                                       ""
                                     } — ${st.width} x ${st.grammage}`
@@ -420,7 +420,7 @@ export const CreateMultipleModal: React.FC<any> = ({
                                         {`${
                                           t.paperColor?.title ??
                                           colorMap.get(
-                                            String(getIdFromDoc(t.paperColorId))
+                                            String(getIdFromDoc(t.paperColor))
                                           )?.title ??
                                           ""
                                         } — ${t.width} x ${t.grammage}`}
@@ -433,10 +433,10 @@ export const CreateMultipleModal: React.FC<any> = ({
                               <>
                                 <select
                                   className="form-control"
-                                  value={row.paperColorId}
+                                  value={row.paperColor}
                                   onChange={(e) =>
                                     updateCreateMultipleRow(row.id, {
-                                      paperColorId: e.target.value,
+                                      paperColor: e.target.value,
                                     })
                                   }
                                   style={{ minWidth: 200 }}
@@ -608,11 +608,11 @@ export const UpdateModal: React.FC<any> = ({
                 Màu
                 <select
                   className="form-control"
-                  value={updateForm.paperColorId}
+                  value={updateForm.paperColor}
                   onChange={(e) =>
                     setUpdateForm((f: any) => ({
                       ...f,
-                      paperColorId: e.target.value,
+                      paperColor: e.target.value,
                     }))
                   }
                 >

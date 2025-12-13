@@ -30,7 +30,7 @@ export default function ManufacturingOrderDetailsDialogOrderDetailsCard(props: M
       <Card.Header>
         <HStack justifyContent={"space-between"}>
           <Heading size="md">Thông tin đơn hàng</Heading>
-          <Link href={`purchase-order${check.string(po?._id) ? "?id=" + po._id : ""}`}>
+          <Link href={`/purchase-order${check.string(po?._id) ? "?id=" + po._id : ""}`}>
             <Button colorPalette={"blue"} size="xs">Chỉnh sửa</Button>
           </Link>
         </HStack>
@@ -48,7 +48,7 @@ export default function ManufacturingOrderDetailsDialogOrderDetailsCard(props: M
         <Stack mt={5}>
           <Heading size="lg">Ghi chú</Heading>
           <Editable.Root value={po?.note} readOnly >
-            <Editable.Preview />
+            <Editable.Preview w={"full"} />
           </Editable.Root>
         </Stack>
 

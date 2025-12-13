@@ -5,6 +5,7 @@ import SemiFinishedTransactionHistory from "./SemiFinishedTransactionHistory";
 import { formatDate, hourGap } from "@/utils/dateUtils";
 import { safeGet } from "@/utils/storagesUtils";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
+import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 
 interface Props {
     isOpen: boolean;
@@ -31,7 +32,7 @@ const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) =>
 
     useEffect(() => { if (isOpen) setCurrent(item); }, [isOpen, item]);
 
-    const mo = current?.manufacturingOrder;
+    const mo = current?.manufacturingOrder as ManufacturingOrder;
     const poItem = mo?.purchaseOrderItem;
 
     const amount = (poItem as PurchaseOrderItem)?.amount ?? 0;
@@ -70,7 +71,7 @@ const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) =>
                                         },
                                     }}>
                                     <Table.Header>
-                                        <Table.Row>
+                                        <Table.Row background={'blue.100'}>
                                             <Table.ColumnHeader rowSpan={2} w="1%" textAlign="center">
                                                 Ngày SX
                                             </Table.ColumnHeader>
@@ -94,10 +95,10 @@ const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) =>
                                             <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tổng xuất</Table.ColumnHeader>
                                             <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tồn kho</Table.ColumnHeader>
                                             <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Số giờ tồn kho</Table.ColumnHeader>
-                                            <Table.ColumnHeader rowSpan={2}>Ghi chú</Table.ColumnHeader>
+                                            {/* <Table.ColumnHeader rowSpan={2}>Ghi chú</Table.ColumnHeader> */}
 
                                         </Table.Row>
-                                        <Table.Row >
+                                        <Table.Row background={'blue.100'}>
                                             <Table.ColumnHeader colSpan={1}>Khách hàng</Table.ColumnHeader>
                                             <Table.ColumnHeader colSpan={1}>Mã hàng</Table.ColumnHeader>
                                             <Table.ColumnHeader colSpan={1}>Dài</Table.ColumnHeader>
@@ -156,14 +157,14 @@ const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) =>
                                                 {item.currentQuantity}
                                             </Table.Cell>
                                             <Table.Cell backgroundColor={hoursInStock > 48 ? "red" : "white"}
-                                                color={hoursInStock > 2 ? "white" : "black"}
+                                                color={hoursInStock > 48 ? "white" : "black"}
                                                 fontWeight={"bold"}
                                                 textAlign={"center"}>
                                                 {hoursInStock}
                                             </Table.Cell>
-                                            <Table.Cell>
+                                            {/* <Table.Cell>
                                                 {item.note}
-                                            </Table.Cell>
+                                            </Table.Cell> */}
 
                                         </Table.Row>
                                     </Table.Body>

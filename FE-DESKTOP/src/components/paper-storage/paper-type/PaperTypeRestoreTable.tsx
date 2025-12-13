@@ -30,14 +30,14 @@ const PaperTypeRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore,
                 w="100%"
             >
                 <Table.Header>
-                    <Table.Row>
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
                         <Table.ColumnHeader>Mã Loại Giấy</Table.ColumnHeader>
                         <Table.ColumnHeader>Màu Giấy</Table.ColumnHeader>
                         <Table.ColumnHeader>Khổ Giấy</Table.ColumnHeader>
-                        <Table.ColumnHeader>Định lượng</Table.ColumnHeader>
+                        <Table.ColumnHeader>Định Lượng</Table.ColumnHeader>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             Thao tác
                         </Table.ColumnHeader>

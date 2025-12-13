@@ -18,6 +18,18 @@ export const FinishedGoodTransactionApiSlice = apiSlice.injectEndpoints({
             providesTags: ["FinishedGoodTransaction"],
         }),
 
+        getFinishedGoodAdjustmentTransaction: builder.query<
+            BaseResponse<PaginatedList<FinishedGoodTransaction>>,
+            { page?: number; limit?: number; search?: string }>({
+                query: ({ page = 1, limit = 10, search }) => ({
+                    url: `${FINISHED_GOOD_TRANSACTION_URL}/list-adjustment`,
+                    method: "GET",
+                    params: { page, limit, search },
+                    credentials: "include",
+                }),
+                providesTags: ["FinishedGoodTransaction"],
+            }),
+
         createFinishedGoodTransaction: builder.mutation<BaseResponse<FinishedGoodTransaction>, Partial<FinishedGoodTransaction>>({
             query: (body) => ({
                 url: `${FINISHED_GOOD_TRANSACTION_URL}/create`,
@@ -57,4 +69,5 @@ export const {
     useCreateFinishedGoodTransactionMutation,
     useCreateBulkFinishedGoodTransactionsMutation,
     useGetFGDailyReportQuery,
+    useGetFinishedGoodAdjustmentTransactionQuery,
 } = FinishedGoodTransactionApiSlice;

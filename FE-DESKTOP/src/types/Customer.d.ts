@@ -1,8 +1,9 @@
-export interface Customer extends BaseSchema {
+export interface Customer {
+  _id?: string;
   code: string;
   name: string;
-  address: string | null;
-  email: string | null;
-  contactNumber: string | null;
-  note: string;
+  address?: string;
+  email?: string;
+  contactNumber?: string;
+  note?: string;
 }

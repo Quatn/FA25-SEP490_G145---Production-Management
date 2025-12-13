@@ -14,8 +14,8 @@ export class CreateDeliveryNoteDto {
   poitems!: any[];
 
 
-  @IsEnum(['PENDINGAPPROVAL', 'APPROVED', 'CONFIRMEDAPPROVAL'])
-  status!: 'PENDINGAPPROVAL' | 'APPROVED' | 'CONFIRMEDAPPROVAL';
+  @IsEnum(['PENDINGAPPROVAL', 'APPROVED', 'EXPORTED', 'CANCELLED'])
+  status!: 'PENDINGAPPROVAL' | 'APPROVED' | 'EXPORTED' | 'CANCELLED';
 
 
   @IsOptional()

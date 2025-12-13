@@ -1,18 +1,25 @@
-import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
-import { FaEdit } from "react-icons/fa";
+import { Table, Group, Button, Icon } from "@chakra-ui/react";
+import { FaEdit, FaEye } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
 import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";
-import WareFinishingProcessTypeDetailDialog from "./WareFinishingProcessTypeDetailDialog";
 
 interface Props {
     page: number;
     limit: number;
     items: WareFinishingProcessType[];
     onEdit: (item: WareFinishingProcessType) => void;
+    onDetail: (item: WareFinishingProcessType) => void;
     onDelete: (item: WareFinishingProcessType) => void;
 }
 
-const WareFinishingProcessTypeTable = ({ page, limit, items, onEdit, onDelete }: Props) => {
+const WareFinishingProcessTypeTable = ({
+    page,
+    limit,
+    items,
+    onEdit,
+    onDetail,
+    onDelete
+}: Props) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
@@ -29,12 +36,12 @@ const WareFinishingProcessTypeTable = ({ page, limit, items, onEdit, onDelete }:
                 w="100%"
             >
                 <Table.Header>
-                    <Table.Row>
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
-                        <Table.ColumnHeader>Mã</Table.ColumnHeader>
-                        <Table.ColumnHeader>Tên</Table.ColumnHeader>
+                        <Table.ColumnHeader>Mã loại hoàn thiện</Table.ColumnHeader>
+                        <Table.ColumnHeader>Tên loại hoàn thiện</Table.ColumnHeader>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             Thao tác
                         </Table.ColumnHeader>
@@ -50,9 +57,16 @@ const WareFinishingProcessTypeTable = ({ page, limit, items, onEdit, onDelete }:
 
                             <Table.Cell>
                                 <Group gap={5}>
-                                    <WareFinishingProcessTypeDetailDialog
-                                        item={item}
-                                    />
+                                    <Button
+                                        variant="surface"
+                                        colorPalette="blue"
+                                        onClick={() => onDetail(item)}
+                                    >
+                                        <Icon>
+                                            <FaEye />
+                                        </Icon>
+                                        Chi tiết
+                                    </Button>
                                     <Button
                                         variant="surface"
                                         colorPalette="yellow"

@@ -49,7 +49,7 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                     },
                 }}>
                 <Table.Header>
-                    <Table.Row>
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader colSpan={1} />
                         <Table.ColumnHeader colSpan={4} textAlign="center">
                             THÔNG TIN CƠ BẢN
@@ -63,13 +63,13 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                         <Table.ColumnHeader colSpan={2} textAlign="center">
                             SẢN LƯỢNG XUẤT
                         </Table.ColumnHeader>
-                        <Table.ColumnHeader colSpan={3} textAlign="center">
+                        <Table.ColumnHeader colSpan={2} textAlign="center">
                             SẢN LƯỢNG TỒN
                         </Table.ColumnHeader>
                         <Table.ColumnHeader colSpan={1} />
                     </Table.Row>
 
-                    <Table.Row>
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader rowSpan={2} w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
@@ -79,7 +79,7 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                         </Table.ColumnHeader>
 
                         <Table.ColumnHeader rowSpan={2}>
-                            Số đơn hàng
+                            Mã đơn hàng
                         </Table.ColumnHeader>
 
                         <Table.ColumnHeader rowSpan={2}>
@@ -103,11 +103,11 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                         <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tình trạng xuất hàng</Table.ColumnHeader>
                         <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Số ngày tồn kho</Table.ColumnHeader>
                         <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Tồn kho</Table.ColumnHeader>
-                        <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Điều kiện</Table.ColumnHeader>
+                        {/* <Table.ColumnHeader whiteSpace={"normal"} w={"1%"} rowSpan={2}>Điều kiện</Table.ColumnHeader> */}
                         <Table.ColumnHeader rowSpan={2} textAlign={"center"}>Thao tác</Table.ColumnHeader>
 
                     </Table.Row>
-                    <Table.Row >
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader colSpan={1}>Dài</Table.ColumnHeader>
                         <Table.ColumnHeader colSpan={1}>Rộng</Table.ColumnHeader>
                         <Table.ColumnHeader colSpan={1}> Cao</Table.ColumnHeader>
@@ -244,7 +244,7 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                                     fontWeight={"bold"}
                                     textAlign={"center"}>{daysInStock}</Table.Cell>
                                 <Table.Cell>{item.currentQuantity}</Table.Cell>
-                                <Table.Cell
+                                {/* <Table.Cell
                                     backgroundColor={
                                         item.currentStatus == 'SAVE' ? "" : "yellow"
                                     }
@@ -252,7 +252,7 @@ const FinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTransact
                                     fontWeight={"bold"}
                                 >
                                     {item.currentStatus == 'SAVE' ? "Lưu" : "Hủy"}
-                                </Table.Cell>
+                                </Table.Cell> */}
                                 <Table.Cell>
                                     <Group gap={3}>
                                         <Button

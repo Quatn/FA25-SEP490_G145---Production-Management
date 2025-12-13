@@ -20,11 +20,11 @@ const PaperSupplierDetailDialog: React.FC<PaperSupplierDetailDialogProps> = ({ i
                         <Dialog.Body>
                             <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
                                 <DataList.Item pt="4">
-                                    <DataList.ItemLabel>Mã Nhà Giấy</DataList.ItemLabel>
+                                    <DataList.ItemLabel>Mã nhà giấy</DataList.ItemLabel>
                                     <DataList.ItemValue>{initialData?.code}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
-                                    <DataList.ItemLabel>Tên Nhà Giấy</DataList.ItemLabel>
+                                    <DataList.ItemLabel>Tên nhà giấy</DataList.ItemLabel>
                                     <DataList.ItemValue>{initialData?.name}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">

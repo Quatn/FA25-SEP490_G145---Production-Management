@@ -68,5 +68,6 @@ export const buildFullDetailsMOFilterFromDto = (
       },
     });
 
-  return filter;
+  if (filter.$and.length > 0) return filter
+  return {};
 };

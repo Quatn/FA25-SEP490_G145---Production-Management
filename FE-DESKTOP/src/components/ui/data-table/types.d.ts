@@ -10,6 +10,7 @@ export type DataTableEditableCellProps = {
   updateTableData: (value: DataTableEditableCellValueTypes) => void,
   selectValues?: { label: string, value: string }[]
   selectCollection?: ListCollection<{ label: string, value: string }>
+  disabled?: boolean,
 }
 
 export type DataTableMeta = {
