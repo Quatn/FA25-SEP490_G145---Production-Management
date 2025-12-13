@@ -1,0 +1,184 @@
+[
+  {
+    "id": "manufacturingorderid001",
+    "code": "1/10",
+    "manufacturingDate": "2025-10-25T00:00:00.000Z",
+    "requestedDatetime": "2025-10-27T00:00:00.000Z",
+    "corrugatorLine": 7,
+    "manufacturedAmount": 0,
+    "manufacturingDirective": null,
+    "note": "",
+    "purchaseOrderItem": {
+      "id": "purchaseorderitemid001",
+      "subPurchaseOrderId": "subpurchaseorderid001",
+      "amount": 1288,
+      "numberOfBlanks": 0,
+      "longitudinalCutCount": 0,
+      "runningLength": 0,
+      "totalVolume": 0,
+      "totalWeight": 0,
+      "status": "NOTSTARTED",
+      "note": "",
+      "recalcFlag": true,
+      "ware": {
+        "id": "wareid001",
+        "code": "dt-pad-65x50",
+        "unitPrice": 10.0,
+        "fluteCombinationCode": "5BC",
+        "wareWidth": 65,
+        "wareLength": 50,
+        "wareHeight": null,
+        "wareManufacturingProcessType": "Tấm",
+        "faceLayerPaperType": "K/VT/140/140",
+        "BFlutePaperType": "M/140/110",
+        "BACLinerLayerPaperType": "M/140/110",
+        "ACFlutePaperType": "M/140/110",
+        "backLayerPaperType": "K/VT/140/140",
+        "volume": 0,
+        "printColors": [],
+        "typeOfPrinter": null,
+        "manufacturingProcesses": [
+          "BE",
+          "BO"
+        ],
+        "note": "",
+        "recalcFlag": true
+      }
+    },
+    "manufacturingOrderProcesses": [
+      {
+        "id": "manufacturingorderprocessid002",
+        "manufacturingOrderCode": "1/10",
+        "manufacturingProcessCode": "BE",
+        "processNumber": "1",
+        "manufacturedAmount": 0,
+        "status": "NOTSTARTED",
+        "note": "",
+        "processDefinition": {
+          "id": "manufacturingprocessid003",
+          "code": "BE",
+          "name": "Bế",
+          "description": "Công đoạn cắt theo hình dạng định sẵn bằng khuôn bế (die-cut) để tạo ra bao bì có hình dáng phức tạp.",
+          "note": "Dùng cho thùng bế, hộp nắp chồm hoặc sản phẩm có tay cầm, cửa sổ, khe rãnh đặc biệt."
+        }
+      },
+      {
+        "id": "manufacturingorderprocessid003",
+        "manufacturingOrderCode": "1/10",
+        "manufacturingProcessCode": "BO",
+        "processNumber": "3",
+        "manufacturedAmount": 0,
+        "status": "NOTSTARTED",
+        "note": "",
+        "processDefinition": {
+          "id": "manufacturingprocessid006",
+          "code": "BO",
+          "name": "Bó",
+          "description": "Công đoạn đóng bó, xếp chồng và buộc dây thùng carton để chuẩn bị giao hàng hoặc chuyển tiếp sang công đoạn khác.",
+          "note": "Là công đoạn cuối cùng của quá trình gia công, thường kết hợp kiểm tra số lượng và chất lượng."
+        }
+      }
+    ]
+  },
+  {
+    "id": "manufacturingorderid002",
+    "code": "2/10",
+    "manufacturingDate": "2025-10-25T00:00:00.000Z",
+    "requestedDatetime": "2025-10-27T00:00:00.000Z",
+    "corrugatorLine": 7,
+    "manufacturedAmount": 0,
+    "manufacturingDirective": null,
+    "note": "",
+    "purchaseOrderItem": {
+      "id": "purchaseorderitemid002",
+      "subPurchaseOrderId": "subpurchaseorderid002",
+      "amount": 376,
+      "numberOfBlanks": 0,
+      "longitudinalCutCount": 0,
+      "runningLength": 0,
+      "totalVolume": 0,
+      "totalWeight": 0,
+      "status": "NOTSTARTED",
+      "note": "",
+      "recalcFlag": true,
+      "ware": {
+        "id": "wareid002",
+        "code": "dt-box-70x53x15",
+        "unitPrice": 10.0,
+        "fluteCombinationCode": "5BC",
+        "wareWidth": 70,
+        "wareLength": 53,
+        "wareHeight": 15,
+        "wareManufacturingProcessType": "Liền",
+        "faceLayerPaperType": "K/VT/140/140",
+        "BFlutePaperType": "M/140/110",
+        "BACLinerLayerPaperType": "M/140/110",
+        "ACFlutePaperType": "M/140/110",
+        "backLayerPaperType": "K/VT/140/140",
+        "volume": 0,
+        "printColors": [
+          "BK6F",
+          "XL44"
+        ],
+        "typeOfPrinter": "Máy 6 màu",
+        "manufacturingProcesses": [
+          "IN",
+          "CHAP",
+          "DAN"
+        ],
+        "note": "",
+        "recalcFlag": true
+      }
+    },
+    "manufacturingOrderProcesses": [
+      {
+        "id": "manufacturingorderprocessid001",
+        "manufacturingOrderCode": "2/10",
+        "manufacturingProcessCode": "IN",
+        "processNumber": "1",
+        "manufacturedAmount": 0,
+        "status": "NOTSTARTED",
+        "note": "",
+        "processDefinition": {
+          "id": "manufacturingprocessid001",
+          "code": "IN",
+          "name": "In",
+          "description": "Công đoạn in ấn lên bề mặt tấm phôi carton, thường dùng máy in flexo để in logo, ký hiệu hoặc thông tin sản phẩm.",
+          "note": "Là công đoạn đầu tiên trong nhóm gia công, có thể in một hoặc nhiều màu tùy yêuêu cầu."
+        }
+      },
+      {
+        "id": "manufacturingorderprocessid004",
+        "manufacturingOrderCode": "2/10",
+        "manufacturingProcessCode": "CHAP",
+        "processNumber": "2",
+        "manufacturedAmount": 0,
+        "status": "NOTSTARTED",
+        "note": "",
+        "processDefinition": {
+          "id": "manufacturingprocessid002",
+          "code": "CHAP",
+          "name": "Chạp",
+          "description": "Công đoạn cấn, gấp và tạo nếp cho tấm phôi trước khi ghim hoặc dán; giúp định hình thùng carton.",
+          "note": "Thường thực hiện sau in, có thể kết hợp trong cụm 'In chạp' hoặc 'In chạp-ghim'."
+        }
+      },
+      {
+        "id": "manufacturingorderprocessid005",
+        "manufacturingOrderCode": "2/10",
+        "manufacturingProcessCode": "DAN",
+        "processNumber": "3",
+        "manufacturedAmount": 0,
+        "status": "NOTSTARTED",
+        "note": "",
+        "processDefinition": {
+          "id": "manufacturingprocessid005",
+          "code": "DAN",
+          "name": "Dán",
+          "description": "Công đoạn dùng keo dán để nối mép carton, thay cho ghim cơ học.",
+          "note": "Phổ biến cho thùng kích thước nhỏ hoặc yêu cầu thẩm mỹ cao."
+        }
+      }
+    ]
+  }
+]

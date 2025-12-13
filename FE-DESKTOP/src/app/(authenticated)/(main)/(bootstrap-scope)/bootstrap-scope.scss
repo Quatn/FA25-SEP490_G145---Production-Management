@@ -1,0 +1,16 @@
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/root";
+
+.bootstrap-scope {
+  @import "bootstrap/scss/bootstrap";
+}
+
+// Các phần tử modal cần style global
+// @import "bootstrap/scss/modal";
+// @import "bootstrap/scss/transitions";
+// @import "bootstrap/scss/buttons";
+// @import "bootstrap/scss/forms";

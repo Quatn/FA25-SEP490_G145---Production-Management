@@ -1,0 +1,51 @@
+[{
+  "_id": {
+    "$oid": "66f000000000000000000301"
+  },
+  "code": "1/10",
+  "manufacturingDate": "2025-10-25T00:00:00.000Z",
+  "requestedDatetime": "2025-10-27T00:00:00.000Z",
+  "corrugatorLine": 7,
+  "manufacturedAmount": 0,
+  "manufacturingDirective": null,
+  "note": "",
+  "purchaseOrderItem": {
+    "$oid": "66f000000000000000000011"
+  },
+  "overallStatus": "NOTSTARTED",
+  "processes": [
+    {
+      "$oid": "66f000000000000000000201"
+    },
+    {
+      "$oid": "66f000000000000000000202"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "66f000000000000000000302"
+  },
+  "code": "2/10",
+  "manufacturingDate": "2025-10-25T00:00:00.000Z",
+  "requestedDatetime": "2025-10-27T00:00:00.000Z",
+  "corrugatorLine": 7,
+  "manufacturedAmount": 0,
+  "manufacturingDirective": null,
+  "note": "",
+  "purchaseOrderItem": {
+    "$oid": "66f000000000000000000012"
+  },
+  "overallStatus": "NOTSTARTED",
+  "processes": [
+    {
+      "$oid": "66f000000000000000000203"
+    },
+    {
+      "$oid": "66f000000000000000000204"
+    },
+    {
+      "$oid": "66f000000000000000000205"
+    }
+  ]
+}]
