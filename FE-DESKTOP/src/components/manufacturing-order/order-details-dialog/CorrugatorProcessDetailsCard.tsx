@@ -69,6 +69,8 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
     if (check.null(props.order)) return []
 
     return [
+      { label: "Số lượng cần sản xuất", value: (props.order.numberOfBlanks ?? 0) + "" },
+      { label: "Số lượng đã sản xuất", value: (props.order.corrugatorProcess.manufacturedAmount ?? 0) + "" },
       { label: "Khổ giấy thực", value: (props.order.corrugatorProcess.actualPaperWidth ?? 0) + "" },
       { label: "Mét dài thực", value: (props.order.corrugatorProcess.actualRunningLength ?? 0) + "" },
     ]
@@ -105,7 +107,6 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
   }
 
   const setManufacturedAmount = (value: string) => {
-    console.log(value)
     if (value.length < 1) setFormValueWrapped(prev => ({ ...prev, manufacturedAmount: undefined }))
     const val = parseInt(value)
     if (check.number(val)) setFormValueWrapped(prev => ({ ...prev, manufacturedAmount: val }))
@@ -175,9 +176,6 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
       <Card.Header>
         <HStack justifyContent={"space-between"}>
           <Heading size="md">Quy trình sóng</Heading>
-          <Link href={`purchase - order${check.string(po?._id) ? "?id=" + po._id : ""}`}>
-            <Button colorPalette={"blue"} size="xs">Chỉnh sửa</Button>
-          </Link>
         </HStack>
       </Card.Header>
 
@@ -220,7 +218,6 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
                   <Select.ValueText placeholder="Chọn dàn sóng" />
                 </Select.Trigger>
                 <Select.IndicatorGroup>
-                  <Select.ClearTrigger />
                   <Select.Indicator />
                 </Select.IndicatorGroup>
               </Select.Control>
@@ -240,7 +237,7 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
           </Stack>
 
 
-          <Stack>
+          {/*<Stack>
             <Heading size={"xs"}>Số tấm đã sản xuất {formValue.manufacturedAmount}</Heading>
             <NumberInput.Root
               bg={"bg"}
@@ -251,6 +248,7 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
               <NumberInput.Input />
             </NumberInput.Root>
           </Stack>
+            */}
         </HStack>
 
         <DataList.Root orientation="horizontal">
@@ -264,7 +262,7 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
         <Stack mt={5}>
           <Heading size="lg">Ghi chú</Heading>
           <Editable.Root value={po?.note} readOnly >
-            <Editable.Preview />
+            <Editable.Preview w={"full"} />
           </Editable.Root>
         </Stack>
 

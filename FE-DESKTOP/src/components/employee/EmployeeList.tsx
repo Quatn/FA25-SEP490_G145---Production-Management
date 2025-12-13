@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import type { PurchaseOrder } from "@/types/PurchaseOrderTypes";
+import PurchaseOrderDetailModal from "./PurchaseOrderDetailModal";
+import ProductSelectorModal from "./SubPOSelectorModal";
 import {
   useGetEmployeesQuery,
   useCreateEmployeeMutation,
@@ -11,6 +14,8 @@ import {
 import { useGetAllRolesQuery } from "@/service/api/roleApiSlice";
 import EmployeeCreateModal from "./EmployeeCreateModal";
 import EmployeeEditModal from "./EmployeeEditModal";
+import { toaster } from "@/components/ui/toaster";
+import { useConfirm } from "@/components/common/ConfirmModal";
 
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
@@ -113,6 +118,9 @@ const EmployeeList: React.FC = () => {
     setEditOpen(true);
   };
 
+  // confirm hook (make sure ConfirmProvider is mounted above this component)
+  const showConfirm = useConfirm();
+
   // --- new helper: check if a code already exists in the current list ---
   const isCodeTaken = (code: string, excludeId?: string | null) => {
     const norm = String(code ?? "")
@@ -130,18 +138,91 @@ const EmployeeList: React.FC = () => {
     });
   };
 
+  /**
+   * helper validators for optional fields
+   */
+  const isValidEmail = (v: string) => {
+    const s = String(v ?? "").trim();
+    if (!s) return true; // optional
+    // simple but practical email regex
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(s);
+  };
+
+  const isValidContactNumber = (v: string) => {
+    const s = String(v ?? "").trim();
+    if (!s) return true; // optional
+    // allowed chars: digits, spaces, parentheses, plus, hyphen, dot
+    if (!/^[0-9()+\-\.\s]*$/.test(s)) return false;
+    const digits = s.replace(/\D/g, "");
+    // reasonable length check: 7..15 digits
+    return digits.length >= 7 && digits.length <= 15;
+  };
+
+  /**
+   * handleCreateSubmit
+   * Returns structured result:
+   *  { success: true, message?: string }
+   *  or { success: false, errors?: {...}, message?: string }
+   */
   const handleCreateSubmit = async () => {
     try {
       const codeVal = String(createForm.code ?? "").trim();
-      if (!codeVal) return alert("Please provide code");
 
-      // validate uniqueness before creating
-      if (isCodeTaken(codeVal)) return alert("Mã nhân viên đã tồn tại");
+      // validation object to return to modal
+      const errors: any = {};
 
-      if (!createForm.name || String(createForm.name).trim() === "")
-        return alert("Please provide name");
-      if (!createForm.role || String(createForm.role).trim() === "")
-        return alert("Please choose role");
+      if (!codeVal) {
+        errors.codeRequired = true;
+      }
+
+      if (!createForm.name || String(createForm.name).trim() === "") {
+        errors.nameRequired = true;
+      }
+
+      if (!createForm.role || String(createForm.role).trim() === "") {
+        errors.roleRequired = true;
+      }
+
+      // optional email validation
+      const emailVal = String(createForm.email ?? "").trim();
+      if (emailVal && !isValidEmail(emailVal)) {
+        errors.emailInvalid = true;
+      }
+
+      // optional contact number validation
+      const contactVal = String(createForm.contactNumber ?? "").trim();
+      if (contactVal && !isValidContactNumber(contactVal)) {
+        errors.contactInvalid = true;
+      }
+
+      if (Object.keys(errors).length > 0) {
+        // user-friendly message
+        const parts: string[] = [];
+        if (errors.codeRequired) parts.push("Mã nhân viên (Code) là bắt buộc.");
+        if (errors.nameRequired) parts.push("Tên là bắt buộc.");
+        if (errors.roleRequired) parts.push("Vui lòng chọn vai trò (Role).");
+        if (errors.emailInvalid) parts.push("Email không hợp lệ.");
+        if (errors.contactInvalid)
+          parts.push(
+            "Số điện thoại không hợp lệ (chỉ gồm chữ số, + - () . và độ dài chữ số 7-15)."
+          );
+
+        return {
+          success: false,
+          errors,
+          message: parts.join(" ") || "Validation failed",
+        };
+      }
+
+      // uniqueness check
+      if (isCodeTaken(codeVal)) {
+        return {
+          success: false,
+          errors: { codeDuplicate: true },
+          message: `Mã nhân viên "${codeVal}" đã tồn tại.`,
+        };
+      }
 
       const payload = {
         code: codeVal,
@@ -153,12 +234,15 @@ const EmployeeList: React.FC = () => {
         note: createForm.note ?? "",
       };
 
+      // attempt create
       const resp: any = await createEmployee(payload).unwrap();
       let createdDoc = resp?.data ?? resp;
       if (createdDoc?.data) createdDoc = createdDoc.data;
 
+      // update local display list
       setDisplayEmployees((prev) => [createdDoc, ...prev]);
-      setCreateOpen(false);
+
+      // reset form (keep modal open responsibility to caller)
       setCreateForm({
         code: "",
         name: "",
@@ -169,6 +253,7 @@ const EmployeeList: React.FC = () => {
         note: "",
       });
 
+      // trigger background refetches (non-blocking)
       setTimeout(() => {
         try {
           refetchEmployees?.();
@@ -176,27 +261,71 @@ const EmployeeList: React.FC = () => {
         } catch {}
       }, 600);
 
-      alert(resp?.message ?? "Created");
+      // Return success and server message (modal will show toast + close)
+      return {
+        success: true,
+        message:
+          resp?.message ?? `Tạo nhân viên ${payload.code} — ${payload.name}`,
+      };
     } catch (err: any) {
       console.error("Create employee failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Create failed");
+      const message = err?.data?.message ?? err?.message ?? "Create failed";
+      return { success: false, message };
     }
   };
 
   const handleEditSubmit = async () => {
     try {
-      if (!editForm?.id) return alert("No id");
+      if (!editForm?.id) {
+        return { success: false, message: "No id" };
+      }
+
       const codeVal = String(editForm.code ?? "").trim();
-      if (!codeVal) return alert("Please provide code");
 
-      // validate uniqueness (exclude current record id)
-      if (isCodeTaken(codeVal, editForm.id))
-        return alert("Mã nhân viên đã tồn tại");
-
+      const errors: any = {};
+      if (!codeVal) errors.codeRequired = true;
       if (!editForm.name || String(editForm.name).trim() === "")
-        return alert("Please provide name");
+        errors.nameRequired = true;
       if (!editForm.role || String(editForm.role).trim() === "")
-        return alert("Please choose role");
+        errors.roleRequired = true;
+
+      // optional email validation
+      const emailVal = String(editForm.email ?? "").trim();
+      if (emailVal && !isValidEmail(emailVal)) {
+        errors.emailInvalid = true;
+      }
+
+      // optional contact validation
+      const contactVal = String(editForm.contactNumber ?? "").trim();
+      if (contactVal && !isValidContactNumber(contactVal)) {
+        errors.contactInvalid = true;
+      }
+
+      if (Object.keys(errors).length > 0) {
+        const parts: string[] = [];
+        if (errors.codeRequired) parts.push("Mã nhân viên (Code) là bắt buộc.");
+        if (errors.nameRequired) parts.push("Tên là bắt buộc.");
+        if (errors.roleRequired) parts.push("Vui lòng chọn vai trò (Role).");
+        if (errors.emailInvalid) parts.push("Email không hợp lệ.");
+        if (errors.contactInvalid)
+          parts.push(
+            "Số điện thoại không hợp lệ (chỉ gồm chữ số, + - () . và độ dài chữ số 7-15)."
+          );
+        return {
+          success: false,
+          errors,
+          message: parts.join(" ") || "Validation failed",
+        };
+      }
+
+      // uniqueness check (exclude current id)
+      if (isCodeTaken(codeVal, editForm.id)) {
+        return {
+          success: false,
+          errors: { codeDuplicate: true },
+          message: `Mã nhân viên "${codeVal}" đã tồn tại.`,
+        };
+      }
 
       const payload = {
         code: codeVal,
@@ -222,23 +351,35 @@ const EmployeeList: React.FC = () => {
         )
       );
 
-      setEditOpen(false);
-
       setTimeout(() => {
         try {
           refetchEmployees?.();
         } catch {}
       }, 600);
 
-      alert(res?.message ?? "Updated");
+      return {
+        success: true,
+        message:
+          res?.message ??
+          `Cập nhật thành công: ${payload.code} — ${payload.name}`,
+      };
     } catch (err: any) {
       console.error("Update failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Update failed");
+      const message = err?.data?.message ?? err?.message ?? "Update failed";
+      return { success: false, message };
     }
   };
 
   const handleSoftDelete = async (e: any) => {
-    if (!confirm(`Delete ${e.code}?`)) return;
+    const ok = await showConfirm({
+      title: "Delete employee",
+      description: `Delete ${e.code}?`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      destructive: true,
+    });
+    if (!ok) return;
+
     try {
       const id = getIdFromDoc(e) ?? e._id ?? e.id;
       const res: any = await deleteEmployee(id).unwrap();
@@ -258,28 +399,48 @@ const EmployeeList: React.FC = () => {
         } catch {}
       }, 600);
 
-      alert(res?.message ?? "Deleted");
+      toaster.create({
+        description: res?.message ?? "Deleted",
+        type: "success",
+      });
     } catch (err: any) {
       console.error("Delete failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Delete failed");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Delete failed",
+        type: "error",
+      });
     }
   };
 
-  // pagination helpers
-  const totalCount =
+  // pagination helpers — robust to different API shapes and missing total
+  const inferredTotal =
     Number(
-      resp?.data?.total ??
+      resp?.data?.totalItems ??
+        resp?.data?.total ??
         resp?.total ??
         resp?.data?.meta?.total ??
         resp?.data?.meta?.count ??
         resp?.meta?.total ??
         0
     ) || 0;
-  const totalPages =
-    totalCount > 0 ? Math.max(1, Math.ceil(totalCount / limit)) : 1;
+
+  // If server doesn't return a total, fall back to the number of items we actually received
+  const totalCount = inferredTotal > 0 ? inferredTotal : employees?.length ?? 0;
+
+  // totalPages: at least 1
+  const totalPages = Math.max(1, Math.ceil((totalCount || 0) / limit));
+
   const goToPage = (p: number) => {
     if (p < 1) p = 1;
-    if (totalCount > 0 && p > totalPages) p = totalPages;
+    // if server provides total, clamp to totalPages
+    if (inferredTotal > 0 && p > totalPages) p = totalPages;
+
+    // if server does NOT provide total, disallow going forward when current page has fewer items than limit
+    if (inferredTotal === 0 && p > page && (employees?.length ?? 0) < limit) {
+      // no more pages
+      return;
+    }
+
     setPage(p);
   };
 
@@ -414,13 +575,18 @@ const EmployeeList: React.FC = () => {
           <button
             className="btn btn-sm btn-outline-secondary"
             onClick={() => goToPage(page + 1)}
-            disabled={totalCount > 0 ? page >= totalPages : false}
+            // if server provided a total -> use page >= totalPages; otherwise, disable when current page has fewer items than limit
+            disabled={
+              inferredTotal > 0
+                ? page >= totalPages
+                : (employees?.length ?? 0) < limit
+            }
             style={{ marginLeft: 8 }}
           >
             Sau
           </button>
           <span style={{ marginLeft: 12 }}>
-            Trang {page} {totalCount > 0 && `trong ${totalPages}`}
+            Trang {page} {inferredTotal > 0 && `trong ${totalPages}`}
           </span>
         </div>
 

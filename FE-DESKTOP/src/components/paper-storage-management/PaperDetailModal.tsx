@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useGetTransactionsQuery } from "@/service/api/paperRollTransactionApiSlice";
 import { useGetAllPaperColorsQuery } from "@/service/api/paperColorApiSlice";
 import { useGetAllPaperSuppliersQuery } from "@/service/api/paperSupplierApiSlice";
+import { PaperType } from "@/types/PaperType";
 
 type Props = {
   show: boolean;
@@ -167,15 +168,12 @@ export const PaperDetailModal: React.FC<Props> = ({
   }, [allSuppliers]);
 
   // helper copied from PaperList: get color id from paperType object (handles object or id)
-  const getColorIdFromPaperType = (pt: any) => {
+  const getColorIdFromPaperType = (pt: PaperType) => {
     if (!pt) return undefined;
-    if (pt.paperColorId && typeof pt.paperColorId === "object")
-      return getIdFromDoc(pt.paperColorId);
-    // some shapes may have 'paperColor' instead of 'paperColorId'
     if (pt.paperColor && typeof pt.paperColor === "object")
       return getIdFromDoc(pt.paperColor);
     return (
-      getIdFromDoc(pt.paperColorId) ?? getIdFromDoc(pt.paperColor) ?? undefined
+      getIdFromDoc(pt.paperColor) ?? undefined
     );
   };
 

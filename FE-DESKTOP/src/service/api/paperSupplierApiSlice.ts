@@ -26,6 +26,17 @@ export const paperSupplierApiSlice = apiSlice.injectEndpoints({
                 providesTags: ["PaperSupplier"],
             }),
 
+        getDeletedPaperSupplier: builder.query<BaseResponse<PaginatedList<PaperSupplier>>, { page?: number; limit?: number }>(
+            {
+                query: ({ page = 1, limit = 10 }) => ({
+                    url: `${PAPER_SUPPLIER_URL}/list-deleted`,
+                    method: "GET",
+                    params: { page, limit },
+                    credentials: "include",
+                }),
+                providesTags: ["PaperSupplier"],
+            }),
+
         addPaperSupplier: builder.mutation<{ success: boolean; message: string }, PaperSupplier>({
             query: (body) => ({
                 url: `${PAPER_SUPPLIER_URL}/create`,
@@ -38,7 +49,7 @@ export const paperSupplierApiSlice = apiSlice.injectEndpoints({
 
         updatePaperSupplier: builder.mutation<{ success: boolean; message: string }, PaperSupplier>({
             query: (body) => ({
-                url: `${PAPER_SUPPLIER_URL}/update/${body._id?.$oid ?? body._id}`,
+                url: `${PAPER_SUPPLIER_URL}/update/${body._id}`,
                 method: "PATCH",
                 body,
                 credentials: "include",
@@ -48,10 +59,34 @@ export const paperSupplierApiSlice = apiSlice.injectEndpoints({
 
         deletePaperSupplier: builder.mutation<{ success: boolean; message: string }, PaperSupplier>({
             query: (body) => ({
-                url: `${PAPER_SUPPLIER_URL}/delete-soft/${body._id?.$oid ?? body._id}`,
+                url: `${PAPER_SUPPLIER_URL}/delete-soft/${body._id}`,
                 method: "DELETE",
                 credentials: "include",
             }),
+            invalidatesTags: ["PaperSupplier"],
+        }),
+
+        deleteHardPaperSupplier: builder.mutation<{ success: boolean; message: string }, PaperSupplier>({
+            query: (body) => {
+                const id = body._id;
+                return {
+                    url: `${PAPER_SUPPLIER_URL}/delete-hard/${id}`,
+                    method: "DELETE",
+                    credentials: "include",
+                };
+            },
+            invalidatesTags: ["PaperSupplier"],
+        }),
+
+        restorePaperSupplier: builder.mutation<{ success: boolean; message: string }, PaperSupplier>({
+            query: (body) => {
+                const id = body._id;
+                return {
+                    url: `${PAPER_SUPPLIER_URL}/restore/${id}`,
+                    method: "PATCH",
+                    credentials: "include",
+                };
+            },
             invalidatesTags: ["PaperSupplier"],
         }),
     }),
@@ -63,4 +98,7 @@ export const {
     useGetPaperSupplierQuery,
     useUpdatePaperSupplierMutation,
     useDeletePaperSupplierMutation,
+    useDeleteHardPaperSupplierMutation,
+    useRestorePaperSupplierMutation,
+    useGetDeletedPaperSupplierQuery,
 } = paperSupplierApiSlice;

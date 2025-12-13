@@ -30,6 +30,10 @@ import {
   QrModal,
 } from "./PaperListModal";
 
+import { toaster } from "@/components/ui/toaster";
+import { useConfirm } from "@/components/common/ConfirmModal";
+import { PaperType } from "@/types/PaperType";
+
 function uniqueIdTimeStamp() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
@@ -75,7 +79,7 @@ export const PaperList: React.FC = () => {
   const [createForm, setCreateForm] = useState({
     useNewType: false,
     paperTypeId: "",
-    paperColorId: "",
+    paperColor: "",
     width: "",
     grammage: "",
     paperSupplierId: "",
@@ -88,7 +92,7 @@ export const PaperList: React.FC = () => {
     id: string;
     useNewType: boolean;
     paperTypeId?: string;
-    paperColorId?: string;
+    paperColor?: string;
     width?: string;
     grammage?: string;
     paperSupplierId?: string;
@@ -103,7 +107,7 @@ export const PaperList: React.FC = () => {
       id: String(Date.now()),
       useNewType: false,
       paperTypeId: "",
-      paperColorId: "",
+      paperColor: "",
       width: "",
       grammage: "",
       paperSupplierId: "",
@@ -116,7 +120,7 @@ export const PaperList: React.FC = () => {
   const [updateOpen, setUpdateOpen] = useState(false);
   const [updateForm, setUpdateForm] = useState({
     id: "",
-    paperColorId: "",
+    paperColor: "",
     paperSupplierId: "",
     width: "",
     grammage: "",
@@ -142,7 +146,7 @@ export const PaperList: React.FC = () => {
     page,
     limit,
     search: debouncedSearch,
-    sortBy: "both",
+    sortBy: "sequenceNumber",
     sortOrder: "desc",
   });
 
@@ -206,11 +210,11 @@ export const PaperList: React.FC = () => {
   const findType = (id?: string) =>
     (allTypes || []).find((t: any) => String(getIdFromDoc(t)) === String(id));
 
-  const getColorIdFromPaperType = (pt: any) => {
+  const getColorIdFromPaperType = (pt: PaperType) => {
     if (!pt) return undefined;
-    if (pt.paperColorId && typeof pt.paperColorId === "object")
-      return getIdFromDoc(pt.paperColorId);
-    return getIdFromDoc(pt.paperColorId) ?? undefined;
+    if (pt.paperColor && typeof pt.paperColor === "object")
+      return getIdFromDoc(pt.paperColor);
+    return getIdFromDoc(pt.paperColor) ?? undefined;
   };
 
   const computePaperRollId = (r: any) => {
@@ -277,6 +281,9 @@ export const PaperList: React.FC = () => {
     return !isNaN(w) && w > 0 && w < LOW_WEIGHT_THRESHOLD;
   };
 
+  // confirm hook (make sure ConfirmProvider is mounted above this component)
+  const showConfirm = useConfirm();
+
   // --- SELECTION logic using DB id keys everywhere ---
   const selectedRolls = useMemo(
     () => paperRolls.filter((r) => !!selectedIds[getDbId(r)]),
@@ -314,19 +321,50 @@ export const PaperList: React.FC = () => {
   const handleCreateSubmit = async () => {
     try {
       const supplierId = String(createForm.paperSupplierId ?? "");
-      if (!supplierId) return alert("Please select a supplier");
+      if (!supplierId) {
+        toaster.create({
+          description: "Please select a supplier",
+          type: "error",
+        });
+        return;
+      }
 
       let paperTypeId: string | undefined = undefined;
 
       if (createForm.useNewType) {
-        const colorId = createForm.paperColorId;
-        const widthNum = Number(createForm.width || 0);
-        const grammageNum = Number(createForm.grammage || 0);
-        if (!colorId || !widthNum || !grammageNum)
-          return alert("Please provide color, width and grammage for new type");
+        const colorId = createForm.paperColor;
+        const widthStr = String(createForm.width ?? "").trim();
+        const grammageStr = String(createForm.grammage ?? "").trim();
+
+        // cannot be empty
+        if (!colorId || widthStr === "" || grammageStr === "") {
+          toaster.create({
+            description:
+              "Please provide color, width and grammage for new type",
+            type: "error",
+          });
+          return;
+        }
+
+        const widthNum = Number(widthStr);
+        const grammageNum = Number(grammageStr);
+
+        // must be numeric and >= 0
+        if (
+          !Number.isFinite(widthNum) ||
+          widthNum < 0 ||
+          !Number.isFinite(grammageNum) ||
+          grammageNum < 0
+        ) {
+          toaster.create({
+            description: "Width and grammage must be numbers >= 0",
+            type: "error",
+          });
+          return;
+        }
 
         const matched = (allTypes || []).find((t: any) => {
-          const tColorId = getIdFromDoc(t.paperColorId);
+          const tColorId = getIdFromDoc(t.paperColor);
           return (
             String(tColorId) === String(colorId) &&
             Number(t.width) === widthNum &&
@@ -336,7 +374,7 @@ export const PaperList: React.FC = () => {
         paperTypeId = matched ? getIdFromDoc(matched) : undefined;
         if (!paperTypeId) {
           const createdResp: any = await addPaperType({
-            paperColorId: String(colorId),
+            paperColor: String(colorId),
             width: widthNum,
             grammage: grammageNum,
           }).unwrap();
@@ -347,13 +385,40 @@ export const PaperList: React.FC = () => {
         paperTypeId = createForm.paperTypeId;
       }
 
-      if (!paperTypeId) return alert("Please select or create paper type");
+      if (!paperTypeId) {
+        toaster.create({
+          description: "Please select or create paper type",
+          type: "error",
+        });
+        return;
+      }
 
-      const weight = Number(createForm.weight || 0);
+      // weight: cannot be empty and must be numeric >= 0
+      const weightStr = String(createForm.weight ?? "").trim();
+      if (weightStr === "") {
+        toaster.create({
+          description: "Please provide weight (>= 0)",
+          type: "error",
+        });
+        return;
+      }
+      const weight = Number(weightStr);
+      if (!Number.isFinite(weight) || weight < 0) {
+        toaster.create({
+          description: "Provide valid weight (>= 0)",
+          type: "error",
+        });
+        return;
+      }
+
       const receivingDate = createForm.receivingDate;
-      if (!Number.isFinite(weight) || weight <= 0)
-        return alert("Provide valid weight (>0)");
-      if (!receivingDate) return alert("Please provide receiving date");
+      if (!receivingDate) {
+        toaster.create({
+          description: "Please provide receiving date",
+          type: "error",
+        });
+        return;
+      }
 
       const payload = {
         paperSupplierId: supplierId,
@@ -364,12 +429,15 @@ export const PaperList: React.FC = () => {
       };
 
       const resp: any = await createPaperRoll(payload).unwrap();
-      alert(resp?.message ?? "Created");
+      toaster.create({
+        description: resp?.message ?? "Created",
+        type: "success",
+      });
       setCreateOpen(false);
       setCreateForm({
         useNewType: false,
         paperTypeId: "",
-        paperColorId: "",
+        paperColor: "",
         width: "",
         grammage: "",
         paperSupplierId: "",
@@ -379,7 +447,10 @@ export const PaperList: React.FC = () => {
       });
     } catch (err: any) {
       console.error(err);
-      alert(err?.data?.message ?? err?.message ?? "Create failed");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Create failed",
+        type: "error",
+      });
     }
   };
 
@@ -390,7 +461,7 @@ export const PaperList: React.FC = () => {
         id: String(Date.now()) + Math.random().toString(36).slice(2, 7),
         useNewType: false,
         paperTypeId: "",
-        paperColorId: "",
+        paperColor: "",
         width: "",
         grammage: "",
         paperSupplierId: "",
@@ -413,26 +484,57 @@ export const PaperList: React.FC = () => {
 
   const handleCreateMultipleSubmit = async () => {
     try {
-      if (!createMultipleRows.length) return alert("No rows");
+      if (!createMultipleRows.length) {
+        toaster.create({ description: "No rows", type: "error" });
+        return;
+      }
 
       const rollsPayload: any[] = [];
 
       for (const row of createMultipleRows) {
         const supplierId = String(row.paperSupplierId ?? "");
-        if (!supplierId) return alert("Please select supplier for every row");
+        if (!supplierId) {
+          toaster.create({
+            description: "Please select supplier for every row",
+            type: "error",
+          });
+          return;
+        }
 
         let paperTypeId: string | undefined = undefined;
         if (row.useNewType) {
-          const colorId = row.paperColorId;
-          const widthNum = Number(row.width || 0);
-          const grammageNum = Number(row.grammage || 0);
-          if (!colorId || !widthNum || !grammageNum)
-            return alert(
-              "Please provide color, width and grammage for every new-type row"
-            );
+          const colorId = row.paperColor;
+          const widthStr = String(row.width ?? "").trim();
+          const grammageStr = String(row.grammage ?? "").trim();
+
+          if (!colorId || widthStr === "" || grammageStr === "") {
+            toaster.create({
+              description:
+                "Please provide color, width and grammage for every new-type row",
+              type: "error",
+            });
+            return;
+          }
+
+          const widthNum = Number(widthStr);
+          const grammageNum = Number(grammageStr);
+
+          if (
+            !Number.isFinite(widthNum) ||
+            widthNum < 0 ||
+            !Number.isFinite(grammageNum) ||
+            grammageNum < 0
+          ) {
+            toaster.create({
+              description:
+                "Width and grammage must be numbers >= 0 for every new-type row",
+              type: "error",
+            });
+            return;
+          }
 
           const matched = (allTypes || []).find((t: any) => {
-            const tColorId = getIdFromDoc(t.paperColorId);
+            const tColorId = getIdFromDoc(t.paperColor);
             return (
               String(tColorId) === String(colorId) &&
               Number(t.width) === widthNum &&
@@ -443,7 +545,7 @@ export const PaperList: React.FC = () => {
 
           if (!paperTypeId) {
             const createdResp: any = await addPaperType({
-              paperColorId: String(colorId),
+              paperColor: String(colorId),
               width: widthNum,
               grammage: grammageNum,
             }).unwrap();
@@ -454,15 +556,39 @@ export const PaperList: React.FC = () => {
           paperTypeId = row.paperTypeId;
         }
 
-        if (!paperTypeId)
-          return alert("Please select or create paper type for every row");
+        if (!paperTypeId) {
+          toaster.create({
+            description: "Please select or create paper type for every row",
+            type: "error",
+          });
+          return;
+        }
 
-        const weight = Number(row.weight || 0);
+        const weightStr = String(row.weight ?? "").trim();
         const receivingDate = row.receivingDate;
-        if (!Number.isFinite(weight) || weight <= 0)
-          return alert("Provide valid weight (>0) for every row");
-        if (!receivingDate)
-          return alert("Please provide receiving date for every row");
+        if (weightStr === "") {
+          toaster.create({
+            description: "Provide valid weight (>= 0) for every row",
+            type: "error",
+          });
+          return;
+        }
+        const weight = Number(weightStr);
+        if (!Number.isFinite(weight) || weight < 0) {
+          toaster.create({
+            description: "Provide valid weight (>= 0) for every row",
+            type: "error",
+          });
+          return;
+        }
+
+        if (!receivingDate) {
+          toaster.create({
+            description: "Please provide receiving date for every row",
+            type: "error",
+          });
+          return;
+        }
 
         rollsPayload.push({
           paperSupplierId: supplierId,
@@ -476,14 +602,17 @@ export const PaperList: React.FC = () => {
       const resp: any = await createMultiplePaperRolls({
         rolls: rollsPayload,
       }).unwrap();
-      alert(resp?.message ?? `Created ${rollsPayload.length} rolls`);
+      toaster.create({
+        description: resp?.message ?? `Created ${rollsPayload.length} rolls`,
+        type: "success",
+      });
       setCreateMultipleOpen(false);
       setCreateMultipleRows([
         {
           id: String(Date.now()),
           useNewType: false,
           paperTypeId: "",
-          paperColorId: "",
+          paperColor: "",
           width: "",
           grammage: "",
           paperSupplierId: "",
@@ -494,7 +623,11 @@ export const PaperList: React.FC = () => {
       ]);
     } catch (err: any) {
       console.error(err);
-      alert(err?.data?.message ?? err?.message ?? "Create multiple failed");
+      toaster.create({
+        description:
+          err?.data?.message ?? err?.message ?? "Create multiple failed",
+        type: "error",
+      });
     }
   };
 
@@ -504,7 +637,7 @@ export const PaperList: React.FC = () => {
     const supplierId = getIdFromDoc(r.paperSupplier ?? r.paperSupplierId) ?? "";
     setUpdateForm({
       id: getIdFromDoc(r) ?? r.paperRollId ?? "",
-      paperColorId: colorId,
+      paperColor: colorId,
       paperSupplierId: supplierId,
       width: pt?.width ?? r.width ?? "",
       grammage: pt?.grammage ?? r.grammage ?? "",
@@ -518,25 +651,55 @@ export const PaperList: React.FC = () => {
   };
 
   const handleUpdateSubmit = async () => {
-    const widthNum = Number(updateForm.width || 0);
-    const grammageNum = Number(updateForm.grammage || 0);
-    const weightNum = Number(updateForm.weight ?? 0);
+    const widthStr = String(updateForm.width ?? "").trim();
+    const grammageStr = String(updateForm.grammage ?? "").trim();
+    const weightStr = String(updateForm.weight ?? "").trim();
+
+    // required checks for update: color, supplier, width, grammage, receivingDate
     if (
-      !updateForm.paperColorId ||
+      !updateForm.paperColor ||
       !updateForm.paperSupplierId ||
-      !widthNum ||
-      !grammageNum ||
-      isNaN(weightNum) ||
+      widthStr === "" ||
+      grammageStr === "" ||
       !updateForm.receivingDate
     ) {
-      return alert("Please fill required fields");
+      toaster.create({
+        description: "Please fill required fields",
+        type: "error",
+      });
+      return;
+    }
+
+    const widthNum = Number(widthStr);
+    const grammageNum = Number(grammageStr);
+    const weightNum = Number(weightStr);
+
+    if (
+      !Number.isFinite(widthNum) ||
+      widthNum < 0 ||
+      !Number.isFinite(grammageNum) ||
+      grammageNum < 0
+    ) {
+      toaster.create({
+        description: "Width and grammage must be numbers >= 0",
+        type: "error",
+      });
+      return;
+    }
+
+    if (!Number.isFinite(weightNum) || weightNum < 0) {
+      toaster.create({
+        description: "Weight must be a number >= 0",
+        type: "error",
+      });
+      return;
     }
 
     try {
       const matched = (allTypes || []).find((t: any) => {
-        const tColorId = getIdFromDoc(t.paperColorId);
+        const tColorId = getIdFromDoc(t.paperColor);
         return (
-          String(tColorId) === String(updateForm.paperColorId) &&
+          String(tColorId) === String(updateForm.paperColor) &&
           Number(t.width) === widthNum &&
           Number(t.grammage) === grammageNum
         );
@@ -545,7 +708,7 @@ export const PaperList: React.FC = () => {
       let paperTypeId = matched ? getIdFromDoc(matched) : undefined;
       if (!paperTypeId) {
         const createdResp: any = await addPaperType({
-          paperColorId: String(updateForm.paperColorId),
+          paperColor: String(updateForm.paperColor),
           width: widthNum,
           grammage: grammageNum,
         }).unwrap();
@@ -567,32 +730,67 @@ export const PaperList: React.FC = () => {
         id: updateForm.id,
         data: payload,
       }).unwrap();
-      alert(res?.message ?? "Updated");
+      toaster.create({
+        description: res?.message ?? "Updated",
+        type: "success",
+      });
       setUpdateOpen(false);
     } catch (err: any) {
       console.error(err);
-      alert(err?.data?.message ?? err?.message ?? "Update failed");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Update failed",
+        type: "error",
+      });
     }
   };
 
   const handleSoftDelete = async (r: any) => {
     const id = getIdFromDoc(r) ?? r.paperRollId;
-    if (!id) return alert("No id");
-    if (!confirm(`Delete ${computePaperRollId(r)}?`)) return;
+    if (!id) {
+      toaster.create({ description: "No id", type: "error" });
+      return;
+    }
+    const ok = await showConfirm({
+      title: "Delete roll",
+      description: `Delete ${computePaperRollId(r)}?`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const res: any = await deletePaperRoll({ id }).unwrap();
-      alert(res?.message ?? "Deleted");
+      toaster.create({
+        description: res?.message ?? "Deleted",
+        type: "success",
+      });
     } catch (err: any) {
       console.error(err);
-      alert(err?.data?.message ?? err?.message ?? "Delete failed");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Delete failed",
+        type: "error",
+      });
     }
   };
 
   const doSingleExport = async (roll: any) => {
     if (!roll) return;
     const w = Number(roll.weight || 0);
-    if (!w || w <= 0) return alert("Trọng lượng rỗng, không thể xuất");
-    if (!confirm(`Xuất ${computePaperRollId(roll)} (${w}kg)?`)) return;
+    if (!w || w <= 0) {
+      toaster.create({
+        description: "Trọng lượng rỗng, không thể xuất",
+        type: "error",
+      });
+      return;
+    }
+    const ok = await showConfirm({
+      title: "Xuất cuộn",
+      description: `Xuất ${computePaperRollId(roll)} (${w}kg)?`,
+      confirmText: "Xuất",
+      cancelText: "Hủy",
+      destructive: false,
+    });
+    if (!ok) return;
 
     const id = getIdFromDoc(roll) ?? roll.paperRollId;
     try {
@@ -606,10 +804,10 @@ export const PaperList: React.FC = () => {
         inCharge: "Operator A",
       }).unwrap();
       await updatePaperRoll({ id, data: { weight: 0 } }).unwrap();
-      alert("Xuất thành công");
+      toaster.create({ description: "Xuất thành công", type: "success" });
     } catch (err: any) {
       console.error(err);
-      alert("Export failed");
+      toaster.create({ description: "Export failed", type: "error" });
     }
   };
 
@@ -622,11 +820,18 @@ export const PaperList: React.FC = () => {
       !Number.isFinite(newWeight) ||
       newWeight < 0
     ) {
-      return alert("Vui lòng cung cấp trọng lượng hợp lệ (>= 0).");
+      toaster.create({
+        description: "Vui lòng cung cấp trọng lượng hợp lệ (>= 0).",
+        type: "error",
+      });
+      return;
     }
 
     let roll: any = null;
-    if (!rollOrPaperRollId) return alert("No roll provided");
+    if (!rollOrPaperRollId) {
+      toaster.create({ description: "No roll provided", type: "error" });
+      return;
+    }
 
     if (typeof rollOrPaperRollId === "string") {
       roll = paperRolls.find((r) => r.paperRollId === rollOrPaperRollId);
@@ -650,10 +855,22 @@ export const PaperList: React.FC = () => {
         }) || rollOrPaperRollId;
     }
 
-    if (!roll) return alert("Không tìm thấy cuộn để cập nhật.");
+    if (!roll) {
+      toaster.create({
+        description: "Không tìm thấy cuộn để cập nhật.",
+        type: "error",
+      });
+      return;
+    }
 
     const dbId = getIdFromDoc(roll) ?? roll._id ?? roll.paperRollId;
-    if (!dbId) return alert("Không xác định được id cuộn (db id).");
+    if (!dbId) {
+      toaster.create({
+        description: "Không xác định được id cuộn (db id).",
+        type: "error",
+      });
+      return;
+    }
 
     const prev = Number(roll.weight || 0);
     const newW = Number(newWeight);
@@ -679,10 +896,13 @@ export const PaperList: React.FC = () => {
         return next;
       });
 
-      alert("Nhập lại thành công");
+      toaster.create({ description: "Nhập lại thành công", type: "success" });
     } catch (err: any) {
       console.error("Single re-import failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Nhập lại thất bại");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Nhập lại thất bại",
+        type: "error",
+      });
     }
   };
 
@@ -714,11 +934,14 @@ export const PaperList: React.FC = () => {
         })
       );
 
-      alert("Đã cập nhật trọng lượng nhập lại cho các cuộn.");
+      toaster.create({
+        description: "Đã cập nhật trọng lượng nhập lại cho các cuộn.",
+        type: "success",
+      });
       setSelectedIds({});
     } catch (err) {
       console.error("Bulk re-import failed", err);
-      alert("Nhập lại thất bại");
+      toaster.create({ description: "Nhập lại thất bại", type: "error" });
     }
   };
 
@@ -732,7 +955,11 @@ export const PaperList: React.FC = () => {
     if (!singleModal.roll) return;
     const newW = Number(singleWeight);
     if (!Number.isFinite(newW) || newW < 0) {
-      return alert("Vui lòng nhập một số trọng lượng hợp lệ (>= 0).");
+      toaster.create({
+        description: "Vui lòng nhập một số trọng lượng hợp lệ (>= 0).",
+        type: "error",
+      });
+      return;
     }
     await doSingleReImport(singleModal.roll, newW);
     setSingleModal({ open: false });
@@ -747,7 +974,7 @@ export const PaperList: React.FC = () => {
       setQrDataUrl(dataUrl);
     } catch (err) {
       console.error(err);
-      alert("QR failed");
+      toaster.create({ description: "QR failed", type: "error" });
     } finally {
       setQrLoading(false);
     }
@@ -759,7 +986,10 @@ export const PaperList: React.FC = () => {
     setQrLoading(false);
   };
   const handleDownloadQr = () => {
-    if (!qrDataUrl || !qrModal.text) return alert("QR not ready");
+    if (!qrDataUrl || !qrModal.text) {
+      toaster.create({ description: "QR not ready", type: "error" });
+      return;
+    }
     const a = document.createElement("a");
     a.href = qrDataUrl;
     a.download = `${qrModal.text}-qr.png`;
@@ -770,22 +1000,34 @@ export const PaperList: React.FC = () => {
   const handleOpenQrInNewTab = () => {
     if (!qrDataUrl) return;
     const w = window.open();
-    if (!w) return alert("Popup blocked");
+    if (!w) {
+      toaster.create({ description: "Popup blocked", type: "error" });
+      return;
+    }
     w.document.write(`<img src="${qrDataUrl}" alt="QR" />`);
   };
   const handleCopyCode = async () => {
     if (!qrModal.text) return;
     try {
       await navigator.clipboard.writeText(qrModal.text);
-      alert("Mã cuộn đã được copy");
+      toaster.create({ description: "Mã cuộn đã được copy", type: "success" });
     } catch {
-      alert("Copy failed — please copy manually: " + qrModal.text);
+      toaster.create({
+        description: "Copy failed — please copy manually: " + qrModal.text,
+        type: "error",
+      });
     }
   };
   const handlePrintQr = () => {
-    if (!qrDataUrl) return alert("QR not ready");
+    if (!qrDataUrl) {
+      toaster.create({ description: "QR not ready", type: "error" });
+      return;
+    }
     const w = window.open("", "_blank", "width=600,height=600");
-    if (!w) return alert("Popup blocked");
+    if (!w) {
+      toaster.create({ description: "Popup blocked", type: "error" });
+      return;
+    }
     w.document.write(`
       <html><head><title>QR Print</title></head>
       <body style="text-align:center;font-family:sans-serif;margin-top:40px">
@@ -800,6 +1042,26 @@ export const PaperList: React.FC = () => {
   const fieldStyle: React.CSSProperties = {
     display: "block",
     marginBottom: 12,
+  };
+
+  // handle bulk export (previously inline with window.confirm)
+  const handleBulkExportSelected = async () => {
+    const sel = getSelectedRolls();
+    if (!sel.length) {
+      toaster.create({ description: "Select at least 1", type: "error" });
+      return;
+    }
+    const ok = await showConfirm({
+      title: "Xuất nhiều cuộn",
+      description: `Xuất ${sel.length} cuộn?`,
+      confirmText: "Xuất",
+      cancelText: "Hủy",
+      destructive: false,
+    });
+    if (!ok) return;
+    // original behaviour also confirmed each individual export inside doSingleExport;
+    // keep that behaviour by calling doSingleExport for each.
+    sel.forEach((r) => doSingleExport(r));
   };
 
   return (
@@ -846,11 +1108,7 @@ export const PaperList: React.FC = () => {
         <button
           className="btn btn-danger"
           onClick={() => {
-            const sel = getSelectedRolls();
-            if (!sel.length) return alert("Select at least 1");
-            sel.length &&
-              window.confirm(`Xuất ${sel.length} cuộn?`) &&
-              sel.forEach((r) => doSingleExport(r));
+            handleBulkExportSelected();
           }}
         >
           Xuất (chọn)
@@ -886,8 +1144,8 @@ export const PaperList: React.FC = () => {
               <th>Mã cuộn</th>
               <th>Màu</th>
               <th>Nhà cung cấp</th>
-              <th style={{ textAlign: "right" }}>Rộng</th>
               <th style={{ textAlign: "right" }}>Khổ</th>
+              <th style={{ textAlign: "right" }}>Định lượng</th>
               <th style={{ textAlign: "right" }}>Trọng lượng</th>
               <th>Ngày nhập</th>
               <th style={{ width: 360 }}>Actions</th>

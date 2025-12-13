@@ -1,5 +1,6 @@
 import ManufacturingOrderCreatePageConfirmSaveDialog from "./ConfirmSaveDialog";
 import PurchaseOrderItemListGroupTypeControl from "./po-picker/GroupTypeControl";
+import PurchaseOrderItemPagination from "./po-picker/Pagination";
 import PurchaseOrderItemSelector from "./po-picker/PurchaseOrderItemSelector";
 import PurchaseOrderItemSelectorItem from "./po-picker/PurchaseOrderItemSelectorItem";
 import PurchaseOrderItemSearchBar from "./po-picker/SearchBar";
@@ -8,6 +9,7 @@ import ManufacturingOrderCreatePageSelectedOrdersDetails from "./selected-order-
 
 export const ManufacturingOrderCreatePageComponents = {
   SearchBar: PurchaseOrderItemSearchBar,
+  OrderPickerPagination: PurchaseOrderItemPagination,
   GroupTypeControl: PurchaseOrderItemListGroupTypeControl,
   ItemSelector: PurchaseOrderItemSelector,
   ItemSelectorItem: PurchaseOrderItemSelectorItem,

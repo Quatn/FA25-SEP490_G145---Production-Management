@@ -15,28 +15,23 @@ export class FluteCombinationService {
     private readonly fcModel: Model<FluteCombination>,
   ) { }
 
-  async checkDuplicates(dto: CreateFluteCombinationDto | UpdateFluteCombinationDto) {
-    const duplicates = await this.fcModel.aggregate([
-      {
-        $match: {
-          $or: [
-            { code: dto.code },
-          ],
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          code: 1,
-        },
-      },
-    ]);
+  async checkDuplicates(
+    dto: CreateFluteCombinationDto,
+  ) {
+    const code = dto.code?.trim();
+
+    const query: any = {
+      $or: [{ code }],
+    };
+
+    const duplicates = await this.fcModel.find(query).lean();
 
     if (duplicates.length > 0) {
       const duplicateFields: string[] = [];
-      duplicates.forEach((d) => {
-        if (d.code === dto.code) duplicateFields.push('Mã sóng');
+      duplicates.forEach((item) => {
+        if (item.code === code) duplicateFields.push('Mã tổ hợp sóng');
       });
+
       throw new BadRequestException(
         `Trùng lặp giá trị ở các trường: ${duplicateFields.join(', ')}`,
       );
@@ -49,15 +44,20 @@ export class FluteCombinationService {
     const query: any = {};
 
     if (search && search.trim() !== '') {
-      const regex = new RegExp(search.trim(), 'i');
+      const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escapedSearch, 'i');
       query.$or = [
         { code: regex },
-        { description: regex },
       ];
     }
 
     const [data, totalItems] = await Promise.all([
-      this.fcModel.find(query).skip(skip).limit(limit).exec(),
+      this.fcModel
+      .find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort({ 'updatedAt': -1 })
+      .exec(),
       this.fcModel.countDocuments(query),
     ]);
 
@@ -87,6 +87,7 @@ export class FluteCombinationService {
         .find(filter)
         .skip(skip)
         .limit(limit)
+        .sort({ 'updatedAt': -1 })
         .exec(),
       this.fcModel.countDocuments(filter),
     ]);
@@ -110,25 +111,9 @@ export class FluteCombinationService {
   }
 
   async createOne(dto: CreateFluteCombinationDto): Promise<FluteCombinationDocument> {
-    try {
-      const doc = new this.fcModel(dto);
-      return await doc.save();
-    } catch (err: any) {
-      if (err.code === 11000 && err.keyValue) {
-        const field = Object.keys(err.keyValue)[0];
-        const value = err.keyValue[field];
-        let message = '';
-
-        if (field === 'code') {
-          message = `Mã sóng "${value}" đã tồn tại.`;
-        } else {
-          message = `Giá trị "${value}" ở trường "${field}" đã tồn tại.`;
-        }
-
-        throw new BadRequestException(message);
-      }
-      throw err;
-    }
+    await this.checkDuplicates(dto);
+    const doc = new this.fcModel(dto);
+    return await doc.save();
   }
 
   async updateOne(id: string, dto: UpdateFluteCombinationDto): Promise<FluteCombinationDocument> {

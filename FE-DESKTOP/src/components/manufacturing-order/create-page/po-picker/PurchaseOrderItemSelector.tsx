@@ -87,7 +87,7 @@ export default function PurchaseOrderItemSelector() {
               ? "Tất cả PO bị ẩn đi bởi bộ lọc"
               : "Không có PO nào chưa có lệnh sản xuất"}
           </Text>
-          <Link href="/purchase-order/create">
+          <Link href="/purchase-order">
             <Center>
               <Button colorPalette={"cyan"} size={"sm"}>Tạo PO</Button>
             </Center>

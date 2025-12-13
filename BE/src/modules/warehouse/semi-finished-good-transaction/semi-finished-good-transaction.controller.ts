@@ -32,6 +32,17 @@ export class SemiFinishedGoodTransactionController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
+  @Get('list-adjustment')
+  @ApiOperation({ summary: 'List semi finished inventory audit transactions' })
+  async findAdjustment(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+    @Query('search') search?: string,
+  ): Promise<BaseResponse<PaginatedList<SemiFinishedGoodTransaction>>> {
+    const docs = await this.semiFinishedGoodTransactionService.findAdjustmentTransaction(page, limit, search);
+    return { success: true, message: 'Fetch successful', data: docs };
+  }
+
   @Get('detail/:id')
   @ApiOperation({ summary: 'Transaction detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<SemiFinishedGoodTransaction>> {
@@ -56,6 +67,15 @@ export class SemiFinishedGoodTransactionController {
   @Get("employees/daily")
   async getSFGDailyEmployees(@Query("date") date: string) {
     return this.semiFinishedGoodTransactionService.getDailyEmployees(date);
+  }
+
+  @Get('chart/daily')
+  async getDailyStats(@Query('date') date: string) {
+    const data = await this.semiFinishedGoodTransactionService.getDailyStatistics(date);
+    return {
+      success: true,
+      data: data,
+    };
   }
 
   @Get('report/daily')

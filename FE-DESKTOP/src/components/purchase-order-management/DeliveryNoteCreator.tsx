@@ -1,4 +1,3 @@
-// src/components/purchase-order-management/DeliveryNoteCreator.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -6,6 +5,8 @@ import { useQueryPurchaseOrderItemsQuery } from "@/service/api/purchaseOrderItem
 import { useCreateDeliveryNoteMutation } from "@/service/api/deliveryNoteApiSlice";
 import { useGetAllCustomersQuery } from "@/service/api/customerApiSlice";
 import { useGetPoitemsRemainingQuery } from "@/service/api/deliveryNoteApiSlice";
+import { useConfirm } from "@/components/common/ConfirmModal";
+import { toaster } from "@/components/ui/toaster";
 
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
@@ -29,6 +30,8 @@ function resolveId(x: any) {
 }
 
 export default function DeliveryNoteCreator() {
+  const confirm = useConfirm();
+
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(25);
   const { data: customersResp } = useGetAllCustomersQuery();
@@ -227,7 +230,10 @@ export default function DeliveryNoteCreator() {
 
   const handleCreateDeliveryNote = async () => {
     if (selectedIdsArr.length === 0) {
-      alert("Vui lòng chọn ít nhất 1 mã để xuất kho.");
+      toaster.create({
+        description: "Vui lòng chọn ít nhất 1 mã để xuất kho.",
+        type: "error",
+      });
       return;
     }
 
@@ -237,11 +243,17 @@ export default function DeliveryNoteCreator() {
       const val = valStr === "" ? 0 : Number(valStr);
       const rem = Number(remainingMap[id] ?? 0);
       if (Number.isNaN(val) || val < 0) {
-        alert("Số lượng xuất không hợp lệ.");
+        toaster.create({
+          description: "Số lượng xuất không hợp lệ.",
+          type: "error",
+        });
         return;
       }
       if (val > rem) {
-        alert(`Số lượng xuất (${val}) vượt quá còn lại (${rem}) cho mã ${id}.`);
+        toaster.create({
+          description: `Số lượng xuất (${val}) vượt quá còn lại (${rem}) cho mã ${id}.`,
+          type: "error",
+        });
         return;
       }
     }
@@ -255,11 +267,23 @@ export default function DeliveryNoteCreator() {
     const payload: any = { poitems: poitemsPayload };
     if (selectedCustomer) payload.customer = selectedCustomer;
     if (!payload.status) payload.status = "PENDINGAPPROVAL";
-    if (!confirm("Xác nhận tạo phiếu xuất kho cho các mã đã chọn?")) return;
+
+    const ok = await confirm({
+      title: "Tạo phiếu xuất kho",
+      description: "Xác nhận tạo phiếu xuất kho cho các mã đã chọn?",
+      confirmText: "Tạo",
+      cancelText: "Hủy",
+      destructive: false,
+    });
+    if (!ok) return;
+
     try {
       const res = await createDeliveryNote(payload).unwrap();
       if (res?.success) {
-        alert("Tạo phiếu xuất kho thành công.");
+        toaster.create({
+          description: "Tạo phiếu xuất kho thành công.",
+          type: "success",
+        });
         setSelectedMap({});
         setDeliveredMap({});
         setErrorsMap({});
@@ -268,13 +292,18 @@ export default function DeliveryNoteCreator() {
           refetchRemaining();
         } catch {}
       } else {
-        alert("Tạo thất bại: " + (res?.message ?? "unknown"));
+        toaster.create({
+          description: "Tạo thất bại: " + (res?.message ?? "unknown"),
+          type: "error",
+        });
       }
     } catch (err: any) {
       console.error("Create failed", err);
-      alert(
-        "Tạo thất bại: " + (err?.data?.message || err?.message || "unknown")
-      );
+      toaster.create({
+        description:
+          "Tạo thất bại: " + (err?.data?.message || err?.message || "unknown"),
+        type: "error",
+      });
     }
   };
 
@@ -404,7 +433,6 @@ export default function DeliveryNoteCreator() {
             <col style={{ width: 60 }} />
             <col style={{ width: 60 }} />
             <col style={{ width: 60 }} />
-            {/* <col style={{ width: 140 }} /> */}
             <col style={{ width: 120 }} />
             <col style={{ width: 100 }} />
             <col style={{ width: 120 }} />
@@ -429,9 +457,6 @@ export default function DeliveryNoteCreator() {
                 Kích thước
               </th>
               <th rowSpan={2}>PO</th>
-              {/* <th rowSpan={2} style={{ textAlign: "right" }}>
-                Đơn giá
-              </th> */}
               <th rowSpan={2} style={{ textAlign: "right" }}>
                 Số lượng yêu cầu
               </th>
@@ -479,9 +504,6 @@ export default function DeliveryNoteCreator() {
                     <td style={{ textAlign: "right" }}>{getWareWidth(it)}</td>
                     <td style={{ textAlign: "right" }}>{getWareHeight(it)}</td>
                     <td>{getPoCode(it)}</td>
-                    {/* <td style={{ textAlign: "right" }}>
-                      {Number(getUnitPrice(it)).toLocaleString()}
-                    </td> */}
                     <td style={{ textAlign: "right" }}>{getAmount(it)}</td>
 
                     <td style={{ textAlign: "right", verticalAlign: "top" }}>

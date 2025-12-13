@@ -10,15 +10,8 @@ export enum PurchaseOrderStatus {
   Draft = "DRAFT",
   PendingApproval = "PENDINGAPPROVAL",
   Approved = "APPROVED",
-  Scheduled = "SCHEDULED",
-  Cancelled = "CANCELLED",
-  InProduction = "INPRODUCTION",
-  Paused = "PAUSED",
   PartiallyCompleted = "PARTIALLYCOMPLETED",
   Completed = "COMPLETED",
-  PartiallyFinished = "PARTIALLYFINISHED",
-  Finished = "FINISHED",
-  Closed = "CLOSED",
 }
 
 @Schema({ timestamps: true })
@@ -43,7 +36,7 @@ export class PurchaseOrder extends BaseSchema {
   orderDate: Date;
 
   @ApiProperty()
-  @Prop({ required: true })
+  @Prop({ required: false })
   @IsString()
   deliveryAddress: string;
 

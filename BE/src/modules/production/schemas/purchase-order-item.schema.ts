@@ -18,13 +18,6 @@ export enum PurchaseOrderItemStatus {
   Draft = "DRAFT",
   PendingApproval = "PENDINGAPPROVAL",
   Approved = "APPROVED",
-  Scheduled = "SCHEDULED",
-  OnHold = "ONHOLD",
-  Cancelled = "CANCELLED",
-  InProduction = "INPRODUCTION",
-  Paused = "PAUSED",
-  FinishedProduction = "FINISHEDPRODUCTION",
-  QualityCheck = "QUALITYCHECK",
   Completed = "COMPLETED",
 }
 
@@ -131,13 +124,13 @@ export class PurchaseOrderItem extends BaseDenormalizedSchema {
   totalWeight: number = 0;
 
   @ApiProperty({
-    default: PurchaseOrderItemStatus.PendingApproval,
+    default: PurchaseOrderItemStatus.Draft,
     enum: PurchaseOrderStatus,
   })
   @Prop({
     required: true,
     enum: PurchaseOrderItemStatus,
-    default: PurchaseOrderItemStatus.PendingApproval,
+    default: PurchaseOrderItemStatus.Draft,
   })
   @IsEnum(PurchaseOrderItemStatus)
   status: PurchaseOrderItemStatus;

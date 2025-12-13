@@ -1,17 +1,17 @@
+import { PaperColor } from "@/types/PaperColor";
 import { PaperType } from "@/types/PaperType";
-import { Button, CloseButton, DataList, Dialog, Icon, Portal } from "@chakra-ui/react"
-import { FaEye } from "react-icons/fa"
+import { Button, CloseButton, DataList, Dialog, Portal } from "@chakra-ui/react"
 
 interface PaperTypeDetailDialogProps {
-    type: PaperType;
+    isOpen: boolean;
+    onClose: () => void;
+    initialData: PaperType | undefined;
 }
 
-const PaperTypeDetailDialog: React.FC<PaperTypeDetailDialogProps> = ({ type: type }) => {
+const PaperTypeDetailDialog: React.FC<PaperTypeDetailDialogProps> = ({ isOpen, onClose, initialData }) => {
+    const paperColor: PaperColor = initialData?.paperColor as PaperColor;
     return (
-        <Dialog.Root>
-            <Dialog.Trigger asChild>
-                <Button variant={"surface"} colorPalette={"blue"}> <Icon><FaEye /></Icon> Chi tiết</Button>
-            </Dialog.Trigger>
+        <Dialog.Root open={isOpen} onOpenChange={onClose}>
             <Portal>
                 <Dialog.Backdrop />
                 <Dialog.Positioner>
@@ -23,19 +23,19 @@ const PaperTypeDetailDialog: React.FC<PaperTypeDetailDialogProps> = ({ type: typ
                             <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Mã Loại Giấy</DataList.ItemLabel>
-                                    <DataList.ItemValue>{type.paperColor?.code}/{type.width}/{type.grammage}</DataList.ItemValue>
+                                    <DataList.ItemValue>{paperColor?.code}/{initialData?.width}/{initialData?.grammage}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Màu Giấy</DataList.ItemLabel>
-                                    <DataList.ItemValue>{type.paperColor?.title}</DataList.ItemValue>
+                                    <DataList.ItemValue>{paperColor?.title}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Khổ Giấy</DataList.ItemLabel>
-                                    <DataList.ItemValue>{type.width}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.width}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
-                                    <DataList.ItemLabel>Định lượng</DataList.ItemLabel>
-                                    <DataList.ItemValue>{type.grammage}</DataList.ItemValue>
+                                    <DataList.ItemLabel>Định Lượng</DataList.ItemLabel>
+                                    <DataList.ItemValue>{initialData?.grammage}</DataList.ItemValue>
                                 </DataList.Item>
                             </DataList.Root>
                         </Dialog.Body>

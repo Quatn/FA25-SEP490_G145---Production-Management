@@ -1,4 +1,5 @@
-export interface WareFinishingProcessType extends BaseSchema {
+export interface WareFinishingProcessType {
+  _id?: string,
   code: string;
   name: string;
   description: string;

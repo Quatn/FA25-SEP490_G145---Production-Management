@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, Length, Matches, IsEmail } from 'class-validator';
+import { IsOptional, IsString, Matches, IsEmail } from 'class-validator';
 
 export class CreatePaperSupplierRequestDto {
     @ApiProperty({
@@ -7,7 +7,9 @@ export class CreatePaperSupplierRequestDto {
         description: 'Unique code of the paper supplier',
     })
     @IsString()
-    @Length(2, 3, { message: 'Code must be between 2 and 3 characters' })
+    @Matches(/^[A-Z0-9]{2,3}$/, {
+        message: 'Code must be between 2 and 3 characters'
+    })
     code: string;
 
     @ApiProperty({
@@ -15,7 +17,9 @@ export class CreatePaperSupplierRequestDto {
         description: 'Full name of the paper supplier',
     })
     @IsString()
-    @Length(2, 100, { message: 'Name must be between 2 and 100 characters' })
+    @Matches(/^(?!.* {2})[A-ZÀ-Ỹ0-9 ]{2,20}$/, {
+        message: 'Name must be between 2 and 20 characters'
+    })
     name: string;
 
     @ApiProperty({
@@ -25,8 +29,8 @@ export class CreatePaperSupplierRequestDto {
     })
     @IsOptional()
     @IsString()
-    @Matches(/^[0-9\-\+\s]{8,15}$/, {
-        message: 'Phone number must be 8–15 digits and may contain +, -, or spaces',
+    @Matches(/^[0-9\-\+\s]{9,15}$/, {
+        message: 'Phone number must be 9–15 digits and may contain +, -, or spaces',
     })
     phone?: string;
 

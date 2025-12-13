@@ -2,7 +2,7 @@ import { ManufacturingOrder } from "./ManufacturingOrder";
 
 export type SemiFinishedGood = {
     _id?: string;
-    manufacturingOrder?: ManufacturingOrder;
+    manufacturingOrder?: ManufacturingOrder | string;
     currentQuantity: number;
     importedQuantity: number;
     exportedQuantity: number;

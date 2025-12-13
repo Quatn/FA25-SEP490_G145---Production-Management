@@ -1,15 +1,14 @@
-import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
-import { Tooltip } from "@/components/ui/tooltip"
-import { FaEdit } from "react-icons/fa";
+import { Table, Group, Button, Icon } from "@chakra-ui/react";
+import { FaEdit, FaEye } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
 import { PaperColor } from "@/types/PaperColor";
-import PaperColorDetailDialog from "./PaperColorDetailDialog";
 
 interface PaperColorTableProps {
     page: number;
     limit: number;
     colors: PaperColor[];
     onEdit: (color: PaperColor) => void;
+    onDetail: (color: PaperColor) => void;
     onDelete: (color: PaperColor) => void;
 }
 
@@ -18,6 +17,7 @@ const PaperColorTable = ({
     limit,
     colors,
     onEdit,
+    onDetail,
     onDelete,
 }: PaperColorTableProps) => {
     return (
@@ -36,7 +36,7 @@ const PaperColorTable = ({
                 w="100%"
             >
                 <Table.Header>
-                    <Table.Row>
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
@@ -57,9 +57,16 @@ const PaperColorTable = ({
 
                             <Table.Cell>
                                 <Group gap={5}>
-                                    <PaperColorDetailDialog
-                                        color={color}
-                                    />
+                                    <Button
+                                        variant="surface"
+                                        colorPalette="blue"
+                                        onClick={() => onDetail(color)}
+                                    >
+                                        <Icon>
+                                            <FaEye />
+                                        </Icon>
+                                        Chi tiết
+                                    </Button>
                                     <Button
                                         variant="surface"
                                         colorPalette="yellow"

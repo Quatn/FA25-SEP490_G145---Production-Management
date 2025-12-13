@@ -1,4 +1,3 @@
-import FluteCombinationList from "@/components/flute-combination/FluteCombinationList";
 import FluteCombinationRestoreList from "@/components/flute-combination/FluteCombinationRestoreList";
 import { Box, Stack, Text } from "@chakra-ui/react";
 export default function FluteCombinationRestorationHome() {

@@ -1,17 +1,15 @@
 import { ProductType } from "@/types/ProductType";
-import { Button, CloseButton, DataList, Dialog, Icon, Portal } from "@chakra-ui/react"
-import { FaEye } from "react-icons/fa"
+import { Button, CloseButton, DataList, Dialog, Portal } from "@chakra-ui/react"
 
 interface Props {
-    item: ProductType;
+    isOpen: boolean;
+    onClose: () => void;
+    initialData: ProductType | undefined;
 }
 
-const ProductTypeDetailDialog: React.FC<Props> = ({ item }) => {
+const ProductTypeDetailDialog: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
     return (
-        <Dialog.Root>
-            <Dialog.Trigger asChild>
-                <Button variant={"surface"} colorPalette={"blue"}> <Icon><FaEye /></Icon> Chi tiết</Button>
-            </Dialog.Trigger>
+        <Dialog.Root open={isOpen} onOpenChange={onClose}>
             <Portal>
                 <Dialog.Backdrop />
                 <Dialog.Positioner>
@@ -23,19 +21,19 @@ const ProductTypeDetailDialog: React.FC<Props> = ({ item }) => {
                             <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Mã</DataList.ItemLabel>
-                                    <DataList.ItemValue>{item.code}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.code}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Tên</DataList.ItemLabel>
-                                    <DataList.ItemValue>{item.name}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.name}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Mô tả</DataList.ItemLabel>
-                                    <DataList.ItemValue>{item.description}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.description}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Ghi chú</DataList.ItemLabel>
-                                    <DataList.ItemValue>{item.note}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.note}</DataList.ItemValue>
                                 </DataList.Item>
                             </DataList.Root>
                         </Dialog.Body>

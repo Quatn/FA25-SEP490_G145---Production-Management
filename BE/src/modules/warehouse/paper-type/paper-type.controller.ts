@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { PaperTypeService } from './paper-type.service';
 import { CreatePaperTypeRequestDto } from './dto/create-paper-type-request.dto';
 import { UpdatePaperTypeRequestDto } from './dto/update-paper-type-request.dto';
-import { PaperTypeDocument } from '../schemas/paper-type.schema';
+import { PaperType, PaperTypeDocument } from '../schemas/paper-type.schema';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { ApiOperation } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
@@ -41,6 +41,21 @@ export class PaperTypeController {
     }
 
     // @UseGuards(JwtAuthGuard)
+    @Get('list-deleted')
+    @ApiOperation({ summary: 'List deleted paper types' })
+    async findDeleted(
+        @Query("page") page: number = 1,
+        @Query("limit") limit: number = 10,
+    ): Promise<BaseResponse<PaginatedList<PaperType>>> {
+        const docs = await this.ptService.findDeleted(page, limit);
+        return {
+            success: true,
+            message: 'Fetch successful',
+            data: docs,
+        };
+    }
+
+    // @UseGuards(JwtAuthGuard)
     @Get("detail/:id")
     @ApiOperation({ summary: "Paper type detail" })
     async findOne(@Param("id") id: string): Promise<BaseResponse<PaperTypeDocument>> {
@@ -61,10 +76,10 @@ export class PaperTypeController {
 
         const doc = await this.ptService.createOne(dto);
 
-        const populatedDoc = await doc.populate<{ paperColorId: PaperColor }>('paperColorId', 'code title') ?? doc;
+        const populatedDoc = await doc.populate<{ paperColor: PaperColor }>('paperColor', 'code title') ?? doc;
 
         const paperColorCode =
-            (populatedDoc.paperColorId as PaperColor)?.code ?? 'Unknown';
+            (populatedDoc.paperColor as PaperColor)?.code ?? 'Unknown';
 
         return {
             success: true,
@@ -82,10 +97,10 @@ export class PaperTypeController {
     ): Promise<BaseResponse<PaperTypeDocument>> {
         const doc = await this.ptService.updateOne(id, dto);
 
-        const populatedDoc = await doc.populate<{ paperColorId: PaperColor }>('paperColorId', 'code title') ?? doc;
+        const populatedDoc = await doc.populate<{ paperColor: PaperColor }>('paperColor', 'code title') ?? doc;
 
         const paperColorCode =
-            (populatedDoc.paperColorId as PaperColor)?.code ?? 'Unknown';
+            (populatedDoc.paperColor as PaperColor)?.code ?? 'Unknown';
 
         return {
             success: true,

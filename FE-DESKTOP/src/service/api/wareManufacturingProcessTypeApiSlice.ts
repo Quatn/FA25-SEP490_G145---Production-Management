@@ -6,15 +6,6 @@ import { WARE_MANUFACTURING_PROCESS_TYPE_URL } from "../constants";
 export const wareManufacturingProcessTypeApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
 
-        getAllWareManufacturingProcesses: builder.query<{ success: boolean; message: string; data: WareManufacturingProcessType[] }, void>({
-            query: () => ({
-                url: `${WARE_MANUFACTURING_PROCESS_TYPE_URL}/list-all`,
-                method: "GET",
-                credentials: "include",
-            }),
-            providesTags: ["WareManufacturingProcessType"],
-        }),
-
         getAllWareManufacturingTypes: builder.query<{ success: boolean; message: string; data: WareManufacturingProcessType[] }, void>({
             query: () => ({
                 url: `${WARE_MANUFACTURING_PROCESS_TYPE_URL}/list-all`,
@@ -24,7 +15,7 @@ export const wareManufacturingProcessTypeApiSlice = apiSlice.injectEndpoints({
             providesTags: ["WareManufacturingProcessType"],
         }),
 
-        getWareManufacturingProcess: builder.query<BaseResponse<PaginatedList<WareManufacturingProcessType>>, { page?: number; limit?: number, search?: string }>(
+        getWareManufacturingProcessType: builder.query<BaseResponse<PaginatedList<WareManufacturingProcessType>>, { page?: number; limit?: number, search?: string }>(
             {
                 query: ({ page = 1, limit = 10, search = '' }) => ({
                     url: `${WARE_MANUFACTURING_PROCESS_TYPE_URL}/list`,
@@ -35,7 +26,18 @@ export const wareManufacturingProcessTypeApiSlice = apiSlice.injectEndpoints({
                 providesTags: ["WareManufacturingProcessType"],
             }),
 
-        addWareManufacturingProcess: builder.mutation<{ success: boolean; message: string }, WareManufacturingProcessType>({
+        getDeletedWareManufacturingProcessType: builder.query<BaseResponse<PaginatedList<WareManufacturingProcessType>>, { page?: number; limit?: number }>(
+            {
+                query: ({ page = 1, limit = 10 }) => ({
+                    url: `${WARE_MANUFACTURING_PROCESS_TYPE_URL}/list-deleted`,
+                    method: "GET",
+                    params: { page, limit },
+                    credentials: "include",
+                }),
+                providesTags: ["WareManufacturingProcessType"],
+            }),
+
+        addWareManufacturingProcessType: builder.mutation<{ success: boolean; message: string }, WareManufacturingProcessType>({
             query: (body) => ({
                 url: `${WARE_MANUFACTURING_PROCESS_TYPE_URL}/create`,
                 method: "POST",
@@ -45,7 +47,7 @@ export const wareManufacturingProcessTypeApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: ["WareManufacturingProcessType"],
         }),
 
-        updateWareManufacturingProcess: builder.mutation<{ success: boolean; message: string }, WareManufacturingProcessType>({
+        updateWareManufacturingProcessType: builder.mutation<{ success: boolean; message: string }, WareManufacturingProcessType>({
             query: (body) => {
                 const id = body._id;
                 return {
@@ -58,7 +60,7 @@ export const wareManufacturingProcessTypeApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: ["WareManufacturingProcessType"],
         }),
 
-        deleteWareManufacturingProcess: builder.mutation<{ success: boolean; message: string }, WareManufacturingProcessType>({
+        deleteWareManufacturingProcessType: builder.mutation<{ success: boolean; message: string }, WareManufacturingProcessType>({
             query: (body) => {
                 const id = body._id;
                 return {
@@ -69,14 +71,41 @@ export const wareManufacturingProcessTypeApiSlice = apiSlice.injectEndpoints({
             },
             invalidatesTags: ["WareManufacturingProcessType"],
         }),
+
+        deleteHardWareManufacturingProcessType: builder.mutation<{ success: boolean; message: string }, WareManufacturingProcessType>({
+            query: (body) => {
+                const id = body._id;
+                return {
+                    url: `${WARE_MANUFACTURING_PROCESS_TYPE_URL}/delete-hard/${id}`,
+                    method: "DELETE",
+                    credentials: "include",
+                };
+            },
+            invalidatesTags: ["WareManufacturingProcessType"],
+        }),
+
+        restoreWareManufacturingProcessType: builder.mutation<{ success: boolean; message: string }, WareManufacturingProcessType>({
+            query: (body) => {
+                const id = body._id;
+                return {
+                    url: `${WARE_MANUFACTURING_PROCESS_TYPE_URL}/restore/${id}`,
+                    method: "PATCH",
+                    credentials: "include",
+                };
+            },
+            invalidatesTags: ["WareManufacturingProcessType"],
+        }),
+
     }),
 });
 
 export const {
-    useGetAllWareManufacturingProcessesQuery,
-    useGetAllWareManufacturingTypesQuery, 
-    useAddWareManufacturingProcessMutation,
-    useGetWareManufacturingProcessQuery,
-    useUpdateWareManufacturingProcessMutation,
-    useDeleteWareManufacturingProcessMutation,
+    useGetAllWareManufacturingTypesQuery,
+    useAddWareManufacturingProcessTypeMutation,
+    useGetWareManufacturingProcessTypeQuery,
+    useUpdateWareManufacturingProcessTypeMutation,
+    useDeleteWareManufacturingProcessTypeMutation,
+    useDeleteHardWareManufacturingProcessTypeMutation,
+    useGetDeletedWareManufacturingProcessTypeQuery,
+    useRestoreWareManufacturingProcessTypeMutation,
 } = wareManufacturingProcessTypeApiSlice;

@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { PaperSupplierService } from './paper-supplier.service';
 import { CreatePaperSupplierRequestDto } from './dto/create-paper-supplier-request.dto';
 import { UpdatePaperSupplierRequestDto } from './dto/update-paper-supplier-request.dto';
-import { PaperSupplierDocument } from '../schemas/paper-supplier.schema';
+import { PaperSupplier, PaperSupplierDocument } from '../schemas/paper-supplier.schema';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { ApiOperation } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
@@ -35,6 +35,21 @@ export class PaperSupplierController {
         return {
             success: true,
             message: "Fetch successful",
+            data: docs,
+        };
+    }
+
+    // @UseGuards(JwtAuthGuard)
+    @Get('list-deleted')
+    @ApiOperation({ summary: 'List deleted paper suppliers' })
+    async findDeleted(
+        @Query("page") page: number = 1,
+        @Query("limit") limit: number = 10,
+    ): Promise<BaseResponse<PaginatedList<PaperSupplier>>> {
+        const docs = await this.psService.findDeleted(page, limit);
+        return {
+            success: true,
+            message: 'Fetch successful',
             data: docs,
         };
     }

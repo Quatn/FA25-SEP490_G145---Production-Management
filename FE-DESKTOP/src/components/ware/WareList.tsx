@@ -14,6 +14,13 @@ import { useGetAllWareManufacturingTypesQuery } from "@/service/api/wareManufact
 import { useGetAllWareFinishingTypesQuery } from "@/service/api/wareFinishingProcessTypeApiSlice";
 import WareCreateModal from "@/components/ware/WareCreateModal";
 import WareEditModal from "@/components/ware/WareEditModal";
+import {
+  useGetPaperTypeQuery,
+  useGetAllPaperTypesQuery,
+} from "@/service/api/paperTypeApiSlice";
+import { useGetAllPaperSuppliersQuery } from "@/service/api/paperSupplierApiSlice";
+import { useConfirm } from "@/components/common/ConfirmModal";
+import { toaster } from "@/components/ui/toaster";
 
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
@@ -110,15 +117,6 @@ const Chip: React.FC<{ label: string; onRemove?: () => void }> = ({
   </span>
 );
 
-/**
- * MultiSelectInline
- *
- * - Uses onMouseDown for option selection and remove button to avoid
- *   click/blur ordering races that would otherwise cause parent state to be
- *   overwritten or removal to fire accidentally.
- *
- * - Adds some debug logs so you can observe selectedIds/options in DevTools.
- */
 const MultiSelectInline: React.FC<{
   options?: any[];
   selected?: any[];
@@ -374,6 +372,8 @@ const MultiSelectInline: React.FC<{
 };
 
 export const WareList: React.FC = () => {
+  const confirm = useConfirm();
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(5);
@@ -399,6 +399,25 @@ export const WareList: React.FC = () => {
   const [createWare, { isLoading: creating }] = useCreateWareMutation();
   const [updateWare] = useUpdateWareMutation();
   const [deleteWare] = useDeleteWareMutation();
+
+  // --- new: fetch paper types (paginated list endpoint) and paper suppliers
+  // use a large limit so we get all items in one call (server supports limit param)
+  const { data: paperTypeResp } = useGetPaperTypeQuery({
+    page: 1,
+    limit: 1000,
+    search: "",
+  });
+  // paper types live in paperTypeResp.data.data (paginated). Normalize to array.
+  const paperTypeList: any[] =
+    paperTypeResp?.data?.data && Array.isArray(paperTypeResp.data.data)
+      ? paperTypeResp.data.data
+      : paperTypeResp?.data && Array.isArray(paperTypeResp.data)
+      ? paperTypeResp.data
+      : [];
+
+  const { data: paperSupplierResp } = useGetAllPaperSuppliersQuery();
+  const paperSupplierList: any[] =
+    paperSupplierResp?.data ?? paperSupplierResp ?? [];
 
   let wares: any[] = [];
   if (waresResp?.data?.data && Array.isArray(waresResp.data.data))
@@ -445,16 +464,15 @@ export const WareList: React.FC = () => {
     flapOverlapAdjustment: "",
     crossCutCountAdjustment: "",
     faceLayerPaperType: "",
+    faceLayerPaperSupplier: "", // new
     EFlutePaperType: "",
     EBLinerLayerPaperType: "",
     BFlutePaperType: "",
     BACLinerLayerPaperType: "",
     ACFlutePaperType: "",
     backLayerPaperType: "",
+    backLayerPaperSupplier: "", // new
     volume: "",
-    warePerSet: "",
-    warePerCombinedSet: "",
-    horizontalWareSplit: "",
     printColors: [] as string[],
     typeOfPrinter: "",
     finishingProcesses: [] as string[],
@@ -533,20 +551,6 @@ export const WareList: React.FC = () => {
         ware.volume !== undefined && ware.volume !== null
           ? String(ware.volume)
           : "",
-      warePerSet:
-        ware.warePerSet !== undefined && ware.warePerSet !== null
-          ? String(ware.warePerSet)
-          : "",
-      warePerCombinedSet:
-        ware.warePerCombinedSet !== undefined &&
-        ware.warePerCombinedSet !== null
-          ? String(ware.warePerCombinedSet)
-          : "",
-      horizontalWareSplit:
-        ware.horizontalWareSplit !== undefined &&
-        ware.horizontalWareSplit !== null
-          ? String(ware.horizontalWareSplit)
-          : "",
       printColors:
         (ware.printColors || []).map((p: any) => getIdFromDoc(p) ?? p) ?? [],
       typeOfPrinter: ware.typeOfPrinter ?? "",
@@ -559,12 +563,14 @@ export const WareList: React.FC = () => {
         ) ?? [],
       note: ware.note ?? "",
       faceLayerPaperType: ware.faceLayerPaperType ?? "",
+      faceLayerPaperSupplier: ware.faceLayerPaperSupplier ?? "", // note: may not exist yet
       EFlutePaperType: ware.EFlutePaperType ?? "",
       EBLinerLayerPaperType: ware.EBLinerLayerPaperType ?? "",
       BFlutePaperType: ware.BFlutePaperType ?? "",
       BACLinerLayerPaperType: ware.BACLinerLayerPaperType ?? "",
       ACFlutePaperType: ware.ACFlutePaperType ?? "",
       backLayerPaperType: ware.backLayerPaperType ?? "",
+      backLayerPaperSupplier: ware.backLayerPaperSupplier ?? "",
     });
     setEditOpen(true);
   };
@@ -632,8 +638,9 @@ export const WareList: React.FC = () => {
   };
 
   const parsePositiveNumberOrNull = (s: string | number | undefined | null) => {
+    // treat empty string / undefined / null as "missing" -> null
     if (s === undefined || s === null) return null;
-    if (s === "" || s === 0) return null;
+    if (s === "") return null;
     const n = Number(s);
     if (!Number.isFinite(n)) return null;
     return n;
@@ -659,36 +666,55 @@ export const WareList: React.FC = () => {
 
   const handleCreateSubmit = async () => {
     try {
-      if (!createForm.code || String(createForm.code).trim() === "")
-        return alert("Mã hàng không được để trống");
+      if (!createForm.code || String(createForm.code).trim() === "") {
+        toaster.create({
+          description: "Mã hàng không được để trống",
+          type: "error",
+        });
+        return;
+      }
 
       // uniqueness check
-      if (isCodeTaken(createForm.code)) return alert("Mã hàng đã tồn tại");
+      if (isCodeTaken(createForm.code)) {
+        toaster.create({ description: "Mã hàng đã tồn tại", type: "error" });
+        return;
+      }
 
       const unitPrice = parsePositiveNumberOrNull(createForm.unitPrice);
-      if (!unitPrice || unitPrice <= 0) return alert("Đơn giá phải > 0");
+      if (!unitPrice || unitPrice <= 0) {
+        toaster.create({ description: "Đơn giá phải > 0", type: "error" });
+        return;
+      }
 
       const fluteCombination = String(createForm.fluteCombination || "");
-      if (!fluteCombination) return alert("Hãy chọn sóng");
+      if (!fluteCombination) {
+        toaster.create({ description: "Hãy chọn sóng", type: "error" });
+        return;
+      }
 
       const wareWidth = parsePositiveNumberOrNull(createForm.wareWidth);
       const wareLength = parsePositiveNumberOrNull(createForm.wareLength);
-      if (!wareWidth || wareWidth <= 0) return alert("Rộng phải > 0");
-      if (!wareLength || wareLength <= 0) return alert("Dài phải > 0");
+      if (!wareWidth || wareWidth <= 0) {
+        toaster.create({ description: "Rộng phải > 0", type: "error" });
+        return;
+      }
+      if (!wareLength || wareLength <= 0) {
+        toaster.create({ description: "Dài phải > 0", type: "error" });
+        return;
+      }
 
       const wareManufacturingProcessType = String(
         createForm.wareManufacturingProcessType || ""
       );
-      if (!wareManufacturingProcessType)
-        return alert("Hãy chọn Kiểu SP gia công");
+      if (!wareManufacturingProcessType) {
+        toaster.create({
+          description: "Hãy chọn Kiểu SP gia công",
+          type: "error",
+        });
+        return;
+      }
       const volume = parsePositiveNumberOrNull(createForm.volume);
-      const warePerSet = parsePositiveNumberOrNull(createForm.warePerSet);
-      const warePerCombinedSet = parsePositiveNumberOrNull(
-        createForm.warePerCombinedSet
-      );
-      const horizontalWareSplit = parsePositiveNumberOrNull(
-        createForm.horizontalWareSplit
-      );
+
       const warePerBlankAdjustment = parsePositiveNumberOrNull(
         createForm.warePerBlankAdjustment
       );
@@ -702,27 +728,47 @@ export const WareList: React.FC = () => {
         createForm.crossCutCountAdjustment
       );
 
-      if (!volume || volume <= 0) return alert("Thể tích phải > 0");
-      if (!warePerSet || warePerSet <= 0) return alert("Số SP bộ phải > 0");
-      if (!warePerCombinedSet || warePerCombinedSet <= 0)
-        return alert("Số SP ghép bộ phải > 0");
-      if (!horizontalWareSplit || horizontalWareSplit <= 0)
-        return alert("Dọc chia SP phải > 0");
+      if (!volume || volume <= 0) {
+        toaster.create({ description: "Thể tích phải > 0", type: "error" });
+        return;
+      }
 
-      if (!warePerBlankAdjustment || warePerBlankAdjustment <= 0)
-        return alert("Điều chỉnh số SP phải > 0");
-      if (!flapAdjustment || flapAdjustment <= 0)
-        return alert("Điều chỉnh tai phải > 0");
-      if (!flapOverlapAdjustment || flapOverlapAdjustment <= 0)
-        return alert("Điều chỉnh cộng cánh phải > 0");
-      if (!crossCutCountAdjustment || crossCutCountAdjustment <= 0)
-        return alert("Điều chỉnh part SX phải > 0");
+      if (warePerBlankAdjustment !== null && warePerBlankAdjustment < 1) {
+        toaster.create({
+          description: "Điều chỉnh số SP phải >= 1",
+          type: "error",
+        });
+        return;
+      }
+      if (flapAdjustment !== null && flapAdjustment < 1) {
+        toaster.create({
+          description: "Điều chỉnh tai phải >= 1",
+          type: "error",
+        });
+        return;
+      }
+      if (flapOverlapAdjustment !== null && flapOverlapAdjustment < 1) {
+        toaster.create({
+          description: "Điều chỉnh cộng cánh phải >= 1",
+          type: "error",
+        });
+        return;
+      }
+      if (crossCutCountAdjustment !== null && crossCutCountAdjustment < 1) {
+        toaster.create({
+          description: "Điều chỉnh part SX phải >= 1",
+          type: "error",
+        });
+        return;
+      }
 
       if (
         !Array.isArray(createForm.printColors) ||
         createForm.printColors.length === 0
-      )
-        return alert("Chọn ít nhất 1 màu in");
+      ) {
+        toaster.create({ description: "Chọn ít nhất 1 màu in", type: "error" });
+        return;
+      }
 
       const oneLayerSelected = [
         createForm.faceLayerPaperType,
@@ -733,7 +779,13 @@ export const WareList: React.FC = () => {
         createForm.ACFlutePaperType,
         createForm.backLayerPaperType,
       ].some((v) => v && String(v).trim() !== "");
-      if (!oneLayerSelected) return alert("Chọn ít nhất 1 mặt giấy");
+      if (!oneLayerSelected) {
+        toaster.create({
+          description: "Chọn ít nhất 1 mặt giấy",
+          type: "error",
+        });
+        return;
+      }
 
       const payload: any = {
         code: String(createForm.code).trim(),
@@ -757,11 +809,11 @@ export const WareList: React.FC = () => {
         faceLayerPaperType:
           createForm.faceLayerPaperType && createForm.faceLayerPaperType !== ""
             ? createForm.faceLayerPaperType
-            : 0,
+            : null,
         EFlutePaperType:
           createForm.EFlutePaperType && createForm.EFlutePaperType !== ""
             ? createForm.EFlutePaperType
-            : 0,
+            : null,
         EBLinerLayerPaperType:
           createForm.EBLinerLayerPaperType &&
           createForm.EBLinerLayerPaperType !== ""
@@ -784,10 +836,18 @@ export const WareList: React.FC = () => {
           createForm.backLayerPaperType && createForm.backLayerPaperType !== ""
             ? createForm.backLayerPaperType
             : null,
+        // optional supplier fields stored separately if needed by backend (kept for compatibility)
+        faceLayerPaperSupplier:
+          createForm.faceLayerPaperSupplier &&
+          createForm.faceLayerPaperSupplier !== ""
+            ? createForm.faceLayerPaperSupplier
+            : null,
+        backLayerPaperSupplier:
+          createForm.backLayerPaperSupplier &&
+          createForm.backLayerPaperSupplier !== ""
+            ? createForm.backLayerPaperSupplier
+            : null,
         volume: volume,
-        warePerSet: warePerSet,
-        warePerCombinedSet: warePerCombinedSet,
-        horizontalWareSplit: horizontalWareSplit,
         printColors: createForm.printColors || [],
         typeOfPrinter:
           createForm.typeOfPrinter && createForm.typeOfPrinter !== ""
@@ -828,16 +888,15 @@ export const WareList: React.FC = () => {
         flapOverlapAdjustment: "",
         crossCutCountAdjustment: "",
         faceLayerPaperType: "",
+        faceLayerPaperSupplier: "",
         EFlutePaperType: "",
         EBLinerLayerPaperType: "",
         BFlutePaperType: "",
         BACLinerLayerPaperType: "",
         ACFlutePaperType: "",
         backLayerPaperType: "",
+        backLayerPaperSupplier: "",
         volume: "",
-        warePerSet: "",
-        warePerCombinedSet: "",
-        horizontalWareSplit: "",
         printColors: [],
         typeOfPrinter: "",
         finishingProcesses: [],
@@ -851,48 +910,74 @@ export const WareList: React.FC = () => {
         } catch {}
       }, 800);
 
-      alert(resp?.message ?? "Đã tạo");
+      toaster.create({
+        description: resp?.message ?? "Đã tạo",
+        type: "success",
+      });
     } catch (err: any) {
       console.error("Tạo thất bại", err);
-      alert(err?.data?.message ?? err?.message ?? "Tạo thất bại");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Tạo thất bại",
+        type: "error",
+      });
     }
   };
 
   const handleEditSubmit = async () => {
     try {
-      if (!editForm?.id) return alert("Không tìm thấy mã này");
+      if (!editForm?.id) {
+        toaster.create({ description: "Không tìm thấy mã này", type: "error" });
+        return;
+      }
 
-      if (!editForm.code || String(editForm.code).trim() === "")
-        return alert("Mã hàng không được để trống");
+      if (!editForm.code || String(editForm.code).trim() === "") {
+        toaster.create({
+          description: "Mã hàng không được để trống",
+          type: "error",
+        });
+        return;
+      }
 
       // uniqueness check (exclude current record id)
-      if (isCodeTaken(editForm.code, editForm.id))
-        return alert("Mã hàng đã tồn tại");
+      if (isCodeTaken(editForm.code, editForm.id)) {
+        toaster.create({ description: "Mã hàng đã tồn tại", type: "error" });
+        return;
+      }
 
       const unitPrice = parsePositiveNumberOrNull(editForm.unitPrice);
-      if (!unitPrice || unitPrice <= 0) return alert("Đơn giá phải > 0");
+      if (!unitPrice || unitPrice <= 0) {
+        toaster.create({ description: "Đơn giá phải > 0", type: "error" });
+        return;
+      }
 
       const fluteCombination = String(editForm.fluteCombination || "");
-      if (!fluteCombination) return alert("Hãy chọn sóng");
+      if (!fluteCombination) {
+        toaster.create({ description: "Hãy chọn sóng", type: "error" });
+        return;
+      }
 
       const wareWidth = parsePositiveNumberOrNull(editForm.wareWidth);
       const wareLength = parsePositiveNumberOrNull(editForm.wareLength);
-      if (!wareWidth || wareWidth <= 0) return alert("Rộng phải > 0");
-      if (!wareLength || wareLength <= 0) return alert("Dài phải > 0");
+      if (!wareWidth || wareWidth <= 0) {
+        toaster.create({ description: "Rộng phải > 0", type: "error" });
+        return;
+      }
+      if (!wareLength || wareLength <= 0) {
+        toaster.create({ description: "Dài phải > 0", type: "error" });
+        return;
+      }
 
       const wareManufacturingProcessType = String(
         editForm.wareManufacturingProcessType || ""
       );
-      if (!wareManufacturingProcessType)
-        return alert("Hãy chọn Kiểu SP gia công");
+      if (!wareManufacturingProcessType) {
+        toaster.create({
+          description: "Hãy chọn Kiểu SP gia công",
+          type: "error",
+        });
+        return;
+      }
       const volume = parsePositiveNumberOrNull(editForm.volume);
-      const warePerSet = parsePositiveNumberOrNull(editForm.warePerSet);
-      const warePerCombinedSet = parsePositiveNumberOrNull(
-        editForm.warePerCombinedSet
-      );
-      const horizontalWareSplit = parsePositiveNumberOrNull(
-        editForm.horizontalWareSplit
-      );
 
       // parse new adjustments
       const warePerBlankAdjustment = parsePositiveNumberOrNull(
@@ -906,27 +991,47 @@ export const WareList: React.FC = () => {
         editForm.crossCutCountAdjustment
       );
 
-      if (!volume || volume <= 0) return alert("Thể tích phải > 0");
-      if (!warePerSet || warePerSet <= 0) return alert("Số SP bộ phải > 0");
-      if (!warePerCombinedSet || warePerCombinedSet <= 0)
-        return alert("Số SP ghép bộ phải > 0");
-      if (!horizontalWareSplit || horizontalWareSplit <= 0)
-        return alert("Dọc chia SP > 0");
+      if (!volume || volume <= 0) {
+        toaster.create({ description: "Thể tích phải > 0", type: "error" });
+        return;
+      }
 
-      if (!warePerBlankAdjustment || warePerBlankAdjustment <= 0)
-        return alert("Điều chỉnh số SP phải > 0");
-      if (!flapAdjustment || flapAdjustment <= 0)
-        return alert("Điều chỉnh tai phải > 0");
-      if (!flapOverlapAdjustment || flapOverlapAdjustment <= 0)
-        return alert("Điều chỉnh cộng cánh phải > 0");
-      if (!crossCutCountAdjustment || crossCutCountAdjustment <= 0)
-        return alert("Điều chỉnh part SX phải > 0");
+      if (warePerBlankAdjustment !== null && warePerBlankAdjustment < 1) {
+        toaster.create({
+          description: "Điều chỉnh số SP phải >= 1",
+          type: "error",
+        });
+        return;
+      }
+      if (flapAdjustment !== null && flapAdjustment < 1) {
+        toaster.create({
+          description: "Điều chỉnh tai phải >= 1",
+          type: "error",
+        });
+        return;
+      }
+      if (flapOverlapAdjustment !== null && flapOverlapAdjustment < 1) {
+        toaster.create({
+          description: "Điều chỉnh cộng cánh phải >= 1",
+          type: "error",
+        });
+        return;
+      }
+      if (crossCutCountAdjustment !== null && crossCutCountAdjustment < 1) {
+        toaster.create({
+          description: "Điều chỉnh part SX phải >= 1",
+          type: "error",
+        });
+        return;
+      }
 
       if (
         !Array.isArray(editForm.printColors) ||
         editForm.printColors.length === 0
-      )
-        return alert("Chọn ít nhất 1 màu in");
+      ) {
+        toaster.create({ description: "Chọn ít nhất 1 màu in", type: "error" });
+        return;
+      }
 
       const oneLayerSelected = [
         editForm.faceLayerPaperType,
@@ -937,7 +1042,13 @@ export const WareList: React.FC = () => {
         editForm.ACFlutePaperType,
         editForm.backLayerPaperType,
       ].some((v) => v && String(v).trim() !== "");
-      if (!oneLayerSelected) return alert("Chọn ít nhất 1 mặt giấy");
+      if (!oneLayerSelected) {
+        toaster.create({
+          description: "Chọn ít nhất 1 mặt giấy",
+          type: "error",
+        });
+        return;
+      }
 
       const payload: any = {
         code: String(editForm.code).trim(),
@@ -989,10 +1100,18 @@ export const WareList: React.FC = () => {
           editForm.backLayerPaperType && editForm.backLayerPaperType !== ""
             ? editForm.backLayerPaperType
             : null,
+        // optional supplier fields
+        faceLayerPaperSupplier:
+          editForm.faceLayerPaperSupplier &&
+          editForm.faceLayerPaperSupplier !== ""
+            ? editForm.faceLayerPaperSupplier
+            : null,
+        backLayerPaperSupplier:
+          editForm.backLayerPaperSupplier &&
+          editForm.backLayerPaperSupplier !== ""
+            ? editForm.backLayerPaperSupplier
+            : null,
         volume: volume,
-        warePerSet: warePerSet,
-        warePerCombinedSet: warePerCombinedSet,
-        horizontalWareSplit: horizontalWareSplit,
         printColors: editForm.printColors || [],
         typeOfPrinter:
           editForm.typeOfPrinter && editForm.typeOfPrinter !== ""
@@ -1028,15 +1147,28 @@ export const WareList: React.FC = () => {
         } catch {}
       }, 800);
 
-      alert(res?.message ?? "Đã thay đổi thành công");
+      toaster.create({
+        description: res?.message ?? "Đã thay đổi thành công",
+        type: "success",
+      });
     } catch (err: any) {
       console.error("Update failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Update failed");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Update failed",
+        type: "error",
+      });
     }
   };
 
   const handleSoftDelete = async (w: any) => {
-    if (!confirm(`Delete ${w.code}?`)) return;
+    const ok = await confirm({
+      title: "Delete Ware",
+      description: `Delete ${w.code}?`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const id = getIdFromDoc(w) ?? w._id ?? w.code;
       const res: any = await deleteWare({ id }).unwrap();
@@ -1055,10 +1187,16 @@ export const WareList: React.FC = () => {
         } catch {}
       }, 800);
 
-      alert(res?.message ?? "Deleted");
+      toaster.create({
+        description: res?.message ?? "Deleted",
+        type: "success",
+      });
     } catch (err: any) {
       console.error("delete failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Delete failed");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Delete failed",
+        type: "error",
+      });
     }
   };
 
@@ -1092,14 +1230,26 @@ export const WareList: React.FC = () => {
 
   const displayed = displayWares;
 
-  const PAPER_LAYER_OPTIONS = [
-    "K/VT/120/100",
-    "T/LE/100/100",
-    "K/VT/150/120",
-    "T/LE/120/120",
-  ];
-
-  const TYPE_OF_PRINTER_OPTIONS = ["3M - A", "2M - C", "4M"];
+  // --- derive PAPER_LAYER_OPTIONS from paperTypeList ---
+  // The desired format for each option: "<colorCode>/<width>/<grammage>"
+  // For face/back, a supplier code may be inserted by the modal (as "<colorCode>/<supplierCode>/<width>/<grammage>")
+  const PAPER_LAYER_OPTIONS: string[] = useMemo(() => {
+    const set = new Set<string>();
+    (paperTypeList || []).forEach((pt) => {
+      try {
+        const colorCode = pt?.paperColor?.code ?? pt?.paperColor;
+        const width = pt?.width ?? pt?.w ?? "";
+        const grammage = pt?.grammage ?? pt?.gsm ?? "";
+        if (colorCode && width !== undefined && grammage !== undefined) {
+          const key = `${String(colorCode)}/${String(width)}/${String(
+            grammage
+          )}`;
+          set.add(key);
+        }
+      } catch {}
+    });
+    return Array.from(set);
+  }, [paperTypeList]);
 
   const PAPER_LAYER_KEYS: { key: string; label: string }[] = [
     { key: "faceLayerPaperType", label: "Mặt" },
@@ -1110,6 +1260,8 @@ export const WareList: React.FC = () => {
     { key: "ACFlutePaperType", label: "Sóng A/C" },
     { key: "backLayerPaperType", label: "Đáy" },
   ];
+
+  const TYPE_OF_PRINTER_OPTIONS = ["3M - A", "2M - C", "4M"];
 
   // pagination helpers (extract totalCount from likely response shapes)
   const totalCount =
@@ -1176,9 +1328,6 @@ export const WareList: React.FC = () => {
             <col style={{ width: 90 }} />
             <col style={{ width: 90 }} />
             <col style={{ width: 100 }} />
-            <col style={{ width: 90 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 90 }} />
             <col style={{ width: 160 }} />
             <col style={{ width: 220 }} />
             <col style={{ width: 160 }} />
@@ -1199,9 +1348,6 @@ export const WareList: React.FC = () => {
               <th rowSpan={2}>Dài (mm)</th>
               <th rowSpan={2}>Cao (mm)</th>
               <th rowSpan={2}>Thể tích (m2)</th>
-              <th rowSpan={2}>Số SP bộ</th>
-              <th rowSpan={2}>Số SP ghép bộ</th>
-              <th rowSpan={2}>Dọc chia SP</th>
               <th rowSpan={2}>Kiểu SP gia công</th>
               <th rowSpan={2}>Công đoạn hoàn thiện</th>
               <th rowSpan={2}>Màu in</th>
@@ -1256,13 +1402,6 @@ export const WareList: React.FC = () => {
                   <td style={{ textAlign: "right" }}>{w.wareLength ?? "-"}</td>
                   <td style={{ textAlign: "right" }}>{w.wareHeight ?? "-"}</td>
                   <td style={{ textAlign: "right" }}>{w.volume ?? "-"}</td>
-                  <td style={{ textAlign: "right" }}>{w.warePerSet ?? "-"}</td>
-                  <td style={{ textAlign: "right" }}>
-                    {w.warePerCombinedSet ?? "-"}
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    {w.horizontalWareSplit ?? "-"}
-                  </td>
                   <td>{manufTypeLabel}</td>
                   <td style={{ maxWidth: 220 }}>{finishingProcesses}</td>
                   <td>{pcolors || "-"}</td>
@@ -1317,8 +1456,7 @@ export const WareList: React.FC = () => {
 
             {!displayed.length && (
               <tr>
-                {/* new total columns count = previous columns - 1 + 7 = 23 */}
-                <td colSpan={23} className="text-muted p-4">
+                <td colSpan={20} className="text-muted p-4">
                   Không có mã hàng nào
                 </td>
               </tr>
@@ -1394,6 +1532,9 @@ export const WareList: React.FC = () => {
         creating={creating}
         getIdFromDoc={getIdFromDoc}
         MultiSelectInline={MultiSelectInline}
+        // pass paper type & supplier raw lists (useful for future logic/display)
+        paperTypeList={paperTypeList}
+        paperSupplierList={paperSupplierList}
       />
 
       <WareEditModal

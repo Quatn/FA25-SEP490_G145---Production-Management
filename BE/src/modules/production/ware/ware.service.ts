@@ -5,6 +5,9 @@ import { Ware, WareDocument } from "../schemas/ware.schema";
 import { CreateWareDto } from "./dto/create-ware.dto";
 import { UpdateWareDto } from "./dto/update-ware.dto";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
+import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
+
+type SoftWare = Ware & SoftDeleteDocument;
 
 @Injectable()
 export class WareService {
@@ -205,7 +208,10 @@ export class WareService {
   }
 
   async restore(id: string) {
-    const doc = await this.wareModel.findById(id).exec();
+    const doc = await this.wareModel.findOne({
+      _id: id,
+      isDeleted: true
+    }) as SoftWare;
     if (!doc) throw new NotFoundException("Ware not found");
     // assuming soft-delete plugin exposes restore()
     await (doc as any).restore();

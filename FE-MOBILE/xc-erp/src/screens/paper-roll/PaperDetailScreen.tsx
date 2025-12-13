@@ -66,9 +66,9 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
 
   const getColorIdFromPaperType = (pt: any) => {
     if (!pt) return undefined;
-    if (pt.paperColorId && typeof pt.paperColorId === "object")
-      return getIdFromDoc(pt.paperColorId);
-    return getIdFromDoc(pt.paperColorId) ?? undefined;
+    if (pt.paperColor && typeof pt.paperColor === "object")
+      return getIdFromDoc(pt.paperColor);
+    return getIdFromDoc(pt.paperColor) ?? undefined;
   };
 
   const { data: colorsResp } = useGetAllPaperColorsQuery();
@@ -104,7 +104,7 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
         String(
           getIdFromDoc(t) ??
             t._id ??
-            `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColorId)}`
+            `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColor)}`
         ),
         t
       )

@@ -1,22 +1,27 @@
+import check from "check-types";
 import { PipelineStage } from "mongoose";
+import {
+  CorrugatorProcessStatus,
+  ManufacturingOrderOperativeStatus,
+} from "../../schemas/manufacturing-order.schema";
+import { OrderFinishingProcessStatus } from "../../schemas/order-finishing-process.schema";
+import { CompileMOOperativeStatusPipe } from "./compile-operative-status-pipe";
 
 export function fullDetailsFilterAggregationPipeline({
   filter = {},
   skip = 0,
   limit = 20,
+  sort = [],
+}: {
+  filter: Record<string, unknown>;
+  skip: number;
+  limit: number;
+  sort?: PipelineStage[];
 }) {
   const pipeline: PipelineStage[] = [];
 
   pipeline.push(
     // from mo
-    {
-      $lookup: {
-        from: "manufacturingorderprocesses",
-        localField: "processes",
-        foreignField: "_id",
-        as: "processes",
-      },
-    },
     {
       $lookup: {
         from: "purchaseorderitems",
@@ -28,6 +33,43 @@ export function fullDetailsFilterAggregationPipeline({
     {
       $unwind: { path: "$purchaseOrderItem", preserveNullAndEmptyArrays: true },
     },
+    {
+      $match: {
+        "purchaseOrderItem.isDeleted": {
+          $ne: true,
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "finishedgoods",
+        localField: "_id",
+        foreignField: "manufacturingOrder",
+        as: "finishedGoodRecord",
+      },
+    },
+    {
+      $unwind: {
+        path: "$finishedGoodRecord",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $lookup: {
+        from: "orderfinishingprocesses",
+        localField: "_id",
+        foreignField: "manufacturingOrder",
+        as: "finishingProcesses",
+      },
+    },
+    {
+      $match: {
+        finishingProcesses: {
+          $all: [{ $elemMatch: { $ne: true } }],
+        },
+      },
+    },
+    ...CompileMOOperativeStatusPipe,
 
     // from poi
     {
@@ -42,6 +84,13 @@ export function fullDetailsFilterAggregationPipeline({
       $unwind: {
         path: "$purchaseOrderItem.ware",
         preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $match: {
+        "purchaseOrderItem.ware.isDeleted": {
+          $ne: true,
+        },
       },
     },
 
@@ -61,6 +110,14 @@ export function fullDetailsFilterAggregationPipeline({
       },
     },
     {
+      $match: {
+        "purchaseOrderItem.ware.fluteCombination.isDeleted": {
+          $ne: true,
+        },
+      },
+    },
+
+    {
       $lookup: {
         from: "warefinishingprocesstypes",
         localField: "purchaseOrderItem.ware.finishingProcesses",
@@ -68,6 +125,14 @@ export function fullDetailsFilterAggregationPipeline({
         as: "purchaseOrderItem.ware.finishingProcesses",
       },
     },
+    {
+      $match: {
+        "purchaseOrderItem.ware.finishingProcesses": {
+          $all: [{ $elemMatch: { $ne: true } }],
+        },
+      },
+    },
+
     {
       $lookup: {
         from: "waremanufacturingprocesstypes",
@@ -83,11 +148,25 @@ export function fullDetailsFilterAggregationPipeline({
       },
     },
     {
+      $match: {
+        "purchaseOrderItem.ware.wareManufacturingProcessType.isDeleted": {
+          $ne: true,
+        },
+      },
+    },
+    {
       $lookup: {
         from: "printcolors",
         localField: "purchaseOrderItem.ware.printColors",
         foreignField: "_id",
         as: "purchaseOrderItem.ware.printColors",
+      },
+    },
+    {
+      $match: {
+        "purchaseOrderItem.ware.printColors": {
+          $all: [{ $elemMatch: { $ne: true } }],
+        },
       },
     },
 
@@ -104,6 +183,13 @@ export function fullDetailsFilterAggregationPipeline({
       $unwind: {
         path: "$purchaseOrderItem.subPurchaseOrder",
         preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $match: {
+        "purchaseOrderItem.subPurchaseOrder.isDeleted": {
+          $ne: true,
+        },
       },
     },
 
@@ -123,6 +209,13 @@ export function fullDetailsFilterAggregationPipeline({
       },
     },
     {
+      $match: {
+        "purchaseOrderItem.subPurchaseOrder.product.isDeleted": {
+          $ne: true,
+        },
+      },
+    },
+    {
       $lookup: {
         from: "purchaseorders",
         localField: "purchaseOrderItem.subPurchaseOrder.purchaseOrder",
@@ -134,6 +227,13 @@ export function fullDetailsFilterAggregationPipeline({
       $unwind: {
         path: "$purchaseOrderItem.subPurchaseOrder.purchaseOrder",
         preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $match: {
+        "purchaseOrderItem.subPurchaseOrder.purchaseOrder.isDeleted": {
+          $ne: true,
+        },
       },
     },
 
@@ -152,44 +252,22 @@ export function fullDetailsFilterAggregationPipeline({
         preserveNullAndEmptyArrays: true,
       },
     },
-
-    // sort by code
     {
-      $addFields: {
-        parts: { $split: ["$code", "/"] },
-      },
-    },
-    {
-      $addFields: {
-        n: {
-          $convert: {
-            input: { $arrayElemAt: ["$parts", 0] },
-            to: "int",
-            onError: -1, // fallback value for bad format
-            onNull: -1,
-          },
-        },
-        m: {
-          $convert: {
-            input: { $arrayElemAt: ["$parts", 1] },
-            to: "int",
-            onError: -1,
-            onNull: -1,
-          },
+      $match: {
+        "purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.isDeleted": {
+          $ne: true,
         },
       },
     },
-    {
-      $sort: { m: 1, n: 1 },
-    },
+    ...sort,
   );
 
   const mainFilters: Record<string, unknown> = {};
   const nestedFilters: Record<string, unknown> = {};
 
   for (const key in filter) {
-    if (!key.includes(".")) mainFilters[key] = filter[key] as unknown;
-    else nestedFilters[key] = filter[key] as unknown;
+    if (!key.includes(".")) mainFilters[key] = filter[key];
+    else nestedFilters[key] = filter[key];
   }
 
   if (Object.keys(mainFilters).length > 0) {

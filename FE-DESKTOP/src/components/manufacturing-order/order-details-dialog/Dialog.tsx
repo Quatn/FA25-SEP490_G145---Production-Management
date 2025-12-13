@@ -9,19 +9,21 @@ import {
   GridItem,
   Portal,
   SimpleGrid,
+  Tabs,
 } from "@chakra-ui/react";
 import check from "check-types";
 import ManufacturingOrderDetailsDialogOrderDetailsCard from "./OrderDetailsCard";
 import ManufacturingOrderDetailsDialogWareDetailsCard from "./WareDetailsCard";
 import ManufacturingOrderDetailsDialogManufacturingDetailsCard from "./ManufacturingDetailsCard";
 import ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCard from "./CorrugatorProcessDetailsCard";
+import { LuFolder, LuUser } from "react-icons/lu";
+import ManufacturingOrderDetailsDialogFinishingProcessDetailsCard from "./FinishingProcessesCard";
 
 export default function ManufacturingOrderDetailsDialog() {
   const { useDispatch, useSelector } = ManufacturingOrderDetailsDialogReducerStore;
   const dispatch = useDispatch();
   const open = useSelector(s => s.open)
   const order = useSelector(s => s.order)
-  const processes = useSelector(s => s.processes)
 
   return (
     <Dialog.Root
@@ -45,22 +47,44 @@ export default function ManufacturingOrderDetailsDialog() {
             </Dialog.Header>
             <Dialog.Body overflowY={"auto"}>
               {check.null(order) ? <></> : (
-                <SimpleGrid columns={{ base: 1, md: 2 }} gap="40px" justifyItems={"stretch"}>
-                  <GridItem colSpan={{ base: 1 }}>
-                    <ManufacturingOrderDetailsDialogOrderDetailsCard order={order} />
-                  </GridItem>
-                  <GridItem colSpan={{ base: 1 }}>
-                    <ManufacturingOrderDetailsDialogWareDetailsCard order={order} />
-                  </GridItem>
-                  <GridItem colSpan={{ base: 1, md: 2 }}>
-                    <ManufacturingOrderDetailsDialogManufacturingDetailsCard order={order} processes={processes} />
-                  </GridItem>
-
-                  <GridItem colSpan={{ base: 1, md: 2 }}>
-                    <ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCard order={order} />
-                  </GridItem>
-
-                </SimpleGrid>
+                <Tabs.Root
+                  defaultValue="details"
+                  variant={"outline"}
+                >
+                  <Tabs.List>
+                    <Tabs.Trigger value="details">
+                      <LuUser />
+                      Chi tiết lệnh và PO
+                    </Tabs.Trigger>
+                    <Tabs.Trigger value="processes">
+                      <LuFolder />
+                      Chi tiết các công đoạn
+                    </Tabs.Trigger>
+                  </Tabs.List>
+                  <Tabs.Content value="details">
+                    <SimpleGrid columns={{ base: 1, md: 2 }} gap="40px" justifyItems={"stretch"}>
+                      <GridItem colSpan={{ base: 1 }}>
+                        <ManufacturingOrderDetailsDialogOrderDetailsCard order={order} />
+                      </GridItem>
+                      <GridItem colSpan={{ base: 1 }}>
+                        <ManufacturingOrderDetailsDialogWareDetailsCard order={order} />
+                      </GridItem>
+                      <GridItem colSpan={{ base: 1, md: 2 }}>
+                        <ManufacturingOrderDetailsDialogManufacturingDetailsCard order={order} />
+                      </GridItem>
+                    </SimpleGrid>
+                  </Tabs.Content>
+                  <Tabs.Content value="processes">
+                    <SimpleGrid columns={{ base: 1, md: 2 }} gap="40px" justifyItems={"stretch"}>
+                      <GridItem colSpan={{ base: 1, md: 2 }}>
+                        <ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCard order={order} />
+                      </GridItem>
+                      <GridItem colSpan={{ base: 1, md: 2 }}>
+                        <ManufacturingOrderDetailsDialogFinishingProcessDetailsCard order={order} />
+                      </GridItem>
+                    </SimpleGrid>
+                  </Tabs.Content>
+                </Tabs.Root>
               )}
             </Dialog.Body>
           </Dialog.Content>

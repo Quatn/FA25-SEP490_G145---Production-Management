@@ -196,31 +196,30 @@ export class ProductionRecalculateService {
       const recalcWare = mo.purchaseOrderItem.ware.recalculateFlag;
       const recalcPOI = mo.purchaseOrderItem.recalculateFlag;
 
-      // console.log("Check recalc ware", mo.purchaseOrderItem.ware.code);
       if (recalcWare) {
-        // console.log("Need recalc ware", mo.purchaseOrderItem.ware.code);
         const wareDoc = this.wareModel.hydrate(mo.purchaseOrderItem.ware);
         const res = await this.checkAndRecalculateWareDoc(wareDoc);
-        // console.log("f1", mo.purchaseOrderItem.ware.recalculateFlag);
-        // console.log("res", res.recalculateFlag);
         mo.purchaseOrderItem.ware = res;
-        // console.log("f2", mo.purchaseOrderItem.ware.recalculateFlag);
       }
 
-      // console.log("Check recalc poi", mo.purchaseOrderItem.code);
       if (recalcWare || recalcPOI) {
         const poiDoc = this.purchaseOrderItemModel.hydrate(
           mo.purchaseOrderItem,
         );
-        mo.purchaseOrderItem =
-          await this.checkAndRecalculatePurchaseOrderItemDoc(poiDoc);
+
+        const res = await this.checkAndRecalculatePurchaseOrderItemDoc(poiDoc);
+        mo.purchaseOrderItem = res;
       }
 
-      await this.orderFinishingProcessModel.updateMany({manufacturingOrder: mo._id}, {
-        $set: { requiredAmount: mo.amount },
-      });
+      await this.orderFinishingProcessModel.updateMany(
+        { manufacturingOrder: mo._id },
+        {
+          $set: { requiredAmount: mo.amount },
+        },
+      );
 
       const recalculatedOrder = recalculateManufacturingOrder(mo);
+
       Object.assign(mo, recalculatedOrder);
       await mo.save();
       return mo;

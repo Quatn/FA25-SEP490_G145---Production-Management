@@ -7,19 +7,24 @@ import { NeedRecalculateError } from "@/common/errors/need-recalculate.error";
 
 const paperConsumptionCalculation = (
   runningLength: number,
+  paperWidth: number,
   paperType: string,
 ): number => {
-  const lastThree = paperType.slice(-3);
-  const parsed = parseInt(lastThree, 10);
-
-  console.log("A", paperType, parsed)
+  const lastBlock = paperType.split("/").at(-1);
+  const parsed = parseInt(lastBlock ?? "", 10);
 
   if (!check.number(parsed))
     throw new BusinessLogicError(
-      `Unable to parse paper weight information from paper type value "${paperType}"`,
+      `Unable to parse paper weight information from paper type value "${paperType}" after trying to parse "${lastBlock}"`,
     );
 
-  return (parsed * runningLength) / 1000000;
+  if (!check.greater(paperWidth, 0) || !check.greater(runningLength, 0)) {
+    throw new BusinessLogicError(
+      `Recalculation error: Ware's paperWidth and runningLength must be a number greater than 0 (paperWidth: ${paperWidth}, runningLength: ${runningLength})`,
+    );
+  }
+
+  return (parsed * paperWidth * runningLength) / 1000000;
 };
 
 export function recalculatePurchaseOrderItem(
@@ -43,28 +48,55 @@ export function recalculatePurchaseOrderItem(
   const longitudinalCutCount = Math.ceil(numberOfBlanks / ware.crossCutCount);
   const runningLength = (longitudinalCutCount * ware.blankLength) / 1000;
 
-  console.log(ware)
   const faceLayerPaperWeight = check.null(ware.faceLayerPaperType)
     ? null
-    : paperConsumptionCalculation(runningLength, ware.faceLayerPaperType);
+    : paperConsumptionCalculation(
+      runningLength,
+      ware.paperWidth,
+      ware.faceLayerPaperType,
+    );
   const EFlutePaperWeight = check.null(ware.EFlutePaperType)
     ? null
-    : paperConsumptionCalculation(runningLength, ware.EFlutePaperType) * 1.1;
+    : paperConsumptionCalculation(
+      runningLength,
+      ware.paperWidth,
+      ware.EFlutePaperType,
+    ) * 1.1;
   const EBLinerLayerPaperWeight = check.null(ware.EBLinerLayerPaperType)
     ? null
-    : paperConsumptionCalculation(runningLength, ware.EBLinerLayerPaperType);
+    : paperConsumptionCalculation(
+      runningLength,
+      ware.paperWidth,
+      ware.EBLinerLayerPaperType,
+    );
   const BFlutePaperWeight = check.null(ware.BFlutePaperType)
     ? null
-    : paperConsumptionCalculation(runningLength, ware.BFlutePaperType) * 1.2;
+    : paperConsumptionCalculation(
+      runningLength,
+      ware.paperWidth,
+      ware.BFlutePaperType,
+    ) * 1.2;
   const BACLinerLayerPaperWeight = check.null(ware.BACLinerLayerPaperType)
     ? null
-    : paperConsumptionCalculation(runningLength, ware.BACLinerLayerPaperType);
+    : paperConsumptionCalculation(
+      runningLength,
+      ware.paperWidth,
+      ware.BACLinerLayerPaperType,
+    );
   const ACFlutePaperWeight = check.null(ware.ACFlutePaperType)
     ? null
-    : paperConsumptionCalculation(runningLength, ware.ACFlutePaperType) * 1.35;
+    : paperConsumptionCalculation(
+      runningLength,
+      ware.paperWidth,
+      ware.ACFlutePaperType,
+    ) * 1.35;
   const backLayerPaperWeight = check.null(ware.backLayerPaperType)
     ? null
-    : paperConsumptionCalculation(runningLength, ware.backLayerPaperType);
+    : paperConsumptionCalculation(
+      runningLength,
+      ware.paperWidth,
+      ware.backLayerPaperType,
+    );
 
   return {
     ...item,

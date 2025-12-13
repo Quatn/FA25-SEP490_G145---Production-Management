@@ -1,17 +1,17 @@
 "use client"
 import { ManufacturingOrderTrackPanelListReducerStore } from "@/context/manufacturing-order/manufacturingOrderTrackPanelContext";
-import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
-import { useGetFullDetailManufacturingOrdersQuery, useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice";
-import { Box, Button, HStack, Link, Stack, Text } from "@chakra-ui/react";
+import { useGetFullDetailManufacturingOrdersQuery } from "@/service/api/manufacturingOrderApiSlice";
+import { Center, Spinner, Stack, Text } from "@chakra-ui/react";
 import check from "check-types";
-import { useCallback, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import ManufacturingOrderTrackPanelListItem from "./ListItem";
-import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
+import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
+import DataFetchError from "@/components/common/DataFetchError";
+import { QueryListFullDetailsManufacturingOrderRequestSortOptions } from "@/types/enums/QueryListFullDetailsManufacturingOrderRequestSortOptions";
 
 export default function ManufacturingOrderTrackPanelList() {
-  const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
   const { useDispatch, useSelector } = ManufacturingOrderTrackPanelListReducerStore;
-  const dispatch = useDispatch();
+  const dispatch = useDispatch()
   const page = useSelector(s => s.page)
   const limit = useSelector(s => s.limit)
   const search = useSelector(s => s.search)
@@ -20,79 +20,40 @@ export default function ManufacturingOrderTrackPanelList() {
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
-  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: search });
+    refetch: refetchList,
+  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: search, approvalStatuses: [ManufacturingOrderApprovalStatus.Approved], sort: [QueryListFullDetailsManufacturingOrderRequestSortOptions.OperativeStatus + "_desc"] });
 
-  const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
+  const moList = useMemo(() => fullDetailMOPaginatedResponse?.data?.data ?? [], [fullDetailMOPaginatedResponse?.data?.data])
 
-  const {
-    data: orderFinishingProcessesResponse,
-    error: orderFinishingProcessFetchError,
-    isLoading: isOrderFinishingProcessFetchingList,
-  } = useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery({ orders: ids ?? [] });
+  useEffect(() => {
+    dispatch({
+      type: "SET_TOTAL_ITEMS",
+      payload: fullDetailMOPaginatedResponse?.data ? fullDetailMOPaginatedResponse?.data.totalItems : 0,
+    });
+  }, [dispatch, fullDetailMOPaginatedResponse?.data, fullDetailMOPaginatedResponse?.data?.totalItems]);
 
-  const moPaginatedList = useMemo(() => {
-    if (fullDetailMOPaginatedResponse?.data) {
-      const calculatedMoPaginatedList = fullDetailMOPaginatedResponse?.data?.data.map((mo) => {
-        if (check.string(mo.purchaseOrderItem)) {
-          throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
-        }
+  if (isFetchingList) {
+    return (
+      <Center h={"full"} flex={1} flexGrow={1}>
+        <Stack alignItems={"center"}>
+          <Spinner size="xl" />
+          <Text>Đang tải danh sách lệnh</Text>
+        </Stack>
+      </Center>
+    );
+  }
 
-        // Unpopulated field
-        const process = orderFinishingProcessesResponse?.data.filter(p => (p.manufacturingOrder as unknown as string) === mo._id)
+  if (fetchError) {
+    return <DataFetchError h={"full"} flexGrow={1} refetch={refetchList} />;
+  }
 
-        return {
-          ...mo,
-          finishingProcesses: process ?? [],
-          // purchaseOrderItem: calculatedPOI,
-        }
-      })
-
-
-      return {
-        ...fullDetailMOPaginatedResponse.data,
-        data: calculatedMoPaginatedList
-      }
-    }
-    else {
-      return undefined
-    }
-  }, [fullDetailMOPaginatedResponse?.data, orderFinishingProcessesResponse?.data])
-
-  const moList = useMemo(() => moPaginatedList?.data ?? [], [moPaginatedList?.data])
+  if (check.undefined(fullDetailMOPaginatedResponse?.data?.data)) {
+    return <DataFetchError h={"full"} flexGrow={1} />;
+  }
 
   return (
-    <Box
-      m={5}
-      p={2}
-      flexGrow={1}
-    >
-      <Box
-        px={3}
-        py={5}
-        rounded={"md"}
-        colorPalette={"gray"}
-        backgroundColor={"colorPalette.subtle"}
-      >
-        <Stack
-          gapY={2}
-          minHeight={"80vh"}
-        >
-          <Text fontWeight={"semibold"} color={"blackAlpha.800"}>
-            Quản lý lệnh
-          </Text>
-          <HStack justifyContent={"end"}>
-
-            <Link href="/manufacturing-order/list">
-              <Button size={"sm"} colorPalette={"cyan"}>Xem danh sách chi tiết</Button>
-            </Link>
-          </HStack>
-
-          <Stack flexGrow={1}>
-            {moList.map(mo => <ManufacturingOrderTrackPanelListItem key={mo._id} mo={mo} processes={mo.finishingProcesses} />)}
-          </Stack>
-
-        </Stack>
-      </Box>
-    </Box>
+    <Stack flexGrow={1}>
+      {moList.map(mo => <ManufacturingOrderTrackPanelListItem key={mo._id} mo={mo} />)}
+    </Stack>
   )
 }

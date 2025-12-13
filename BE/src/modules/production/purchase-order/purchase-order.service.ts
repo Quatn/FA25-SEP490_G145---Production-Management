@@ -204,9 +204,10 @@ export class PurchaseOrderService {
   }
 
   async restore(id: string) {
-    const doc = (await this.purchaseOrderModel.findById(
-      id,
-    )) as SoftPurchaseOrder;
+    const doc = (await this.purchaseOrderModel.findOne({
+      _id: id,
+      isDeleted: true
+    })) as SoftPurchaseOrder;
     if (!doc) throw new NotFoundException("Purchase order not found");
     await doc.restore();
     return { success: true };

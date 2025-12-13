@@ -10,6 +10,8 @@ import { manufacturingOrderComponentUtils as utils } from "../utils"
 import { CorrugatorProcess } from "@/types/CorrugatorProcess";
 import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
 import { createListCollection } from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
+import ManufacturingOrderCorrugatorOperatePageTableActionColumn from "./ActionColumn";
 
 const { getPopulatedPo, getPopulatedWare, getPopulatedSubPo, corrugatorProcessStatusNameMap } = utils
 
@@ -32,7 +34,7 @@ export type ManufacturingOrderCorrugatorOperatePageTableData = {
   manufacturingDate: Date,
   requestedDatetime: Date | null,
   manufacturingDateAdjustment: Date | null,
-  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined,
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder> } | undefined,
   purchaseOrderItemId: string,
   initialManufacturedAmount: number,
   numberOfBlanks: number,
@@ -40,7 +42,7 @@ export type ManufacturingOrderCorrugatorOperatePageTableData = {
 
 export const convertSerializedMOToManufacturingOrderCorrugatorOperatePageTableData = (
   mo: Serialized<ManufacturingOrder>,
-  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined): ManufacturingOrderCorrugatorOperatePageTableData => {
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder> } | undefined): ManufacturingOrderCorrugatorOperatePageTableData => {
   const ware = getPopulatedWare(mo)
   const subPo = getPopulatedSubPo(mo)
   const po = getPopulatedPo(mo)
@@ -99,11 +101,18 @@ const CorrugatorProcessStatuses: { label: string, value: string }[] = [
   { label: "Tạm dừng", value: CorrugatorProcessStatus.PAUSED },
   { label: "Hoàn thành", value: CorrugatorProcessStatus.COMPLETED },
   { label: "Hủy", value: CorrugatorProcessStatus.CANCELLED },
-  { label: "Hoàn thành", value: CorrugatorProcessStatus.OVERCOMPLETED },
 ]
 
 const corrugatorProcessStatusCol = createListCollection({
   items: CorrugatorProcessStatuses,
+})
+
+const corrugatorProcessStatusColWatting = createListCollection({
+  items: CorrugatorProcessStatuses.filter(s => check.in(s.value, [CorrugatorProcessStatus.NOTSTARTED, CorrugatorProcessStatus.RUNNING])),
+})
+
+const corrugatorProcessStatusColRunning = createListCollection({
+  items: CorrugatorProcessStatuses.filter(s => !check.in(s.value, [CorrugatorProcessStatus.NOTSTARTED])),
 })
 
 
@@ -148,161 +157,180 @@ export const manufacturingOrderCorrugatorOperatePageTableMergedHeaders = [
   ["actions-column", "1_actions-column_actions-column"],
 ]
 
-export const manufacturingOrderCorrugatorOperatePageTableColumns: (ColumnDef<ManufacturingOrderCorrugatorOperatePageTableData & { isEdited: boolean }>)[] = [
-  columnHelper.defineDataTableAccessorColumn({
-    id: "manufacturingDirective",
-    accessorFn: (tmo) => {
-      return manufacturingDirectives.find(md => md.value == tmo.manufacturingDirective)?.label
-    },
-    header: "Kế hoạch giao",
-    enablePinning: true,
-    cellType: DataTableCellType.Readonly,
-    ...colSize.md,
-  }),
+export function manufacturingOrderCorrugatorOperatePageTableColumns(dataVariant: "WAITING" | "RUNNING" | "HISTORY"): (ColumnDef<ManufacturingOrderCorrugatorOperatePageTableData & { isEdited: boolean }>)[] {
+  return [
+    columnHelper.defineDataTableAccessorColumn({
+      id: "manufacturingDirective",
+      accessorFn: (tmo) => {
+        return manufacturingDirectives.find(md => md.value == tmo.manufacturingDirective)?.label
+      },
+      header: "Kế hoạch giao",
+      enablePinning: true,
+      cellType: DataTableCellType.Readonly,
+      ...colSize.md,
+    }),
 
-  columnHelper.defineDataTableAccessorColumn({
-    id: "corrugatorProcessStatus",
-    accessorKey: "corrugatorProcessStatus",
-    header: "Trạng thái chạy",
-    enablePinning: true,
-    cellType: DataTableCellType.Select,
-    selectCollection: corrugatorProcessStatusCol,
-    ...colSize.md,
-  }),
+    columnHelper.defineDataTableAccessorColumn({
+      id: "corrugatorProcessStatus",
+      accessorKey: "corrugatorProcessStatus",
+      header: "Trạng thái chạy",
+      enablePinning: true,
+      cellType: DataTableCellType.Select,
+      selectCollection:
+        (dataVariant === "WAITING") ? corrugatorProcessStatusColWatting : (dataVariant === "RUNNING") ? corrugatorProcessStatusColRunning : corrugatorProcessStatusCol,
+      ...colSize.md,
+    }),
 
-  columnHelper.defineDataTableAccessorColumn({
-    id: "code",
-    accessorKey: "code",
-    header: "Mã lệnh",
-    enablePinning: true,
-    cellType: DataTableCellType.Highlight,
-    ...colSize.sm,
-  }),
+    columnHelper.defineDataTableAccessorColumn({
+      id: "code",
+      accessorKey: "code",
+      header: "Mã lệnh",
+      enablePinning: true,
+      cellType: DataTableCellType.Highlight,
+      ...colSize.sm,
+    }),
 
-  columnHelper.defineDataTableAccessorColumn({
-    id: "purchaseOrderCode",
-    accessorKey: "purchaseOrderCode",
-    header: "Đơn hàng",
-    enablePinning: true,
-    cellType: DataTableCellType.Highlight,
-    ...colSize.md,
-  }),
+    columnHelper.defineDataTableAccessorColumn({
+      id: "purchaseOrderCode",
+      accessorKey: "purchaseOrderCode",
+      header: "Đơn hàng",
+      enablePinning: true,
+      cellType: DataTableCellType.Highlight,
+      ...colSize.md,
+    }),
 
-  columnHelper.defineDataTableAccessorColumn({
-    id: "wareCode",
-    accessorKey: "wareCode",
-    header: "Mã hàng",
-    enablePinning: true,
-    cellType: DataTableCellType.Highlight,
-    ...colSize.md,
-  }),
+    columnHelper.defineDataTableAccessorColumn({
+      id: "wareCode",
+      accessorKey: "wareCode",
+      header: "Mã hàng",
+      enablePinning: true,
+      cellType: DataTableCellType.Highlight,
+      ...colSize.md,
+    }),
 
-  columnHelper.defineDataTableAccessorColumn({
-    id: "fluteCombinationCode",
-    accessorFn: (tmo) => {
-      return tmo.fluteCombinationCode
-    },
-    header: "Sóng",
-    enablePinning: true,
-    cellType: DataTableCellType.Highlight,
-    ...colSize.sm,
-  }),
+    columnHelper.defineDataTableAccessorColumn({
+      id: "fluteCombinationCode",
+      accessorFn: (tmo) => {
+        return tmo.fluteCombinationCode
+      },
+      header: "Sóng",
+      enablePinning: true,
+      cellType: DataTableCellType.Highlight,
+      ...colSize.sm,
+    }),
 
-  columnHelper.defineDataTableAccessorColumn({
-    id: "numberOfBlanks",
-    accessorKey: "numberOfBlanks",
-    header: "Số lượng phôi",
-    enablePinning: true,
-    cellType: DataTableCellType.Readonly,
-    ...colSize.md,
-  }),
+    columnHelper.defineDataTableAccessorColumn({
+      id: "numberOfBlanks",
+      accessorKey: "numberOfBlanks",
+      header: "Số lượng phôi",
+      enablePinning: true,
+      cellType: DataTableCellType.Readonly,
+      ...colSize.md,
+    }),
 
-  columnHelper.defineDataTableAccessorColumn({
-    id: "manufacturedAmount",
-    accessorFn: (mo) => {
-      return mo.corrugatorProcess.manufacturedAmount
-    },
-    header: "Số lượng đã sản xuất",
-    enablePinning: true,
-    cellType: DataTableCellType.Number,
-    ...colSize.md,
-  }),
+    columnHelper.defineDataTableAccessorColumn({
+      id: "manufacturedAmount",
+      accessorFn: (mo) => {
+        return mo.corrugatorProcess.manufacturedAmount
+      },
+      header: "Số lượng đã sản xuất",
+      enablePinning: true,
+      cellType: DataTableCellType.Number,
+      options: {
+        forBiddenIfNumValIsLessThan: 0,
+        onForbidden: () => {
+          toaster.warning({ title: "Sản lượng quy trình sóng không được nhỏ hơn 0" })
+        },
+      },
+      ...colSize.md,
+    }),
 
-  columnHelper.defineHeaderGroup({
-    id: "calculatedMeasurements",
-    header: () => "Theo lệnh",
-    size: 500,
-    columns: [
-      columnHelper.defineDataTableAccessorColumn({
-        id: "calculatedPaperWidth",
-        accessorKey: "calculatedPaperWidth",
-        header: "Khổ giấy",
-        enablePinning: true,
-        cellType: DataTableCellType.Readonly,
-        ...colSize.sm,
-      }),
+    columnHelper.defineHeaderGroup({
+      id: "calculatedMeasurements",
+      header: () => "Theo lệnh",
+      size: 200,
+      columns: [
+        columnHelper.defineDataTableAccessorColumn({
+          id: "calculatedPaperWidth",
+          accessorKey: "calculatedPaperWidth",
+          header: "Khổ giấy",
+          enablePinning: true,
+          cellType: DataTableCellType.Readonly,
+          ...colSize.sm,
+        }),
 
-      columnHelper.defineDataTableAccessorColumn({
-        id: "calculatedRunningLength",
-        accessorKey: "calculatedRunningLength",
-        header: "Mét dài",
-        enablePinning: true,
-        cellType: DataTableCellType.Readonly,
-        ...colSize.sm,
-      }),
-    ]
-  }),
+        columnHelper.defineDataTableAccessorColumn({
+          id: "calculatedRunningLength",
+          accessorKey: "calculatedRunningLength",
+          header: "Mét dài",
+          enablePinning: true,
+          cellType: DataTableCellType.Readonly,
+          ...colSize.sm,
+        }),
+      ]
+    }),
 
-  columnHelper.defineHeaderGroup({
-    id: "actualMeasurements",
-    header: () => "Thực",
-    size: 500,
-    columns: [
-      columnHelper.defineDataTableAccessorColumn({
-        id: "actualPaperWidth",
-        accessorKey: "actualPaperWidth",
-        header: "Khổ giấy",
-        enablePinning: true,
-        cellType: DataTableCellType.Number,
-        ...colSize.sm,
-      }),
+    columnHelper.defineHeaderGroup({
+      id: "actualMeasurements",
+      header: () => "Thực",
+      size: 200,
+      columns: [
+        columnHelper.defineDataTableAccessorColumn({
+          id: "actualPaperWidth",
+          accessorKey: "actualPaperWidth",
+          header: "Khổ giấy",
+          enablePinning: true,
+          cellType: DataTableCellType.Number,
+          options: {
+            forBiddenIfNumValIsLessThan: 0,
+            onForbidden: () => {
+              toaster.warning({ title: "Khổ giấy thực quy trình sóng không được nhỏ hơn 0" })
+            },
+          },
+          ...colSize.sm,
+        }),
 
-      columnHelper.defineDataTableAccessorColumn({
-        id: "actualRunningLength",
-        accessorKey: "actualRunningLength",
-        header: "Mét dài",
-        enablePinning: true,
-        cellType: DataTableCellType.Readonly,
-        ...colSize.sm,
-      }),
-    ]
-  }),
+        columnHelper.defineDataTableAccessorColumn({
+          id: "actualRunningLength",
+          accessorKey: "actualRunningLength",
+          header: "Mét dài",
+          enablePinning: true,
+          cellType: DataTableCellType.Number,
+          options: {
+            forBiddenIfNumValIsLessThan: 0,
+            onForbidden: () => {
+              toaster.warning({ title: "Mét dài thực quy trình sóng không được nhỏ hơn 0" })
+            },
+          },
+          ...colSize.sm,
+        }),
+      ]
+    }),
 
-  columnHelper.defineDataTableAccessorColumn({
-    id: "manufacturingDateAdjustment",
-    accessorFn: (mo) => {
-      return check.assigned(mo.manufacturingDateAdjustment) ? mo.manufacturingDateAdjustment : mo.manufacturingDate
-    },
-    header: "Ngày SX",
-    enablePinning: true,
-    cellType: DataTableCellType.Readonly,
-    ...colSize.md,
-  }),
+    columnHelper.defineDataTableAccessorColumn({
+      id: "manufacturingDateAdjustment",
+      accessorFn: (mo) => {
+        return check.assigned(mo.manufacturingDateAdjustment) ? mo.manufacturingDateAdjustment : mo.manufacturingDate
+      },
+      header: "Ngày SX",
+      enablePinning: true,
+      cellType: DataTableCellType.Readonly,
+      ...colSize.md,
+    }),
 
-  columnHelper.defineDataTableAccessorColumn({
-    id: "requestedDatetime",
-    accessorKey: "requestedDatetime",
-    header: "Ngày và giờ cần",
-    enablePinning: true,
-    cellType: DataTableCellType.Readonly,
-    ...colSize.md,
-  }),
+    columnHelper.defineDataTableAccessorColumn({
+      id: "requestedDatetime",
+      accessorKey: "requestedDatetime",
+      header: "Ngày và giờ cần",
+      enablePinning: true,
+      cellType: DataTableCellType.Readonly,
+      ...colSize.md,
+    }),
 
-  /*
-  columnHelper.defineDataTableDisplayColumn({
-    id: "actions-column",
-    header: undefined,
-    cell: ({ cell, table }) => ManufacturingOrderTableActionColumn({ rowId: cell.row.id, isEdited: cell.row.original.isEdited, getOrder: cell.row.original.getOrder, meta: table.options.meta })
-  }),
-  */
-];
+    columnHelper.defineDataTableDisplayColumn({
+      id: "actions-column",
+      header: undefined,
+      cell: ({ cell, table }) => ManufacturingOrderCorrugatorOperatePageTableActionColumn({ rowId: cell.row.id, isEdited: cell.row.original.isEdited, getOrder: cell.row.original.getOrder, meta: table.options.meta })
+    }),
+  ]
+};

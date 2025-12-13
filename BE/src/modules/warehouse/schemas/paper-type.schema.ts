@@ -7,7 +7,7 @@ import { PaperColor } from "./paper-color.schema";
 @Schema({ timestamps: true })
 export class PaperType extends BaseSchema {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: PaperColor.name, required: true })
-  paperColorId: mongoose.Types.ObjectId | PaperColor;
+  paperColor: mongoose.Types.ObjectId | PaperColor;
 
   @Prop({ required: true })
   width: number;

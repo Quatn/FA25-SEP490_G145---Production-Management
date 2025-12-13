@@ -1,5 +1,5 @@
 export type PaperColor = {
-  _id: string,
+  _id?: string,
   code: string,
   title: string,
 };

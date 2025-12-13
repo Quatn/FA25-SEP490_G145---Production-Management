@@ -16,6 +16,26 @@ import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg"
 import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent"
 import { OrderFinishingProcess } from "@/types/OrderFinishingProcess"
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus"
+import { ManufacturingOrderOperativeStatus } from "@/types/enums/ManufacturingOrderOperativeStatus"
+import { LuCircleCheckBig, LuCircleMinus, LuCircleX, LuPause, LuPlay } from "react-icons/lu"
+import ManufacturingOrderDetailsDialogManufacturingDetailsAdditionalDetails from "./ManufacturingDetailsAdditionalDetails"
+import { numToFixedBounded } from "@/utils/numToFixedBounded"
+
+const OrderStatusAlertColorMap: Record<ManufacturingOrderOperativeStatus, string> = {
+  NOTSTARTED: "gray",
+  RUNNING: "blue",
+  PAUSED: "yellow",
+  COMPLETED: "green",
+  CANCELLED: "red",
+}
+
+const OrderStatusStatusSymbolMap: Record<ManufacturingOrderOperativeStatus, React.ReactNode> = {
+  NOTSTARTED: <LuCircleMinus />,
+  RUNNING: <LuPlay />,
+  PAUSED: <LuPause />,
+  COMPLETED: <LuCircleCheckBig />,
+  CANCELLED: <LuCircleX />,
+}
 
 const manufacturingDirectives: { label: string, value: string }[] = [
   { label: "Hủy", value: ManufacturingOrderDirectives.Cancel },
@@ -49,7 +69,6 @@ const approvalStatusCol = createListCollection({
 
 export type ManufacturingOrderDetailsDialogManufacturingDetailsCardProps = {
   order: Serialized<ManufacturingOrder>
-  processes: Serialized<OrderFinishingProcess>[]
 }
 
 type FormValue = {
@@ -63,12 +82,14 @@ type FormValue = {
 }
 
 export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(props: ManufacturingOrderDetailsDialogManufacturingDetailsCardProps) {
+  const disabled = props.order.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
+
   const { useDispatch } = ManufacturingOrderDetailsDialogReducerStore;
   const dispatch = useDispatch();
   const [updateOrders, { isLoading: updating, error: updateError }] = useUpdateManyManufacturingOrdersMutation();
 
   const ware = utils.getPopulatedWare(props.order)
-  const orderStatue = utils.getOrderStatus(props.order, props.processes)
+  const orderStatus = props.order.operativeStatus
 
   const initialFormVal = {
     manufacturingDirective: props.order.manufacturingDirective ?? null,
@@ -170,6 +191,14 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
     })
   }
 
+  const parsedFaceLayerPaperWeight = parseFloat(props.order.faceLayerPaperWeight + "")
+  const parsedEFlutePaperWeight = parseFloat(props.order.EFlutePaperWeight + "")
+  const parsedEBLinerLayerPaperWeight = parseFloat(props.order.EBLinerLayerPaperWeight + "")
+  const parsedBFlutePaperWeight = parseFloat(props.order.BFlutePaperWeight + "")
+  const parsedBACLinerLayerPaperWeight = parseFloat(props.order.BACLinerLayerPaperWeight + "")
+  const parsedACFlutePaperWeight = parseFloat(props.order.ACFlutePaperWeight + "")
+  const parsedBackLayerPaperWeight = parseFloat(props.order.backLayerPaperWeight + "")
+
   return (
     <Card.Root size="md">
       <Card.Header>
@@ -177,11 +206,23 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
       </Card.Header>
       <Card.Body color="fg.muted">
         <HStack alignItems={"stretch"} justifyContent={"space-between"} wrap={"wrap"} gapX={"40px"}>
-          <Stack minW={"400px"}>
+          <Stack minW={"10rem"}>
             <DataList.Root orientation="horizontal" flexGrow={1}>
               <DataList.Item>
                 <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Mã lệnh</Heading></DataList.ItemLabel>
                 <DataList.ItemValue color="fg.muted" flexGrow={1}>{props.order.code ?? ""}</DataList.ItemValue>
+              </DataList.Item>
+
+              <DataList.Item>
+                <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Trạng thái chạy</Heading></DataList.ItemLabel>
+                <DataList.ItemValue color="fg.muted" flexGrow={1}>
+                  {orderStatus && <Alert.Root colorPalette={OrderStatusAlertColorMap[orderStatus]} w="10rem">
+                    <Alert.Indicator>
+                      {OrderStatusStatusSymbolMap[orderStatus]}
+                    </Alert.Indicator>
+                    <Alert.Title>{utils.OrderStatusNameMap[orderStatus]}</Alert.Title>
+                  </Alert.Root>}
+                </DataList.ItemValue>
               </DataList.Item>
 
               <DataList.Item>
@@ -193,6 +234,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     width="320px"
                     value={check.null(formValue.approvalStatus) ? undefined : [formValue.approvalStatus]}
                     onValueChange={(v) => setApprovalStatus(v.value.at(0))}
+                    disabled={disabled}
                   >
                     <Select.HiddenSelect />
                     <Select.Control>
@@ -200,7 +242,6 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                         <Select.ValueText placeholder="Chọn trạng thái duyệt" />
                       </Select.Trigger>
                       <Select.IndicatorGroup>
-                        <Select.ClearTrigger />
                         <Select.Indicator />
                       </Select.IndicatorGroup>
                     </Select.Control>
@@ -229,6 +270,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     width="320px"
                     value={check.null(formValue.manufacturingDirective) ? undefined : [formValue.manufacturingDirective]}
                     onValueChange={(v) => setManufacturingDirective(v.value.at(0))}
+                    disabled={disabled}
                   >
                     <Select.HiddenSelect />
                     <Select.Control>
@@ -265,6 +307,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     width="320px"
                     value={check.null(formValue.corrugatorLineAdjustment) ? undefined : [formValue.corrugatorLineAdjustment]}
                     onValueChange={(v) => setCorrugatorLine(v.value.at(0))}
+                    disabled={disabled}
                   >
                     <Select.HiddenSelect />
                     <Select.Control>
@@ -272,7 +315,6 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                         <Select.ValueText placeholder="Chọn dàn sóng" />
                       </Select.Trigger>
                       <Select.IndicatorGroup>
-                        <Select.ClearTrigger />
                         <Select.Indicator />
                       </Select.IndicatorGroup>
                     </Select.Control>
@@ -300,6 +342,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     value={formValue.amount + ""}
                     onValueChange={(ev) => setAmount(ev.value)}
                     w="full"
+                    disabled={disabled}
                   >
                     <NumberInput.Control />
                     <NumberInput.Input />
@@ -320,6 +363,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     onChange={(ev) => {
                       return setManufacturingDateAdjustment(ev.target.value)
                     }}
+                    disabled={disabled}
                   />
                 </DataList.ItemValue>
               </DataList.Item>
@@ -336,20 +380,16 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     onChange={(ev) => {
                       return setRequestedDatetime(ev.target.value)
                     }}
+                    disabled={disabled}
                   />
                 </DataList.ItemValue>
-
               </DataList.Item>
 
-              <DataList.Item>
-                <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Trạng thái chạy</Heading></DataList.ItemLabel>
-                <DataList.ItemValue color="fg.muted" flexGrow={1}>{orderStatue ? utils.OrderStatusNameMap[orderStatue] : ""}</DataList.ItemValue>
-              </DataList.Item>
             </DataList.Root>
             <Stack mt={2}>
               <Heading size="lg">Ghi chú</Heading>
               <Editable.Root bg={"bg.muted"} value={formValue.note} placeholder={"Nhấn để nhập"} onValueChange={(v) => setNote(v.value)}>
-                <Editable.Preview />
+                <Editable.Preview w={"full"} />
                 <Editable.Input />
               </Editable.Root>
             </Stack>
@@ -370,7 +410,6 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
               <Alert.Root status={"error"}>
                 <Alert.Indicator />
                 <Alert.Content>
-                  <Alert.Title>Failed to login</Alert.Title>
                   <Alert.Description>
                     {tryGetApiErrorMsg(updateError)}
                   </Alert.Description>
@@ -446,33 +485,35 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
 
                   <Table.Row>
                     <Table.Cell colorPalette={"green"} bg={"colorPalette.muted"}>
-                      Khối lượng
+                      Khối lượng (kg)
                     </Table.Cell>
                     {ware?.faceLayerPaperType && <Table.Cell>
-                      {props.order.faceLayerPaperWeight}
+                      {numToFixedBounded(parsedFaceLayerPaperWeight)}
                     </Table.Cell>}
                     {ware?.EFlutePaperType && <Table.Cell>
-                      {props.order.EFlutePaperWeight}
+                      {numToFixedBounded(parsedEFlutePaperWeight)}
                     </Table.Cell>}
                     {ware?.EBLinerLayerPaperType && <Table.Cell>
-                      {props.order.EBLinerLayerPaperWeight}
+                      {numToFixedBounded(parsedEBLinerLayerPaperWeight)}
                     </Table.Cell>}
                     {ware?.BFlutePaperType && <Table.Cell>
-                      {props.order.BFlutePaperWeight}
+                      {numToFixedBounded(parsedBFlutePaperWeight)}
                     </Table.Cell>}
                     {ware?.BACLinerLayerPaperType && <Table.Cell>
-                      {props.order.BACLinerLayerPaperWeight}
+                      {numToFixedBounded(parsedBACLinerLayerPaperWeight)}
                     </Table.Cell>}
                     {ware?.ACFlutePaperType && <Table.Cell>
-                      {props.order.ACFlutePaperWeight}
+                      {numToFixedBounded(parsedACFlutePaperWeight)}
                     </Table.Cell>}
                     {ware?.backLayerPaperType && <Table.Cell>
-                      {props.order.backLayerPaperWeight}
+                      {numToFixedBounded(parsedBackLayerPaperWeight)}
                     </Table.Cell>}
                   </Table.Row>
                 </Table.Body>
               </Table.Root>
             </Table.ScrollArea>
+
+            <ManufacturingOrderDetailsDialogManufacturingDetailsAdditionalDetails order={props.order} />
 
           </Stack>
         </HStack>

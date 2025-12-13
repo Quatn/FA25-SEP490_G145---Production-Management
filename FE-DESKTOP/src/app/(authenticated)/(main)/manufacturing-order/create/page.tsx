@@ -29,7 +29,8 @@ export default function PurchaseOrderCreatePage() {
               px={3}
               py={5}
               rounded={"md"}
-              backgroundColor={"gray.100"}
+              colorPalette={"gray"}
+              backgroundColor={"colorPalette.subtle"}
             >
               <Stack
                 height={"full"}
@@ -37,8 +38,8 @@ export default function PurchaseOrderCreatePage() {
                 minH={"50vh"}
                 maxH={"95vh"}
               >
-                <Text fontWeight={"semibold"} color={"blackAlpha.800"} mb={2}>
-                  PO Picker
+                <Text fontWeight={"semibold"} color={"fg"} mb={2}>
+                  Chọn lệnh
                 </Text>
                 <Box mb={2}>
                   <CreatePage.SearchBar />
@@ -47,6 +48,8 @@ export default function PurchaseOrderCreatePage() {
                 <Box flexGrow={1} overflowY={"auto"}>
                   <CreatePage.ItemSelector />
                 </Box>
+
+                <CreatePage.OrderPickerPagination />
               </Stack>
             </Box>
 

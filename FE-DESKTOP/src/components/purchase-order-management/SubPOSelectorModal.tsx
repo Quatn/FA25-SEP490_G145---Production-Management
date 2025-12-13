@@ -267,16 +267,7 @@ const SubPOSelectorModal: React.FC<Props> = ({
                           </Col>
 
                           <Col md={5} className="text-end">
-                            <div style={{ fontSize: 13 }}>
-                              <strong>Size:</strong> {product.length ?? "-"}×
-                              {product.width ?? "-"}×{product.height ?? "-"} mm
-                            </div>
-                            <div style={{ fontSize: 13, marginTop: 8 }}>
-                              <strong>Quantity:</strong>{" "}
-                              {product.quantity ?? "-"}
-                            </div>
-
-                            <div
+                             <div
                               style={{
                                 marginTop: 12,
                                 display: "flex",

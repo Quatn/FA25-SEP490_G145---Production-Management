@@ -13,6 +13,8 @@ import {
 import { useGetAllPaperColorsQuery } from "@/service/api/paperColorApiSlice";
 import { useGetAllPaperSuppliersQuery } from "@/service/api/paperSupplierApiSlice";
 import { useGetAllPaperTypesQuery } from "@/service/api/paperTypeApiSlice";
+import { toaster } from "@/components/ui/toaster";
+import { PaperType } from "@/types/PaperType";
 
 function getIdFromDoc(doc: any): string | undefined {
   if (!doc && doc !== 0) return undefined;
@@ -37,11 +39,11 @@ function docIdAsString(doc: any) {
   );
 }
 
-const getColorIdFromPaperType = (pt: any) => {
+const getColorIdFromPaperType = (pt: PaperType) => {
   if (!pt) return undefined;
-  if (pt.paperColorId && typeof pt.paperColorId === "object")
-    return getIdFromDoc(pt.paperColorId);
-  return getIdFromDoc(pt.paperColorId) ?? undefined;
+  if (pt.paperColor && typeof pt.paperColor === "object")
+    return getIdFromDoc(pt.paperColor);
+  return getIdFromDoc(pt.paperColor) ?? undefined;
 };
 
 export const PaperRollAudit: React.FC = () => {
@@ -117,7 +119,7 @@ export const PaperRollAudit: React.FC = () => {
         String(
           getIdFromDoc(t) ??
             t._id ??
-            `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColorId)}`
+            `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColor)}`
         ),
         t
       )
@@ -224,13 +226,19 @@ export const PaperRollAudit: React.FC = () => {
     const dbId = row.dbId;
     const value = inputs[dbId];
     if (value === undefined || value === null || String(value).trim() === "") {
-      return alert(
-        "Vui lòng nhập trọng lượng (TL hiện tại) trước khi Thay đổi."
-      );
+      toaster.create({
+        description: "Vui lòng nhập trọng lượng trước khi Thay đổi.",
+        type: "error",
+      });
+      return;
     }
     const newW = Number(value);
     if (!Number.isFinite(newW) || newW < 0) {
-      return alert("Vui lòng nhập trọng lượng hợp lệ (>= 0).");
+      toaster.create({
+        description: "Vui lòng nhập trọng lượng hợp lệ (>= 0).",
+        type: "error",
+      });
+      return;
     }
 
     // disable button for this row
@@ -265,10 +273,16 @@ export const PaperRollAudit: React.FC = () => {
       // update the input value to reflect persisted weight
       setInputs((p) => ({ ...p, [dbId]: String(newW) }));
 
-      alert("Thay đổi thành công (Kiểm kê).");
+      toaster.create({
+        description: "Thay đổi thành công (Kiểm kê).",
+        type: "success",
+      });
     } catch (err: any) {
       console.error("Kiểm kê failed", err);
-      alert(err?.data?.message ?? err?.message ?? "Kiểm kê thất bại");
+      toaster.create({
+        description: err?.data?.message ?? err?.message ?? "Kiểm kê thất bại",
+        type: "error",
+      });
     } finally {
       setPending((p) => ({ ...p, [dbId]: false }));
     }

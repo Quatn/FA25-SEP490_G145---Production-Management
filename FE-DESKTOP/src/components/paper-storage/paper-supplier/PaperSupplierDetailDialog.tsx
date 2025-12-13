@@ -1,17 +1,15 @@
 import { PaperSupplier } from "@/types/PaperSupplier";
-import { Button, CloseButton, DataList, Dialog, Icon, Portal } from "@chakra-ui/react"
-import { FaEye } from "react-icons/fa"
+import { Button, CloseButton, DataList, Dialog, Portal } from "@chakra-ui/react"
 
 interface PaperSupplierDetailDialogProps {
-  supplier: PaperSupplier;
+    isOpen: boolean;
+    onClose: () => void;
+    initialData: PaperSupplier | undefined;
 }
 
-const PaperSupplierDetailDialog: React.FC<PaperSupplierDetailDialogProps > = ({ supplier }) => {
+const PaperSupplierDetailDialog: React.FC<PaperSupplierDetailDialogProps> = ({ isOpen, onClose, initialData }) => {
     return (
-        <Dialog.Root>
-            <Dialog.Trigger asChild>
-                <Button variant={"surface"} colorPalette={"blue"}> <Icon><FaEye /></Icon> Chi tiết</Button>
-            </Dialog.Trigger>
+        <Dialog.Root open={isOpen} onOpenChange={onClose}>
             <Portal>
                 <Dialog.Backdrop />
                 <Dialog.Positioner>
@@ -22,36 +20,36 @@ const PaperSupplierDetailDialog: React.FC<PaperSupplierDetailDialogProps > = ({ 
                         <Dialog.Body>
                             <DataList.Root orientation="horizontal" divideY="1px" maxW="md">
                                 <DataList.Item pt="4">
-                                    <DataList.ItemLabel>Mã Nhà Giấy</DataList.ItemLabel>
-                                    <DataList.ItemValue>{supplier.code}</DataList.ItemValue>
+                                    <DataList.ItemLabel>Mã nhà giấy</DataList.ItemLabel>
+                                    <DataList.ItemValue>{initialData?.code}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
-                                    <DataList.ItemLabel>Tên Nhà Giấy</DataList.ItemLabel>
-                                    <DataList.ItemValue>{supplier.name}</DataList.ItemValue>
+                                    <DataList.ItemLabel>Tên nhà giấy</DataList.ItemLabel>
+                                    <DataList.ItemValue>{initialData?.name}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Địa chỉ</DataList.ItemLabel>
-                                    <DataList.ItemValue>{supplier.address}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.address}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Số điện thoại</DataList.ItemLabel>
-                                    <DataList.ItemValue>{supplier.phone}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.phone}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Email</DataList.ItemLabel>
-                                    <DataList.ItemValue>{supplier.email}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.email}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Ngân hàng</DataList.ItemLabel>
-                                    <DataList.ItemValue>{supplier.bank}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.bank}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Tài khoản ngân hàng</DataList.ItemLabel>
-                                    <DataList.ItemValue>{supplier.bankAccount}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.bankAccount}</DataList.ItemValue>
                                 </DataList.Item>
                                 <DataList.Item pt="4">
                                     <DataList.ItemLabel>Ghi chú</DataList.ItemLabel>
-                                    <DataList.ItemValue>{supplier.note}</DataList.ItemValue>
+                                    <DataList.ItemValue>{initialData?.note}</DataList.ItemValue>
                                 </DataList.Item>
                             </DataList.Root>
                         </Dialog.Body>

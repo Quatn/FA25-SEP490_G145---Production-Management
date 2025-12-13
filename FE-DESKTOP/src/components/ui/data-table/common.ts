@@ -9,7 +9,6 @@ export function getCommonPinningStyles<T>(column: Column<T>): CSSProperties {
     isPinned === 'right' && column.getIsFirstColumn('right')
 
   return {
-    boxSizing: "border-box",
     boxShadow: isLastLeftPinnedColumn
       ? '-4px 0 4px -4px gray inset'
       : isFirstRightPinnedColumn
@@ -17,6 +16,7 @@ export function getCommonPinningStyles<T>(column: Column<T>): CSSProperties {
         : undefined,
     left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
     right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
+    top: 0,
     // opacity: isPinned ? 0.95 : 1,
     position: isPinned ? 'sticky' : 'relative',
     // width: column.getIsLastColumn() ? "100%" : column.getSize(),

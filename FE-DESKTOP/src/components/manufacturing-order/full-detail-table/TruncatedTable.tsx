@@ -33,6 +33,8 @@ import { toaster } from "@/components/ui/toaster";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import { ManufacturingOrderTableProps } from "./TablePicker";
 import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
+import { QueryListFullDetailsManufacturingOrderRequestSortOptions } from "@/types/enums/QueryListFullDetailsManufacturingOrderRequestSortOptions";
+import DataEmpty from "@/components/common/DataEmpty";
 
 export default function TruncatedManufacturingOrderTable(
   props: ManufacturingOrderTableProps,
@@ -43,55 +45,17 @@ export default function TruncatedManufacturingOrderTable(
   const page = useSelector(s => s.page)
   const limit = useSelector(s => s.limit)
   const query = useDataTableSelector(s => s.query)
+  const sorts = useSelector(s => s.sorts)
 
   const {
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
     isLoading: isFetchingList,
     refetch: refetchTable,
-  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query });
+  } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query, sort: sorts });
 
-  const ids = fullDetailMOPaginatedResponse?.data?.data.map(mo => mo._id)
+  const moList = useMemo(() => fullDetailMOPaginatedResponse?.data?.data ?? [], [fullDetailMOPaginatedResponse?.data?.data])
 
-  const {
-    data: orderFinishingProcessesResponse,
-    error: orderFinishingProcessFetchError,
-    isLoading: isOrderFinishingProcessFetchingList,
-  } = useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery({ orders: ids ?? [] });
-
-  const moPaginatedList = useMemo(() => {
-    if (fullDetailMOPaginatedResponse?.data) {
-      const calculatedMoPaginatedList = fullDetailMOPaginatedResponse?.data?.data.map((mo) => {
-        if (check.string(mo.purchaseOrderItem)) {
-          throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
-        }
-
-        /*
-        const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
-        const calculatedPOI = recalculatePurchaseOrderItem({
-          ...mo.purchaseOrderItem!,
-          ware: calculatedWare
-        })
-        */
-
-        const process = orderFinishingProcessesResponse?.data.filter(p => (p.manufacturingOrder as unknown as string) === mo._id)
-
-        return {
-          ...mo,
-          finishingProcesses: process ?? [],
-        }
-      })
-      return {
-        ...fullDetailMOPaginatedResponse.data,
-        data: calculatedMoPaginatedList
-      }
-    }
-    else {
-      return undefined
-    }
-  }, [fullDetailMOPaginatedResponse?.data, orderFinishingProcessesResponse?.data])
-
-  const moList = useMemo(() => moPaginatedList?.data ?? [], [moPaginatedList?.data])
   const getMo = useCallback((id: string) => {
     const mo = moList.find(mo => mo._id === id)
     if (!mo) {
@@ -103,7 +67,7 @@ export default function TruncatedManufacturingOrderTable(
   }, [moList])
 
   const rawTableData: TruncatedManufacturingOrderTableData[] = useMemo(() => moList.map(mo =>
-    convertSerializedMOToTruncatedManufacturingOrderTableData(mo, mo.finishingProcesses, getMo)
+    convertSerializedMOToTruncatedManufacturingOrderTableData(mo, getMo)
   ), [moList, getMo])
 
   const { tableComponent, tableData, resetTable } = useDataTable({
@@ -140,11 +104,11 @@ export default function TruncatedManufacturingOrderTable(
     logTimestamp("SET_TOTAL_ITEMS effect Triggered")
     dispatch({
       type: "SET_TOTAL_ITEMS",
-      payload: moPaginatedList ? moPaginatedList.totalItems : 0,
+      payload: fullDetailMOPaginatedResponse?.data ? fullDetailMOPaginatedResponse?.data.totalItems : 0,
     });
-  }, [dispatch, moPaginatedList, moPaginatedList?.totalItems]);
+  }, [dispatch, fullDetailMOPaginatedResponse?.data, fullDetailMOPaginatedResponse?.data?.totalItems]);
 
-  if (isFetchingList || isOrderFinishingProcessFetchingList) {
+  if (isFetchingList) {
     return (
       <Center h={"full"} flex={1} flexGrow={1}>
         <Stack alignItems={"center"}>
@@ -155,12 +119,16 @@ export default function TruncatedManufacturingOrderTable(
     );
   }
 
-  if (fetchError || orderFinishingProcessFetchError) {
+  if (fetchError) {
     return <DataFetchError h={"full"} flexGrow={1} errorText={tryGetApiErrorMsg(fetchError)} refetch={refetchTable} />;
   }
 
-  if (check.undefined(moPaginatedList)) {
+  if (check.undefined(fullDetailMOPaginatedResponse?.data)) {
     return <DataFetchError h={"full"} flexGrow={1} refetch={refetchTable} />;
+  }
+
+  if (fullDetailMOPaginatedResponse?.data.totalItems < 1) {
+    return <DataEmpty h={"full"} flexGrow={1} />;
   }
 
   const editedItemsNum = tableData.filter(row => row.isEdited).length
@@ -170,6 +138,7 @@ export default function TruncatedManufacturingOrderTable(
       orders: tableData.filter((row) => row.isEdited).map((order) => ({
         id: order._id,
         corrugatorLineAdjustment: order.corrugatorLineAdjustment,
+        approvalStatus: order.approvalStatus,
         manufacturingDirective: order.manufacturingDirective,
         amount: order.amount,
         note: order.note,

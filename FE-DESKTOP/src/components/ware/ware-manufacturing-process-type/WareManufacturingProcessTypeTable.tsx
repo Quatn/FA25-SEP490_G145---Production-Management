@@ -1,19 +1,25 @@
-import { Table, Text, Group, Button, Icon } from "@chakra-ui/react";
-import { Tooltip } from "@/components/ui/tooltip"
-import { FaEdit } from "react-icons/fa";
+import { Table, Group, Button, Icon } from "@chakra-ui/react";
+import { FaEdit, FaEye } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
 import { WareManufacturingProcessType } from "@/types/WareManufacturingProcessType";
-import WareManufacturingProcessTypeDetailDialog from "./WareManufacturingProcessTypeDetailDialog";
 
 interface Props {
     page: number;
     limit: number;
     items: WareManufacturingProcessType[];
     onEdit: (item: WareManufacturingProcessType) => void;
+    onDetail: (item: WareManufacturingProcessType) => void;
     onDelete: (item: WareManufacturingProcessType) => void;
 }
 
-const WareManufacturingProcessTypeTable = ({ page, limit, items, onEdit, onDelete }: Props) => {
+const WareManufacturingProcessTypeTable = ({
+    page,
+    limit,
+    items,
+    onEdit,
+    onDetail,
+    onDelete
+}: Props) => {
     return (
         <Table.ScrollArea
             borderWidth="1px"
@@ -30,12 +36,12 @@ const WareManufacturingProcessTypeTable = ({ page, limit, items, onEdit, onDelet
                 w="100%"
             >
                 <Table.Header>
-                    <Table.Row>
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
-                        <Table.ColumnHeader>Mã</Table.ColumnHeader>
-                        <Table.ColumnHeader>Tên</Table.ColumnHeader>
+                        <Table.ColumnHeader>Mã loại gia công</Table.ColumnHeader>
+                        <Table.ColumnHeader>Tên loại gia công</Table.ColumnHeader>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             Thao tác
                         </Table.ColumnHeader>
@@ -51,9 +57,16 @@ const WareManufacturingProcessTypeTable = ({ page, limit, items, onEdit, onDelet
 
                             <Table.Cell>
                                 <Group gap={5}>
-                                    <WareManufacturingProcessTypeDetailDialog
-                                        item={item}
-                                    />
+                                    <Button
+                                        variant="surface"
+                                        colorPalette="blue"
+                                        onClick={() => onDetail(item)}
+                                    >
+                                        <Icon>
+                                            <FaEye />
+                                        </Icon>
+                                        Chi tiết
+                                    </Button>
                                     <Button
                                         variant="surface"
                                         colorPalette="yellow"

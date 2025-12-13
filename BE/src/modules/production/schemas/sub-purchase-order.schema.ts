@@ -17,14 +17,8 @@ export enum SubPurchaseOrderStatus {
   Draft = "DRAFT",
   PendingApproval = "PENDINGAPPROVAL",
   Approved = "APPROVED",
-  Scheduled = "SCHEDULED",
-  Cancelled = "CANCELLED",
-  InProduction = "INPRODUCTION",
-  Paused = "PAUSED",
   PartiallyCompleted = "PARTIALLYCOMPLETED",
   Completed = "COMPLETED",
-  InDelivery = "INDELIVERY",
-  Delivered = "DELIVERED",
 }
 
 @Schema({ timestamps: true })
@@ -61,7 +55,7 @@ export class SubPurchaseOrder extends BaseSchema {
   @Prop({
     required: true,
     enum: SubPurchaseOrderStatus,
-    default: SubPurchaseOrderStatus.PendingApproval,
+    default: SubPurchaseOrderStatus.Draft,
   })
   @IsEnum(SubPurchaseOrderStatus)
   status: SubPurchaseOrderStatus;

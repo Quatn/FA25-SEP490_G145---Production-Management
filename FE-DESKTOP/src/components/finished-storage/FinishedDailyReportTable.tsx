@@ -10,6 +10,8 @@ interface DailyReportTableProps {
     search: string;
     page: number;
     limit: number;
+    startDate: string;
+    endDate: string;
     totalPages: number;
     transactionType: 'IMPORT' | 'EXPORT';
     dailyItems: FinishedGoodDailyItem[];
@@ -17,15 +19,21 @@ interface DailyReportTableProps {
 }
 
 const FinishedDailyReportTable: React.FC<DailyReportTableProps> = ({
-     search, 
-     page, 
-     limit,
-     totalPages, 
-     handlePageChange, 
-     dailyItems, 
-     transactionType,
-    }) => {
+    search,
+    page,
+    limit,
+    totalPages,
+    startDate,
+    endDate,
+    handlePageChange,
+    dailyItems,
+    transactionType,
+}) => {
     const totalQuantity = dailyItems.reduce((sum, item) => sum + (item.totalQuantity ?? 0), 0);
+    const tableTitle = () => {
+        if (startDate == endDate) return formatDate(startDate);
+        else return `TỪ ${formatDate(startDate)} ĐẾN ${formatDate(endDate)}`;
+    }
     return (
         <Box mt={5}>
 
@@ -58,7 +66,7 @@ const FinishedDailyReportTable: React.FC<DailyReportTableProps> = ({
                                 fontSize={'xl'}
                                 textAlign={'center'}
                                 colSpan={9}>
-                                {`BÁO CÁO CHI TIẾT ${transactionType == 'IMPORT' ? 'NHẬP' : 'XUẤT'} THEO NGÀY`}
+                                {`BÁO CÁO CHI TIẾT ${transactionType == 'IMPORT' ? 'NHẬP' : 'XUẤT'} THEO NGÀY ${tableTitle()}`}
                             </Table.ColumnHeader>
                             <Table.ColumnHeader
                                 fontWeight={'bold'}
@@ -67,7 +75,7 @@ const FinishedDailyReportTable: React.FC<DailyReportTableProps> = ({
                                 TỔNG {transactionType == 'IMPORT' ? 'NHẬP' : 'XUẤT'}
                             </Table.ColumnHeader>
                         </Table.Row>
-                        <Table.Row>
+                        <Table.Row background={'blue.100'}>
                             <Table.ColumnHeader rowSpan={2} textAlign="center" w="1%">
                                 STT
                             </Table.ColumnHeader>
@@ -100,7 +108,7 @@ const FinishedDailyReportTable: React.FC<DailyReportTableProps> = ({
                             </Table.ColumnHeader>
 
                         </Table.Row>
-                        <Table.Row>
+                        <Table.Row background={'blue.100'}>
                             <Table.ColumnHeader>Dài</Table.ColumnHeader>
                             <Table.ColumnHeader>Rộng</Table.ColumnHeader>
                             <Table.ColumnHeader>Cao</Table.ColumnHeader>
