@@ -5,11 +5,11 @@ import { UserState } from "@/types/UserState";
 import check from "check-types";
 
 export default function AuthenticatedContent(
-  { children, loading, unauthenticatedContent, throwErrorAction }: {
+  { children, loading, unauthenticatedContent }: {
     children?: React.ReactNode;
     loading?: React.ReactNode;
     unauthenticatedContent?: React.ReactNode;
-    throwErrorAction?: () => Error,
+    // throwErrorAction?: () => Error,
   },
 ) {
   const hydrating: boolean = useAppSelector((state) =>
@@ -28,9 +28,11 @@ export default function AuthenticatedContent(
 
   if (check.null(userState)) {
     if (unauthenticatedContent) {
+      /*
       if (throwErrorAction) {
         throw throwErrorAction()
       }
+      */
       return (
         <div>
           {unauthenticatedContent}
