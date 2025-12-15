@@ -28,12 +28,19 @@ export enum EmployeeModuleAccessPrivilege {
   ReadWrite = "employee-readWrite",
 }
 
+export enum ManufacturingOrderModuleAccessPrivilege {
+  Admin = "manufacturing-order-admin",
+  Read = "manufacturing-order-read",
+  ReadWrite = "manufacturing-order-readWrite",
+}
+
 export type AnyAccessPrivileges =
   | `${SystemAccessPrivilege}`
   | `${ProductionModuleAccessPrivilege}`
   | `${WarehouseModuleAccessPrivilege}`
   | `${UserModuleAccessPrivilege}`
-  | `${EmployeeModuleAccessPrivilege}`;
+  | `${EmployeeModuleAccessPrivilege}`
+  | `${ManufacturingOrderModuleAccessPrivilege}`;
 
 export const ALL_ACCESS_PRIVILEGE_VALUES: string[] = [
   ...Object.values(SystemAccessPrivilege),
@@ -41,4 +48,5 @@ export const ALL_ACCESS_PRIVILEGE_VALUES: string[] = [
   ...Object.values(WarehouseModuleAccessPrivilege),
   ...Object.values(UserModuleAccessPrivilege),
   ...Object.values(EmployeeModuleAccessPrivilege),
+  ...Object.values(ManufacturingOrderModuleAccessPrivilege),
 ];

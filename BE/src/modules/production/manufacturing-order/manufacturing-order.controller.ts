@@ -40,7 +40,12 @@ import {
 import { AssembledUpdateManufacturingOrderRequestDto } from "./dto/update-order-request.dto";
 import { QueryListFullDetailsManufacturingOrderRequestDto } from "./dto/query-list-full-details.dto";
 import { PrivilegedJwtAuthGuard } from "@/common/guards/privileged-jwt-auth.guard";
-import { manufacturingOrderGetPrivileges } from "./manufacturing-order-module-access-privileges";
+import {
+  manufacturingOrderAdminPrivileges,
+  manufacturingOrderCreatePrivileges,
+  manufacturingOrderGetPrivileges,
+  manufacturingOrderUpdatePrivileges,
+} from "./manufacturing-order-module-access-privileges";
 import { buildFullDetailsMOFilterFromDto } from "./utils/buildFullDetailsFilterFromDto";
 import { QueryAllByPaperTypesUsageRequestDto } from "./dto/query-all-by-paper-types-usage.dto";
 import { buildFullDetailsMOSortPipesFromDto } from "./utils/buildFullDetailsSortPipesFromDto";
@@ -48,6 +53,18 @@ import check from "check-types";
 
 const ManufacturingOrderGetRequestGuard = PrivilegedJwtAuthGuard({
   requiredPrivileges: manufacturingOrderGetPrivileges,
+});
+
+const ManufacturingOrderCreateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: manufacturingOrderCreatePrivileges,
+});
+
+const ManufacturingOrderUpdateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: manufacturingOrderUpdatePrivileges,
+});
+
+const ManufacturingOrderAdminRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: manufacturingOrderAdminPrivileges,
 });
 
 @ApiBearerAuth("access-token")
@@ -75,7 +92,7 @@ export class ManufacturingOrderController {
     };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(ManufacturingOrderGetRequestGuard)
   @Get("query/full-details")
   @ApiOperation({ summary: "Query fully populated manufacturing orders" })
   // The decorator below is used to configure swagger to display accurate schema and example, don't bother with it if you don't care about documenting on swagger
@@ -115,7 +132,7 @@ export class ManufacturingOrderController {
     };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(ManufacturingOrderCreateRequestGuard)
   @Post("create")
   @ApiOperation({ summary: "Create one manufacturing order" })
   async createOne(

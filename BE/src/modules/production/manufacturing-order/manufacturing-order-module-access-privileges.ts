@@ -1,18 +1,24 @@
+import { ManufacturingOrderModuleAccessPrivilege } from "@/config/access-privileges-list";
 import {
   productionCreatePrivileges,
   productionGetPrivileges,
-  productionHardDeletePrivileges,
+  productionAdminPrivileges,
   productionUpdatePrivileges,
 } from "../production-module-access-privileges";
 
-// extend later idk
-export const manufacturingOrderGetPrivileges = [...productionGetPrivileges];
+export const manufacturingOrderGetPrivileges = [
+  ...productionGetPrivileges,
+  ManufacturingOrderModuleAccessPrivilege.Read,
+];
 export const manufacturingOrderCreatePrivileges = [
   ...productionCreatePrivileges,
+  ManufacturingOrderModuleAccessPrivilege.ReadWrite,
 ];
 export const manufacturingOrderUpdatePrivileges = [
   ...productionUpdatePrivileges,
+  ManufacturingOrderModuleAccessPrivilege.ReadWrite,
 ];
-export const manufacturingOrderHardDeletePrivileges = [
-  ...productionHardDeletePrivileges,
+export const manufacturingOrderAdminPrivileges = [
+  ...productionAdminPrivileges,
+  ManufacturingOrderModuleAccessPrivilege.Admin,
 ];

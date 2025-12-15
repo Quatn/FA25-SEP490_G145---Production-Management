@@ -1,7 +1,7 @@
 import {
   systemCreatePrivileges,
   systemGetPrivileges,
-  systemHardDeletePrivileges,
+  systemAdminPrivileges,
   systemUpdatePrivileges,
 } from "@/app-access-privileges";
 import { WarehouseModuleAccessPrivilege } from "@/config/access-privileges-list";
@@ -21,7 +21,7 @@ export const warehouseUpdatePrivileges = [
   WarehouseModuleAccessPrivilege.Admin,
   WarehouseModuleAccessPrivilege.ReadWrite,
 ];
-export const warehouseHardDeletePrivileges = [
-  ...systemHardDeletePrivileges,
+export const warehouseAdminPrivileges = [
+  ...systemAdminPrivileges,
   WarehouseModuleAccessPrivilege.Admin,
 ];
