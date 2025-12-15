@@ -1,16 +1,36 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
 import { ProductTypeService } from './product-type.service';
 import { CreateProductTypeDto } from './dto/create-product-type.dto';
 import { UpdateProductTypeDto } from './dto/update-product-type.dto';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ProductType } from '../schemas/product-type.schema';
+import { PrivilegedJwtAuthGuard } from '@/common/guards/privileged-jwt-auth.guard';
+import { productTypeAdminPrivileges, productTypeCreatePrivileges, productTypeGetPrivileges, productTypeUpdatePrivileges } from './product-type-module-access-privileges';
 
+const ProductTypeGetRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: productTypeGetPrivileges,
+});
+
+const ProductTypeCreateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: productTypeCreatePrivileges,
+});
+
+const ProductTypeUpdateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: productTypeUpdatePrivileges,
+});
+
+const ProductTypeAdminRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: productTypeAdminPrivileges,
+});
+
+@ApiBearerAuth("access-token")
 @Controller('product-type')
 export class ProductTypeController {
   constructor(private readonly service: ProductTypeService) { }
 
+  @UseGuards(ProductTypeGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated product types' })
   async findPaginated(
@@ -26,7 +46,7 @@ export class ProductTypeController {
     };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(ProductTypeAdminRequestGuard)
   @Get('list-deleted')
   @ApiOperation({ summary: 'List deleted product type' })
   async findDeleted(
@@ -41,6 +61,7 @@ export class ProductTypeController {
     };
   }
 
+  @UseGuards(ProductTypeGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List product types' })
   async findAll(): Promise<BaseResponse<ProductType[]>> {
@@ -52,6 +73,7 @@ export class ProductTypeController {
     };
   }
 
+  @UseGuards(ProductTypeGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'product type detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<ProductType>> {
@@ -63,6 +85,7 @@ export class ProductTypeController {
     };
   }
 
+  @UseGuards(ProductTypeCreateRequestGuard)
   @Post('create')
   @ApiOperation({ summary: 'Create new product type' })
   async create(@Body() dto: CreateProductTypeDto): Promise<BaseResponse<ProductType>> {
@@ -74,6 +97,7 @@ export class ProductTypeController {
     };
   }
 
+  @UseGuards(ProductTypeUpdateRequestGuard)
   @Patch('update/:id')
   @ApiOperation({ summary: 'Update product type' })
   async update(
@@ -88,6 +112,7 @@ export class ProductTypeController {
     };
   }
 
+  @UseGuards(ProductTypeUpdateRequestGuard)
   @Delete('delete-soft/:id')
   @ApiOperation({ summary: 'Soft delete product type' })
   async softDelete(@Param('id') id: string): Promise<BaseResponse<null>> {
@@ -99,6 +124,7 @@ export class ProductTypeController {
     };
   }
 
+  @UseGuards(ProductTypeAdminRequestGuard)
   @Patch('restore/:id')
   @ApiOperation({ summary: 'Restore product type' })
   async restore(@Param('id') id: string): Promise<BaseResponse<null>> {
@@ -110,6 +136,7 @@ export class ProductTypeController {
     };
   }
 
+  @UseGuards(ProductTypeAdminRequestGuard)
   @Delete('delete-hard/:id')
   @ApiOperation({ summary: 'Hard delete product type' })
   async hardDelete(@Param('id') id: string): Promise<BaseResponse<null>> {
