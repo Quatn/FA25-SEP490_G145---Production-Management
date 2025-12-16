@@ -402,8 +402,8 @@ const FLUTE_COMBINATION_PAGES: SidebarNodeDef = {
   // TODO: Change this to a more specific prefix
   privilegePrefix: "production",
   parentNode: {
-    id: "Quản lý tổ hợp sóng",
-    name: "Flute Combination",
+    id: "flute-combination",
+    name: "Quản lý tổ hợp sóng",
     children: [],
   },
   readNodes: [
