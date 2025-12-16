@@ -29,13 +29,13 @@ const CUSTOMER_PAGES: SidebarNodeDef = {
   privilegePrefix: "production",
   parentNode: {
     id: "customer",
-    name: "Customer",
+    name: "Quản lý khách hàng",
     children: [],
   },
   readNodes: [
     {
       id: "customer-list",
-      name: "Customer List",
+      name: "Danh sách khách hàng",
       href: "/customer/list",
       children: [],
     },
@@ -44,12 +44,11 @@ const CUSTOMER_PAGES: SidebarNodeDef = {
   adminNodes: [
     {
       id: "customer-restore-list",
-      name: "Customer Restore List",
+      name: "Khôi phục khách hàng đã xóa",
       href: "/customer/restore-list",
       children: [],
     },
   ],
-
 }
 
 const PURCHASE_ORDER_PAGES: SidebarNodeDef = {
@@ -57,47 +56,34 @@ const PURCHASE_ORDER_PAGES: SidebarNodeDef = {
   privilegePrefix: "production",
   parentNode: {
     id: "purchase-order",
-    name: "Purchase Order",
+    name: "Quản lý đơn hàng (PO)",
     children: [],
   },
   readNodes: [
     {
       id: "purchase-order-list",
-      name: "Purchase Order List",
+      name: "Danh sách PO",
       href: "/purchase-order",
       children: [],
     },
-    {
-      id: "delivery-note-list",
-      name: "Delivery Note List",
-      href: "/purchase-order/delivery-note-list",
-      children: [],
-    },
   ],
-  readWriteNodes: [
-    {
-      id: "create-delivery-note",
-      name: "Create Delivery Note",
-      href: "/purchase-order/delivery-note-create",
-      children: [],
-    },
-  ],
+  readWriteNodes: [],
   adminNodes: [
     {
       id: "purchase-order-restore",
-      name: "Restore Purchase Order",
+      name: "Khôi phục PO đã xóa",
       href: "/purchase-order/restore-po",
       children: [],
     },
     {
       id: "sub-purchase-order-restore",
-      name: "Restore Sub PO (Product)",
+      name: "Khôi phục Sub PO",
       href: "/purchase-order/restore-subpo",
       children: [],
     },
     {
       id: "purchase-order-item-restore",
-      name: "Restore PO Item",
+      name: "Khôi phục PO Item",
       href: "/purchase-order/restore-item",
       children: [],
     },
@@ -109,13 +95,13 @@ const PRINT_COLOR_PAGES: SidebarNodeDef = {
   privilegePrefix: "production",
   parentNode: {
     id: "print-color",
-    name: "Print Color",
+    name: "Quản lý màu in",
     children: [],
   },
   readNodes: [
     {
       id: "print-color-list",
-      name: "Print Color List",
+      name: "Danh sách màu in",
       href: "/print-color/list",
       children: [],
     },
@@ -124,7 +110,7 @@ const PRINT_COLOR_PAGES: SidebarNodeDef = {
   adminNodes: [
     {
       id: "print-color-restore-list",
-      name: "Print Color Restore List",
+      name: "Khôi phục màu in đã xóa",
       href: "/print-color/restore-list",
       children: [],
     },
@@ -136,19 +122,19 @@ const MANUFACTURING_ORDER_PAGES: SidebarNodeDef = {
   privilegePrefix: "production",
   parentNode: {
     id: "manufacturing-order",
-    name: "Manufacturing Order",
+    name: "Quản lý lệnh sản xuất",
     children: [],
   },
   readNodes: [
     {
       id: "manufacturing-order-dashboard",
-      name: "Manufacturing Order Dashboard",
+      name: "Dashboard lệnh sản xuất",
       href: "/manufacturing-order",
       children: [],
     },
     {
       id: "manufacturing-order-list",
-      name: "Manufacturing Order List",
+      name: "Danh sách lệnh sản xuất",
       href: "/manufacturing-order/list",
       children: [],
     },
@@ -156,21 +142,28 @@ const MANUFACTURING_ORDER_PAGES: SidebarNodeDef = {
   readWriteNodes: [
     {
       id: "manufacturing-order-create",
-      name: "Manufacturing Order Create",
+      name: "Tạo lệnh sản xuất",
       href: "/manufacturing-order/create",
       children: [],
     },
     {
-      id: "manufacturing-order-corrugator-process-operate",
-      name: "Manufacturing Order Corrugator Process Operate",
-      href: "/manufacturing-order/corrugator-process-operate",
-      children: [],
-    },
-    {
-      id: "order-finishing-process",
-      name: "Order Finishing Process",
-      href: "/order-finishing-process",
-      children: [],
+      id: "manufacturing-order-create",
+      name: "Thao tác lệnh",
+      href: "/manufacturing-order/create",
+      children: [
+        {
+          id: "manufacturing-order-corrugator-process-operate",
+          name: "Quy trình sóng",
+          href: "/manufacturing-order/corrugator-process-operate",
+          children: [],
+        },
+        {
+          id: "order-finishing-process",
+          name: "Quy trình hoàn thiện",
+          href: "/order-finishing-process",
+          children: [],
+        },
+      ],
     },
   ],
   adminNodes: [],
@@ -181,13 +174,13 @@ const PRODUCT_PAGES: SidebarNodeDef = {
   privilegePrefix: "production",
   parentNode: {
     id: "product",
-    name: "Product Management",
+    name: "Quản lý sản phẩm",
     children: [],
   },
   readNodes: [
     {
       id: "product-list",
-      name: "Product List",
+      name: "Danh sách sản phẩm",
       href: "/products",
       children: [],
     },
@@ -196,7 +189,7 @@ const PRODUCT_PAGES: SidebarNodeDef = {
   adminNodes: [
     {
       id: "product-restore",
-      name: "Restore Product",
+      name: "Khôi phục sản phẩm đã xóa",
       href: "/products/restore-product",
       children: [],
     },
@@ -208,13 +201,13 @@ const PAPER_COLOR_PAGES: SidebarNodeDef = {
   privilegePrefix: "warehouse",
   parentNode: {
     id: "paper-color",
-    name: "Paper Color",
+    name: "Quản lý màu giấy",
     children: [],
   },
   readNodes: [
     {
       id: "paper-color-list",
-      name: "Paper Color List",
+      name: "Danh sách màu giấy",
       href: "/paper-color/list",
       children: [],
     },
@@ -223,7 +216,7 @@ const PAPER_COLOR_PAGES: SidebarNodeDef = {
   adminNodes: [
     {
       id: "paper-color-restore-list",
-      name: "Paper Color Restore List",
+      name: "Khôi phục sản phẩm đã xóa",
       href: "/paper-color/restore-list",
       children: [],
     },
@@ -235,13 +228,13 @@ const PAPER_SUPPLIER_PAGES: SidebarNodeDef = {
   privilegePrefix: "warehouse",
   parentNode: {
     id: "paper-supplier",
-    name: "Paper Supplier",
+    name: "Quản lý nhà cung cấp giấy",
     children: [],
   },
   readNodes: [
     {
       id: "paper-supplier-list",
-      name: "Paper Supplier List",
+      name: "Danh sách nhà cung cấp giấy",
       href: "/paper-supplier/list",
       children: [],
     },
@@ -250,7 +243,7 @@ const PAPER_SUPPLIER_PAGES: SidebarNodeDef = {
   adminNodes: [
     {
       id: "paper-supplier-restore-list",
-      name: "Paper Supplier Restore List",
+      name: "Khôi phục nhà cung cấp giấy đã xóa",
       href: "/paper-supplier/restore-list",
       children: [],
     },
@@ -262,13 +255,13 @@ const PAPER_TYPE_PAGES: SidebarNodeDef = {
   privilegePrefix: "warehouse",
   parentNode: {
     id: "paper-type",
-    name: "Paper Type",
+    name: "Quản lý loại giấy",
     children: [],
   },
   readNodes: [
     {
       id: "paper-type-list",
-      name: "Paper Type List",
+      name: "Danh sách loại giấy",
       href: "/paper-type/list",
       children: [],
     },
@@ -277,7 +270,7 @@ const PAPER_TYPE_PAGES: SidebarNodeDef = {
   adminNodes: [
     {
       id: "paper-type-restore-list",
-      name: "Paper Type Restore List",
+      name: "Khôi phục loại giấy đã xóa",
       href: "/paper-type/restore-list",
       children: [],
     },
@@ -289,13 +282,13 @@ const PAPER_ROLL_PAGES: SidebarNodeDef = {
   privilegePrefix: "warehouse",
   parentNode: {
     id: "paper-roll",
-    name: "Paper Roll",
+    name: "Quản lý kho giấy",
     children: [],
   },
   readNodes: [
     {
       id: "paper-roll",
-      name: "Paper List",
+      name: "Danh sách cuộn giấy",
       href: "/paper-list",
       children: [],
     },
@@ -303,13 +296,13 @@ const PAPER_ROLL_PAGES: SidebarNodeDef = {
   readWriteNodes: [
     {
       id: "paper-audit",
-      name: "Paper Storage Audit",
+      name: "Khiểm kê kho giấy",
       href: "/paper-list/audit-paper",
       children: [],
     },
     {
       id: "paper-daily-report",
-      name: "Paper Daily Usage Report",
+      name: "Báo cáo sử dụng giấy",
       href: "/paper-list/daily-report",
       children: [],
     },
@@ -317,7 +310,7 @@ const PAPER_ROLL_PAGES: SidebarNodeDef = {
   adminNodes: [
     {
       id: "paper-restore",
-      name: "Restore Paper Roll",
+      name: "Khôi phục cuộn giấy đã xóa",
       href: "/paper-list/restore-paper",
       children: [],
     },
@@ -329,13 +322,13 @@ const WARE_MANUFACTURING_PROCESS_TYPE_PAGES: SidebarNodeDef = {
   privilegePrefix: "production",
   parentNode: {
     id: "ware-manufacturing-process-type",
-    name: "Ware Manufacturing Process Type",
+    name: "Quản lý kiểu gia công sản phẩm",
     children: [],
   },
   readNodes: [
     {
       id: "ware-manufacturing-process-type-list",
-      name: "Ware Manufacturing Process Type List",
+      name: "Danh sách kiểu gia công sản phẩm",
       href: "/ware-manufacturing-process-type/list",
       children: [],
     },
@@ -344,7 +337,7 @@ const WARE_MANUFACTURING_PROCESS_TYPE_PAGES: SidebarNodeDef = {
   adminNodes: [
     {
       id: "ware-manufacturing-process-type-restore-list",
-      name: "Ware Manufacturing Process Type Restore List",
+      name: "Khôi phục  kiểu gia công sản phẩm đã xóa",
       href: "/ware-manufacturing-process-type/restore-list",
       children: [],
     },
@@ -356,13 +349,13 @@ const WARE_FINISHING_PROCESS_TYPE_PAGES: SidebarNodeDef = {
   privilegePrefix: "production",
   parentNode: {
     id: "ware-finishing-process-type",
-    name: "Ware Finishing Process Type",
+    name: "Quản lý loại quy trình hoàn thiện sản phẩm",
     children: [],
   },
   readNodes: [
     {
       id: "ware-finishing-process-type-list",
-      name: "Ware Finishing Process Type List",
+      name: "Danh sách loại quy trình hoàn thiện sản phẩm",
       href: "/ware-finishing-process-type/list",
       children: [],
     },
@@ -371,7 +364,7 @@ const WARE_FINISHING_PROCESS_TYPE_PAGES: SidebarNodeDef = {
   adminNodes: [
     {
       id: "ware-finishing-process-type-restore-list",
-      name: "Ware Finishing Process Type Restore List",
+      name: "Khôi phục loại quy trình hoàn thiện sản phẩm đã xóa",
       href: "/ware-finishing-process-type/restore-list",
       children: [],
     },
@@ -383,13 +376,13 @@ const PRODUCT_TYPE_PAGES: SidebarNodeDef = {
   privilegePrefix: "production",
   parentNode: {
     id: "product-type",
-    name: "Product Type",
+    name: "Quản lý loại sản phẩm",
     children: [],
   },
   readNodes: [
     {
       id: "product-type-list",
-      name: "Product Type List",
+      name: "Danh sách loại sản phẩm",
       href: "/product-type/list",
       children: [],
     },
@@ -398,7 +391,7 @@ const PRODUCT_TYPE_PAGES: SidebarNodeDef = {
   adminNodes: [
     {
       id: "product-type-restore-list",
-      name: "Product Type Restore List",
+      name: "Khôi phục loại sản phẩm đã xóa",
       href: "/product-type/restore-list",
       children: [],
     },
@@ -409,14 +402,14 @@ const FLUTE_COMBINATION_PAGES: SidebarNodeDef = {
   // TODO: Change this to a more specific prefix
   privilegePrefix: "production",
   parentNode: {
-    id: "flute-combination",
+    id: "Quản lý tổ hợp sóng",
     name: "Flute Combination",
     children: [],
   },
   readNodes: [
     {
       id: "flute-combination-list",
-      name: "Flute Combination List",
+      name: "Danh sách tổ hợp sóng",
       href: "/flute-combination/list",
       children: [],
     },
@@ -425,7 +418,7 @@ const FLUTE_COMBINATION_PAGES: SidebarNodeDef = {
   adminNodes: [
     {
       id: "flute-combination-restore-list",
-      name: "Flute Combination Restore List",
+      name: "Khôi phục tổ hợp sóng đã xóa",
       href: "/flute-combination/restore-list",
       children: [],
     },
@@ -437,19 +430,19 @@ const SEMI_FINISHED_GOOD_PAGES: SidebarNodeDef = {
   privilegePrefix: "warehouse",
   parentNode: {
     id: "semi-finished-good",
-    name: "Semi Finished Good",
+    name: "Kho bán thành phẩm",
     children: [],
   },
   readNodes: [
     {
       id: "semi-finished-good-dashboard",
-      name: "Semi Finished Good Dashboard",
+      name: "Dashboard kho bán thành phẩm",
       href: "/semi-finished-good/dashboard",
       children: [],
     },
     {
       id: "semi-finished-good-list",
-      name: "Semi Finished Good List",
+      name: "Danh sách bán thành phẩm",
       href: "/semi-finished-good/list",
       children: [],
     },
@@ -457,7 +450,7 @@ const SEMI_FINISHED_GOOD_PAGES: SidebarNodeDef = {
   readWriteNodes: [
     {
       id: "semi-finished-good-inventory-audit-list",
-      name: "Semi Finished Good Inventory Audit List",
+      name: "Kiểm kê kho bán thành phẩm",
       href: "/semi-finished-good/inventory-audit-list",
       children: [],
     },
@@ -470,19 +463,19 @@ const FINISHED_GOOD_PAGES: SidebarNodeDef = {
   privilegePrefix: "warehouse",
   parentNode: {
     id: "finished-good",
-    name: "Finished Good",
+    name: "Kho thành phẩm",
     children: [],
   },
   readNodes: [
     {
       id: "finished-good-list",
-      name: "Finished Good List",
+      name: "Danh sách thành phẩm",
       href: "/finished-good/list",
       children: [],
     },
     {
       id: "finished-good-daily-report",
-      name: "Finished Good Daily Report",
+      name: "Báo cáo kho thành phẩm",
       href: "/finished-good/daily-report",
       children: [],
     },
@@ -490,7 +483,7 @@ const FINISHED_GOOD_PAGES: SidebarNodeDef = {
   readWriteNodes: [
     {
       id: "finished-good-inventory-audit-list",
-      name: "Finished Good Inventory Audit List",
+      name: "Kiểm kê kho thành phẩm",
       href: "/finished-good/inventory-audit-list",
       children: [],
     },
@@ -503,13 +496,13 @@ const WARE_PAGES: SidebarNodeDef = {
   privilegePrefix: "production",
   parentNode: {
     id: "ware",
-    name: "Ware",
+    name: "Quản lý mã hàng",
     children: [],
   },
   readNodes: [
     {
       id: "ware-list",
-      name: "Ware List",
+      name: "Danh sách mã hàng",
       href: "/ware",
       children: [],
     },
@@ -518,7 +511,7 @@ const WARE_PAGES: SidebarNodeDef = {
   adminNodes: [
     {
       id: "ware-restore",
-      name: "Restore Ware",
+      name: "Khôi phục mã hàng đã xóa",
       href: "/ware/restore-ware",
       children: [],
     },

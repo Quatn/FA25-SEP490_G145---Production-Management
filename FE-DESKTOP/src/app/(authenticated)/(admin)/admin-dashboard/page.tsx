@@ -1,7 +1,11 @@
 "use client"
-import { Box, Text } from "@chakra-ui/react";
+// import { Box, Text } from "@chakra-ui/react";
+import { redirect, RedirectType } from 'next/navigation'
 
 export default function AdminDashboard() {
+  redirect('/user', RedirectType.replace)
+
+  /*
   return (
     <Box
       m={5}
@@ -16,4 +20,5 @@ export default function AdminDashboard() {
       </Text>
     </Box>
   );
+    */
 }

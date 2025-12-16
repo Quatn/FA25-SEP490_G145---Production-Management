@@ -2,12 +2,12 @@
 
 import Header from "@/components/layout/Header";
 import "./main.css";
-import { Node, Sidebar } from "@/components/layout/Sidebar";
+import { Sidebar } from "@/components/layout/Sidebar";
 import {
-  createTreeCollection,
   Flex,
   GridItem,
   Input,
+  InputGroup,
   SimpleGrid,
   useFilter,
 } from "@chakra-ui/react";
@@ -18,6 +18,7 @@ import DataLoading from "@/components/common/DataLoading";
 import check from "check-types";
 import { getAccessPrivilegeFilteredCollection } from "./sidebar-collection";
 import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { LuSearch } from "react-icons/lu";
 
 const SidebarNav = ({ accessPrivileges }: { accessPrivileges: AnyAccessPrivileges[] }) => {
   const initialCollection = useMemo(() => getAccessPrivilegeFilteredCollection(accessPrivileges), [accessPrivileges])
@@ -42,12 +43,14 @@ const SidebarNav = ({ accessPrivileges }: { accessPrivileges: AnyAccessPrivilege
       bg="colorPalette.subtle"
     >
       <Sidebar.Header>
-        <Input
-          size="sm"
-          placeholder="Search page"
-          onChange={(e) => search(e.target.value)}
-          backgroundColor={"bg"}
-        />
+        <InputGroup startElement={<LuSearch />}>
+          <Input
+            size="sm"
+            placeholder="Tìm trang"
+            onChange={(e) => search(e.target.value)}
+            backgroundColor={"bg"}
+          />
+        </InputGroup>
       </Sidebar.Header>
 
       <Sidebar.Body>

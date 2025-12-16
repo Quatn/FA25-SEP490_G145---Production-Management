@@ -16,22 +16,22 @@ export default function SidebarExpandCollapseButton() {
   return (
     <Box>
       <Button
-        aria-label="Expand all"
+        aria-label="Mở rộng danh sách"
         size={"2xs"}
         colorPalette={"white"}
         onClick={() => tree.expand()}
         hidden={isAllExpanded}
       >
-        Expand all
+        Mở rộng
       </Button>
       <Button
-        aria-label="Collapse all"
+        aria-label="Đóng danh sách"
         size={"2xs"}
         colorPalette={"white"}
         onClick={() => tree.collapse()}
         hidden={!isAllExpanded}
       >
-        Collapse all
+        Đóng
       </Button>
     </Box>
   );
