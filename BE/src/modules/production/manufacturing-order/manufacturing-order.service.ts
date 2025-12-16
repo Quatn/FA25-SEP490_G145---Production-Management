@@ -205,6 +205,7 @@ export class ManufacturingOrderService {
         { $count: "total" },
       ]),
     ]);
+
     const totalItems =
       (countArr[0] as { total: number } | undefined)?.total ?? 0;
 

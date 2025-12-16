@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Group, HStack, Tabs } from "@chakra-ui/react";
+import { Box, Button, Center, Group, HStack, Stack, Tabs, Text } from "@chakra-ui/react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import CreatePageManufacturingOrderTable from "./details-table-tab/Table";
 import MaterialRequirementContainer from "./material-requirement-summary-tab/Container";
@@ -8,6 +8,10 @@ import { useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service
 import { FullDetailManufacturingOrderDTO } from "@/types/DTO/FullDetailManufactureOrder";
 import React, { createContext, Dispatch, useContext, useEffect, useReducer } from "react";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
+import DataLoading from "@/components/common/DataLoading";
+import DataFetchError from "@/components/common/DataFetchError";
+import check from "check-types";
 
 type SelectedOrdersState = {
   selectedManufacturingOrders: Serialized<ManufacturingOrder>[] | undefined
@@ -58,28 +62,36 @@ export function useSelectedOrdersDispatch() {
 }
 
 export default function ManufacturingOrderCreatePageSelectedOrdersDetails() {
-  // const { groupType, selectedPOIsIds } = useManufacturingOrderCreatePageState();
-  // const dispatch = useManufacturingOrderCreatePageDispatch();
+  const { useSelector } = ManufacturingOrderCreatePageReducerStore;
+  const selectedPOIsIds = useSelector(s => s.selectedPOIsIds);
 
-  // const {
-  //   data: fullDetailMOsResponse,
-  //   error: fetchError,
-  //   isLoading: isFetchingList,
-  // } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
-  //   ids: selectedPOIsIds,
-  // });
+  const {
+    data: fullDetailMOsResponse,
+    error: fetchError,
+    isLoading: isFetchingList,
+  } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
+    ids: selectedPOIsIds,
+  });
 
-  // const moPaginatedList = fullDetailMOsResponse?.data;
+  if (isFetchingList) {
+    return <DataLoading />
+  }
 
-  // const [state, selectedOrdersDispatch] = useReducer(reducer, initialState);
+  if (fetchError) {
+    return <DataFetchError />
+  }
 
-  // useEffect(() => {
-  // selectedOrdersDispatch({ type: "SET_ORDERS", payload: moPaginatedList })
-  // }, [moPaginatedList])
-  // 
-  // <OrdersStateContext.Provider value={{ selectedManufacturingOrders: moPaginatedList }}>
-  // <OrdersDispatchContext.Provider value={selectedOrdersDispatch}>
-
+  if (!check.greater(fullDetailMOsResponse?.data?.length as number, 0)) {
+    return (
+      <Center>
+        <Box bgColor={"colorPalette.muted"} my={5} px={3} py={2} rounded={"md"} maxW={"20rem"}>
+          <Stack alignItems={"center"}>
+            <Text textWrap={"wrap"} textAlign={"center"}>Chọn PO Item bên trên để xem trước các lệnh sẽ được tạo</Text>
+          </Stack>
+        </Box>
+      </Center>
+    )
+  }
 
   return (
     <Tabs.Root defaultValue="members">
