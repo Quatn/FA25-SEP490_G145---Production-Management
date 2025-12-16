@@ -1,18 +1,37 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { PaperTypeService } from './paper-type.service';
 import { CreatePaperTypeRequestDto } from './dto/create-paper-type-request.dto';
 import { UpdatePaperTypeRequestDto } from './dto/update-paper-type-request.dto';
 import { PaperType, PaperTypeDocument } from '../schemas/paper-type.schema';
 import { BaseResponse } from '@/common/dto/response.dto';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
 import { PaperColor } from '../schemas/paper-color.schema';
+import { PrivilegedJwtAuthGuard } from '@/common/guards/privileged-jwt-auth.guard';
+import { paperTypeAdminPrivileges, paperTypeCreatePrivileges, paperTypeGetPrivileges, paperTypeUpdatePrivileges } from './paper-type-module-access-privileges';
 
+const PaperTypeGetRequestGuard = PrivilegedJwtAuthGuard({
+    requiredPrivileges: paperTypeGetPrivileges,
+});
+
+const PaperTypeCreateRequestGuard = PrivilegedJwtAuthGuard({
+    requiredPrivileges: paperTypeCreatePrivileges,
+});
+
+const PaperTypeUpdateRequestGuard = PrivilegedJwtAuthGuard({
+    requiredPrivileges: paperTypeUpdatePrivileges,
+});
+
+const PaperTypeAdminRequestGuard = PrivilegedJwtAuthGuard({
+    requiredPrivileges: paperTypeAdminPrivileges,
+});
+
+@ApiBearerAuth("access-token")
 @Controller('paper-type')
 export class PaperTypeController {
     constructor(private readonly ptService: PaperTypeService) { }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperTypeGetRequestGuard)
     @Get("list")
     @ApiOperation({ summary: "List paginated paper types" })
     async findPaginated(
@@ -28,7 +47,7 @@ export class PaperTypeController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperTypeGetRequestGuard)
     @Get("list-all")
     @ApiOperation({ summary: "List paper types" })
     async findAll(): Promise<BaseResponse<PaperTypeDocument[]>> {
@@ -40,7 +59,7 @@ export class PaperTypeController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperTypeAdminRequestGuard)
     @Get('list-deleted')
     @ApiOperation({ summary: 'List deleted paper types' })
     async findDeleted(
@@ -55,7 +74,7 @@ export class PaperTypeController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperTypeGetRequestGuard)
     @Get("detail/:id")
     @ApiOperation({ summary: "Paper type detail" })
     async findOne(@Param("id") id: string): Promise<BaseResponse<PaperTypeDocument>> {
@@ -67,7 +86,7 @@ export class PaperTypeController {
         }
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperTypeCreateRequestGuard)
     @Post("create")
     @ApiOperation({ summary: "Create new paper type" })
     async create(
@@ -88,7 +107,7 @@ export class PaperTypeController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperTypeUpdateRequestGuard)
     @Patch("update/:id")
     @ApiOperation({ summary: "Update paper Type" })
     async update(
@@ -109,7 +128,7 @@ export class PaperTypeController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperTypeUpdateRequestGuard)
     @Delete("delete-soft/:id")
     @ApiOperation({ summary: "Soft delete paper type" })
     async softDelete(
@@ -123,7 +142,7 @@ export class PaperTypeController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperTypeAdminRequestGuard)
     @Patch("restore/:id")
     @ApiOperation({ summary: "Restore paper type" })
     async restore(
@@ -137,7 +156,7 @@ export class PaperTypeController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperTypeAdminRequestGuard)
     @Delete("delete-hard/:id")
     @ApiOperation({ summary: "Hard delete paper type" })
     async hardDelete(

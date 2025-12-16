@@ -1,21 +1,41 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
 import { OrderFinishingProcessService } from './order-finishing-process.service';
 import { CreateOrderFinishingProcessDto } from './dto/create-order-finishing-process.dto';
 import { UpdateOrderFinishingProcessDto } from './dto/update-order-finishing-process.dto';
 import { GetOrderFinishingProcessDto } from './dto/get-order-finishing-process.dto';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
 import { OrderFinishingProcess, OrderFinishingProcessDocument } from '../schemas/order-finishing-process.schema';
 import { FindManyOrderFinishingProcessesByManufacturingOrderIdsRequestDto } from './dto/find-many-by-manufacturing-order-ids.dto';
 import { BulkUpdateOrderFinishingProcessDto } from './dto/bulk-update-order-finishing-process.dto';
+import { PrivilegedJwtAuthGuard } from '@/common/guards/privileged-jwt-auth.guard';
+import { orderFinishingProcessAdminPrivileges, orderFinishingProcessCreatePrivileges, orderFinishingProcessGetPrivileges, orderFinishingProcessUpdatePrivileges } from './order-finishing-process-module-access-privileges';
 
+const OrderFinishingProcessGetRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: orderFinishingProcessGetPrivileges,
+});
+
+const OrderFinishingProcessCreateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: orderFinishingProcessCreatePrivileges,
+});
+
+const OrderFinishingProcessUpdateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: orderFinishingProcessUpdatePrivileges,
+});
+
+const OrderFinishingProcessAdminRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: orderFinishingProcessAdminPrivileges,
+});
+
+@ApiBearerAuth("access-token")
 @Controller('order-finishing-process')
 export class OrderFinishingProcessController {
   constructor(
     private readonly service: OrderFinishingProcessService,
   ) { }
 
+  @UseGuards(OrderFinishingProcessGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated finishing processes' })
   async findPaginated(
@@ -30,7 +50,7 @@ export class OrderFinishingProcessController {
     };
   }
 
-
+  @UseGuards(OrderFinishingProcessGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List all finishing processes' })
   async findAll(): Promise<BaseResponse<OrderFinishingProcessDocument[]>> {
@@ -43,6 +63,7 @@ export class OrderFinishingProcessController {
     };
   }
 
+  @UseGuards(OrderFinishingProcessGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Get finishing process detail' })
   async findOne(
@@ -57,6 +78,7 @@ export class OrderFinishingProcessController {
     };
   }
 
+  @UseGuards(OrderFinishingProcessCreateRequestGuard)
   @Post('create')
   @ApiOperation({ summary: 'Create new finishing process' })
   async create(
@@ -71,6 +93,7 @@ export class OrderFinishingProcessController {
     };
   }
 
+  @UseGuards(OrderFinishingProcessUpdateRequestGuard)
   @Patch('update/:id')
   @ApiOperation({ summary: 'Update finishing process' })
   async update(
@@ -86,6 +109,7 @@ export class OrderFinishingProcessController {
     };
   }
 
+  @UseGuards(OrderFinishingProcessUpdateRequestGuard)
   @Patch('update-many')
   @ApiOperation({ summary: 'Update many finishing processes' })
   async updateMany(
@@ -103,6 +127,7 @@ export class OrderFinishingProcessController {
     };
   }
 
+  @UseGuards(OrderFinishingProcessUpdateRequestGuard)
   @Delete('delete-soft/:id')
   @ApiOperation({ summary: 'Soft delete finishing process' })
   async softDelete(
@@ -117,6 +142,7 @@ export class OrderFinishingProcessController {
     };
   }
 
+  @UseGuards(OrderFinishingProcessAdminRequestGuard)
   @Patch('restore/:id')
   @ApiOperation({ summary: 'Restore soft-deleted finishing process' })
   async restore(
@@ -131,6 +157,7 @@ export class OrderFinishingProcessController {
     };
   }
 
+  @UseGuards(OrderFinishingProcessAdminRequestGuard)
   @Delete('delete-hard/:id')
   @ApiOperation({ summary: 'Hard delete finishing process' })
   async hardDelete(
@@ -145,7 +172,7 @@ export class OrderFinishingProcessController {
     };
   }
 
-
+  @UseGuards(OrderFinishingProcessGetRequestGuard)
   @Get("find-by-manufacturing-order-id")
   @ApiOperation({ summary: "Find all order finishing process that have which have mo ids in the query" })
   async findByManufacturingOrderId(
