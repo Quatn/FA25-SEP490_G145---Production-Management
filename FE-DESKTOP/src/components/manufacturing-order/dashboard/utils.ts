@@ -15,7 +15,7 @@ const monthCollection = createListCollection({
   items: monthItemsArray
 })
 
-export const ManufacturingOrderMonthlyProductionBarChartCommons = {
+export const ManufacturingOrderDashBoardUtils = {
   monthValueArray,
   monthItemsArray,
   monthCollection,

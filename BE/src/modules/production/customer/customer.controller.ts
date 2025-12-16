@@ -1,17 +1,37 @@
 // src/modules/production/customer/customer.controller.ts
-import { Controller, Get, Query, Param, Post, Body, Patch, Delete } from '@nestjs/common';
+import { Controller, Get, Query, Param, Post, Body, Patch, Delete, UseGuards } from '@nestjs/common';
 import { CustomerService } from './customer.service';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { Customer, CustomerDocument } from '../schemas/customer.schema';
 import { PaginatedList } from '@/common/dto/paginated-list.dto';
 import { CreateCustomerRequestDto } from './dto/create-customer-request.dto';
 import { UpdateCustomerRequestDto } from './dto/update-customer-request.dto';
+import { PrivilegedJwtAuthGuard } from '@/common/guards/privileged-jwt-auth.guard';
+import { customerAdminPrivileges, customerCreatePrivileges, customerGetPrivileges, customerUpdatePrivileges } from './customer-module-access-privileges';
 
+const CustomerGetRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: customerGetPrivileges,
+});
+
+const CustomerCreateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: customerCreatePrivileges,
+});
+
+const CustomerUpdateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: customerUpdatePrivileges,
+});
+
+const CustomerAdminRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: customerAdminPrivileges,
+});
+
+@ApiBearerAuth("access-token")
 @Controller('customer')
 export class CustomerController {
   constructor(private readonly service: CustomerService) { }
 
+  @UseGuards(CustomerGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List all customers' })
   async findAll(): Promise<BaseResponse<Customer[]>> {
@@ -23,7 +43,7 @@ export class CustomerController {
     };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(CustomerGetRequestGuard)
   @Get("list")
   @ApiOperation({ summary: "List paginated customers" })
   async findPaginated(
@@ -40,7 +60,7 @@ export class CustomerController {
   }
 
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(CustomerAdminRequestGuard)
   @Get('list-deleted')
   @ApiOperation({ summary: 'List deleted customer' })
   async findDeleted(
@@ -55,7 +75,7 @@ export class CustomerController {
     };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(CustomerGetRequestGuard)
   @Get("detail/:id")
   @ApiOperation({ summary: "Customer detail" })
   async findOne(@Param("id") id: string): Promise<BaseResponse<CustomerDocument>> {
@@ -67,7 +87,7 @@ export class CustomerController {
     }
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(CustomerCreateRequestGuard)
   @Post("create")
   @ApiOperation({ summary: "Create new customer" })
   async create(
@@ -81,7 +101,7 @@ export class CustomerController {
     };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(CustomerUpdateRequestGuard)
   @Patch("update/:id")
   @ApiOperation({ summary: "Update customer" })
   async update(
@@ -96,7 +116,8 @@ export class CustomerController {
     };
   }
 
-  // @UseGuards(JwtAuthGuard)
+
+  @UseGuards(CustomerUpdateRequestGuard)
   @Delete("delete-soft/:id")
   @ApiOperation({ summary: "Soft delete customer" })
   async softDelete(
@@ -110,7 +131,7 @@ export class CustomerController {
     };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(CustomerAdminRequestGuard)
   @Patch("restore/:id")
   @ApiOperation({ summary: "Restore customer" })
   async restore(
@@ -124,7 +145,7 @@ export class CustomerController {
     };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(CustomerAdminRequestGuard)
   @Delete("delete-hard/:id")
   @ApiOperation({ summary: "Hard delete customer" })
   async hardDelete(

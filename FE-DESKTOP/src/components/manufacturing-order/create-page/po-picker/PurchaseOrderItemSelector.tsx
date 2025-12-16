@@ -20,13 +20,13 @@ import { CiWarning } from "react-icons/ci";
 import PurchaseOrderItemSelectorItem from "./PurchaseOrderItemSelectorItem";
 import Link from "next/link";
 import { RiFolderOpenLine } from "react-icons/ri";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import DataFetchError from "@/components/common/DataFetchError";
 import { LuArchiveX } from "react-icons/lu";
 
 export default function PurchaseOrderItemSelector() {
   const { useSelector, useDispatch } = ManufacturingOrderCreatePageReducerStore;
-  // const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const page = useSelector(s => s.page);
   const limit = useSelector(s => s.limit);
   const search = useSelector(s => s.search);
@@ -61,6 +61,10 @@ export default function PurchaseOrderItemSelector() {
         };
       });
     }, [orderPaginatedList]);
+
+  useEffect(() => {
+    dispatch({ type: "SET_TOTAL_ITEMS", payload: orderPaginatedList?.totalItems ?? 0 })
+  }, [dispatch, orderPaginatedList?.totalItems])
 
   if (isFetchingList) {
     return <Skeleton width={"full"} height={"full"} />;

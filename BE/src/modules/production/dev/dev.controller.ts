@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from "@nestjs/common";
+import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
 import { ApiOperation } from "@nestjs/swagger";
 import {
   ManufacturingOrder,
@@ -16,7 +16,9 @@ import { Product } from "../schemas/product.schema";
 import { Ware } from "../schemas/ware.schema";
 import { SubPurchaseOrder } from "../schemas/sub-purchase-order.schema";
 import { PurchaseOrderItem } from "../schemas/purchase-order-item.schema";
+import { DevOnlyGuard } from "@/common/guards/dev.guard";
 
+@UseGuards(DevOnlyGuard)
 @Controller("production-dev")
 export class ProductionDevController {
   constructor(private service: ProductionDevService) { }

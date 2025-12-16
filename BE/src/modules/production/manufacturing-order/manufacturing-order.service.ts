@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import mongoose, { Model, MongooseError, Types } from "mongoose";
+import mongoose, { Model, MongooseError, PipelineStage, Types } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import {
   CorrugatorProcess,
@@ -19,7 +19,11 @@ import {
   UpdateManufacturingOrderRequestDto,
 } from "./dto/update-order-request.dto";
 import { PaginatedList } from "@/common/dto/paginated-list.dto";
-import { FullDetailManufacturingOrderDto } from "./dto/full-details-orders.dto";
+import {
+  FullDetailManufacturingOrderDto,
+  PopulatedPurchaseOrderItem,
+  PopulatedWare,
+} from "./dto/full-details-orders.dto";
 import {
   PurchaseOrderItem,
   PurchaseOrderItemDocument,
@@ -53,6 +57,8 @@ import { UnpopulatedFieldError } from "@/common/errors/unpopulated-field.error";
 import { ProductionRecalculateService } from "../common/recalculate/recalculate.service";
 import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type.schema";
 import { queryAllByPaperTypesUsagePipeline } from "./aggregate-pipes/query-all-by-paper-types-usage";
+import { recalculateWare } from "../ware/business-logics/recalculate-ware";
+import { recalculatePurchaseOrderItem } from "../purchase-order-item/business-logics/recalculate-poi";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -152,7 +158,11 @@ export class ManufacturingOrderService {
       ],
     };
 
-    return await this.manufacturingOrderModel.find().populate(populate);
+    return await this.manufacturingOrderModel
+      .find({
+        "corrugatorProcess.manufacturedAmount": { $gt: 0 },
+      })
+      .populate(populate);
   }
 
   async getLastOrder() {
@@ -172,10 +182,12 @@ export class ManufacturingOrderService {
     page,
     limit,
     filter = {},
+    sort,
   }: {
     page: number;
     limit: number;
-    filter?: object;
+    filter?: Record<string, unknown>;
+    sort?: PipelineStage[];
   }): Promise<PaginatedList<FullDetailManufacturingOrderDto>> {
     const skip = (page - 1) * limit;
 
@@ -183,6 +195,7 @@ export class ManufacturingOrderService {
       filter,
       skip,
       limit,
+      sort,
     });
 
     const [data, countArr] = await Promise.all([
@@ -192,6 +205,7 @@ export class ManufacturingOrderService {
         { $count: "total" },
       ]),
     ]);
+
     const totalItems =
       (countArr[0] as { total: number } | undefined)?.total ?? 0;
 
@@ -247,7 +261,10 @@ export class ManufacturingOrderService {
     const mos: FullDetailManufacturingOrderDto[] = purchaseOrderItems.map(
       (poi, index): FullDetailManufacturingOrderDto => ({
         code: codeGenerator.getCode(index),
-        purchaseOrderItem: poi,
+        purchaseOrderItem: recalculatePurchaseOrderItem({
+          ...poi,
+          ware: recalculateWare(poi.ware) as PopulatedWare,
+        }) as PopulatedPurchaseOrderItem,
         approvalStatus: ManufacturingOrderApprovalStatus.Draft,
         overallStatus: OrderStatus.NOTSTARTED,
         corrugatorProcess: {
@@ -288,7 +305,10 @@ export class ManufacturingOrderService {
       }),
     );
 
-    return mos;
+    return mos.map(
+      (mo) =>
+        recalculateManufacturingOrder(mo) as FullDetailManufacturingOrderDto,
+    );
   }
 
   // This might not work, just use createMany for everything
@@ -473,6 +493,8 @@ export class ManufacturingOrderService {
       })
       .populate(populate);
 
+    const accRes: { updatedAmount: number; code: string }[] = [];
+
     for (const dto of dtos) {
       const doc = items.find((x) => x.id === dto.id);
       if (!doc) continue;
@@ -488,7 +510,10 @@ export class ManufacturingOrderService {
         poi.subPurchaseOrder.purchaseOrder.customer.code,
       );
 
-      if (dto.approvalStatus === ManufacturingOrderApprovalStatus.Approved) {
+      if (
+        doc.approvalStatus !== dto.approvalStatus &&
+        dto.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+      ) {
         const currentCount =
           await this.orderFinishingProcessModel.countDocuments({
             manufacturingOrder: doc._id,
@@ -567,6 +592,34 @@ export class ManufacturingOrderService {
 
         doc.set("corrugatorProcess", dto.corrugatorProcess);
       }
+
+      /*
+      if (doc.approvalStatus !== ManufacturingOrderApprovalStatus.Draft) {
+        let updated = false;
+
+        if (dto.manufacturingDirective) {
+          doc.manufacturingDirective = dto.manufacturingDirective;
+          updated = true;
+        }
+
+        if (dto.note) {
+          doc.note = dto.note;
+          updated = true;
+        }
+
+        if (updated) {
+          const res = await doc.save();
+
+          accRes.push({
+            updatedAmount: 1,
+            code: res.code,
+          });
+        }
+        continue;
+      }
+      */
+
+
       const { corrugatorProcess: _, ...dtoWOCorruProgress } = dto;
       Object.assign(doc, dtoWOCorruProgress);
 
@@ -577,14 +630,18 @@ export class ManufacturingOrderService {
         },
       );
 
-      await doc.save();
+      const res = await doc.save();
+      accRes.push({
+        updatedAmount: 1,
+        code: res.code,
+      });
     }
 
     return {
       requestedAmount: dtos.length,
-      patchedAmount: items.length,
+      patchedAmount: accRes.reduce((acc, i) => acc + i.updatedAmount, 0),
       echo: {
-        codes: items.map((item) => item.code),
+        codes: accRes.map((item) => item.code),
       },
     };
   }
@@ -656,10 +713,10 @@ export class ManufacturingOrderService {
     paperTypes: string[];
   }): Promise<FullDetailManufacturingOrderDto[]> {
     const pipeline = queryAllByPaperTypesUsagePipeline({
-      paperTypes
+      paperTypes,
     });
 
-    const data = await this.manufacturingOrderModel.aggregate([...pipeline])
+    const data = await this.manufacturingOrderModel.aggregate([...pipeline]);
 
     const moDocs = (data as ManufacturingOrderDocument[]).map((mo) =>
       this.manufacturingOrderModel.hydrate(mo),

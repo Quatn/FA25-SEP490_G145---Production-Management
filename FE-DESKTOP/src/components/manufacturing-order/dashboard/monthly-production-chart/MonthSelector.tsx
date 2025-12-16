@@ -1,14 +1,14 @@
 "use client"
 
 import { Portal, Select } from "@chakra-ui/react"
-import { ManufacturingOrderMonthlyProductionBarChartCommons } from "./common"
 import { ManufacturingOrderMonthlyProductionChartReducerStore } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyProductionChartContext"
 import check from "check-types"
+import { ManufacturingOrderDashBoardUtils } from "../utils"
 
-const { monthValueArray, monthCollection } = ManufacturingOrderMonthlyProductionBarChartCommons
+const { monthValueArray, monthCollection } = ManufacturingOrderDashBoardUtils
 
 
-export const ManufacturingOrderMonthlyProductionBarChartMonthSelector = () => {
+export default function ManufacturingOrderMonthlyProductionBarChartMonthSelector() {
   const { useSelector, useDispatch } = ManufacturingOrderMonthlyProductionChartReducerStore
   const dispatch = useDispatch()
   const month = useSelector(s => s.month)

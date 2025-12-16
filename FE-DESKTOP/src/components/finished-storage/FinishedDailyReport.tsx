@@ -7,6 +7,7 @@ import FinishedDailyReportTable from "./FinishedDailyReportTable";
 import { formatDateForInput, minDate } from "@/utils/dateUtils";
 import { exportFinishedDailyReport } from "./FinishedExportExcelButton";
 import { FaFileExcel } from "react-icons/fa";
+import { toaster } from "@/components/ui/toaster";
 
 
 const FinishedDailyReport: React.FC = () => {
@@ -51,6 +52,10 @@ const FinishedDailyReport: React.FC = () => {
     const exportReport = exportData?.data ?? null;
     const dailyReport = dailyReportData?.data ?? null;
 
+    const showInvalidDateToast = () => {
+        toaster.create({ title: "Nhắc nhở", description: "Không được phép xóa ngày", type: "error", closable: true });
+    }
+
     if (importIsLoading || exportIsLoading || dailyReportIsLoading) return <Spinner />;
     if (importError || exportError || dailyReportError) return <Box>Không thể tải dữ liệu</Box>;
 
@@ -76,7 +81,10 @@ const FinishedDailyReport: React.FC = () => {
                         onChange={(e) => {
                             setPage(1);
                             setSearch('');
-                            setStartDate(e.target.value);
+                            if (e.target.value) {
+                                setStartDate(e.target.value);
+                            } else showInvalidDateToast();
+
                         }}
                         max={minDate(localDate, endDate)}
                         width="200px"
@@ -90,7 +98,9 @@ const FinishedDailyReport: React.FC = () => {
                         onChange={(e) => {
                             setPage(1);
                             setSearch('');
-                            setEndDate(e.target.value);
+                            if (e.target.value) {
+                                setEndDate(e.target.value);
+                            } else showInvalidDateToast();
                         }}
                         min={startDate}
                         max={localDate}
@@ -138,6 +148,8 @@ const FinishedDailyReport: React.FC = () => {
                             search={search}
                             limit={importReport.limit}
                             page={importReport.page}
+                            startDate={startDate}
+                            endDate={endDate}
                             totalPages={importReport.totalPages}
                             handlePageChange={setPage}
                             dailyItems={importReport.data}
@@ -151,6 +163,8 @@ const FinishedDailyReport: React.FC = () => {
                             search={search}
                             limit={exportReport.limit}
                             page={exportReport.page}
+                            startDate={startDate}
+                            endDate={endDate}
                             totalPages={exportReport.totalPages}
                             handlePageChange={setPage}
                             dailyItems={exportReport.data}

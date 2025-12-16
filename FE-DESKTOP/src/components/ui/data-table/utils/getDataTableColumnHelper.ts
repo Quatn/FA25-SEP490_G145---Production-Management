@@ -1,5 +1,5 @@
 import { CellContext, ColumnDef, ColumnDefTemplate, createColumnHelper } from "@tanstack/react-table";
-import { dataTableCells, DataTableCellType } from "../Cell";
+import { CellOptions, dataTableCells, DataTableCellType } from "../Cell";
 import { DataTableEditableCellValueTypes } from "../types";
 import { JSX } from "react";
 import { ListCollection } from "@chakra-ui/react";
@@ -8,6 +8,7 @@ import check from "check-types";
 export type DataTableAccessorColumnOptions<T> = ColumnDef<T> & {
   cellType?: DataTableCellType,
   selectCollection?: ListCollection<{ label: string, value: string }>
+  options?: CellOptions<T>,
 }
 
 export function getDataTableColumnHelper<TData>() {
@@ -19,18 +20,21 @@ export function getDataTableColumnHelper<TData>() {
     defineDataTableAccessorColumn: (o: DataTableAccessorColumnOptions<RowData>): ColumnDef<RowData> => {
       let cell = (context: CellContext<RowData, DataTableEditableCellValueTypes>) => dataTableCells.readonly({
         context,
+        options: o.options
       })
 
       switch (o.cellType) {
         case DataTableCellType.Highlight:
           cell = (context: CellContext<RowData, DataTableEditableCellValueTypes>) => dataTableCells.highlight({
             context,
+            options: o.options
           })
           break;
 
         case DataTableCellType.Text:
           cell = (context: CellContext<RowData, DataTableEditableCellValueTypes>) => dataTableCells.text({
             context,
+            options: o.options
           }) as JSX.Element
           break;
 
@@ -41,18 +45,21 @@ export function getDataTableColumnHelper<TData>() {
           cell = (context: CellContext<RowData, DataTableEditableCellValueTypes>) => dataTableCells.select({
             context,
             selectCollection: o.selectCollection,
+            options: o.options
           }) as JSX.Element
           break;
 
         case DataTableCellType.Date:
           cell = (context: CellContext<RowData, DataTableEditableCellValueTypes>) => dataTableCells.date({
             context,
+            options: o.options
           }) as JSX.Element
           break;
 
         case DataTableCellType.Number:
           cell = (context: CellContext<RowData, DataTableEditableCellValueTypes>) => dataTableCells.number({
             context,
+            options: o.options
           }) as JSX.Element
           break;
       }

@@ -97,34 +97,7 @@ export default function POPieChart(): JSX.Element {
   const PIE_OFFSET_PX = 100;
 
   return (
-    <Box p={2} rounded="sm" position="relative" height={`${CARD_HEIGHT_PX}px`}>
-      <Box position="absolute" top={6} right={6} zIndex={2}>
-        <ChakraLink
-          href="/purchase-order"
-          aria-label="Open purchase order list"
-          title="Open purchase order list"
-          _hover={{ textDecoration: "none" }}
-        >
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 6,
-              borderRadius: 6,
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              color: iconColor,
-              fontSize: 16,
-              lineHeight: 0,
-            }}
-          >
-            <FiExternalLink />
-          </span>
-        </ChakraLink>
-      </Box>
-
+    <Box p={2} rounded="sm" position="relative" height={"full"}>
       {isLoading ? (
         <Center py={8} h="100%">
           <Spinner />

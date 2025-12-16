@@ -39,7 +39,7 @@ export default function PurchaseOrderCreatePage() {
                 maxH={"95vh"}
               >
                 <Text fontWeight={"semibold"} color={"fg"} mb={2}>
-                  PO Picker
+                  Chọn lệnh
                 </Text>
                 <Box mb={2}>
                   <CreatePage.SearchBar />
@@ -48,6 +48,8 @@ export default function PurchaseOrderCreatePage() {
                 <Box flexGrow={1} overflowY={"auto"}>
                   <CreatePage.ItemSelector />
                 </Box>
+
+                <CreatePage.OrderPickerPagination />
               </Stack>
             </Box>
 

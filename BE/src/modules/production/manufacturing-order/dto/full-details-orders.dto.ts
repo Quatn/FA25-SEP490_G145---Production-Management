@@ -12,6 +12,7 @@ import { WareFinishingProcessType } from "../../schemas/ware-finishing-process-t
 import { WareManufacturingProcessType } from "../../schemas/ware-manufacturing-process-type.schema";
 import { PrintColor } from "../../schemas/print-color.schema";
 import { FinishedGood } from "@/modules/warehouse/schemas/finished-good.schema";
+import { OrderFinishingProcess } from "../../schemas/order-finishing-process.schema";
 
 // Change the ref fields from id or object (unpopulated or populated) to just object since you are supposed to populate all of the full detail dto's fields
 class PopulatedPurchaseOrder extends PurchaseOrder {
@@ -30,7 +31,7 @@ class PopulatedPurchaseOrder extends PurchaseOrder {
   }
 }
 
-class PopulatedWare extends Ware {
+export class PopulatedWare extends Ware {
   @ApiProperty({
     type: FluteCombination,
     description: "Populated fluteCombination",
@@ -105,7 +106,7 @@ class PopulatedSubPurchaseOrder extends SubPurchaseOrder {
   }
 }
 
-class PopulatedPurchaseOrderItem extends PurchaseOrderItem {
+export class PopulatedPurchaseOrderItem extends PurchaseOrderItem {
   @ApiProperty({
     type: PopulatedSubPurchaseOrder,
     description: "Populated subPurchaseOrder",
@@ -151,6 +152,12 @@ export class FullDetailManufacturingOrderDto extends ManufacturingOrder {
     description: "Populated FinishedGood record",
   })
   declare finishedGoodRecord?: FinishedGood;
+
+  @ApiProperty({
+    type: [OrderFinishingProcess],
+    description: "OrderFinishingProcess records",
+  })
+  declare finishingProcesses?: OrderFinishingProcess[];
 
   constructor(
     order: ManufacturingOrder & { finishedGoodRecord?: FinishedGood },

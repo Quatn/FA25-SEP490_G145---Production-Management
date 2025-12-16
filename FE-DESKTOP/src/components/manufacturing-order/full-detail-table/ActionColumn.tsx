@@ -7,7 +7,6 @@ import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { useDeleteManufacturingOrderMutation, useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
-import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import { Box, Button, Group, Popover, Portal, Stack } from "@chakra-ui/react"
@@ -16,7 +15,7 @@ import { BiSolidDownArrow } from "react-icons/bi"
 
 export type ManufacturingOrderTableActionColumnProps = {
   rowId: string,
-  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined,
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder> } | undefined,
   isEdited: boolean,
   meta?: DataTableMeta
 }

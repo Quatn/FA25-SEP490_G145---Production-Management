@@ -61,14 +61,9 @@ export function hourGap(date?: string): number {
   const created = new Date(date);
   if (isNaN(created.getTime())) return 0;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const createdDay = new Date(created);
-  createdDay.setHours(0, 0, 0, 0);
-
-  const diffMs = today.getTime() - createdDay.getTime();
-  return Math.floor(diffMs / (1000 * 60 * 60));
+  const diffMs = Date.now() - created.getTime();
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  return Math.max(0, hours);
 }
 
 export function formatDateToDDMMYYYY(date: Date | string | null | undefined) {
@@ -87,6 +82,26 @@ export function formatDateToDDMMYYYY(date: Date | string | null | undefined) {
   const year = d.getFullYear();
 
   return `${day}/${month}/${year}`;
+}
+
+export function formatDateTommhhDDMMYYYY(date: Date | string | null | undefined) {
+  if (!check.assigned(date)) {
+    return "";
+  }
+
+  const d = check.date(date) ? date : new Date(date as string);
+
+  if (!check.date(d)) {
+    return "";
+  }
+
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+
+  return `${hours}:${minutes} ${day}/${month}/${year}`;
 }
 
 export function formatDateToYYYYMMDD(date: Date | string | null | undefined) {

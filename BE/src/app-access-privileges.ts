@@ -12,4 +12,4 @@ export const systemUpdatePrivileges = [
   SystemAccessPrivilege.Admin,
   SystemAccessPrivilege.ReadWrite,
 ];
-export const systemHardDeletePrivileges = [SystemAccessPrivilege.Admin];
+export const systemAdminPrivileges = [SystemAccessPrivilege.Admin];

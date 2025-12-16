@@ -9,15 +9,16 @@ import { createListCollection } from "@chakra-ui/react";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import ManufacturingOrderTableActionColumn from "./ActionColumn";
-import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
 import { manufacturingOrderComponentUtils as utils } from "../utils"
+import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 
-const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, getOrderStatus, OrderStatusNameMap } = utils
+const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, OrderStatusNameMap, OrderApprovalStatusNameMap } = utils
 
 export type TruncatedManufacturingOrderTableData = {
   _id: string,
   code: string,
   manufacturingDirective: ManufacturingOrderDirectives | null,
+  approvalStatus: ManufacturingOrderApprovalStatus,
   customerCode: string,
   wareCode: string,
   purchaseOrderCode: string,
@@ -39,15 +40,14 @@ export type TruncatedManufacturingOrderTableData = {
   finishingProcesses: Omit<WareFinishingProcessType, "createdAt" | "updatedAt">[],
   wareNote: string,
   note: string,
-  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined,
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder> } | undefined,
   purchaseOrderItemId: string,
   orderStatusDisplay: string,
 }
 
 export const convertSerializedMOToTruncatedManufacturingOrderTableData = (
   mo: Serialized<ManufacturingOrder>,
-  processes: Serialized<OrderFinishingProcess>[],
-  getOrder: (id: string) => { order: Serialized<ManufacturingOrder>, processes: Serialized<OrderFinishingProcess>[] } | undefined): TruncatedManufacturingOrderTableData => {
+  getOrder: (id: string) => { order: Serialized<ManufacturingOrder> } | undefined): TruncatedManufacturingOrderTableData => {
   const customer = getPopulatedCustomer(mo)
   const ware = getPopulatedWare(mo)
   const subPo = getPopulatedSubPo(mo)
@@ -72,12 +72,11 @@ export const convertSerializedMOToTruncatedManufacturingOrderTableData = (
     )
   }
 
-  const orderStatus = getOrderStatus(mo, processes)
-
   return {
     _id: mo._id,
     code: mo.code,
     manufacturingDirective: mo.manufacturingDirective ?? null,
+    approvalStatus: mo.approvalStatus,
     customerCode: customer?.code ?? "",
     wareCode: ware?.code ?? "",
     purchaseOrderCode: po?.code ?? "",
@@ -100,7 +99,7 @@ export const convertSerializedMOToTruncatedManufacturingOrderTableData = (
     note: mo.note,
     getOrder,
     purchaseOrderItemId: poi._id,
-    orderStatusDisplay: orderStatus ? OrderStatusNameMap[orderStatus] : ""
+    orderStatusDisplay: mo.operativeStatus ? OrderStatusNameMap[mo.operativeStatus] : ""
   }
 }
 
@@ -126,6 +125,12 @@ const corrugatorLinesCol = createListCollection({
   items: corrugatorLines,
 })
 
+const approvalStatusesCol = createListCollection({
+  items: Object.keys(OrderApprovalStatusNameMap).map((k) => ({
+    label: OrderApprovalStatusNameMap[k as ManufacturingOrderApprovalStatus], value: k
+  }))
+})
+
 const colSize = {
   sm: {
     minSize: 50,
@@ -149,6 +154,7 @@ export const truncatedManufacturingOrderTableMergedHeaders = [
   ["code", "1_code_code"],
   ["customerCode", "1_customerCode_customerCode"],
   ["wareCode", "1_wareCode_wareCode"],
+  ["approvalStatus", "1_approvalStatus_approvalStatus"],
   ["purchaseOrderCode", "1_purchaseOrderCode_purchaseOrderCode"],
   ["orderStatusDisplay", "1_orderStatusDisplay_orderStatusDisplay"],
   ["fluteCombinationCode", "1_fluteCombination_fluteCombination"],
@@ -213,6 +219,19 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
   }),
 
   columnHelper.defineDataTableAccessorColumn({
+    id: "approvalStatus",
+    accessorKey: "approvalStatus",
+    header: "Trạng thái duyệt",
+    enablePinning: true,
+    cellType: DataTableCellType.Select,
+    selectCollection: approvalStatusesCol,
+    options: {
+      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+    },
+    ...colSize.md,
+  }),
+
+  columnHelper.defineDataTableAccessorColumn({
     id: "orderStatusDisplay",
     accessorKey: "orderStatusDisplay",
     header: "Trạng thái chạy",
@@ -246,6 +265,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
   columnHelper.defineHeaderGroup({
     id: "wareSize",
     header: () => "Kích thước sản phẩm",
+    size: 250,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "wareWidth",
@@ -269,6 +289,9 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
         header: "Cao",
         enablePinning: true,
         cellType: DataTableCellType.Readonly,
+        options: {
+          nullIfNumLessOrEqual: 0
+        },
         ...colSize.sm,
       }),
     ],
@@ -295,7 +318,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
   columnHelper.defineHeaderGroup({
     id: "orderDates",
     header: () => "Ngày",
-    size: 500,
+    size: 300,
     columns: [
       columnHelper.defineDataTableAccessorColumn({
         id: "orderDate",
@@ -331,6 +354,9 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     header: "Ghi chú tạm thời",
     enablePinning: true,
     cellType: DataTableCellType.Text,
+    options: {
+      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+    },
     ...colSize.lg,
   }),
 
@@ -342,6 +368,9 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     header: "Ngày SX",
     enablePinning: true,
     cellType: DataTableCellType.Date,
+    options: {
+      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+    },
     ...colSize.md,
   }),
 
@@ -351,6 +380,9 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     header: "Ngày và giờ cần",
     enablePinning: true,
     cellType: DataTableCellType.Date,
+    options: {
+      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+    },
     ...colSize.md,
   }),
 
@@ -364,6 +396,9 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     enablePinning: true,
     cellType: DataTableCellType.Select,
     selectCollection: corrugatorLinesCol,
+    options: {
+      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+    },
     ...colSize.md,
   }),
 

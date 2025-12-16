@@ -2,7 +2,6 @@
 
 import { ManufacturingOrderMonthlyProductionChartReducerStore } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyProductionChartContext"
 import { Chart, useChart } from "@chakra-ui/charts"
-import { useState } from "react"
 import {
   Bar,
   BarChart,
@@ -12,13 +11,13 @@ import {
   Tooltip,
   XAxis,
 } from "recharts"
-import { ManufacturingOrderMonthlyProductionBarChartCommons } from "./common"
+import { ManufacturingOrderDashBoardUtils } from "../utils"
 
-const { getDaysInMonth } = ManufacturingOrderMonthlyProductionBarChartCommons
+const { getDaysInMonth } = ManufacturingOrderDashBoardUtils
 
 const randomList = Array.from({ length: 50 }, () => Math.floor(Math.random() * (100 - 30 + 1)) + 30);
 
-export const ManufacturingOrderMonthlyProductionBarChart = () => {
+export default function ManufacturingOrderMonthlyProductionBarChart() {
   const { useSelector } = ManufacturingOrderMonthlyProductionChartReducerStore
   const month = useSelector(s => s.month)
   // Maybe there will also be a year selector, idk
@@ -27,7 +26,10 @@ export const ManufacturingOrderMonthlyProductionBarChart = () => {
   const numberOfDays = getDaysInMonth(year, month)
 
   const mockData = [...Array(numberOfDays).keys()].map(day =>
-    ({ "Tổng": randomList.at(day) ?? 0, day: day + 1 + "" })
+  ({
+    "Tổng": randomList.at(day) ?? 0,
+    day: (day + 1) + "/" + (month + 1) + "/" + year
+  })
   )
 
   const chart = useChart({
@@ -38,14 +40,14 @@ export const ManufacturingOrderMonthlyProductionBarChart = () => {
   })
 
   return (
-    <Chart.Root maxH="md" chart={chart}>
+    <Chart.Root maxH="sm" chart={chart}>
       <BarChart data={chart.data}>
         <CartesianGrid stroke={chart.color("border.muted")} vertical={false} />
         <XAxis
           axisLine={false}
           tickLine={false}
           dataKey={chart.key("day")}
-          tickFormatter={(value) => value.slice(0, 3)}
+          tickFormatter={(value) => (value + "").split("/").filter((_v, index) => index < 2).join("/")}
         />
         <Tooltip
           cursor={{ fill: chart.color("bg.muted") }}

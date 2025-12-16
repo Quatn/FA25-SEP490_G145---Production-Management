@@ -16,6 +16,7 @@ export const DataTableEditableCell = (props: DataTableEditableCellProps) => {
             if (props.onBlur)
               props.onBlur(ev.target.value)
           }}
+          disabled={props.disabled}
         />
       )
     case DataTableEditableCellInputTypes.Select:
@@ -29,6 +30,7 @@ export const DataTableEditableCell = (props: DataTableEditableCellProps) => {
             value={[props.value as string]}
             onValueChange={(e) => props.updateTableData(check.undefined(e.value.at(0)) ? "" : e.value.at(0)!)}
             bg="bg"
+            disabled={props.disabled}
           >
             <Select.HiddenSelect />
             <Select.Control>
@@ -65,6 +67,7 @@ export const DataTableEditableCell = (props: DataTableEditableCellProps) => {
             if (!ev.focused && props.onBlur)
               props.onBlur(ev.value)
           }}
+          disabled={props.disabled}
         >
 
           <NumberInput.Control />
@@ -84,6 +87,7 @@ export const DataTableEditableCell = (props: DataTableEditableCellProps) => {
             if (props.onBlur)
               props.onBlur(ev.target.value)
           }}
+          disabled={props.disabled}
         />
       )
   }

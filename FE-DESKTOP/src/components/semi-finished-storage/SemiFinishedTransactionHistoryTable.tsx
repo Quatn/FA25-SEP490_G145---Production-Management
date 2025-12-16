@@ -12,7 +12,7 @@ export const SemiFinishedTransactionHistoryTable: React.FC<FGTTableProps> = ({ i
         <Table.ScrollArea borderWidth="1px" rounded="md" mt={4}>
             <Table.Root>
                 <Table.Header>
-                    <Table.Row>
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader fontSize={"lg"}>STT</Table.ColumnHeader>
                         <Table.ColumnHeader fontSize={"lg"}>Thời gian tạo phiếu</Table.ColumnHeader>
                         <Table.ColumnHeader fontSize={"lg"}>Ngày thực hiện</Table.ColumnHeader>

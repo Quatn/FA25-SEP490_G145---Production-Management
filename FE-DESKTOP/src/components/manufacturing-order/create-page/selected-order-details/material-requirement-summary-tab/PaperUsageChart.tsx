@@ -1,12 +1,14 @@
 "use client"
 
+import DataEmpty from "@/components/common/DataEmpty";
+import DataFetchError from "@/components/common/DataFetchError";
+import DataLoading from "@/components/common/DataLoading";
 import { manufacturingOrderComponentUtils as moUtils } from "@/components/manufacturing-order/utils";
 import { productionModuleConfigs } from "@/config/production-module.config";
 import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
-import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { useGetAllByPaperTypesUsageQuery, useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
 import { useGetInventoryByWarePaperTypeCodesQuery } from "@/service/api/paperRollApiSlice";
-import { formatDateToDDMMYYYY, formatDateToYYYYMMDD } from "@/utils/dateUtils";
+import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
 import { Chart, useChart } from "@chakra-ui/charts"
 import check from "check-types";
 import { useMemo } from "react";
@@ -33,6 +35,7 @@ export default function PaperUsageChart(props: PaperUsageChartProps) {
     data: fullDetailMOsResponse,
     error: fetchError,
     isLoading: isFetchingList,
+    refetch: refetchDraft,
   } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
     ids: selectedPOIsIds,
   });
@@ -45,8 +48,13 @@ export default function PaperUsageChart(props: PaperUsageChartProps) {
     })
 
     const set = new Set(arr?.flat())
-    return [...set].filter(p => !check.undefined(p) && !check.null(p) && check.equal(p.split("/").length, props.type === "FACE" ? 4 : 3)) as string[]
-  }, [fullDetailMOsResponse?.data])
+    return [...set].filter(p => !check.undefined(p)
+      && !check.null(p)
+      && (
+        (props.type === "FACE") ? (p.split("/").length === 4)
+          : (p.split("/").length === 3)
+      )) as string[]
+  }, [fullDetailMOsResponse?.data, props.type])
 
   const {
     data: paperrollsByTypeListResponse,
@@ -54,7 +62,7 @@ export default function PaperUsageChart(props: PaperUsageChartProps) {
     isLoading: paperrollsByTypeListIsFetchingList,
   } = useGetInventoryByWarePaperTypeCodesQuery({
     codes: paperTypesList,
-  });
+  }, { skip: paperTypesList.length < 1 });
 
   const {
     data: moByTypeListResponse,
@@ -62,7 +70,7 @@ export default function PaperUsageChart(props: PaperUsageChartProps) {
     isLoading: moByTypeListIsFetchingList,
   } = useGetAllByPaperTypesUsageQuery({
     paperTypes: paperTypesList,
-  });
+  }, { skip: paperTypesList.length < 1 });
 
   const paperUsageChartData = useMemo(() => {
     const arr: ({
@@ -152,6 +160,18 @@ export default function PaperUsageChart(props: PaperUsageChartProps) {
   }, [moByTypeListResponse, paperrollsByTypeListResponse?.data, paperTypesList])
 
   const chart = useChart(paperUsageChartData)
+
+  if (isFetchingList || moByTypeListIsFetchingList || paperrollsByTypeListIsFetchingList) {
+    return <DataLoading />
+  }
+
+  if (fetchError || moByTypeListFetchError || paperrollsByTypeListFetchError) {
+    return <DataFetchError refetch={refetchDraft} />
+  }
+
+  if (paperTypesList.length < 1) {
+    return <DataEmpty />
+  }
 
   return (
     <Chart.Root maxH="sm" chart={chart}>

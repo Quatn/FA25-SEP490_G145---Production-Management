@@ -187,7 +187,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Số điện thoại</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={customer.contactNumber}
+                                        value={customer.contactNumber ?? ""}
                                         placeholder="Nhập số điện thoại"
                                         required
                                         onChange={(e) => handleChange("contactNumber", e.target.value)}
@@ -205,7 +205,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Địa chỉ</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={customer.address}
+                                        value={customer.address ?? ""}
                                         placeholder="Nhập địa chỉ"
                                         onChange={(e) => handleChange("address", e.target.value)}
                                     />
@@ -220,7 +220,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     <Input
                                         size="lg"
                                         type="email"
-                                        value={customer.email}
+                                        value={customer.email ?? ""}
                                         placeholder="Nhập email"
                                         onChange={(e) => handleChange("email", e.target.value)}
                                     />
@@ -234,7 +234,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Ghi chú</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={customer.note}
+                                        value={customer.note ?? ""}
                                         placeholder="Nhập ghi chú"
                                         onChange={(e) => handleChange("note", e.target.value)}
                                     />

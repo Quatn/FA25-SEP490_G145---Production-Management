@@ -86,10 +86,19 @@ export class PurchaseOrderService {
     limit: number;
     search: string;
   }): Promise<PaginatedList<QueryOrdersWithUnmanufacturedItemsResponseDto>> {
-    const data = await this.purchaseOrderItemModel.aggregate(
-      ordersWithUnmanufacturedItemsLeanPipe(1, 20, search),
-    );
+    const [data, countArr] = await Promise.all([
+      this.purchaseOrderItemModel.aggregate(
+        ordersWithUnmanufacturedItemsLeanPipe(1, 20, search),
+      ),
+      this.purchaseOrderItemModel.aggregate([
+        ...ordersWithUnmanufacturedItemsLeanPipe(1, 20, search).filter(
+          (stage) => !("$skip" in stage || "$limit" in stage),
+        ),
+        { $count: "total" },
+      ]),
+    ]);
 
+    // TODO: Move this into the aggregate pipe
     await this.customerModel.populate(data, [
       { path: "purchaseOrder.customer" },
     ]);
@@ -107,8 +116,8 @@ export class PurchaseOrderService {
     ]);
     // console.log(populatedData)
 
-    // temp
-    const totalItems = 0;
+    const totalItems =
+      (countArr[0] as { total: number } | undefined)?.total ?? 0;
     const totalPages = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
@@ -206,7 +215,7 @@ export class PurchaseOrderService {
   async restore(id: string) {
     const doc = (await this.purchaseOrderModel.findOne({
       _id: id,
-      isDeleted: true
+      isDeleted: true,
     })) as SoftPurchaseOrder;
     if (!doc) throw new NotFoundException("Purchase order not found");
     await doc.restore();

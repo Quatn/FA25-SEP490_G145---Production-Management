@@ -1,17 +1,36 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { PaperColorService } from './paper-color.service';
 import { CreatePaperColorRequestDto } from './dto/create-paper-color-request.dto';
 import { UpdatePaperColorRequestDto } from './dto/update-paper-color-request.dto';
 import { PaperColor, PaperColorDocument } from '../schemas/paper-color.schema';
 import { BaseResponse } from '@/common/dto/response.dto';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
+import { PrivilegedJwtAuthGuard } from '@/common/guards/privileged-jwt-auth.guard';
+import { paperColorAdminPrivileges, paperColorCreatePrivileges, paperColorGetPrivileges, paperColorUpdatePrivileges } from './paper-color-module-access-privileges';
 
+const PaperColorGetRequestGuard = PrivilegedJwtAuthGuard({
+    requiredPrivileges: paperColorGetPrivileges,
+});
+
+const PaperColorCreateRequestGuard = PrivilegedJwtAuthGuard({
+    requiredPrivileges: paperColorCreatePrivileges,
+});
+
+const PaperColorUpdateRequestGuard = PrivilegedJwtAuthGuard({
+    requiredPrivileges: paperColorUpdatePrivileges,
+});
+
+const PaperColorAdminRequestGuard = PrivilegedJwtAuthGuard({
+    requiredPrivileges: paperColorAdminPrivileges,
+});
+
+@ApiBearerAuth("access-token")
 @Controller('paper-color')
 export class PaperColorController {
     constructor(private readonly pcService: PaperColorService) { }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperColorGetRequestGuard)
     @Get("list")
     @ApiOperation({ summary: "List paginated paper colors" })
     async findPaginated(
@@ -27,7 +46,7 @@ export class PaperColorController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperColorAdminRequestGuard)
     @Get('list-deleted')
     @ApiOperation({ summary: 'List deleted paper colors' })
     async findDeleted(
@@ -42,7 +61,7 @@ export class PaperColorController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperColorGetRequestGuard)
     @Get("list-all")
     @ApiOperation({ summary: "List paper colors" })
     async findAll(): Promise<BaseResponse<PaperColorDocument[]>> {
@@ -54,7 +73,7 @@ export class PaperColorController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperColorGetRequestGuard)
     @Get("detail/:id")
     @ApiOperation({ summary: "Paper color detail" })
     async findOne(@Param("id") id: string): Promise<BaseResponse<PaperColorDocument>> {
@@ -66,7 +85,7 @@ export class PaperColorController {
         }
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperColorCreateRequestGuard)
     @Post("create")
     @ApiOperation({ summary: "Create new paper color" })
     async create(
@@ -80,7 +99,7 @@ export class PaperColorController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperColorUpdateRequestGuard)
     @Patch("update/:id")
     @ApiOperation({ summary: "Update paper color" })
     async update(
@@ -95,7 +114,7 @@ export class PaperColorController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperColorUpdateRequestGuard)
     @Delete("delete-soft/:id")
     @ApiOperation({ summary: "Soft delete paper color" })
     async softDelete(
@@ -109,7 +128,7 @@ export class PaperColorController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperColorAdminRequestGuard)
     @Patch("restore/:id")
     @ApiOperation({ summary: "Restore paper color" })
     async restore(
@@ -123,7 +142,7 @@ export class PaperColorController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperColorAdminRequestGuard)
     @Delete("delete-hard/:id")
     @ApiOperation({ summary: "Hard delete paper color" })
     async hardDelete(

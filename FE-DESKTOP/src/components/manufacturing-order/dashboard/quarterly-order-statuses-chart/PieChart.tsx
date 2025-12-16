@@ -6,7 +6,7 @@ import { manufacturingOrderComponentUtils } from "../../utils"
 
 const { OrderStatusNameMap } = manufacturingOrderComponentUtils
 
-export const ManufacturingOrderStatusesPieChart = () => {
+export const ManufacturingOrderQuarterlyStatusesPieChart = () => {
   const chart = useChart({
     data: [
       { name: OrderStatusNameMap.PAUSED, value: 400, color: "yellow.solid" },

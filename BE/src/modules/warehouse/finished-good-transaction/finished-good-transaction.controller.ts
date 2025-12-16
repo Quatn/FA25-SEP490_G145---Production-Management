@@ -1,19 +1,39 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
 import { FinishedGoodTransactionService } from './finished-good-transaction.service';
 import { CreateFinishedGoodTransactionDto } from './dto/create-finished-good-transaction.dto';
 import { UpdateFinishedGoodTransactionDto } from './dto/update-finished-good-transaction.dto';
 import { FinishedGoodTransaction } from '../schemas/finished-good-transaction.schema';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { GetFinishedGoodTransactionsDto } from './dto/get-finished-good-transaction.dto';
 import { FinishedGoodDailyReportResponse } from '@/common/types/finished-good-types';
 import { GetFinishedGoodDailyReportDto } from './dto/get-finished-good-daily-report.dto';
+import { PaginatedList } from '@/common/dto/paginated-list.dto';
+import { PrivilegedJwtAuthGuard } from '@/common/guards/privileged-jwt-auth.guard';
+import { finishedGoodTransactionAdminPrivileges, finishedGoodTransactionCreatePrivileges, finishedGoodTransactionGetPrivileges, finishedGoodTransactionUpdatePrivileges } from './finished-good-transaction-module-access-privileges';
 
+const FinishedGoodTransactionGetRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: finishedGoodTransactionGetPrivileges,
+});
+
+const FinishedGoodTransactionCreateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: finishedGoodTransactionCreatePrivileges,
+});
+
+const FinishedGoodTransactionUpdateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: finishedGoodTransactionUpdatePrivileges,
+});
+
+const FinishedGoodTransactionAdminRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: finishedGoodTransactionAdminPrivileges,
+});
+
+@ApiBearerAuth("access-token")
 @Controller('finished-good-transaction')
 export class FinishedGoodTransactionController {
   constructor(private readonly fgtService: FinishedGoodTransactionService) { }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(FinishedGoodTransactionGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated transactions formatted for table view' })
   @ApiResponse({ status: 200, description: 'Returns formatted table data' })
@@ -26,7 +46,19 @@ export class FinishedGoodTransactionController {
     };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(FinishedGoodTransactionGetRequestGuard)
+  @Get('list-adjustment')
+  @ApiOperation({ summary: 'List finished inventory audit transactions' })
+  async findAdjustment(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+    @Query('search') search?: string,
+  ): Promise<BaseResponse<PaginatedList<FinishedGoodTransaction>>> {
+    const docs = await this.fgtService.findAdjustmentTransaction(page, limit, search);
+    return { success: true, message: 'Fetch successful', data: docs };
+  }
+
+  @UseGuards(FinishedGoodTransactionGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List all finished good transactions' })
   async findAll(): Promise<BaseResponse<FinishedGoodTransaction[]>> {
@@ -34,7 +66,7 @@ export class FinishedGoodTransactionController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(FinishedGoodTransactionGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Transaction detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<FinishedGoodTransaction>> {
@@ -42,7 +74,7 @@ export class FinishedGoodTransactionController {
     return { success: true, message: 'Fetch successful', data: doc };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(FinishedGoodTransactionCreateRequestGuard)
   @Post('create')
   @ApiOperation({ summary: 'Create a new transaction (by manufacturingOrder)' })
   async create(@Body() dto: CreateFinishedGoodTransactionDto): Promise<BaseResponse<FinishedGoodTransaction>> {
@@ -50,7 +82,7 @@ export class FinishedGoodTransactionController {
     return { success: true, message: 'Created successfully', data: doc };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(FinishedGoodTransactionCreateRequestGuard)
   @Post('bulk')
   @ApiOperation({ summary: 'Create new transactions' })
   async createMany(@Body() dtos: CreateFinishedGoodTransactionDto[]): Promise<BaseResponse<FinishedGoodTransaction[]>> {
@@ -58,7 +90,7 @@ export class FinishedGoodTransactionController {
     return { success: true, message: 'Created successfully', data: doc };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(FinishedGoodTransactionUpdateRequestGuard)
   @Patch('update/:id')
   @ApiOperation({ summary: 'Update a transaction' })
   async update(@Param('id') id: string, @Body() dto: UpdateFinishedGoodTransactionDto): Promise<BaseResponse<FinishedGoodTransaction>> {
@@ -66,7 +98,7 @@ export class FinishedGoodTransactionController {
     return { success: true, message: 'Updated successfully', data: doc };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(FinishedGoodTransactionGetRequestGuard)
   @Get('report/daily')
   @ApiOperation({ summary: 'Get daily report of transactions' })
   async getDailyReport(@Query() dto: GetFinishedGoodDailyReportDto): Promise<BaseResponse<FinishedGoodDailyReportResponse>> {
@@ -74,7 +106,7 @@ export class FinishedGoodTransactionController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(FinishedGoodTransactionUpdateRequestGuard)
   @Delete('delete-soft/:id')
   @ApiOperation({ summary: 'Soft delete transaction' })
   async softDelete(@Param('id') id: string): Promise<BaseResponse<null>> {
@@ -82,7 +114,7 @@ export class FinishedGoodTransactionController {
     return { success: true, message: 'Soft deleted successfully', data: null };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(FinishedGoodTransactionAdminRequestGuard)
   @Patch('restore/:id')
   @ApiOperation({ summary: 'Restore transaction' })
   async restore(@Param('id') id: string): Promise<BaseResponse<null>> {
@@ -90,7 +122,7 @@ export class FinishedGoodTransactionController {
     return { success: true, message: 'Restored successfully', data: null };
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(FinishedGoodTransactionAdminRequestGuard)
   @Delete('delete-hard/:id')
   @ApiOperation({ summary: 'Hard delete transaction' })
   async hardDelete(@Param('id') id: string): Promise<BaseResponse<null>> {

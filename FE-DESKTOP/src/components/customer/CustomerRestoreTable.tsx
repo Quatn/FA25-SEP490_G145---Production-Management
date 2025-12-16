@@ -30,15 +30,15 @@ const CustomerRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, 
                 w="100%"
             >
                 <Table.Header>
-                    <Table.Row>
+                    <Table.Row background={'blue.100'}>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             STT
                         </Table.ColumnHeader>
                         <Table.ColumnHeader>Mã khách hàng</Table.ColumnHeader>
                         <Table.ColumnHeader>Tên khách hàng</Table.ColumnHeader>
-                        <Table.ColumnHeader>Địa chỉ</Table.ColumnHeader>
                         <Table.ColumnHeader>Số điện thoại</Table.ColumnHeader>
                         <Table.ColumnHeader>Email</Table.ColumnHeader>
+                        <Table.ColumnHeader>Địa chỉ</Table.ColumnHeader>
                         <Table.ColumnHeader w="1%" textAlign="center">
                             Thao tác
                         </Table.ColumnHeader>
@@ -61,9 +61,9 @@ const CustomerRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, 
                                         {item.name}
                                     </Text>
                                 </Tooltip>
-
                             </Table.Cell>
-
+                            <Table.Cell>{item.contactNumber}</Table.Cell>
+                            <Table.Cell>{item.email}</Table.Cell>
                             <Table.Cell>
                                 <Tooltip content={item.address} showArrow>
                                     <Text
@@ -76,9 +76,6 @@ const CustomerRestoreTable: React.FC<Props> = ({ page, limit, items, onRestore, 
                                     </Text>
                                 </Tooltip>
                             </Table.Cell>
-
-                            <Table.Cell>{item.contactNumber}</Table.Cell>
-                            <Table.Cell>{item.email}</Table.Cell>
                             <Table.Cell>
                                 <Group gap={5}>
                                     <Button

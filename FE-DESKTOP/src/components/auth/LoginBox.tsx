@@ -57,17 +57,12 @@ export default function LoginBox() {
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
         <CardDescription>
-          Or{" "}
-          <Link href={"register"}>
-            <ChakraLink color={"blue.500"} as="span">register</ChakraLink>
-          </Link>{" "}
-          a new account
         </CardDescription>
       </CardHeader>
       <CardBody>
         <form onSubmit={handleSubmit}>
           <Stack gap="4" w="full">
-            <Field label="Handle">
+            <Field label="User code">
               <Input
                 name="code"
                 value={code}

@@ -10,6 +10,19 @@ import {
 } from "../../schemas/manufacturing-order.schema";
 import { Transform } from "class-transformer";
 import { BadRequestException } from "@nestjs/common";
+import { ParseSortOptions } from "@/common/decorators/sort-options-parser";
+
+export enum QueryListFullDetailsManufacturingOrderRequestSortOptions {
+  Code = "code",
+  Directive = "directive",
+  ApprovalStatus = "approval_status",
+  OperativeStatus = "operative_status",
+  Amount = "amount",
+  Inventory = "inventory",
+  OrderDate = "order_date",
+  DeliveryDate = "delivery_date",
+  ManufacturingDate = "manufacturing_date",
+}
 
 export class QueryListFullDetailsManufacturingOrderRequestDto extends PageRequest {
   @ApiProperty({ required: false })
@@ -23,6 +36,7 @@ export class QueryListFullDetailsManufacturingOrderRequestDto extends PageReques
     const arr = Array.isArray(value)
       ? value
       : String(value).split(",").filter(Boolean);
+
     return arr.map((v) => {
       if (
         Object.values(ManufacturingOrderApprovalStatus).includes(
@@ -36,7 +50,6 @@ export class QueryListFullDetailsManufacturingOrderRequestDto extends PageReques
       );
     });
   })
-  @IsArray()
   @IsArray()
   approvalStatuses?: ManufacturingOrderApprovalStatus[];
 
@@ -65,6 +78,7 @@ export class QueryListFullDetailsManufacturingOrderRequestDto extends PageReques
     const arr = Array.isArray(value)
       ? value
       : String(value).split(",").filter(Boolean);
+
     return arr.map((v) => {
       if (
         Object.values(CorrugatorProcessStatus).includes(
@@ -79,8 +93,16 @@ export class QueryListFullDetailsManufacturingOrderRequestDto extends PageReques
     });
   })
   @IsArray()
-  @IsArray()
   corrugatorProcessStatuses?: CorrugatorProcessStatus[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @ParseSortOptions(QueryListFullDetailsManufacturingOrderRequestSortOptions)
+  @IsArray()
+  sort?: {
+    option: QueryListFullDetailsManufacturingOrderRequestSortOptions;
+    value: 1 | -1;
+  }[];
 }
 
 export class QueryListFullDetailsManufacturingOrderResponseDto extends PageResponse<FullDetailManufacturingOrderDto> { }

@@ -1,20 +1,19 @@
 "use client";
 
-import { useGetMaterialRequirementsQuery } from "@/service/api/materialRequirementApiSlice";
 import { MaterialRequirementDto } from "@/types/DTO/material-requirement-summary/MaterialRequirement";
-import { Box, BoxProps, Center, Spinner, Stack, Table, TableRootProps, TabsRootProps, Text } from "@chakra-ui/react";
-import { Column, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { useEffect, useMemo, useReducer, useState } from "react";
-import { paperTypesTableColumns } from "./paperTypesTableDefinition";
+import { Box, BoxProps, Center, Mark, Stack, Table, TableRootProps, TabsRootProps, Text } from "@chakra-ui/react";
+import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { useMemo } from "react";
 import check from "check-types";
-import { useSelectedOrdersState } from "../TabbedContainer";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { Ware } from "@/types/Ware";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
-import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
 import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
-import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
+import { paperUsageTableColumns } from "./paperUsageTableDefinition";
+import { useGetInventoryByWarePaperTypeCodesQuery } from "@/service/api/paperRollApiSlice";
+import DataFetchError from "@/components/common/DataFetchError";
+import DataLoading from "@/components/common/DataLoading";
 
 export type PaperUsageTableProps = {
   rootProps?: BoxProps;
@@ -56,7 +55,7 @@ function accumulateMaterialRequirements(
       const code = (poi.ware as Serialized<Ware>)[pair.type] as string;
       const weight = poi[pair.weight];
 
-      if (code && check.equal(code.startsWith("M"), type === "RAW") && typeof weight === "number") {
+      if (code && check.equal(code.split("/").length === 4, type === "FACE") && typeof weight === "number") {
         const current = requirementMap.get(code) || 0;
         requirementMap.set(code, current + weight);
       }
@@ -90,48 +89,49 @@ export default function PaperUsageTable(
     data: fullDetailMOsResponse,
     error: fetchError,
     isLoading: isFetchingList,
+    refetch: refetchDraft,
   } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
     ids: selectedPOIsIds,
   });
 
-  const moPaginatedList = useMemo(() => {
-    if (fullDetailMOsResponse?.data) {
-      const calculatedMoPaginatedList = fullDetailMOsResponse.data.map((mo) => {
-        if (check.string(mo.purchaseOrderItem)) {
-          throw new UnpopulatedFieldError("mo.purchaseOrderItem should have been populated before it is sent here")
-        }
+  const tableData: MaterialRequirementDto[] = useMemo(() => accumulateMaterialRequirements(fullDetailMOsResponse?.data ?? [], props.type),
+    [fullDetailMOsResponse, props.type]);
 
-        const calculatedWare = recalculateWare(mo.purchaseOrderItem?.ware)
-        const calculatedPOI = recalculatePurchaseOrderItem({
-          ...mo.purchaseOrderItem!,
-          ware: calculatedWare
-        })
+  const paperTypesList = tableData.map(mr => mr.code)
 
-        return {
-          ...mo,
-          purchaseOrderItem: calculatedPOI,
-        }
-      })
-      return {
-        data: calculatedMoPaginatedList
+  const {
+    data: paperrollsByTypeListResponse,
+    error: paperrollsByTypeListFetchError,
+    isLoading: paperrollsByTypeListIsFetchingList,
+  } = useGetInventoryByWarePaperTypeCodesQuery({
+    codes: paperTypesList,
+  }, { skip: paperTypesList.length < 1 });
+
+  if (paperrollsByTypeListResponse?.data) {
+    paperrollsByTypeListResponse.data.forEach(fetchedRolls => {
+      const f = tableData.find((tb) => tb.code === fetchedRolls.code)
+      if (f) {
+        f.inventoryWeight = fetchedRolls.weight
       }
-    }
-    else {
-      return undefined
-    }
-  }, [fullDetailMOsResponse?.data])
-
-  const tableData: MaterialRequirementDto[] = useMemo(() => accumulateMaterialRequirements(moPaginatedList?.data ?? [], props.type),
-    [moPaginatedList, props.type]);
+    })
+  }
 
   const table = useReactTable({
     data: tableData,
-    columns: paperTypesTableColumns(props.header),
+    columns: paperUsageTableColumns(props.header),
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.code,
   });
 
-  if (check.undefined(moPaginatedList?.data) || moPaginatedList?.data.length < 1) {
+  if (isFetchingList || paperrollsByTypeListIsFetchingList) {
+    return <DataLoading />
+  }
+
+  if (fetchError || paperrollsByTypeListFetchError) {
+    return <DataFetchError refetch={refetchDraft} />
+  }
+
+  if (check.undefined(fullDetailMOsResponse?.data) || fullDetailMOsResponse?.data.length < 1) {
     return (
       <Center>
         <Box bgColor={"colorPalette.muted"} px={3} py={2} rounded={"md"}>
@@ -162,6 +162,7 @@ export default function PaperUsageTable(
                     colorPalette={"blue"} bgColor={"colorPalette.muted"}
                     colSpan={header.colSpan}
                     textAlign={header.colSpan > 1 ? "center" : "start"}
+                    textWrap={"wrap"}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </Table.ColumnHeader>
@@ -176,13 +177,20 @@ export default function PaperUsageTable(
                 h={"3.2rem"}
                 bg={"bg"}
               >
-                {row.getVisibleCells().map((cell) => (
-                  <Table.Cell
-                    key={cell.id}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </Table.Cell>
-                ))}
+                {row.getVisibleCells().map((cell) => {
+                  const insufficient = row.original.inventoryWeight < row.original.requirementWeight
+                  return (
+                    <Table.Cell
+                      key={cell.id}
+                    >
+                      {
+                        cell.column.id === "status" ?
+                          <Mark colorPalette={insufficient ? "red" : "green"} variant={insufficient ? "solid" : "subtle"}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</Mark>
+                          : flexRender(cell.column.columnDef.cell, cell.getContext())
+                      }
+                    </Table.Cell>
+                  )
+                })}
               </Table.Row>
             ))}
           </Table.Body>

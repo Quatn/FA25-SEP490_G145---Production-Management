@@ -18,6 +18,17 @@ export const SemiFinishedGoodApiSlice = apiSlice.injectEndpoints({
             providesTags: ["SemiFinishedGood"],
         }),
 
+        getAllSemiFinishedGoods: builder.query<
+            BaseResponse<SemiFinishedGood[]>, void
+        >({
+            query: () => ({
+                url: `${SEMI_FINISHED_GOOD_URL}/list-all`,
+                method: "GET",
+                credentials: "include",
+            }),
+            providesTags: ["SemiFinishedGood"],
+        }),
+
         getSemiFinishedGoodDetail: builder.query<BaseResponse<SemiFinishedGood>, { id: string }>({
             query: ({ id }) => ({
                 url: `${SEMI_FINISHED_GOOD_URL}/detail/${id}`,
@@ -74,4 +85,5 @@ export const {
     useUpdateSemiFinishedGoodMutation,
     useDeleteSemiFinishedGoodMutation,
     useRestoreSemiFinishedGoodMutation,
+    useGetAllSemiFinishedGoodsQuery,
 } = SemiFinishedGoodApiSlice;

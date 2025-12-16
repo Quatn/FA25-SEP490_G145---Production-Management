@@ -22,7 +22,7 @@ export const exportFinishedDailyReport = (
   const row0 = [
     "",
     "",
-    `BÁO CÁO CHI TIẾT ${typeText} KHO THÀNH PHẨM THEO NGÀY (${startDate} - ${endDate})`,
+    `BÁO CÁO CHI TIẾT ${typeText} KHO THÀNH PHẨM THEO NGÀY ${(startDate == endDate ? formatDate(startDate) : `TỪ ${formatDate(startDate)} ĐẾN ${formatDate(endDate)}`)}`,
   ];
 
   // Row 1: Main Headers

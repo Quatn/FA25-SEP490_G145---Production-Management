@@ -9,6 +9,7 @@ import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import { FaEdit } from "react-icons/fa";
 import { OrderFinishingProcessStatus } from "@/types/enums/OrderFinishingProcessStatus";
 import { VscDebugStart, VscRunCoverage } from "react-icons/vsc";
+import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 
 
 interface Props {
@@ -24,6 +25,8 @@ interface Props {
 const OrderFinishingProcessTable: React.FC<Props> = ({
     tableStatus, page, limit, items, totalPages, handlePagination, handleUpdate
 }) => {
+
+  const dialogDispatch = ManufacturingOrderDetailsDialogReducerStore.useDispatch();
 
     return (
         <>
@@ -45,7 +48,7 @@ const OrderFinishingProcessTable: React.FC<Props> = ({
                     }}>
                     <Table.Header>
 
-                        <Table.Row>
+                        <Table.Row background={'blue.100'}>
                             <Table.ColumnHeader w="1%" textAlign="center">
                                 STT
                             </Table.ColumnHeader>
@@ -146,6 +149,16 @@ const OrderFinishingProcessTable: React.FC<Props> = ({
                                                 {tableStatus == OrderFinishingProcessStatus.Scheduled ? 'Chạy kế hoạch' : 'Hoàn thành'}
                                             </Button>
                                         }
+                                        
+                                            <Button
+                                                variant="surface"
+                                                colorPalette={"gray"}
+                                                ms={2}
+                                                onClick={() => dialogDispatch({type: "OPEN_DIALOG_WITH_ORDER", payload: { order: item.manufacturingOrder as unknown as Serialized<ManufacturingOrder> }})}
+                                            >
+                                                Chi tiết lệnh
+                                            </Button>
+
                                     </Table.Cell>
                                 </Table.Row>
                             );

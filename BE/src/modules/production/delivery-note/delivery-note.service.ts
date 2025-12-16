@@ -6,6 +6,7 @@ import { CreateDeliveryNoteDto } from './dto/create-delivery-note.dto';
 import { PurchaseOrderItem } from '../schemas/purchase-order-item.schema';
 import { Customer } from '../schemas/customer.schema';
 import mongoose from 'mongoose';
+import { FinishedGood } from '@/modules/warehouse/schemas/finished-good.schema';
 
 @Injectable()
 export class DeliveryNoteService {
@@ -16,6 +17,7 @@ export class DeliveryNoteService {
         @InjectModel(DeliveryNote.name) private readonly deliveryNoteModel: Model<DeliveryNote>,
         @InjectModel(PurchaseOrderItem.name) private readonly poItemModel: Model<PurchaseOrderItem>,
         @InjectModel(Customer.name) private readonly customerModel: Model<Customer>,
+        @InjectModel(FinishedGood.name) private readonly finishedGoodModel: Model<FinishedGood>,
     ) { }
 
     private async computeNextCode(): Promise<number> {
@@ -323,6 +325,69 @@ export class DeliveryNoteService {
         const populated = await this.populateDeliveryNotes(docs);
         return populated;
     }
+
+    async findPaginatedNoteApproved(
+        page: number = 1,
+        limit: number = 10,
+        search?: string
+    ) {
+        const skip = (page - 1) * limit;
+        const query: any = { status: 'APPROVED' };
+
+        if (search?.trim()) {
+            const regex = new RegExp(search.trim(), 'i');
+            query.$or = [{ code: regex }];
+        }
+
+        const [data, totalItems] = await Promise.all([
+            this.deliveryNoteModel
+                .find(query)
+                .skip(skip)
+                .limit(limit)
+                .populate([
+                    {
+                        path: 'customer',
+                        select: 'code'
+                    },
+                    {
+                        path: 'poitems.poitem',
+                        model: 'PurchaseOrderItem',
+                        populate: [
+                            {
+                                path: 'subPurchaseOrder',
+                                populate: {
+                                    path: 'purchaseOrder',
+                                    select: 'code'
+                                },
+                                select: 'code'
+                            },
+                            {
+                                path: 'ware',
+                                select: 'code'
+                            }
+                        ],
+                        select: 'code'
+                    }
+                ])
+                .sort({ updatedAt: -1 })
+                .lean(),
+            this.deliveryNoteModel.countDocuments(query),
+        ]);
+
+        const totalPages = Math.ceil(totalItems / limit);
+
+        return {
+            data,
+            page,
+            limit,
+            totalItems,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+        };
+    }
+
+    
 
     async findById(id: string) {
         const doc = await this.deliveryNoteModel.findById(id).lean().exec();

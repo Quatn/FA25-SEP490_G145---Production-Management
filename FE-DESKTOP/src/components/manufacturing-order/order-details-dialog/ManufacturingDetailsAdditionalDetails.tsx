@@ -6,8 +6,6 @@ import check from "check-types"
 import { Heading, HStack, Stack, Text } from "@chakra-ui/react"
 import { numToFixedBounded } from "@/utils/numToFixedBounded"
 
-const MIN_DISPLAY_WEIGHT = 0.0001
-
 export type ManufacturingOrderDetailsDialogManufacturingDetailsAdditionalDetailsProps = {
   order: Serialized<ManufacturingOrder>
   // processes: Serialized<OrderFinishingProcess>[]
@@ -33,7 +31,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsAddit
       ],
       [
         {
-          label: "Khối", value: numToFixedBounded(props.order.totalVolume) + (check.number(props.order.totalVolume) ? " m^3" : "")
+          label: "Khối", value: numToFixedBounded(props.order.totalVolume) + (check.number(props.order.totalVolume) ? " m3" : "")
         },
         {
           label: "Tổng lượng", value: numToFixedBounded(props.order.totalWeight) + (check.number(props.order.totalWeight) ? " kg" : "")
