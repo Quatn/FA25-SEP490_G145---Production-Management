@@ -16,7 +16,7 @@ type ProductCard = {
   width?: number;
   height?: number;
   quantity?: number;
-  product_type?: string;
+  productType?: Object;
   customer?: any;
   wares?: any[];
 };
@@ -28,17 +28,10 @@ type Props = {
     selectedProducts: {
       productId: string;
       deliveryDate: string;
-      status: string;
     }[]
   ) => void;
   preselectedIds?: string[];
 };
-
-const SUBPO_STATUSES = [
-  { value: "DRAFT", label: "Draft" },
-  { value: "PENDINGAPPROVAL", label: "Pending approval" },
-  { value: "APPROVED", label: "Approved" },
-];
 
 const todayIso = () => {
   const d = new Date();
@@ -64,9 +57,9 @@ const SubPOSelectorModal: React.FC<Props> = ({
     }
   );
 
-  const [meta, setMeta] = useState<
-    Record<string, { deliveryDate: string; status: string }>
-  >({});
+  const [meta, setMeta] = useState<Record<string, { deliveryDate: string }>>(
+    {}
+  );
 
   // fetch real products
   const { data: productsResp } = useGetProductsQuery({
@@ -77,6 +70,8 @@ const SubPOSelectorModal: React.FC<Props> = ({
   const products: ProductCard[] =
     (productsResp?.data ?? productsResp?.data?.data ?? productsResp?.data) ||
     [];
+
+  console.log("product resp: ", productsResp);
 
   const toggleCollapse = (id: string) => {
     setOpenIds((prev) =>
@@ -113,7 +108,7 @@ const SubPOSelectorModal: React.FC<Props> = ({
       if (next[id] && !meta[id]) {
         setMeta((m) => ({
           ...m,
-          [id]: { deliveryDate: todayIso(), status: "DRAFT" },
+          [id]: { deliveryDate: todayIso() },
         }));
       }
       return next;
@@ -122,12 +117,12 @@ const SubPOSelectorModal: React.FC<Props> = ({
 
   const setProductMeta = (
     id: string,
-    patch: Partial<{ deliveryDate: string; status: string }>
+    patch: Partial<{ deliveryDate: string }>
   ) => {
     setMeta((m) => ({
       ...m,
       [id]: {
-        ...(m[id] ?? { deliveryDate: todayIso(), status: "DRAFT" }),
+        ...(m[id] ?? { deliveryDate: todayIso() }),
         ...(patch ?? {}),
       },
     }));
@@ -139,7 +134,6 @@ const SubPOSelectorModal: React.FC<Props> = ({
       .map((p) => ({
         productId: p._id ?? (p as any).id,
         deliveryDate: meta[p._id ?? (p as any).id]?.deliveryDate ?? todayIso(),
-        status: meta[p._id ?? (p as any).id]?.status ?? "DRAFT",
       }));
     onConfirm(selected);
     onHide();
@@ -191,7 +185,6 @@ const SubPOSelectorModal: React.FC<Props> = ({
                   const isSelected = !!selectedIds[id];
                   const m = meta[id] ?? {
                     deliveryDate: todayIso(),
-                    status: "DRAFT",
                   };
                   return (
                     <Card
@@ -226,7 +219,7 @@ const SubPOSelectorModal: React.FC<Props> = ({
                                 </small>
                               </h5>
                               <Badge bg="secondary">
-                                Loại: {product.product_type ?? "-"}
+                                Loại: {product.productType.code ?? "-"}
                               </Badge>
                               <Badge bg="light" text="dark">
                                 Khách:{" "}
@@ -267,7 +260,7 @@ const SubPOSelectorModal: React.FC<Props> = ({
                           </Col>
 
                           <Col md={5} className="text-end">
-                             <div
+                            <div
                               style={{
                                 marginTop: 12,
                                 display: "flex",
@@ -288,21 +281,6 @@ const SubPOSelectorModal: React.FC<Props> = ({
                                 }
                                 disabled={!isSelected}
                               />
-                              <select
-                                className="form-select form-select-sm"
-                                style={{ width: 160 }}
-                                value={m.status}
-                                onChange={(e) =>
-                                  setProductMeta(id, { status: e.target.value })
-                                }
-                                disabled={!isSelected}
-                              >
-                                {SUBPO_STATUSES.map((s) => (
-                                  <option key={s.value} value={s.value}>
-                                    {s.label}
-                                  </option>
-                                ))}
-                              </select>
                             </div>
                           </Col>
                         </Row>

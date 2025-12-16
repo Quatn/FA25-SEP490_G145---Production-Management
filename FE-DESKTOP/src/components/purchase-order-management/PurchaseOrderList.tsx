@@ -92,6 +92,8 @@ const POITEM_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
 const PurchaseOrderList: React.FC = () => {
   const confirm = useConfirm();
   const [query, setQuery] = useState<string>("");
+  const [page, setPage] = useState<number>(1);
+  const [limit] = useState<number>(4); 
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
 
   const [productModalOpenForPo, setProductModalOpenForPo] = useState<{
@@ -101,15 +103,15 @@ const PurchaseOrderList: React.FC = () => {
     open: false,
   });
 
-  // get paginated purchase orders
+  // get paginated purchase orders (now uses page, limit and search)
   const {
     data: poResp,
     isLoading,
     refetch,
   } = useGetPurchaseOrdersQuery({
-    page: 1,
-    limit: 200,
-    search: "",
+    page,
+    limit,
+    search: query || undefined,
   });
 
   const [createPo] = useCreatePurchaseOrderMutation();
@@ -150,6 +152,7 @@ const PurchaseOrderList: React.FC = () => {
     }
   };
 
+  // Normalize server response -> orders for the current page
   useEffect(() => {
     const payload = poResp?.data?.data ?? poResp?.data ?? [];
     if (Array.isArray(payload)) {
@@ -203,15 +206,9 @@ const PurchaseOrderList: React.FC = () => {
     );
   };
 
-  const filtered = useMemo(() => {
-    const q = (query || "").trim().toLowerCase();
-    if (!q) return orders;
-    return orders.filter(
-      (o) =>
-        (o.poNumber || "").toLowerCase().includes(q) ||
-        (o.customer || "").toLowerCase().includes(q)
-    );
-  }, [orders, query]);
+  // Since server handles search (we pass `search`), the currently returned `orders` are the page results.
+  // We'll render `orders` directly (server-side paging + filtering).
+  const displayList = orders;
 
   const updatePOLocal = (
     poId: string,
@@ -250,10 +247,8 @@ const PurchaseOrderList: React.FC = () => {
 
   const handleSaveFromModal = async (updated: PurchaseOrder) => {
     try {
-      // Basic client-side validation performed here and returned to caller as structured result
       const trimmedPoNumber = (updated.poNumber || "").trim();
 
-      // build errors object
       const errors: any = {};
 
       if (!trimmedPoNumber) {
@@ -271,11 +266,9 @@ const PurchaseOrderList: React.FC = () => {
       }
 
       if (Object.keys(errors).length > 0) {
-        // return structured validation result (modal will display inline errors and stay open)
         return { success: false, errors };
       }
 
-      // uniqueness check (client-side)
       const conflict = orders.find(
         (o) =>
           (o.poNumber || "").trim().toLowerCase() ===
@@ -326,7 +319,6 @@ const PurchaseOrderList: React.FC = () => {
       return { success: true };
     } catch (err: any) {
       console.error("Save PO failed", err);
-      // return failure with message (modal will stay open; we also show toaster)
       const message =
         "Save failed: " + (err?.data?.message || err?.message || "unknown");
       toaster.create({ description: message, type: "error" });
@@ -336,7 +328,6 @@ const PurchaseOrderList: React.FC = () => {
 
   const handleDeleteFromList = async (po: PurchaseOrder) => {
     if (!po?.id) return;
-    // only allow delete if PO is DRAFT
     if (po.status !== "DRAFT") {
       toaster.create({
         description: "Chỉ có thể xóa khi PO ở trạng thái DRAFT.",
@@ -384,9 +375,7 @@ const PurchaseOrderList: React.FC = () => {
   ) => {
     const idStr = String(resolveId(itemIdRaw));
 
-    // check editability: item & its parents must be DRAFT
     if (!expandedLocalDoc) {
-      // safe fallback
       toaster.create({
         description: "Không thể sửa - dữ liệu chưa tải xong.",
         type: "error",
@@ -394,7 +383,6 @@ const PurchaseOrderList: React.FC = () => {
       return;
     }
 
-    // find parent sub and po
     const parentPOId = String(
       expandedLocalDoc._id ?? expandedLocalDoc.id ?? expandedPoId ?? ""
     );
@@ -510,7 +498,6 @@ const PurchaseOrderList: React.FC = () => {
       parentSubStatus === "DRAFT" &&
       itemStatus === "DRAFT"
     ) {
-      // If changing to PENDINGAPPROVAL, ask confirm
       if (newStatus === "PENDINGAPPROVAL") {
         const ok = await confirm({
           title: "Confirm change",
@@ -525,7 +512,6 @@ const PurchaseOrderList: React.FC = () => {
         }
       }
 
-      // If changing to APPROVED, ask confirm as well
       if (newStatus === "APPROVED") {
         const ok = await confirm({
           title: "Confirm approve item",
@@ -538,7 +524,6 @@ const PurchaseOrderList: React.FC = () => {
         if (!ok) return;
       }
 
-      // optimistic update
       setExpandedLocalDoc((prev: any) => {
         if (!prev) return prev;
         const copy = JSON.parse(JSON.stringify(prev));
@@ -568,8 +553,6 @@ const PurchaseOrderList: React.FC = () => {
       return;
     }
 
-    // If we reach here, item is not editable from DRAFT flow.
-    // Allow approving when itemStatus === PENDINGAPPROVAL and newStatus === APPROVED
     if (itemStatus === "PENDINGAPPROVAL" && newStatus === "APPROVED") {
       const ok = await confirm({
         title: "Confirm approve item",
@@ -581,7 +564,6 @@ const PurchaseOrderList: React.FC = () => {
       });
       if (!ok) return;
 
-      // optimistic update
       setExpandedLocalDoc((prev: any) => {
         if (!prev) return prev;
         const copy = JSON.parse(JSON.stringify(prev));
@@ -614,7 +596,6 @@ const PurchaseOrderList: React.FC = () => {
       return;
     }
 
-    // otherwise deny
     toaster.create({
       description:
         "Chỉ có thể thay đổi trạng thái item khi nó đang ở DRAFT, hoặc duyệt khi nó đang PENDINGAPPROVAL.",
@@ -626,7 +607,6 @@ const PurchaseOrderList: React.FC = () => {
   // Delete item (only if allowed)
   const handleDeleteServerItem = async (itemRaw: any) => {
     const idStr = String(resolveId(itemRaw));
-    // check editability via expandedLocalDoc
     if (!expandedLocalDoc) {
       toaster.create({
         description: "Cannot delete - data not loaded.",
@@ -645,7 +625,6 @@ const PurchaseOrderList: React.FC = () => {
       });
       return;
     }
-    // ensure item and parent sub are DRAFT
     let itemStatus: string | null = null;
     let parentSubStatus: string | null = null;
     (expandedLocalDoc.subPurchaseOrders || []).forEach((s: any) => {
@@ -720,7 +699,6 @@ const PurchaseOrderList: React.FC = () => {
       });
       return;
     }
-    // find sub in expandedLocalDoc
     const sub = (expandedLocalDoc.subPurchaseOrders || []).find(
       (x: any) => String(resolveId(x)) === subId
     );
@@ -795,18 +773,15 @@ const PurchaseOrderList: React.FC = () => {
             return;
           }
           try {
-            // update PO
             await updatePo({
               id: poId,
               body: { status: "PENDINGAPPROVAL" },
             }).unwrap();
 
-            // fetch sub list (either from snapshot or expandedLocalDoc)
             const poSnapshot =
               orders.find((o) => String(o.id) === String(poId)) ?? po;
             const subs = (poSnapshot as any).subPOs ?? [];
 
-            // if expanded and fetched, use expandedLocalDoc list instead (to catch ids)
             let subsToUpdate = subs;
             if (
               expandedLocalDoc &&
@@ -815,7 +790,6 @@ const PurchaseOrderList: React.FC = () => {
               subsToUpdate = expandedLocalDoc.subPurchaseOrders || subs;
             }
 
-            // update each sub and its items to PENDINGAPPROVAL
             for (const s of subsToUpdate) {
               const sid = String(resolveId(s));
               try {
@@ -824,10 +798,8 @@ const PurchaseOrderList: React.FC = () => {
                   body: { status: "PENDINGAPPROVAL" },
                 }).unwrap();
               } catch (e) {
-                // continue but log
                 console.warn("updateSub failed for", sid, e);
               }
-              // update items
               const items = s.items || [];
               for (const it of items) {
                 const iid = String(resolveId(it));
@@ -842,7 +814,6 @@ const PurchaseOrderList: React.FC = () => {
               }
             }
 
-            // refresh lists
             await safeRefetchSubs();
             try {
               if (typeof refetch === "function") await refetch();
@@ -868,8 +839,6 @@ const PurchaseOrderList: React.FC = () => {
             });
           }
         } else {
-          // APPROVED allowed directly from DRAFT (now propagate to children)
-          // Ask confirm before approving
           if (newStatus === "APPROVED") {
             const ok = await confirm({
               title: "Confirm approve PO",
@@ -883,10 +852,8 @@ const PurchaseOrderList: React.FC = () => {
           }
 
           try {
-            // update PO to APPROVED
             await updatePo({ id: poId, body: { status: "APPROVED" } }).unwrap();
 
-            // Determine subs (prefer expandedLocalDoc if it matches)
             let subsToUpdate: any[] = [];
             const poSnapshot =
               orders.find((o) => String(o.id) === String(poId)) ?? po;
@@ -900,7 +867,6 @@ const PurchaseOrderList: React.FC = () => {
               subsToUpdate = expandedLocalDoc.subPurchaseOrders || subsToUpdate;
             }
 
-            // propagate APPROVED to subs and items
             for (const s of subsToUpdate) {
               const sid = String(resolveId(s));
               try {
@@ -926,7 +892,6 @@ const PurchaseOrderList: React.FC = () => {
               }
             }
 
-            // refresh
             await safeRefetchSubs();
             try {
               if (typeof refetch === "function") await refetch();
@@ -975,10 +940,8 @@ const PurchaseOrderList: React.FC = () => {
         if (!ok) return;
 
         try {
-          // update PO to APPROVED
           await updatePo({ id: poId, body: { status: "APPROVED" } }).unwrap();
 
-          // Determine subs (prefer expandedLocalDoc if it matches)
           let subsToUpdate: any[] = [];
           const poSnapshot =
             orders.find((o) => String(o.id) === String(poId)) ?? po;
@@ -992,7 +955,6 @@ const PurchaseOrderList: React.FC = () => {
             subsToUpdate = expandedLocalDoc.subPurchaseOrders || subsToUpdate;
           }
 
-          // propagate APPROVED to subs and items
           for (const s of subsToUpdate) {
             const sid = String(resolveId(s));
             try {
@@ -1018,7 +980,6 @@ const PurchaseOrderList: React.FC = () => {
             }
           }
 
-          // refresh
           await safeRefetchSubs();
           try {
             if (typeof refetch === "function") await refetch();
@@ -1044,7 +1005,6 @@ const PurchaseOrderList: React.FC = () => {
           });
         }
       } else {
-        // other statuses not editable
         toaster.create({
           description:
             "Only editable when PO is DRAFT, or can be approved when in PENDINGAPPROVAL.",
@@ -1081,7 +1041,6 @@ const PurchaseOrderList: React.FC = () => {
       return;
     }
 
-    // find sub and current status
     const sub = (expandedLocalDoc.subPurchaseOrders || []).find(
       (s: any) => String(resolveId(s)) === subId
     );
@@ -1089,7 +1048,6 @@ const PurchaseOrderList: React.FC = () => {
     if (newStatus === current) return;
 
     try {
-      // Case A: parent PO is DRAFT and sub is DRAFT -> normal flow (allow pending or approve directly)
       if (poSnapshot.status === "DRAFT" && current === "DRAFT") {
         if (newStatus === "PENDINGAPPROVAL") {
           const ok = await confirm({
@@ -1104,12 +1062,10 @@ const PurchaseOrderList: React.FC = () => {
             return;
           }
           try {
-            // update sub
             await updateSub({
               id: subId,
               body: { status: "PENDINGAPPROVAL" },
             }).unwrap();
-            // update all its items to pending
             const items = sub.items || [];
             for (const it of items) {
               const iid = String(resolveId(it));
@@ -1136,7 +1092,6 @@ const PurchaseOrderList: React.FC = () => {
           return;
         }
 
-        // APPROVED allowed directly from DRAFT (no propagation)
         if (newStatus === "APPROVED") {
           const ok = await confirm({
             title: "Confirm approve Sub-PO",
@@ -1153,7 +1108,6 @@ const PurchaseOrderList: React.FC = () => {
               id: subId,
               body: { status: "APPROVED" },
             }).unwrap();
-            // approve items under it as well
             const items = sub.items || [];
             for (const it of items) {
               const iid = String(resolveId(it));
@@ -1180,7 +1134,6 @@ const PurchaseOrderList: React.FC = () => {
           return;
         }
 
-        // any other transition not expected
         toaster.create({
           description: "Invalid sub-PO transition.",
           type: "error",
@@ -1188,7 +1141,6 @@ const PurchaseOrderList: React.FC = () => {
         return;
       }
 
-      // Case B: sub is PENDINGAPPROVAL -> allow APPROVED only
       if (current === "PENDINGAPPROVAL") {
         if (newStatus !== "APPROVED") {
           toaster.create({
@@ -1211,7 +1163,6 @@ const PurchaseOrderList: React.FC = () => {
         try {
           await updateSub({ id: subId, body: { status: "APPROVED" } }).unwrap();
 
-          // propagate APPROVED to items
           const items = sub.items || [];
           for (const it of items) {
             const iid = String(resolveId(it));
@@ -1274,7 +1225,6 @@ const PurchaseOrderList: React.FC = () => {
       });
       return;
     }
-    // check sub status
     const sub = (expandedLocalDoc.subPurchaseOrders || []).find(
       (s: any) => String(resolveId(s)) === subId
     );
@@ -1312,6 +1262,39 @@ const PurchaseOrderList: React.FC = () => {
     }
   };
 
+  // --- pagination helpers (robust like the employee list) ---
+  const inferredTotal =
+    Number(
+      poResp?.data?.totalItems ??
+        poResp?.data?.total ??
+        poResp?.total ??
+        poResp?.data?.meta?.total ??
+        poResp?.data?.meta?.count ??
+        poResp?.meta?.total ??
+        0
+    ) || 0;
+
+  const totalCount = inferredTotal > 0 ? inferredTotal : orders?.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil((totalCount || 0) / limit));
+
+  const goToPage = (p: number) => {
+    if (p < 1) p = 1;
+    if (inferredTotal > 0 && p > totalPages) p = totalPages;
+
+    if (inferredTotal === 0 && p > page && (orders?.length ?? 0) < limit) {
+      // no more pages available
+      return;
+    }
+
+    setPage(p);
+  };
+
+  // when search changes, reset to page 1
+  const onSearchChange = (v: string) => {
+    setQuery(v);
+    setPage(1);
+  };
+
   return (
     <div style={{ padding: 16 }}>
       <div
@@ -1328,20 +1311,19 @@ const PurchaseOrderList: React.FC = () => {
         <div style={{ flex: 1 }} />
 
         <div style={{ width: 360 }}>
-          <SearchInput value={query} onChange={setQuery} />
+          <SearchInput value={query} onChange={onSearchChange} />
         </div>
       </div>
 
       <div>
         {isLoading ? (
           <div className="text-muted">Loading purchase orders...</div>
-        ) : filtered.length === 0 ? (
+        ) : displayList.length === 0 ? (
           <div className="text-muted">No purchase orders found</div>
         ) : (
-          filtered.map((po) => {
+          displayList.map((po) => {
             const isExpanded = expandedPoId === po.id;
 
-            // If we have expandedLocalDoc for this PO, prefer it as the authoritative sub list
             const expandedDocMatchesPo =
               expandedLocalDoc &&
               String(resolveId(expandedLocalDoc)) === String(po.id);
@@ -1362,9 +1344,7 @@ const PurchaseOrderList: React.FC = () => {
               value: po.totalValue ?? 0,
             };
 
-            // editable only when PO is DRAFT
             const poEditable = po.status === "DRAFT";
-            // allow selecting status when DRAFT or when already PENDINGAPPROVAL (to permit approving it)
             const poStatusSelectable =
               po.status === "DRAFT" || po.status === "PENDINGAPPROVAL";
 
@@ -1410,11 +1390,9 @@ const PurchaseOrderList: React.FC = () => {
                           onChange={(e) =>
                             handleUpdatePoStatus(po.id, e.target.value)
                           }
-                          // allow selecting status when PO is DRAFT, or when PO is PENDINGAPPROVAL to permit approving it
                           disabled={!poStatusSelectable}
                         >
                           {PO_STATUS_OPTIONS.map((s) => {
-                            // when PO is PENDINGAPPROVAL, only allow changing to APPROVED.
                             const optionDisabled =
                               po.status === "PENDINGAPPROVAL" &&
                               s !== "APPROVED" &&
@@ -1445,7 +1423,7 @@ const PurchaseOrderList: React.FC = () => {
                           onClick={() => setSelected(po)}
                           disabled={!poEditable}
                         >
-                          Xem chi tiết
+                          Chỉnh sửa
                         </button>
                         <button
                           className="btn btn-outline-info btn-sm"
@@ -1502,9 +1480,6 @@ const PurchaseOrderList: React.FC = () => {
                               resolveId(s) ||
                               `sub-noid-${String(po.id)}-${sIdx}`;
                             const subStatus = s.status ?? "DRAFT";
-                            // allow sub select when:
-                            // - parent PO is DRAFT and sub is DRAFT (normal editing)
-                            // - or sub is PENDINGAPPROVAL (to permit approving it)
                             const subStatusSelectable =
                               (po.status === "DRAFT" &&
                                 subStatus === "DRAFT") ||
@@ -1550,7 +1525,6 @@ const PurchaseOrderList: React.FC = () => {
                                           disabled={!subStatusSelectable}
                                         >
                                           {SUBPO_STATUS_OPTIONS.map((st) => {
-                                            // when sub is PENDINGAPPROVAL, only allow APPROVED change
                                             const optionDisabled =
                                               subStatus === "PENDINGAPPROVAL" &&
                                               st !== "APPROVED" &&
@@ -1651,9 +1625,6 @@ const PurchaseOrderList: React.FC = () => {
                                                 }-${idx}`;
                                             const itemStatus =
                                               it.status ?? "DRAFT";
-                                            // item select allowed when:
-                                            // - parent PO & sub are DRAFT and item is DRAFT (normal editing)
-                                            // - or item is PENDINGAPPROVAL (to permit approving it)
                                             const itemStatusSelectable =
                                               po.status === "DRAFT" &&
                                               (s.status ?? "DRAFT") ===
@@ -1697,7 +1668,6 @@ const PurchaseOrderList: React.FC = () => {
                                                   >
                                                     {POITEM_STATUS_OPTIONS.map(
                                                       (opt) => {
-                                                        // when item is PENDINGAPPROVAL, only allow APPROVED
                                                         const optionDisabled =
                                                           itemStatus ===
                                                             "PENDINGAPPROVAL" &&
@@ -1903,6 +1873,58 @@ const PurchaseOrderList: React.FC = () => {
         )}
       </div>
 
+      {/* --- Pagination controls --- */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: 8,
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => goToPage(page - 1)}
+            disabled={page <= 1}
+          >
+            Trước
+          </button>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => goToPage(page + 1)}
+            disabled={
+              inferredTotal > 0
+                ? page >= totalPages
+                : (orders?.length ?? 0) < limit
+            }
+            style={{ marginLeft: 8 }}
+          >
+            Sau
+          </button>
+          <span style={{ marginLeft: 12 }}>
+            Trang {page} {inferredTotal > 0 && `trong ${totalPages}`}
+          </span>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span className="text-muted">Go to</span>
+          <input
+            type="number"
+            value={page}
+            min={1}
+            max={totalPages}
+            onChange={(e) => {
+              const v = Number(e.target.value || 1);
+              if (!Number.isFinite(v)) return;
+              goToPage(Math.max(1, Math.floor(v)));
+            }}
+            style={{ width: 72 }}
+            className="form-control form-control-sm"
+          />
+        </div>
+      </div>
+
       <ProductSelectorModal
         show={productModalOpenForPo.open}
         onHide={() => setProductModalOpenForPo({ open: false })}
@@ -1913,12 +1935,10 @@ const PurchaseOrderList: React.FC = () => {
             return;
           }
 
-          // Prevent double submissions
           if (isCreatingSubs) return;
           setIsCreatingSubs(true);
 
           try {
-            // Build a set of existing product ids for this purchase order
             const existingProductIds = new Set<string>();
             const poSnapshot = orders.find(
               (o) => String(o.id) === String(poId)
@@ -1929,7 +1949,6 @@ const PurchaseOrderList: React.FC = () => {
                 if (pid) existingProductIds.add(String(pid));
               });
             }
-            // If we have expandedLocalDoc for that po, include them too
             if (
               expandedLocalDoc &&
               String(resolveId(expandedLocalDoc)) === String(poId)
@@ -1945,7 +1964,6 @@ const PurchaseOrderList: React.FC = () => {
               const productId = p.productId ?? p._id ?? p.unique_id;
               if (existingProductIds.has(String(productId)))
                 duplicates.push(String(productId));
-              // Force newly added products to DRAFT status regardless of p.status
               return {
                 productId: productId,
                 deliveryDate: p.deliveryDate,
@@ -1973,7 +1991,6 @@ const PurchaseOrderList: React.FC = () => {
               type: "success",
             });
 
-            // safe refetch of expanded subs (only attempts if the query has been started)
             await safeRefetchSubs();
 
             try {

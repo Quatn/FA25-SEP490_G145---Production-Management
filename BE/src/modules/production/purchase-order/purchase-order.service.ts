@@ -47,11 +47,22 @@ export class PurchaseOrderService {
   }): Promise<PaginatedList<PurchaseOrder>> {
     const skip = (page - 1) * limit;
 
-    // temp
+    // main filter for purchase orders (adjust as needed)
     const filter = {};
 
-    // temp
-    const populate = [];
+    // populate customer and explicitly include both deleted and non-deleted docs
+    const populate = [
+      {
+        path: "customer",
+        model: "Customer", // optional if ref is set on schema
+        // explicit isDeleted so the soft-delete plugin won't add its default filter
+        match: { isDeleted: { $in: [true, false] } },
+        // pick the fields you want returned
+        select:
+          "_id code name address email contactNumber note isDeleted deletedAt createdAt updatedAt",
+        // justOne: true // useful if customer is a single ref
+      },
+    ];
 
     const [totalItems, data] = await Promise.all([
       this.purchaseOrderModel.countDocuments(filter),
@@ -59,7 +70,7 @@ export class PurchaseOrderService {
         .find(filter)
         .skip(skip)
         .limit(limit)
-        .populate(populate || []),
+        .populate(populate),
     ]);
 
     const totalPages = Math.ceil(totalItems / limit);
@@ -76,6 +87,7 @@ export class PurchaseOrderService {
       data,
     };
   }
+
 
   async queryOrdersWithUnmanufacturedItems({
     page,
