@@ -28,7 +28,10 @@ export class WareFinishingProcessTypeService {
 
     if (orConditions.length === 0) return;
 
-    const query: FilterQuery<WareFinishingProcessTypeDocument> = { $or: orConditions };
+    const query: FilterQuery<WareFinishingProcessTypeDocument> = { 
+      $or: orConditions,
+      isDeleted: { $in: [true, false] }, 
+     };
 
     if (excludeId) {
       query._id = { $ne: excludeId };
