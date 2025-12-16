@@ -27,8 +27,9 @@ import { useGetAllPaperTypesQuery } from "@/service/api/paperTypeApiSlice";
 import { PAPER_ROLL_URL } from "@/service/constants";
 
 type RootStackParamList = {
-  Scan: undefined;
-  Detail: { qrText: string };
+  ImportExportButton: undefined;
+  Scan: { action?: "import" | "export" } | undefined;
+  Detail: { qrText: string; action?: "import" | "export" };
 };
 type Props = NativeStackScreenProps<RootStackParamList, "Detail">;
 
@@ -43,7 +44,7 @@ function getIdFromDoc(doc: any): string | undefined {
 }
 
 export default function PaperDetailScreen({ route, navigation }: Props) {
-  const { qrText } = route.params;
+  const { qrText, action } = route.params;
 
   const {
     data: detailResp,
@@ -312,6 +313,10 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
     );
   }
 
+  // Decide which UI blocks to show:
+  const showExport = action === undefined || action === "export";
+  const showReimport = action === undefined || action === "import";
+
   // Render the same layout you had, but use localWeight to show current weight
   return (
     <View style={styles.container}>
@@ -366,30 +371,37 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
           </View>
         </View>
 
+        {/* Actions area */}
         <View style={styles.actionsRow}>
-          <View style={styles.actionBtn}>
-            <Button title="Xuất" onPress={onExport} disabled={updating} />
-          </View>
+          {showExport && (
+            <View style={styles.actionBtn}>
+              <Button title="Xuất" onPress={onExport} disabled={updating} />
+            </View>
+          )}
         </View>
 
-        <View style={styles.reimportBox}>
-          <Text style={styles.reimportTitle}>Điền trọng lượng để nhập lại</Text>
+        {showReimport && (
+          <View style={styles.reimportBox}>
+            <Text style={styles.reimportTitle}>
+              Điền trọng lượng để nhập lại
+            </Text>
 
-          <TextInput
-            placeholder="Số kg nhập lại"
-            value={reimportValue}
-            onChangeText={setReimportValue}
-            keyboardType="numeric"
-            style={styles.input}
-          />
-          <View style={{ marginTop: 8 }}>
-            <Button
-              title={updating ? "Đang lưu..." : "Xác nhận nhập"}
-              onPress={onReImport}
-              disabled={updating}
+            <TextInput
+              placeholder="Số kg nhập lại"
+              value={reimportValue}
+              onChangeText={setReimportValue}
+              keyboardType="numeric"
+              style={styles.input}
             />
+            <View style={{ marginTop: 8 }}>
+              <Button
+                title={updating ? "Đang lưu..." : "Xác nhận nhập"}
+                onPress={onReImport}
+                disabled={updating}
+              />
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={{ height: 96 }} />
       </ScrollView>
