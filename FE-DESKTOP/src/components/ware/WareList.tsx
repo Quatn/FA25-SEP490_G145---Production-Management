@@ -21,6 +21,8 @@ import {
 import { useGetAllPaperSuppliersQuery } from "@/service/api/paperSupplierApiSlice";
 import { useConfirm } from "@/components/common/ConfirmModal";
 import { toaster } from "@/components/ui/toaster";
+import dynamic from "next/dynamic";
+import WareAdvancedSearchModal from "@/components/ware/WareAdvancedSearchModal";
 
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
@@ -377,12 +379,22 @@ export const WareList: React.FC = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(5);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<any | null>(null);
+
+  const waresQueryParams = React.useMemo(() => {
+    if (activeFilters && Object.keys(activeFilters).length > 0) {
+      return { ...activeFilters, page, limit };
+    }
+    // fallback to simple search field (maps to 'code' param for backend)
+    return { page, limit, code: search ?? undefined };
+  }, [activeFilters, page, limit, search]);
 
   const {
     data: waresResp,
     refetch: refetchWares,
     isLoading: waresLoading,
-  } = useGetWaresQuery({ page, limit, search });
+  } = useGetWaresQuery(waresQueryParams);
 
   const { data: fluteResp } = useGetAllFluteCombinationQuery();
   const fluteList: any[] = fluteResp?.data ?? fluteResp ?? [];
@@ -1302,11 +1314,21 @@ export const WareList: React.FC = () => {
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(1);
+              if (activeFilters) setActiveFilters(null);
             }}
             style={{ minWidth: 300 }}
           />
           <button
+            className="btn btn-outline-secondary"
+            onClick={() => setAdvancedOpen(true)}
+            title="Advanced search"
+            style={{ marginLeft: 8, minWidth: 170 }}
+          >
+            Tìm kiếm nâng cao
+          </button>
+          <button
             className="btn btn-primary"
+            style={{ minWidth: 69 }}
             onClick={() => setCreateOpen(true)}
           >
             + Tạo
@@ -1553,6 +1575,35 @@ export const WareList: React.FC = () => {
         handleEditSubmit={handleEditSubmit}
         getIdFromDoc={getIdFromDoc}
         MultiSelectInline={MultiSelectInline}
+      />
+
+      <WareAdvancedSearchModal
+        show={advancedOpen}
+        onClose={() => setAdvancedOpen(false)}
+        onSearch={(filters: any) => {
+          // normalize filters slightly: convert numeric strings to numbers where appropriate
+          const normalized: any = { ...(filters || {}) };
+          ["wareWidth", "wareLength", "wareHeight"].forEach((k) => {
+            const v = (normalized as any)[k];
+            if (v === "" || v === undefined || v === null)
+              delete (normalized as any)[k];
+            else if (typeof v === "string") {
+              const n = Number(v);
+              if (!Number.isFinite(n)) delete (normalized as any)[k];
+              else (normalized as any)[k] = n;
+            }
+          });
+          setActiveFilters(
+            Object.keys(normalized).length === 0 ? null : normalized
+          );
+          setPage(1);
+        }}
+        initial={activeFilters ?? {}}
+        fluteList={fluteList}
+        printColorList={printColorList}
+        manufList={manufList}
+        MultiSelectInline={MultiSelectInline}
+        getIdFromDoc={getIdFromDoc}
       />
     </div>
   );

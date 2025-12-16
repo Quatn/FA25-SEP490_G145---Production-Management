@@ -32,34 +32,88 @@ export class WareService {
     return payload;
   }
 
-  async findAll(options: { page?: number; limit?: number; search?: string }): Promise<PaginatedList<any>> {
+  // ware.service.ts (replace existing findAll)
+  async findAll(options: {
+    page?: number;
+    limit?: number;
+    code?: string; // ware.code (free-text)
+    fluteCombination?: string; // now interpreted as fluteCombination.code (string)
+    wareWidth?: number;
+    wareLength?: number;
+    wareHeight?: number;
+    wareManufacturingProcessType?: string; // keep as id
+    printColor?: string[]; // array of printColor codes (strings)
+  }): Promise<PaginatedList<any>> {
     const page = Math.max(1, options.page ?? 1);
     const limit = Math.max(1, Math.min(500, options.limit ?? 100));
-    const filter: any = {};
-    if (options.search && options.search.trim() !== "") {
-      const regex = new RegExp(options.search.trim(), "i");
-      filter.$or = [{ code: regex }];
+
+    // Build base DB filter for fields that are stored directly on the ware document
+    const baseFilter: any = {};
+
+    // ware.code - free-text (case-insensitive)
+    if (options.code && String(options.code).trim() !== "") {
+      baseFilter.code = new RegExp(String(options.code).trim(), "i");
     }
 
-    const [data, total] = await Promise.all([
-      this.wareModel.find(filter)
-        .populate("fluteCombination")
-        .populate("wareManufacturingProcessType")
-        .populate("printColors")
-        .populate("finishingProcesses")
-        // .populate("manufacturingProcesses")
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean()
-        .exec(),
-      this.wareModel.countDocuments(filter),
-    ]);
+    if (options.wareWidth !== undefined && options.wareWidth !== null && options.wareWidth.toString() !== "") {
+      baseFilter.wareWidth = Number(options.wareWidth);
+    }
+    if (options.wareLength !== undefined && options.wareLength !== null && options.wareLength.toString() !== "") {
+      baseFilter.wareLength = Number(options.wareLength);
+    }
+    if (options.wareHeight !== undefined && options.wareHeight !== null && options.wareHeight.toString() !== "") {
+      baseFilter.wareHeight = Number(options.wareHeight);
+    }
 
-    const totalItems = total;
+    // wareManufacturingProcessType - treat as ObjectId if provided (existing behavior)
+    if (options.wareManufacturingProcessType) {
+      try {
+        baseFilter.wareManufacturingProcessType = new Types.ObjectId(options.wareManufacturingProcessType);
+      } catch (e) {
+        // if not a valid id, ignore the filter
+      }
+    }
+
+    // Fetch candidate docs from DB (apply only baseFilter). We populate the referenced docs
+    // so we can match by their `.code` fields in-memory.
+    const allCandidates = await this.wareModel.find(baseFilter)
+      .populate("fluteCombination")
+      .populate("wareManufacturingProcessType")
+      .populate("printColors")
+      .populate("finishingProcesses")
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    // In-memory filter: fluteCombination.code and printColors[].code
+    let filtered = allCandidates;
+
+    if (options.fluteCombination && String(options.fluteCombination).trim() !== "") {
+      const fcRegex = new RegExp(String(options.fluteCombination).trim(), "i");
+      filtered = filtered.filter((w: any) => {
+        const fc = w?.fluteCombination;
+        if (!fc) return false;
+        return fcRegex.test(String(fc.code ?? ""));
+      });
+    }
+
+    if (options.printColor && Array.isArray(options.printColor) && options.printColor.length > 0) {
+      // options.printColor is an array of codes (strings). Match any ware that has any printColor.code in the list.
+      const codesSet = new Set(options.printColor.map((c) => String(c).trim().toLowerCase()).filter(Boolean));
+      filtered = filtered.filter((w: any) => {
+        const pcs = Array.isArray(w?.printColors) ? w.printColors : [];
+        return pcs.some((pc: any) => codesSet.has(String(pc?.code ?? "").toLowerCase()));
+      });
+    }
+
+    // total + pagination applied after filtering
+    const totalItems = filtered.length;
     const totalPages = Math.max(1, Math.ceil((totalItems || 0) / limit));
+    const start = (page - 1) * limit;
+    const paged = filtered.slice(start, start + limit);
+
     return {
-      data,
+      data: paged,
       page,
       limit,
       totalItems,
@@ -68,6 +122,7 @@ export class WareService {
       hasPrevPage: page > 1,
     };
   }
+
 
   async findOneById(id: string): Promise<Ware> {
     const doc = await this.wareModel

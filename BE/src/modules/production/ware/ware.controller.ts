@@ -13,30 +13,33 @@ export class WareController {
 
   @Get()
   @ApiOperation({
-    summary: "List wares with pagination and search",
+    summary: "List wares with pagination and advanced filters (code/fluteCombination.code/width/length/height/manufacturingType/printColor.code)",
   })
-  findAll(
+  async findAll(
     @Query("page") page?: string,
     @Query("limit") limit?: string,
-    @Query("search") search?: string,
+    @Query("code") code?: string,
+    @Query("fluteCombination") fluteCombination?: string, // interpreted as fluteCombination.code (string)
+    @Query("wareWidth") wareWidth?: string,
+    @Query("wareLength") wareLength?: string,
+    @Query("wareHeight") wareHeight?: string,
+    @Query("wareManufacturingProcessType") wareManufacturingProcessType?: string, // id expected
+    @Query("printColor") printColor?: string, // comma-separated printColor codes
   ) {
-    return this.wareService.findAll({
-      page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
-      search,
-    });
-  }
+    const printColorArr = printColor
+      ? String(printColor).split(",").map((s) => s.trim()).filter(Boolean)
+      : undefined;
 
-  @Get('deleted')
-  async findDeleted(
-    @Query('page') page = '1',
-    @Query('limit') limit = '20',
-    @Query('search') search?: string,
-  ) {
-    return this.wareService.findDeleted({
-      page: Number(page) || 1,
-      limit: Number(limit) || 20,
-      search: search || undefined,
+    return this.wareService.findAll({
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 100,
+      code: code || undefined,
+      fluteCombination: fluteCombination || undefined, // code string
+      wareWidth: wareWidth !== undefined && wareWidth !== "" ? Number(wareWidth) : undefined,
+      wareLength: wareLength !== undefined && wareLength !== "" ? Number(wareLength) : undefined,
+      wareHeight: wareHeight !== undefined && wareHeight !== "" ? Number(wareHeight) : undefined,
+      wareManufacturingProcessType: wareManufacturingProcessType || undefined,
+      printColor: printColorArr,
     });
   }
 
@@ -49,14 +52,29 @@ export class WareController {
   @Get("list")
   @ApiOperation({ summary: "List wares with pagination and search" })
   async findPaginated(
-    @Query("page") page = "1",
-    @Query("limit") limit = "100",
-    @Query("search") search?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @Query("code") code?: string,
+    @Query("fluteCombination") fluteCombination?: string, // interpreted as fluteCombination.code (string)
+    @Query("wareWidth") wareWidth?: string,
+    @Query("wareLength") wareLength?: string,
+    @Query("wareHeight") wareHeight?: string,
+    @Query("wareManufacturingProcessType") wareManufacturingProcessType?: string, // id expected
+    @Query("printColor") printColor?: string,
   ): Promise<BaseResponse<PaginatedList<any>>> {
+    const printColorArr = printColor
+      ? String(printColor).split(",").map((s) => s.trim()).filter(Boolean)
+      : undefined;
     const docs = await this.wareService.findAll({
-      page: Number(page),
-      limit: Number(limit),
-      search,
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 100,
+      code: code || undefined,
+      fluteCombination: fluteCombination || undefined, // code string
+      wareWidth: wareWidth !== undefined && wareWidth !== "" ? Number(wareWidth) : undefined,
+      wareLength: wareLength !== undefined && wareLength !== "" ? Number(wareLength) : undefined,
+      wareHeight: wareHeight !== undefined && wareHeight !== "" ? Number(wareHeight) : undefined,
+      wareManufacturingProcessType: wareManufacturingProcessType || undefined,
+      printColor: printColorArr,
     });
     return { success: true, message: "Fetch successful", data: docs };
   }
