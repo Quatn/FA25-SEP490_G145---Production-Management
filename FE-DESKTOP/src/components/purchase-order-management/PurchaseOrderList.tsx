@@ -78,7 +78,7 @@ const SearchInput: React.FC<{
 }> = ({ value, onChange }) => (
   <input
     className="form-control"
-    placeholder="Search PO number or customer"
+    placeholder="Tìm kiếm mã PO "
     value={value}
     onChange={(e) => onChange(e.target.value)}
   />
@@ -168,7 +168,6 @@ const PurchaseOrderList: React.FC = () => {
     setExpandedLocalDoc(doc ? JSON.parse(JSON.stringify(doc)) : null);
   }, [expandedPoResp]);
 
-  // stable id resolver (returns string if possible, else empty string)
   const resolveId = (x: any) => {
     if (x == null) return "";
     const candidate = x?._id?.$oid ?? x?._id ?? x?.id ?? null;
@@ -302,8 +301,10 @@ const PurchaseOrderList: React.FC = () => {
         payload.customer = (updated as any).customerId;
       }
 
+      let created = false;
       if (!updated.id || String(updated.id).startsWith("local-")) {
         await createPo(payload).unwrap();
+        created = true;
       } else {
         await updatePo({ id: updated.id, body: payload }).unwrap();
       }
@@ -316,6 +317,12 @@ const PurchaseOrderList: React.FC = () => {
 
       // success -> parent returns success to modal, which will close
       setSelected(null);
+
+      toaster.create({
+        description: created ? "Tạo PO thành công." : "Cập nhật PO thành công.",
+        type: "success",
+      });
+
       return { success: true };
     } catch (err: any) {
       console.error("Save PO failed", err);
@@ -352,6 +359,10 @@ const PurchaseOrderList: React.FC = () => {
       } catch (e) {
         console.warn("refetch purchase orders failed", e);
       }
+      toaster.create({
+        description: "Xóa PO thành công.",
+        type: "success",
+      });
     } catch (err: any) {
       console.error("Delete failed", err);
       toaster.create({
@@ -838,6 +849,10 @@ const PurchaseOrderList: React.FC = () => {
             } catch (e) {
               console.warn("refetch purchase orders failed", e);
             }
+            toaster.create({
+              description: "PO đã chuyển sang PENDINGAPPROVAL.",
+              type: "success",
+            });
           } catch (err: any) {
             console.error("Update PO status failed", err);
             try {
@@ -918,6 +933,10 @@ const PurchaseOrderList: React.FC = () => {
             } catch (e) {
               console.warn("refetch purchase orders failed", e);
             }
+            toaster.create({
+              description: "PO đã được DUYỆT (APPROVED).",
+              type: "success",
+            });
           } catch (err: any) {
             console.error("Update PO status failed", err);
             try {
@@ -1006,6 +1025,10 @@ const PurchaseOrderList: React.FC = () => {
           } catch (e) {
             console.warn("refetch purchase orders failed", e);
           }
+          toaster.create({
+            description: "PO đã được DUYỆT (APPROVED).",
+            type: "success",
+          });
         } catch (err: any) {
           console.error("Approve PO (from PENDINGAPPROVAL) failed", err);
           try {
@@ -1204,7 +1227,7 @@ const PurchaseOrderList: React.FC = () => {
           await safeRefetchSubs();
         } catch (err: any) {
           console.error("Approve sub-PO failed", err);
-          await safeRefRefetchSubs();
+          await safeRefetchSubs();
           toaster.create({
             description:
               "Update failed: " +
@@ -1215,7 +1238,6 @@ const PurchaseOrderList: React.FC = () => {
         return;
       }
 
-      // Otherwise disallow (for example PO not DRAFT and sub not PENDING)
       toaster.create({
         description:
           "Only editable when Sub-PO is DRAFT (and parent PO is DRAFT), or can be approved when Sub-PO is PENDINGAPPROVAL.",
@@ -1303,18 +1325,6 @@ const PurchaseOrderList: React.FC = () => {
         <button className="btn btn-outline-primary" onClick={handleCreateNewPO}>
           Tạo PO
         </button>
-        <button
-          className="btn btn-outline-secondary"
-          onClick={() =>
-            toaster.create({
-              description: "Nhập Excel - not implemented",
-              type: "info",
-            })
-          }
-        >
-          Nhập Excel
-        </button>
-
         <div style={{ flex: 1 }} />
 
         <div style={{ width: 360 }}>
@@ -1958,6 +1968,10 @@ const PurchaseOrderList: React.FC = () => {
             };
 
             await createSubFromProducts(payload).unwrap();
+            toaster.create({
+              description: "Thêm sản phẩm vào PO thành công.",
+              type: "success",
+            });
 
             // safe refetch of expanded subs (only attempts if the query has been started)
             await safeRefetchSubs();
