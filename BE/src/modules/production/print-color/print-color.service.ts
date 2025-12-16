@@ -22,7 +22,10 @@ export class PrintColorService {
 
     if (orConditions.length === 0) return;
 
-    const query: FilterQuery<PrintColorDocument> = { $or: orConditions };
+    const query: FilterQuery<PrintColorDocument> = { 
+      $or: orConditions,
+      isDeleted: { $in: [true, false] }, 
+     };
     if (excludeId) query._id = { $ne: excludeId };
 
     const duplicates = await this.printColorModel.find(query).select('code').lean();

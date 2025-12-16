@@ -28,7 +28,10 @@ export class WareManufacturingProcessTypeService {
 
     if (orConditions.length === 0) return;
 
-    const query: FilterQuery<WareManufacturingProcessTypeDocument> = { $or: orConditions };
+    const query: FilterQuery<WareManufacturingProcessTypeDocument> = { 
+      $or: orConditions,
+      isDeleted: { $in: [true, false] }, 
+     };
 
     if (excludeId) {
       query._id = { $ne: excludeId };

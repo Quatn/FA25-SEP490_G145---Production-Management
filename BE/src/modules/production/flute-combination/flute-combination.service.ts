@@ -22,6 +22,7 @@ export class FluteCombinationService {
 
     const query: any = {
       $or: [{ code }],
+      isDeleted: { $in: [true, false] }, 
     };
 
     const duplicates = await this.fcModel.find(query).lean();
