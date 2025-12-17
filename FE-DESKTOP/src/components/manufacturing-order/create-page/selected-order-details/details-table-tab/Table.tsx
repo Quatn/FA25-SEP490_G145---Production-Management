@@ -208,19 +208,21 @@ export default function CreatePageManufacturingOrderTable(
 
       dispatch({ type: "SET_INSUFFICIENT_PAPER_TYPES", payload: insufficientPaperTypes })
 
-      const currentDate = new Date()
+      if (check.nonEmptyArray(insufficientPaperTypes)) {
+        const currentDate = new Date()
 
-      const insufficientOrderBufferTimes = tableData.filter(order => check.nonEmptyObject(order.purchaseOrderItem))
-        .map((order) => {
-          const adjusted = new Date(order.manufacturingDateAdjustment ?? "---")
-          return {
-            code: order.code,
-            date: (check.string(order.manufacturingDateAdjustment) && check.date(adjusted)) ? adjusted : new Date(order.manufacturingDate)
-          }
-        })
-        .filter(order => (order.date.getTime() - currentDate.getTime()) < productionModuleConfigs.MIN_SCHEDULE_TIME_MS_DISTANCE_ALLOWED_FOR_UNFULFILLED_MATERIAL_REQUIREMENTS)
+        const insufficientOrderBufferTimes = tableData.filter(order => check.nonEmptyObject(order.purchaseOrderItem))
+          .map((order) => {
+            const adjusted = new Date(order.manufacturingDateAdjustment ?? "---")
+            return {
+              code: order.code,
+              date: (check.string(order.manufacturingDateAdjustment) && check.date(adjusted)) ? adjusted : new Date(order.manufacturingDate)
+            }
+          })
+          .filter(order => (order.date.getTime() - currentDate.getTime()) < productionModuleConfigs.MIN_SCHEDULE_TIME_MS_DISTANCE_ALLOWED_FOR_UNFULFILLED_MATERIAL_REQUIREMENTS)
 
-      dispatch({ type: "SET_INSUFFICIENT_ORDER_BUFFER_TIMES", payload: insufficientOrderBufferTimes })
+        dispatch({ type: "SET_INSUFFICIENT_ORDER_BUFFER_TIMES", payload: insufficientOrderBufferTimes })
+      }
     }
 
     dispatch({
