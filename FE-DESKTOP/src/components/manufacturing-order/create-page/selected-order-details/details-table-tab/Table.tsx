@@ -31,6 +31,7 @@ import useDataTable from "@/components/ui/data-table/hook";
 import { CreatePageStoreContext } from "../TabbedContainer";
 import { useStore } from "@tanstack/react-store";
 import { Ware } from "@/types/Ware";
+import { productionModuleConfigs } from "@/config/production-module.config";
 
 type TableProps = {
   rootProps?: BoxProps;
@@ -57,7 +58,7 @@ export default function CreatePageManufacturingOrderTable(
 
   const { table, tableComponent, tableData } = useDataTable({
     data: rawTableData,
-    columns: columnsForTab.filter((r) => r.id !== "actions-column"),
+    columns: columnsForTab.filter((r) => !check.in(r.id, ["orderStatusDisplay", "actions-column"])).filter((r) => r.id !== "actions-column"),
     getCoreRowModel: getCoreRowModel(),
     getRowId: (mo) => mo._id,
     bodyPropsStack: {
@@ -206,6 +207,20 @@ export default function CreatePageManufacturingOrderTable(
       });
 
       dispatch({ type: "SET_INSUFFICIENT_PAPER_TYPES", payload: insufficientPaperTypes })
+
+      const currentDate = new Date()
+
+      const insufficientOrderBufferTimes = tableData.filter(order => check.nonEmptyObject(order.purchaseOrderItem))
+        .map((order) => {
+          const adjusted = new Date(order.manufacturingDateAdjustment ?? "---")
+          return {
+            code: order.code,
+            date: (check.string(order.manufacturingDateAdjustment) && check.date(adjusted)) ? adjusted : new Date(order.manufacturingDate)
+          }
+        })
+        .filter(order => (order.date.getTime() - currentDate.getTime()) < productionModuleConfigs.MIN_SCHEDULE_TIME_MS_DISTANCE_ALLOWED_FOR_UNFULFILLED_MATERIAL_REQUIREMENTS)
+
+      dispatch({ type: "SET_INSUFFICIENT_ORDER_BUFFER_TIMES", payload: insufficientOrderBufferTimes })
     }
 
     dispatch({

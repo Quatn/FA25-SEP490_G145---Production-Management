@@ -6,6 +6,7 @@ import { useContext } from "react";
 import { paperUsageTableColumns } from "./paperUsageTableDefinition";
 import { CreatePageStoreContext } from "../TabbedContainer";
 import { useStore } from "@tanstack/react-store";
+import check from "check-types";
 
 export type PaperUsageTableProps = {
   rootProps?: BoxProps;

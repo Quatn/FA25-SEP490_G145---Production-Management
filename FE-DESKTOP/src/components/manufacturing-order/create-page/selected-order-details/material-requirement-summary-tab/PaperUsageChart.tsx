@@ -16,19 +16,20 @@ function CustomTooltip(props: Partial<TooltipContentProps<string, string>>) {
   const codes = props.payload?.at(0).payload.codes
   return (
     <Box rounded="sm" bg={"bg"} p={2}>
-      <HStack>
-        <Heading size="md">{label}</Heading>
-      </HStack>
       <Stack>
-        {check.array.of.string(codes) && (codes as unknown as string[]).map((code) => (
-          <Text key={code}>{code}</Text>
-        ))}
+        <Heading size="md">{label}</Heading>
+        <Text>
+          {
+            check.array.of.string(codes) && (codes as unknown as string[])
+              .join(", ")
+          }
+        </Text>
       </Stack>
       <Stack mt={2}>
         <DataList.Root orientation="horizontal">
           {payload.map((item) => (
             <DataList.Item key={item.name} justifyContent={"start"}>
-                <Box boxSize="2" bg={item.color} />
+              <Box boxSize="2" bg={item.color} />
               <DataList.ItemValue><Text>{(item.value as number).toFixed(2)} kg</Text></DataList.ItemValue>
             </DataList.Item>
           ))}

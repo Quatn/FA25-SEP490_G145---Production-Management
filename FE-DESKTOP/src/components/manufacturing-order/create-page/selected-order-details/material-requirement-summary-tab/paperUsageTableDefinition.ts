@@ -38,14 +38,14 @@ export const paperUsageTableColumns = (header: string) => [
         header: "Trọng lượng sử dụng (kg)",
         ...colSize.sm,
         cell: ({ row }) =>
-          row.original.requirementWeight.toFixed(4),
+          row.original.requirementWeight.toFixed(2),
       }),
       columnHelper.display({
         id: "inventoryWeight",
         header: "Tồn kho (kg)",
         ...colSize.sm,
         cell: ({ row }) =>
-          row.original.inventoryWeight.toFixed(4),
+          row.original.inventoryWeight.toFixed(2),
       }),
       /*
       columnHelper.display({
