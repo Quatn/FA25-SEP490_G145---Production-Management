@@ -1,166 +1,60 @@
 "use client"
 
-import DataEmpty from "@/components/common/DataEmpty";
-import DataFetchError from "@/components/common/DataFetchError";
-import DataLoading from "@/components/common/DataLoading";
-import { manufacturingOrderComponentUtils as moUtils } from "@/components/manufacturing-order/utils";
 import { productionModuleConfigs } from "@/config/production-module.config";
-import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
-import { useGetAllByPaperTypesUsageQuery, useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
-import { useGetInventoryByWarePaperTypeCodesQuery } from "@/service/api/paperRollApiSlice";
-import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
 import { Chart, useChart } from "@chakra-ui/charts"
+import { Box, Center, DataList, Heading, HStack, Stack, Text } from "@chakra-ui/react";
 import check from "check-types";
-import { useMemo } from "react";
-import { CartesianGrid, Legend, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts"
+import { useContext } from "react";
+import { LuCheck } from "react-icons/lu";
+import { CartesianGrid, Legend, Line, LineChart, ReferenceArea, ReferenceLine, Tooltip, TooltipContentProps, XAxis, YAxis } from "recharts"
+import { CreatePageStoreContext } from "../TabbedContainer";
+import { useStore } from "@tanstack/react-store";
 
-const DEFAULT_LINE_COLORS = [
-  "teal.solid",
-  "blue.solid",
-  "green.solid",
-  "orange.solid",
-  "purple.solid",
-  "red.solid",
-]
+function CustomTooltip(props: Partial<TooltipContentProps<string, string>>) {
+  const { active, payload, label } = props
+  if (!active || !payload || payload.length === 0) return null
+  const codes = props.payload?.at(0).payload.codes
+  return (
+    <Box rounded="sm" bg={"bg"} p={2}>
+      <HStack>
+        <Heading size="md">{label}</Heading>
+      </HStack>
+      <Stack>
+        {check.array.of.string(codes) && (codes as unknown as string[]).map((code) => (
+          <Text key={code}>{code}</Text>
+        ))}
+      </Stack>
+      <Stack mt={2}>
+        <DataList.Root orientation="horizontal">
+          {payload.map((item) => (
+            <DataList.Item key={item.name} justifyContent={"start"}>
+                <Box boxSize="2" bg={item.color} />
+              <DataList.ItemValue><Text>{(item.value as number).toFixed(2)} kg</Text></DataList.ItemValue>
+            </DataList.Item>
+          ))}
+        </DataList.Root>
+      </Stack>
+    </Box>
+  )
+}
 
 export type PaperUsageChartProps = {
   type: "FACE" | "RAW"
 };
 
 export default function PaperUsageChart(props: PaperUsageChartProps) {
-  const { useSelector } = ManufacturingOrderCreatePageReducerStore;
-  const selectedPOIsIds = useSelector(s => s.selectedPOIsIds);
+  const store = useContext(CreatePageStoreContext);
+  if (!store) throw new Error("Must be used inside CreatePageStoreContext");
+  const paperUsageChartData = useStore(store, (s) => s.paperUsageChartData)
 
-  const {
-    data: fullDetailMOsResponse,
-    error: fetchError,
-    isLoading: isFetchingList,
-    refetch: refetchDraft,
-  } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
-    ids: selectedPOIsIds,
-  });
+  const filteredPaperUsageChartData = {
+    ...paperUsageChartData,
+    series: paperUsageChartData.series.filter(s => check.equal(props.type === "RAW", s.name.split("/").length === 3))
+  }
 
-  const paperTypesList = useMemo(() => {
-    const arr = fullDetailMOsResponse?.data?.map(mo => {
-      const ware = moUtils.getPopulatedWare(mo)
+  const chart = useChart(filteredPaperUsageChartData)
 
-      return [ware?.faceLayerPaperType, ware?.EFlutePaperType, ware?.EBLinerLayerPaperType, ware?.BFlutePaperType, ware?.BACLinerLayerPaperType, ware?.ACFlutePaperType, ware?.backLayerPaperType]
-    })
-
-    const set = new Set(arr?.flat())
-    return [...set].filter(p => !check.undefined(p)
-      && !check.null(p)
-      && (
-        (props.type === "FACE") ? (p.split("/").length === 4)
-          : (p.split("/").length === 3)
-      )) as string[]
-  }, [fullDetailMOsResponse?.data, props.type])
-
-  const {
-    data: paperrollsByTypeListResponse,
-    error: paperrollsByTypeListFetchError,
-    isLoading: paperrollsByTypeListIsFetchingList,
-  } = useGetInventoryByWarePaperTypeCodesQuery({
-    codes: paperTypesList,
-  }, { skip: paperTypesList.length < 1 });
-
-  const {
-    data: moByTypeListResponse,
-    error: moByTypeListFetchError,
-    isLoading: moByTypeListIsFetchingList,
-  } = useGetAllByPaperTypesUsageQuery({
-    paperTypes: paperTypesList,
-  }, { skip: paperTypesList.length < 1 });
-
-  const paperUsageChartData = useMemo(() => {
-    const arr: ({
-      orderCode: string,
-      manufacturingDate: Date,
-      types: {
-        type: string,
-        weight: number,
-      }[]
-    })[] | undefined = moByTypeListResponse?.data?.map(mo => {
-      const ware = moUtils.getPopulatedWare(mo)
-
-      const types = ([
-        {
-          type: ware?.faceLayerPaperType, weight: parseFloat(mo.faceLayerPaperWeight + "")
-        },
-        {
-          type: ware?.EFlutePaperType, weight: parseFloat(mo.EFlutePaperWeight + "")
-        },
-        {
-          type: ware?.EBLinerLayerPaperType, weight: parseFloat(mo.EBLinerLayerPaperWeight + "")
-        },
-        {
-          type: ware?.BFlutePaperType, weight: parseFloat(mo.BFlutePaperWeight + "")
-        },
-        {
-          type: ware?.BACLinerLayerPaperType, weight: parseFloat(mo.BACLinerLayerPaperWeight + "")
-        },
-        {
-          type: ware?.ACFlutePaperType, weight: parseFloat(mo.ACFlutePaperWeight + "")
-        },
-        {
-          type: ware?.backLayerPaperType, weight: parseFloat(mo.backLayerPaperWeight + "")
-        },
-      ])
-
-      return {
-        orderCode: mo.code,
-        manufacturingDate: new Date(mo.manufacturingDate),
-        types: (types.filter(ty => check.string(ty.type) && check.number(ty.weight)) as { type: string, weight: number }[]),
-      }
-    })
-
-    const sortedDataList = arr?.sort((mo1, mo2) => {
-      return mo1.manufacturingDate.getTime() - mo2.manufacturingDate.getTime();
-    })
-
-    const accData: Record<string, string | number>[] = []
-
-    if (sortedDataList?.length) {
-      const init: Record<string, string | number> = {
-        manufacturingDate: formatDateToDDMMYYYY(sortedDataList[0].manufacturingDate)
-      }
-
-      paperTypesList.forEach((typ) => {
-        if (typ !== "manufacturingDate") {
-          init[typ] = paperrollsByTypeListResponse?.data.find(pr => pr.code === typ)?.weight ?? 0
-        }
-      })
-
-      accData.push(init)
-    }
-
-    sortedDataList?.forEach(mo => {
-      const lastItem = accData.at(-1)
-      if (lastItem) {
-        if (lastItem["manufacturingDate"] === formatDateToDDMMYYYY(mo.manufacturingDate)) {
-          mo.types.forEach((tp) => {
-            if (check.number(lastItem[tp.type])) lastItem[tp.type] = (lastItem[tp.type] as number) - tp.weight
-          })
-        }
-        else {
-          const newItem = { ...lastItem }
-          newItem["manufacturingDate"] = formatDateToDDMMYYYY(mo.manufacturingDate)
-          mo.types.forEach((tp) => {
-            if (check.number(newItem[tp.type])) newItem[tp.type] = (newItem[tp.type] as number) - tp.weight
-          })
-          accData.push(newItem)
-        }
-      }
-    })
-
-    return {
-      data: accData,
-      series: paperTypesList.map((s, index) => ({ name: s, color: DEFAULT_LINE_COLORS.at(index) })),
-    }
-  }, [moByTypeListResponse, paperrollsByTypeListResponse?.data, paperTypesList])
-
-  const chart = useChart(paperUsageChartData)
-
+  /*
   if (isFetchingList || moByTypeListIsFetchingList || paperrollsByTypeListIsFetchingList) {
     return <DataLoading />
   }
@@ -171,6 +65,19 @@ export default function PaperUsageChart(props: PaperUsageChartProps) {
 
   if (paperTypesList.length < 1) {
     return <DataEmpty />
+  }
+  */
+
+  if (chart.data.length < 1) {
+    return (
+      <Center h={"full"}>
+        <Stack alignItems={"center"}>
+          <LuCheck size={"10rem"} color={"gray"} />
+          <Text colorPalette={"gray"} color={"colorPalette.500"} >Không có lệnh nào dùng đến các loại giấy trên</Text>
+        </Stack>
+      </Center>
+
+    )
   }
 
   return (
@@ -192,7 +99,7 @@ export default function PaperUsageChart(props: PaperUsageChartProps) {
         <Tooltip
           animationDuration={100}
           cursor={false}
-          content={<Chart.Tooltip />}
+          content={<CustomTooltip />}
         />
         <Legend content={<Chart.Legend interaction="hover" />} />
         <ReferenceLine

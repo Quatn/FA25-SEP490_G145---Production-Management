@@ -25,7 +25,7 @@ export default function MaterialRequirementContainer(props: MaterialRequirementC
 
   return (
     <Container m={0}>
-      <Box colorPalette={"gray"} bg={"colorPalette.subtle"} p={5} rounded={"md"}>
+      <Box colorPalette={"gray"} bg={"colorPalette.subtle"} p={5} rounded={"md"} justifyContent={"stretch"}>
         <SimpleGrid columns={2} gap="40px">
           <GridItem colSpan={{ base: 1 }}>
             <PaperUsageTable type="FACE" header={"Trọng lượng giấy mặt"} />
@@ -34,12 +34,12 @@ export default function MaterialRequirementContainer(props: MaterialRequirementC
             <PaperUsageTable type="RAW" header={"Trọng lượng giấy mộc"} />
           </GridItem>
           <GridItem colSpan={{ base: 1 }}>
-            <Box bg="bg" p={2} pt={5} rounded={"sm"}>
+            <Box bg="bg" p={2} pt={5} rounded={"md"} h="full">
               <PaperUsageChart type="FACE" />
             </Box>
           </GridItem>
           <GridItem colSpan={{ base: 1 }}>
-            <Box bg="bg" p={2} pt={5} rounded={"sm"}>
+            <Box bg="bg" p={2} pt={5} rounded={"md"} h="full">
               <PaperUsageChart type="RAW" />
             </Box>
           </GridItem>
