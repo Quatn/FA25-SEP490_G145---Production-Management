@@ -339,8 +339,7 @@ export const PaperList: React.FC = () => {
         // cannot be empty
         if (!colorId || widthStr === "" || grammageStr === "") {
           toaster.create({
-            description:
-              "Please provide color, width and grammage for new type",
+            description: "Màu, rộng hoặc khổ đang trống",
             type: "error",
           });
           return;
@@ -357,7 +356,18 @@ export const PaperList: React.FC = () => {
           grammageNum < 0
         ) {
           toaster.create({
-            description: "Width and grammage must be numbers >= 0",
+            description: "Rộng và khổ >= 0",
+            type: "error",
+          });
+          return;
+        }
+
+        if (
+          widthNum > 2000 ||
+          grammageNum > 2000
+        ) {
+          toaster.create({
+            description: "Rộng và khổ không được vượt quá 2000",
             type: "error",
           });
           return;
