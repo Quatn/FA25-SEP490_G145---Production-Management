@@ -58,6 +58,14 @@ export class SemiFinishedGoodController {
     return { success: true, message: 'Fetch successful', data: doc };
   }
 
+  @UseGuards(SemiFinishedGoodGetRequestGuard)
+  @Get('detail-by-mo/:moId')
+  @ApiOperation({ summary: 'Get semi-finished good by manufacturing order ID' })
+  async findByManufacturingOrderId(@Param('moId') moId: string): Promise<BaseResponse<SemiFinishedGood>> {
+    const doc = await this.semiFinishedGoodService.findByManufacturingOrderId(moId);
+    return { success: true, message: 'Fetch successful', data: doc };
+  }
+
   @UseGuards(SemiFinishedGoodCreateRequestGuard)
   @Post('create')
   @ApiOperation({ summary: 'Create a new semi finished good' })

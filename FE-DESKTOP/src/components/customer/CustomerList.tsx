@@ -13,9 +13,23 @@ import CustomerTable from "./CustomerTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import CustomerDetailDialog from "./CustomerDetailDialog";
 import { useAddCustomerMutation, useDeleteCustomerMutation, useGetCustomerQuery, useUpdateCustomerMutation } from "@/service/api/customerApiSlice";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import DataLoading from "../common/DataLoading";
+import check from "check-types";
 
+const EDIT_PRIVS: AnyAccessPrivileges[] = ["system-admin", "system-readWrite", "customer-admin", "customer-readWrite"]
 
 const CustomerList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
 
     const [addCustomer] = useAddCustomerMutation();
     const [updateCustomer] = useUpdateCustomerMutation();
@@ -151,6 +165,12 @@ const CustomerList: React.FC = () => {
         </IconButton>
     );
 
+    const disabled = !(check.nonEmptyArray(userState?.accessPrivileges) && EDIT_PRIVS.find(priv => userState!.accessPrivileges.includes(priv)))
+
+    if (hydrating) {
+        return <DataLoading />
+    }
+
     if (iscustomersLoading) return <Text>Đang tải dữ liệu...</Text>;
     if (customersError) return <Text>Không thể tải dữ liệu. Vui lòng thử lại.</Text>;
 
@@ -190,7 +210,7 @@ const CustomerList: React.FC = () => {
                         }} />
                 </InputGroup>
                 <Spacer />
-                <Button colorPalette={"green"} onClick={() => handleOpenFormDialog()}><Icon><FaPlus /></Icon>Thêm khách hàng</Button>
+                <Button disabled={disabled} colorPalette={"green"} onClick={() => handleOpenFormDialog()}><Icon><FaPlus /></Icon>Thêm khách hàng</Button>
             </Flex>
             {iscustomersLoading ? (<Spinner />) : (
                 <>

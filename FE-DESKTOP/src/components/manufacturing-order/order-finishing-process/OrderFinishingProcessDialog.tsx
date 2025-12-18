@@ -2,11 +2,13 @@ import { Box, Button, CloseButton, Dialog, Field, NumberInput, Portal, Text } fr
 import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
 import { OrderFinishingProcessStatus } from "@/types/enums/OrderFinishingProcessStatus";
 import { useState } from "react";
+import { SemiFinishedGood } from "@/types/SemiFinishedGood";
 
 interface OrderFinishingProcessAlertDialogProps {
     isOpen: boolean;
     onClose: () => void;
     initialData?: OrderFinishingProcess;
+    semiFinishedGood?: SemiFinishedGood;
     updateToStatus?: OrderFinishingProcessStatus;
     onUpdate: (updateId: string, updateStatus: OrderFinishingProcessStatus, updateCompletedAmount?: number) => void;
 }
@@ -15,11 +17,20 @@ const OrderFinishingProcessDialog: React.FC<OrderFinishingProcessAlertDialogProp
     isOpen,
     onClose,
     initialData,
+    semiFinishedGood,
     updateToStatus,
     onUpdate,
 }) => {
 
     const [quantity, setQuantity] = useState(0);
+
+    const isSfgInvalid = updateToStatus === OrderFinishingProcessStatus.InProduction && (!semiFinishedGood || (semiFinishedGood?.exportedQuantity ?? 0) <= 0);
+
+    const isQuantityInsufficient =
+        updateToStatus === OrderFinishingProcessStatus.FinishedProduction &&
+        quantity < Math.max(0, initialData?.requiredAmount ?? 0);
+
+    const isDisabled = isSfgInvalid || isQuantityInsufficient;
 
     const handleSubmit = () => {
         if (initialData && updateToStatus) onUpdate(initialData._id, updateToStatus, quantity);
@@ -37,7 +48,16 @@ const OrderFinishingProcessDialog: React.FC<OrderFinishingProcessAlertDialogProp
                         </Dialog.Header>
                         <Dialog.Body>
                             {updateToStatus == OrderFinishingProcessStatus.InProduction &&
-                                <Text>Chạy kế hoạch {initialData?.code} ?</Text>
+                                <Box>
+                                    <Text>Chạy kế hoạch {initialData?.code} ?</Text>
+                                    <Text fontWeight={'bold'} color={'red'}>
+                                        {semiFinishedGood ?
+                                            (semiFinishedGood.exportedQuantity > 0 ?
+                                                `Kho phôi đã xuất ${semiFinishedGood.exportedQuantity} tấm`
+                                                : 'Phôi chưa xuất kho')
+                                            : 'Chưa có phôi, không được phép chạy kế hoạch!'}
+                                    </Text>
+                                </Box>
                             }
 
                             {updateToStatus == OrderFinishingProcessStatus.FinishedProduction &&
@@ -86,7 +106,7 @@ const OrderFinishingProcessDialog: React.FC<OrderFinishingProcessAlertDialogProp
 
                                         <NumberInput.Control />
                                     </NumberInput.Root>
- 
+
                                     <Field.HelperText color={'red'} fontWeight={'bold'}>
                                         Sản lượng không được phép nhỏ hơn số lượng yêu cầu: ({initialData?.requiredAmount})
                                     </Field.HelperText>
@@ -100,7 +120,7 @@ const OrderFinishingProcessDialog: React.FC<OrderFinishingProcessAlertDialogProp
                             <Button
                                 colorPalette="red"
                                 onClick={() => handleSubmit()}
-                                disabled={quantity < Math.max(0, initialData?.requiredAmount ?? 0)}
+                                disabled={isDisabled}
                             >
                                 Xác nhận
                             </Button>
