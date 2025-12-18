@@ -89,11 +89,19 @@ const PO_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
 const SUBPO_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
 const POITEM_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
 
+const READONLY_STATUSES = ["COMPLETED", "PARTIALLYCOMPLETE"];
+
+const includeCurrentStatus = (base: string[], current?: string) => {
+  if (!current) return base;
+  if (base.includes(current)) return base;
+  return [...base, current];
+};
+
 const PurchaseOrderList: React.FC = () => {
   const confirm = useConfirm();
   const [query, setQuery] = useState<string>("");
   const [page, setPage] = useState<number>(1);
-  const [limit] = useState<number>(4); 
+  const [limit] = useState<number>(4);
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
 
   const [productModalOpenForPo, setProductModalOpenForPo] = useState<{
@@ -1392,16 +1400,21 @@ const PurchaseOrderList: React.FC = () => {
                           }
                           disabled={!poStatusSelectable}
                         >
-                          {PO_STATUS_OPTIONS.map((s) => {
+                          {includeCurrentStatus(
+                            PO_STATUS_OPTIONS,
+                            po.status
+                          ).map((s) => {
                             const optionDisabled =
                               po.status === "PENDINGAPPROVAL" &&
                               s !== "APPROVED" &&
                               s !== po.status;
+                            const globallyDisabled =
+                              READONLY_STATUSES.includes(s);
                             return (
                               <option
                                 key={s}
                                 value={s}
-                                disabled={optionDisabled}
+                                disabled={optionDisabled || globallyDisabled}
                               >
                                 {s}
                               </option>
@@ -1524,16 +1537,24 @@ const PurchaseOrderList: React.FC = () => {
                                           }
                                           disabled={!subStatusSelectable}
                                         >
-                                          {SUBPO_STATUS_OPTIONS.map((st) => {
+                                          {includeCurrentStatus(
+                                            SUBPO_STATUS_OPTIONS,
+                                            subStatus
+                                          ).map((st) => {
                                             const optionDisabled =
                                               subStatus === "PENDINGAPPROVAL" &&
                                               st !== "APPROVED" &&
                                               st !== subStatus;
+                                            const globallyDisabled =
+                                              READONLY_STATUSES.includes(st);
                                             return (
                                               <option
                                                 key={st}
                                                 value={st}
-                                                disabled={optionDisabled}
+                                                disabled={
+                                                  optionDisabled ||
+                                                  globallyDisabled
+                                                }
                                               >
                                                 {st}
                                               </option>
@@ -1666,26 +1687,33 @@ const PurchaseOrderList: React.FC = () => {
                                                       !itemStatusSelectable
                                                     }
                                                   >
-                                                    {POITEM_STATUS_OPTIONS.map(
-                                                      (opt) => {
-                                                        const optionDisabled =
-                                                          itemStatus ===
-                                                            "PENDINGAPPROVAL" &&
-                                                          opt !== "APPROVED" &&
-                                                          opt !== itemStatus;
-                                                        return (
-                                                          <option
-                                                            key={opt}
-                                                            value={opt}
-                                                            disabled={
-                                                              optionDisabled
-                                                            }
-                                                          >
-                                                            {opt}
-                                                          </option>
+                                                    {includeCurrentStatus(
+                                                      POITEM_STATUS_OPTIONS,
+                                                      itemStatus
+                                                    ).map((opt) => {
+                                                      const optionDisabled =
+                                                        itemStatus ===
+                                                          "PENDINGAPPROVAL" &&
+                                                        opt !== "APPROVED" &&
+                                                        opt !== itemStatus;
+                                                      // For items, COMPLETED also should be read-only:
+                                                      const globallyDisabled =
+                                                        READONLY_STATUSES.includes(
+                                                          opt
                                                         );
-                                                      }
-                                                    )}
+                                                      return (
+                                                        <option
+                                                          key={opt}
+                                                          value={opt}
+                                                          disabled={
+                                                            optionDisabled ||
+                                                            globallyDisabled
+                                                          }
+                                                        >
+                                                          {opt}
+                                                        </option>
+                                                      );
+                                                    })}
                                                   </select>
                                                 </td>
 
@@ -1985,14 +2013,81 @@ const PurchaseOrderList: React.FC = () => {
               products: payloadProducts,
             };
 
-            await createSubFromProducts(payload).unwrap();
+            // === New logic: use mutation result to update UI optimistically ===
+            const result = await createSubFromProducts(payload).unwrap();
+
+            // Attempt to extract created sub-POs from common shapes of response:
+            const createdSubs =
+              (Array.isArray(result) && result) ||
+              result?.data ||
+              result?.subPurchaseOrders ||
+              result?.subPOs ||
+              result?.created ||
+              [];
+
             toaster.create({
               description: "Thêm sản phẩm vào PO thành công.",
               type: "success",
             });
 
-            await safeRefetchSubs();
+            // If the PO is currently expanded, merge created subs into expandedLocalDoc
+            if (
+              String(expandedPoId) === String(poId) &&
+              createdSubs &&
+              createdSubs.length
+            ) {
+              setExpandedLocalDoc((prev: any) => {
+                if (!prev) return prev;
+                const copy = JSON.parse(JSON.stringify(prev));
+                copy.subPurchaseOrders = (copy.subPurchaseOrders || []).concat(
+                  createdSubs
+                );
+                // update totals for display
+                syncTotalsToOrders(copy);
+                return copy;
+              });
+            }
 
+            // Also update the orders list (so the PO card shows updated totals / sub list)
+            if (createdSubs && createdSubs.length) {
+              const addedTotals = createdSubs.reduce(
+                (acc: { items: number; value: number }, s: any) => {
+                  const itemsCount = Array.isArray(s.items)
+                    ? s.items.length
+                    : 0;
+                  let value = 0;
+                  if (Array.isArray(s.items)) {
+                    s.items.forEach((it: any) => {
+                      const unit = Number(it.ware?.unitPrice ?? 0);
+                      const amt = Number(it.amount ?? 0);
+                      value += unit * amt;
+                    });
+                  }
+                  acc.items += itemsCount;
+                  acc.value += value;
+                  return acc;
+                },
+                { items: 0, value: 0 }
+              );
+
+              setOrders((prev) =>
+                prev.map((o) =>
+                  String(o.id) === String(poId)
+                    ? {
+                        ...o,
+                        subPOs: (o.subPOs || []).concat(createdSubs),
+                        totalItems:
+                          (Number(o.totalItems) || 0) + addedTotals.items,
+                        totalValue:
+                          (Number(o.totalValue) || 0) + addedTotals.value,
+                      }
+                    : o
+                )
+              );
+            }
+
+            // Keep the server / cache in sync (still call refetch)
+            await safeRefetchSubs();
             try {
               if (typeof refetch === "function") await refetch();
             } catch (e) {

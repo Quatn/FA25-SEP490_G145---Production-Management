@@ -45,48 +45,55 @@ export class PurchaseOrderService {
     page: number;
     limit: number;
   }): Promise<PaginatedList<PurchaseOrder>> {
-    const skip = (page - 1) * limit;
-
     // main filter for purchase orders (adjust as needed)
     const filter = {};
+
+    // compute total first
+    const totalItems = await this.purchaseOrderModel.countDocuments(filter);
+    // ensure totalPages is at least 1 (useful for clients that expect >=1)
+    const totalPages = Math.max(1, Math.ceil(totalItems / limit || 0));
+
+    // clamp the requested page to [1, totalPages]
+    const safePage = Math.max(1, Math.min(page || 1, totalPages));
+
+    // recompute skip using the clamped page so we always return a real page
+    const skip = (safePage - 1) * limit;
 
     // populate customer and explicitly include both deleted and non-deleted docs
     const populate = [
       {
         path: "customer",
-        model: "Customer", // optional if ref is set on schema
-        // explicit isDeleted so the soft-delete plugin won't add its default filter
+        model: "Customer",
         match: { isDeleted: { $in: [true, false] } },
-        // pick the fields you want returned
         select:
           "_id code name address email contactNumber note isDeleted deletedAt createdAt updatedAt",
-        // justOne: true // useful if customer is a single ref
       },
     ];
 
-    const [totalItems, data] = await Promise.all([
-      this.purchaseOrderModel.countDocuments(filter),
-      this.purchaseOrderModel
-        .find(filter)
-        .skip(skip)
-        .limit(limit)
-        .populate(populate),
-    ]);
+    const data = await this.purchaseOrderModel
+      .find(filter)
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate(populate);
 
-    const totalPages = Math.ceil(totalItems / limit);
-    const hasNextPage = page < totalPages;
-    const hasPrevPage = page > 1;
+    // compute hasNext/hasPrev based on safePage & totalPages
+    const hasNextPage = safePage < totalPages;
+    const hasPrevPage = safePage > 1;
 
+    // return consistent paginated shape + meta for frontend compatibility
     return {
-      page,
+      page: safePage,
       limit,
       totalItems,
       totalPages,
       hasNextPage,
       hasPrevPage,
       data,
-    };
+      meta: { total: totalItems, count: data.length },
+    } as any;
   }
+
 
 
   async queryOrdersWithUnmanufacturedItems({
