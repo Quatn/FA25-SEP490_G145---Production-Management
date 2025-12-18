@@ -1,10 +1,4 @@
-import check from "check-types";
 import { PipelineStage } from "mongoose";
-import {
-  CorrugatorProcessStatus,
-  ManufacturingOrderOperativeStatus,
-} from "../../schemas/manufacturing-order.schema";
-import { OrderFinishingProcessStatus } from "../../schemas/order-finishing-process.schema";
 import { CompileMOOperativeStatusPipe } from "./compile-operative-status-pipe";
 
 export function fullDetailsFilterAggregationPipeline({
@@ -67,6 +61,14 @@ export function fullDetailsFilterAggregationPipeline({
         finishingProcesses: {
           $all: [{ $elemMatch: { $ne: true } }],
         },
+      },
+    },
+    {
+      $lookup: {
+        from: "warefinishingprocesstypes",
+        localField: "finishingProcesses.wareFinishingProcessType",
+        foreignField: "_id",
+        as: "warefinishingprocesstypes",
       },
     },
     ...CompileMOOperativeStatusPipe,

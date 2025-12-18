@@ -1,8 +1,13 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import mongoose, { Model, MongooseError, PipelineStage, Types } from "mongoose";
+import mongoose, {
+  Model,
+  MongooseError,
+  PipelineStage,
+  QueryOptions,
+  Types,
+} from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
 import {
-  CorrugatorProcess,
   CorrugatorProcessStatus,
   ManufacturingOrder,
   ManufacturingOrderApprovalStatus,
@@ -25,14 +30,10 @@ import {
   PopulatedWare,
 } from "./dto/full-details-orders.dto";
 import {
-  PurchaseOrderItem,
   PurchaseOrderItemDocument,
   PurchaseOrderItemSchema,
 } from "../schemas/purchase-order-item.schema";
-import {
-  SubPurchaseOrderDocument,
-  SubPurchaseOrderSchema,
-} from "../schemas/sub-purchase-order.schema";
+import { SubPurchaseOrderSchema } from "../schemas/sub-purchase-order.schema";
 import { PurchaseOrderSchema } from "../schemas/purchase-order.schema";
 import { Ware, WareDocument, WareSchema } from "../schemas/ware.schema";
 import { MOCodeGenerator } from "./business-logics/mo-code-generator";
@@ -52,13 +53,16 @@ import { fullDetailsFilterAggregationPipeline } from "./aggregate-pipes/full-det
 import { FinishedGood } from "@/modules/warehouse/schemas/finished-good.schema";
 import { IllogicalError } from "@/common/errors/illogical.error";
 import { recalculateManufacturingOrder } from "./business-logics/recalculate-manufacturing-orders";
-import { isRefPopulated } from "@/common/utils/populate-check";
-import { UnpopulatedFieldError } from "@/common/errors/unpopulated-field.error";
 import { ProductionRecalculateService } from "../common/recalculate/recalculate.service";
 import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type.schema";
 import { queryAllByPaperTypesUsagePipeline } from "./aggregate-pipes/query-all-by-paper-types-usage";
 import { recalculateWare } from "../ware/business-logics/recalculate-ware";
 import { recalculatePurchaseOrderItem } from "../purchase-order-item/business-logics/recalculate-poi";
+import { CompileMOOperativeStatusPipe } from "./aggregate-pipes/compile-operative-status-pipe";
+import { buildQueryAllMOStatusesByDateRange } from "./utils/buildQueryAllStatusesByDateRangePipeline";
+import { QueryAllMOStatusesByDateRangeResponseDto } from "./dto/query-all-mo-statuses-by-date-range.dto";
+import { QueryAllMOProductionOutputByDateRangeResponseDto } from "./dto/query-all-mo-production-output-by-date-range.dto";
+import { buildQueryAllMOProductionOutputByDateRange } from "./utils/buildQueryAllProductionOutputByDateRangePipeline";
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
@@ -619,7 +623,6 @@ export class ManufacturingOrderService {
       }
       */
 
-
       const { corrugatorProcess: _, ...dtoWOCorruProgress } = dto;
       Object.assign(doc, dtoWOCorruProgress);
 
@@ -741,5 +744,31 @@ export class ManufacturingOrderService {
       });
 
     return mappedData;
+  }
+
+  async queryAllMOStatusesByDateRange({
+    startDate,
+    endDate,
+  }: {
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<QueryAllMOStatusesByDateRangeResponseDto[]> {
+    const pipeline = buildQueryAllMOStatusesByDateRange({ startDate, endDate });
+    const data = await this.manufacturingOrderModel.aggregate(pipeline);
+
+    return data as QueryAllMOStatusesByDateRangeResponseDto[];
+  }
+
+  async queryAllMOProductionOutputByDateRange({
+    startDate,
+    endDate,
+  }: {
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<QueryAllMOProductionOutputByDateRangeResponseDto[]> {
+    const pipeline = buildQueryAllMOProductionOutputByDateRange({ startDate, endDate });
+    const data = await this.manufacturingOrderModel.aggregate(pipeline);
+
+    return data as QueryAllMOProductionOutputByDateRangeResponseDto[];
   }
 }

@@ -50,6 +50,11 @@ import { buildFullDetailsMOFilterFromDto } from "./utils/buildFullDetailsFilterF
 import { QueryAllByPaperTypesUsageRequestDto } from "./dto/query-all-by-paper-types-usage.dto";
 import { buildFullDetailsMOSortPipesFromDto } from "./utils/buildFullDetailsSortPipesFromDto";
 import check from "check-types";
+import {
+  QueryAllMOStatusesByDateRangeRequestDto,
+  QueryAllMOStatusesByDateRangeResponseDto,
+} from "./dto/query-all-mo-statuses-by-date-range.dto";
+import { QueryAllMOProductionOutputByDateRangeRequestDto, QueryAllMOProductionOutputByDateRangeResponseDto } from "./dto/query-all-mo-production-output-by-date-range.dto";
 
 const ManufacturingOrderGetRequestGuard = PrivilegedJwtAuthGuard({
   requiredPrivileges: manufacturingOrderGetPrivileges,
@@ -114,6 +119,7 @@ export class ManufacturingOrderController {
     };
   }
 
+  @UseGuards(ManufacturingOrderGetRequestGuard)
   @Get("draft-orders-by-poi-ids")
   @ApiOperation({ summary: "Query fully populated manufacturing orders" })
   @ApiResponseWith(FullDetailManufacturingOrderDto, { paginated: true })
@@ -146,6 +152,7 @@ export class ManufacturingOrderController {
     };
   }
 
+  @UseGuards(ManufacturingOrderCreateRequestGuard)
   @Post("create-many")
   @ApiOperation({ summary: "Create many manufacturing orders" })
   // @ApiResponseWith(FullDetailManufacturingOrderDto)
@@ -176,6 +183,7 @@ export class ManufacturingOrderController {
     };
   }
 
+  @UseGuards(ManufacturingOrderUpdateRequestGuard)
   @Patch("update-many")
   @ApiOperation({ summary: "Update many manufacturing orders" })
   // @ApiResponseWith(FullDetailManufacturingOrderDto)
@@ -196,6 +204,7 @@ export class ManufacturingOrderController {
     };
   }
 
+  @UseGuards(ManufacturingOrderUpdateRequestGuard)
   @Delete("id/:id")
   @ApiOperation({ summary: "Delete one manufacturing order" })
   async deleteOne(@Param() param: DeleteManufacturingOrderRequestDto): Promise<
@@ -214,6 +223,7 @@ export class ManufacturingOrderController {
     };
   }
 
+  @UseGuards(ManufacturingOrderAdminRequestGuard)
   @Patch("restore/:id")
   @ApiOperation({ summary: "Create one manufacturing order" })
   async RestoreOne(
@@ -227,8 +237,11 @@ export class ManufacturingOrderController {
     };
   }
 
+  @UseGuards(ManufacturingOrderGetRequestGuard)
   @Get("query/all-by-paper-types-usage")
-  @ApiOperation({ summary: "Query fully populated manufacturing orders" })
+  @ApiOperation({
+    summary: "Query fully populated manufacturing orders by paper type usages",
+  })
   async queryAllByPaperTypesUsage(
     @Query() query: QueryAllByPaperTypesUsageRequestDto,
   ): Promise<BaseResponse<FullDetailManufacturingOrderDto[]>> {
@@ -237,6 +250,40 @@ export class ManufacturingOrderController {
         paperTypes: query.paperTypes,
       })
       : [];
+
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
+    };
+  }
+
+  @UseGuards(ManufacturingOrderGetRequestGuard)
+  @Get("query/all-statuses-by-date-range")
+  @ApiOperation({ summary: "Query statuses of orders using a date range" })
+  async queryAllMOStatusesByDateRange(
+    @Query() query: QueryAllMOStatusesByDateRangeRequestDto,
+  ): Promise<BaseResponse<QueryAllMOStatusesByDateRangeResponseDto[]>> {
+    const docs = await this.moService.queryAllMOStatusesByDateRange(query);
+
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: docs,
+    };
+  }
+
+  @UseGuards(ManufacturingOrderGetRequestGuard)
+  @Get("query/all-production-output-by-date-range")
+  @ApiOperation({
+    summary:
+      "Query production output of manufacturing processes of orders using a date range",
+  })
+  async queryAllMOProductionOutputByDateRange(
+    @Query() query: QueryAllMOProductionOutputByDateRangeRequestDto,
+  ): Promise<BaseResponse<QueryAllMOProductionOutputByDateRangeResponseDto[]>> {
+    const docs =
+      await this.moService.queryAllMOProductionOutputByDateRange(query);
 
     return {
       success: true,

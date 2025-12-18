@@ -12,32 +12,53 @@ import {
   XAxis,
 } from "recharts"
 import { ManufacturingOrderDashBoardUtils } from "../utils"
+import { useGetAllMOStatusesByDateRangeQuery } from "@/service/api/manufacturingOrderApiSlice"
+import { formatDateToYYYYMMDD } from "@/utils/dateUtils"
+import DataLoading from "@/components/common/DataLoading"
+import DataFetchError from "@/components/common/DataFetchError"
+import DataEmpty from "@/components/common/DataEmpty"
 
 const { getDaysInMonth } = ManufacturingOrderDashBoardUtils
 
-const randomList = Array.from({ length: 50 }, () => Math.floor(Math.random() * (100 - 30 + 1)) + 30);
-
 export default function ManufacturingOrderMonthlyProductionBarChart() {
   const { useSelector } = ManufacturingOrderMonthlyProductionChartReducerStore
+  const currentDate = new Date()
   const month = useSelector(s => s.month)
-  // Maybe there will also be a year selector, idk
-  const year = new Date().getFullYear()
-
+  const year = currentDate.getFullYear()
   const numberOfDays = getDaysInMonth(year, month)
+  const {
+    data: response,
+    isLoading,
+    isError,
+  } = useGetAllMOStatusesByDateRangeQuery({ startDate: new Date(year, month, 1).toString(), endDate: new Date(year, month, numberOfDays).toString() })
 
-  const mockData = [...Array(numberOfDays).keys()].map(day =>
-  ({
-    "Tổng": randomList.at(day) ?? 0,
-    day: (day + 1) + "/" + (month + 1) + "/" + year
+  const data = [...Array(numberOfDays).keys()].map(day => {
+    const date = year + "-" + (month + 1) + "-" + (day + 1)
+    const statsForDate = response?.data?.filter(order => formatDateToYYYYMMDD(order.manufacturingDateAdjustment ?? order.manufacturingDate) === date).length ?? 0
+    return {
+      "Số lượng lệnh": statsForDate,
+      day: date,
+    }
   })
-  )
 
   const chart = useChart({
-    data: mockData,
+    data: data,
     series: [
-      { name: "Tổng", color: "teal.solid" },
+      { name: "Số lượng lệnh", color: "teal.solid" },
     ],
   })
+
+  if (isLoading) {
+    return <DataLoading h="full" />
+  }
+
+  if (isError) {
+    return <DataFetchError h="full" />
+  }
+
+  if (chart.data.length < 1) {
+    return <DataEmpty h="full" text="Không có lệnh nào sản xuất trong khoảng thời gian đã chọn" />
+  }
 
   return (
     <Chart.Root maxH="sm" chart={chart}>
