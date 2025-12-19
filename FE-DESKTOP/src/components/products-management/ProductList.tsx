@@ -27,7 +27,24 @@ import ProductAddItemCodeModal from "./ProductAddItemCodeModal";
 import { toaster } from "@/components/ui/toaster";
 import { useConfirm } from "@/components/common/ConfirmModal";
 
+// privilege hook (same path as used elsewhere in your project)
+import { useAppSelector } from "@/service/hooks";
+
 export default function ProductList() {
+  // --- Privilege check ---
+  const userState: any = useAppSelector((s: any) => s.auth?.userState ?? null);
+  const EDIT_PRIVS = [
+    "system-admin",
+    "system-readWrite",
+    "purchaseOrder-admin",
+    "purchaseOrder-readWrite",
+  ];
+  const writeAllowed =
+    Array.isArray(userState?.accessPrivileges) &&
+    userState.accessPrivileges.some((p: string) => EDIT_PRIVS.includes(p));
+  const writeDisabled = !writeAllowed;
+  // ------------------------
+
   // Load wares from API instead of mock data
   const { data: waresData, isLoading: isLoadingWares } = useGetWaresQuery({
     page: 1,
@@ -128,8 +145,15 @@ export default function ProductList() {
   // confirm hook (ConfirmProvider must be mounted above this component)
   const showConfirm = useConfirm();
 
-  // 🔹 Hàm mở modal chính (Thêm/Sửa Sản phẩm)
+  // 🔹 Hàm mở modal chính (Thêm/Sửa Sản phẩm) - guarded
   const handleOpenProductModal = (product: any = null) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền tạo/cập nhật sản phẩm.",
+        type: "error",
+      });
+      return;
+    }
     if (product) {
       setEditingProduct({
         ...product,
@@ -144,8 +168,15 @@ export default function ProductList() {
   // 🔹 Hàm đóng modal chính
   const handleCloseProductModal = () => setEditingProduct(null);
 
-  // 🆕 Hàm mở modal thêm mã hàng
+  // 🆕 Hàm mở modal thêm mã hàng - guarded
   const handleShowAddItemCodeModal = (product: any) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền thêm mã hàng cho sản phẩm.",
+        type: "error",
+      });
+      return;
+    }
     setProductToUpdateWareCodes(product); // Lưu sản phẩm cần cập nhật
     setModalSearchTerm(""); // Reset thanh tìm kiếm
     setShowAddItemCodeModal(true);
@@ -157,8 +188,16 @@ export default function ProductList() {
     setProductToUpdateWareCodes(null);
   };
 
-  // 🆕 Hàm thêm mã hàng vào sản phẩm (nhận itemId từ child modal)
+  // 🆕 Hàm thêm mã hàng vào sản phẩm (nhận itemId từ child modal) - guarded
   const handleAddItemCodeToProduct = async (selectedItemId: string) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền thêm mã hàng.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!productToUpdateWareCodes || !selectedItemId) return;
 
     // Get existing wares IDs
@@ -220,12 +259,20 @@ export default function ProductList() {
     }
   };
 
-  // 🆕 Hàm xóa mã hàng khỏi sản phẩm
+  // 🆕 Hàm xóa mã hàng khỏi sản phẩm - guarded
   const handleRemoveItemCode = async (
     productId: string,
     itemCodeId: string,
     itemCode?: string
   ) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xóa mã hàng.",
+        type: "error",
+      });
+      return;
+    }
+
     const product = products.find((p: any) => p._id === productId);
     if (!product) return;
 
@@ -313,8 +360,16 @@ export default function ProductList() {
     }
   };
 
-  // 1. Thêm/Cập nhật Sản phẩm (Create/Update)
+  // 1. Thêm/Cập nhật Sản phẩm (Create/Update) - guarded inside
   const handleSaveProduct = async () => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền tạo/cập nhật sản phẩm.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!editingProduct) return;
 
     // Convert wares to array of ObjectId strings
@@ -428,11 +483,19 @@ export default function ProductList() {
     }
   };
 
-  // 2. Xóa Sản phẩm (Delete)
+  // 2. Xóa Sản phẩm (Delete) - guarded
   const handleDeleteProduct = async (
     productId: string,
     productCode?: string
   ) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xóa sản phẩm.",
+        type: "error",
+      });
+      return;
+    }
+
     const ok = await showConfirm({
       title: "Xóa sản phẩm",
       description: `Bạn có chắc chắn muốn xóa sản phẩm ${
@@ -493,7 +556,14 @@ export default function ProductList() {
       {/* Header, Search and Filter Section (Giữ nguyên) */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Quản Lý Sản Phẩm</h2>
-        <Button variant="success" onClick={() => handleOpenProductModal()}>
+        <Button
+          variant="success"
+          onClick={() => handleOpenProductModal()}
+          disabled={writeDisabled}
+          title={
+            writeDisabled ? "Bạn không có quyền tạo sản phẩm" : "Thêm sản phẩm"
+          }
+        >
           <i className="bi bi-plus-circle me-2"></i> Thêm sản phẩm
         </Button>
       </div>
@@ -613,8 +683,11 @@ export default function ProductList() {
                 alignItems: "center",
                 justifyContent: "center",
               }}
-              title="Cập nhật"
+              title={
+                writeDisabled ? "Bạn không có quyền chỉnh sửa" : "Cập nhật"
+              }
               onClick={() => handleOpenProductModal(product)}
+              disabled={writeDisabled}
             >
               <i className="bi bi-pencil-square"></i>
             </Button>
@@ -629,8 +702,9 @@ export default function ProductList() {
                 alignItems: "center",
                 justifyContent: "center",
               }}
-              title="Xóa"
+              title={writeDisabled ? "Bạn không có quyền xóa" : "Xóa"}
               onClick={() => handleDeleteProduct(product._id, product.code)}
+              disabled={writeDisabled}
             >
               <i className="bi bi-trash3"></i>
             </Button>
@@ -867,7 +941,12 @@ export default function ProductList() {
                                 borderRadius: "50%",
                                 flexShrink: 0,
                               }}
-                              title="Xóa mã hàng này"
+                              title={
+                                writeDisabled
+                                  ? "Bạn không có quyền xóa mã hàng"
+                                  : "Xóa mã hàng này"
+                              }
+                              disabled={writeDisabled}
                             >
                               <i className="bi bi-trash3"></i>
                             </Button>
@@ -883,6 +962,12 @@ export default function ProductList() {
                           borderStyle: "dashed",
                         }}
                         onClick={() => handleShowAddItemCodeModal(product)}
+                        title={
+                          writeDisabled
+                            ? "Bạn không có quyền thêm mã hàng"
+                            : "Thêm mã hàng mới"
+                        }
+                        disabled={writeDisabled}
                       >
                         <i className="bi bi-plus-circle me-2"></i>
                         Thêm mã hàng mới
