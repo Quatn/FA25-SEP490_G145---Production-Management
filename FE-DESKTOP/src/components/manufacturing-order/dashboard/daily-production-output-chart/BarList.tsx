@@ -29,9 +29,9 @@ export const ManufacturingOrderDailyProductionOutputChartBarList = () => {
   response?.data?.forEach((order) => {
     accValue["Bộ phận sóng"] += order.corrugatorProcess.manufacturedAmount
     order.finishingProcesses.forEach((fp) => {
-      if (check.in(fp.warefinishingprocesstype.code, ["IN"])) accValue["Bộ phận in"] += fp.completedAmount
-      else if (!check.in(fp.warefinishingprocesstype.code, ["IN", "GHIM", "DAN"])) accValue["Bộ phận chế biến"] += fp.completedAmount
-      else if (check.in(fp.warefinishingprocesstype.code, ["GHIM", "DAN"])) accValue["Bộ phận ghim dán"] += fp.completedAmount
+      if (check.in(fp.wareFinishingProcessType.code, ["IN"])) accValue["Bộ phận in"] += fp.completedAmount
+      else if (!check.in(fp.wareFinishingProcessType.code, ["IN", "GHIM", "DAN"])) accValue["Bộ phận chế biến"] += fp.completedAmount
+      else if (check.in(fp.wareFinishingProcessType.code, ["GHIM", "DAN"])) accValue["Bộ phận ghim dán"] += fp.completedAmount
     })
   })
 

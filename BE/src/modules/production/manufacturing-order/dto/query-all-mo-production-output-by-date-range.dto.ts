@@ -50,7 +50,7 @@ export class QueryAllMOProductionOutputByDateRangeResponseDto {
     code: string;
     requiredAmount: number;
     completedAmount: number;
-    warefinishingprocesstype: {
+    wareFinishingProcessType: {
       code: string;
     };
   }[];
