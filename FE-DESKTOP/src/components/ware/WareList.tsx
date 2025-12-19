@@ -1008,34 +1008,34 @@ export const WareList: React.FC = () => {
         return;
       }
 
-      if (warePerBlankAdjustment !== null && warePerBlankAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh số SP phải >= 1",
-          type: "error",
-        });
-        return;
-      }
-      if (flapAdjustment !== null && flapAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh tai phải >= 1",
-          type: "error",
-        });
-        return;
-      }
-      if (flapOverlapAdjustment !== null && flapOverlapAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh cộng cánh phải >= 1",
-          type: "error",
-        });
-        return;
-      }
-      if (crossCutCountAdjustment !== null && crossCutCountAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh part SX phải >= 1",
-          type: "error",
-        });
-        return;
-      }
+      // if (warePerBlankAdjustment !== null && warePerBlankAdjustment < 1) {
+      //   toaster.create({
+      //     description: "Điều chỉnh số SP phải >= 1",
+      //     type: "error",
+      //   });
+      //   return;
+      // }
+      // if (flapAdjustment !== null && flapAdjustment < 1) {
+      //   toaster.create({
+      //     description: "Điều chỉnh tai phải >= 1",
+      //     type: "error",
+      //   });
+      //   return;
+      // }
+      // if (flapOverlapAdjustment !== null && flapOverlapAdjustment < 1) {
+      //   toaster.create({
+      //     description: "Điều chỉnh cộng cánh phải >= 1",
+      //     type: "error",
+      //   });
+      //   return;
+      // }
+      // if (crossCutCountAdjustment !== null && crossCutCountAdjustment < 1) {
+      //   toaster.create({
+      //     description: "Điều chỉnh part SX phải >= 1",
+      //     type: "error",
+      //   });
+      //   return;
+      // }
 
       if (
         !Array.isArray(editForm.printColors) ||
@@ -1575,6 +1575,8 @@ export const WareList: React.FC = () => {
         handleEditSubmit={handleEditSubmit}
         getIdFromDoc={getIdFromDoc}
         MultiSelectInline={MultiSelectInline}
+        paperTypeList={paperTypeList}
+        paperSupplierList={paperSupplierList}
       />
 
       <WareAdvancedSearchModal
