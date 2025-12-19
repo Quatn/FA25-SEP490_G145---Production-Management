@@ -67,7 +67,7 @@ export const buildQueryAllMOProductionOutputByDateRange = ({
               code: "$$item.code",
               requiredAmount: "$$item.requiredAmount",
               completedAmount: "$$item.completedAmount",
-              warefinishingprocesstype: {
+              wareFinishingProcessType: {
                 $let: {
                   vars: {
                     p: {

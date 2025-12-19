@@ -54,15 +54,15 @@ export default function ManufacturingOrderMonthlyDepartmentOutputsBarChart() {
     } = response?.data?.filter(order => formatDateToYYYYMMDD(order.manufacturingDateAdjustment ?? order.manufacturingDate) === date).map((order) => ({
       "Bộ phận sóng": order.corrugatorProcess.manufacturedAmount ?? 0,
       "Bộ phận in": order.finishingProcesses
-        .filter(fp => check.in(fp.warefinishingprocesstype.code, ["IN"]))
+        .filter(fp => check.in(fp.wareFinishingProcessType.code, ["IN"]))
         .map(fp => fp.completedAmount)
         .reduce((acc, i) => acc + i, 0),
       "Bộ phận chế biến": order.finishingProcesses
-        .filter(fp => !check.in(fp.warefinishingprocesstype.code, ["IN", "GHIM", "DAN"]))
+        .filter(fp => !check.in(fp.wareFinishingProcessType.code, ["IN", "GHIM", "DAN"]))
         .map(fp => fp.completedAmount)
         .reduce((acc, i) => acc + i, 0),
       "Bộ phận ghim dán": order.finishingProcesses
-        .filter(fp => check.in(fp.warefinishingprocesstype.code, ["GHIM", "DAN"]))
+        .filter(fp => check.in(fp.wareFinishingProcessType.code, ["GHIM", "DAN"]))
         .map(fp => fp.completedAmount)
         .reduce((acc, i) => acc + i, 0),
       day: date,

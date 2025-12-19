@@ -1,5 +1,6 @@
 import { PipelineStage } from "mongoose";
 import { CompileMOOperativeStatusPipe } from "./compile-operative-status-pipe";
+import { LookUpMOFinishingProcessesTypesPipeline } from "./lookup-mo-finishing-processes-types-pipe";
 
 export function fullDetailsFilterAggregationPipeline({
   filter = {},
@@ -57,20 +58,17 @@ export function fullDetailsFilterAggregationPipeline({
       },
     },
     {
-      $match: {
+      $set: {
         finishingProcesses: {
-          $all: [{ $elemMatch: { $ne: true } }],
+          $filter: {
+            input: "$finishingProcesses",
+            as: "p",
+            cond: { $ne: ["$$p.isDeleted", true] },
+          },
         },
       },
     },
-    {
-      $lookup: {
-        from: "warefinishingprocesstypes",
-        localField: "finishingProcesses.wareFinishingProcessType",
-        foreignField: "_id",
-        as: "warefinishingprocesstypes",
-      },
-    },
+    ...LookUpMOFinishingProcessesTypesPipeline,
     ...CompileMOOperativeStatusPipe,
 
     // from poi

@@ -90,16 +90,32 @@ const getOrderStatus = (mo: Serialized<ManufacturingOrder>, processes: Serialize
   return ManufacturingOrderOperativeStatus.PAUSED;
 }
 
-const corrugatorProcessStatusNameMap: Record<CorrugatorProcessStatus, string> = {
+const CorrugatorProcessStatusNameMap: Record<CorrugatorProcessStatus, string> = {
   NOTSTARTED: "Chưa bắt đầu",
   RUNNING: "Đang chạy",
   PAUSED: "Tạm dừng",
-  COMPLETED: "Hoàn thành",
+  COMPLETED: "Đã hoàn thành",
   CANCELLED: "Hủy",
-  OVERCOMPLETED: "Hoàn thành",
+  OVERCOMPLETED: "Đã hoàn thành",
 }
 
-const corrugatorLineNameMap: Record<CorrugatorLine, string> = {
+// Temporarily pegging some values as others until things gets more sophisticated
+const OrderFinishingProcessStatusNameMap: Record<OrderFinishingProcessStatus, string> = {
+  PENDINGAPPROVAL: "Chờ duyệt",
+  APPROVED: "Duyệt",
+  // SCHEDULED: "Chờ sản xuất",
+  SCHEDULED: "Đang chờ",
+  INPRODUCTION: "Đang sản xuất",
+  ONHOLD: "Đang chờ",
+  PAUSED: "Tạm dừng",
+  // FINISHEDPRODUCTION: "Đã sản xuất xong",
+  FINISHEDPRODUCTION: "Đã hoàn thành",
+  CANCELLED: "Đã hủy",
+  QUALITYCHECK: "Đang kiểm tra chất lượng",
+  COMPLETED: "Đã hoàn thành",
+}
+
+const CorrugatorLineNameMap: Record<CorrugatorLine, string> = {
   LINE5: "Dàn 5",
   LINE7: "Dàn 7",
 }
@@ -113,6 +129,7 @@ export const manufacturingOrderComponentUtils = {
   OrderStatusNameMap,
   getOrderStatus,
   OrderApprovalStatusNameMap,
-  corrugatorProcessStatusNameMap,
-  corrugatorLineNameMap,
+  CorrugatorProcessStatusNameMap,
+  CorrugatorLineNameMap,
+  OrderFinishingProcessStatusNameMap,
 }
