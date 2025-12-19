@@ -132,7 +132,7 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
                     <Heading size="md">Quy trình sóng</Heading>
                   </Card.Header>
                   <Card.Body color="fg.muted">
-                    <Progress.Root value={props.mo.corrugatorProcess.manufacturedAmount} max={requiredAmount} flexGrow={1} colorPalette={CorrugatorProcessProgressColorMap[props.mo.corrugatorProcess.status]}>
+                    <Progress.Root value={props.mo.corrugatorProcess.manufacturedAmount} max={props.mo.numberOfBlanks} flexGrow={1} colorPalette={CorrugatorProcessProgressColorMap[props.mo.corrugatorProcess.status]}>
                       <HStack gap="10" gapX={10}>
                         <Progress.Label>Số lượng phôi</Progress.Label>
                         <Progress.Track flex="1">

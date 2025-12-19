@@ -363,7 +363,7 @@ export class ManufacturingOrderService {
             poi.purchaseOrderItem.subPurchaseOrder.purchaseOrder.customer.code,
           ),
           corrugatorLineAdjustment: poi.corrugatorLineAdjustment,
-          amount: poi.purchaseOrderItem.amount,
+          amount: poi.amount ?? poi.purchaseOrderItem.amount,
           numberOfBlanks: 0,
           longitudinalCutCount: 0,
           runningLength: 0,
