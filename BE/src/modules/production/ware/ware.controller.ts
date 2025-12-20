@@ -43,6 +43,21 @@ export class WareController {
     });
   }
 
+  @Get("deleted")
+  @ApiOperation({ summary: "List soft-deleted wares (paginated, searchable)" })
+  async findDeleted(
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @Query("search") search?: string,
+  ): Promise<BaseResponse<PaginatedList<any>>> {
+    const docs = await this.wareService.findDeleted({
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 20,
+      search: search || undefined,
+    });
+    return { success: true, message: "Fetch deleted wares successful", data: docs };
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Get a ware by Mongo _id" })
   findOne(@Param("id") id: string) {

@@ -16,6 +16,7 @@ import {
   useCreateProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
+  useGetDeletedProductsQuery, // <-- added
 } from "@/service/api/productApiSlice";
 import { useGetWaresQuery } from "@/service/api/wareApiSlice";
 import { useGetAllCustomersQuery } from "@/service/api/customerApiSlice";
@@ -144,6 +145,43 @@ export default function ProductList() {
 
   // confirm hook (ConfirmProvider must be mounted above this component)
   const showConfirm = useConfirm();
+
+  // --- NEW: fetch deleted products for duplicate detection ---
+  const {
+    data: deletedProductsResp,
+    isLoading: isLoadingDeletedProducts,
+    refetch: refetchDeletedProducts,
+  } = useGetDeletedProductsQuery({ page: 1, limit: 1000 });
+
+  const deletedProductsList = useMemo(() => {
+    const raw = deletedProductsResp?.data ?? deletedProductsResp ?? [];
+    const arr = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.data)
+      ? raw.data
+      : raw?.data?.data && Array.isArray(raw.data.data)
+      ? raw.data.data
+      : [];
+    return Array.isArray(arr) ? arr : [];
+  }, [deletedProductsResp]);
+
+  const isCodeInDeleted = (code?: string, excludeId?: string | null) => {
+    if (!code) return false;
+    const norm = String(code).trim().toLowerCase();
+    if (!norm) return false;
+    return (deletedProductsList || []).some((d: any) => {
+      const candidate = String(
+        d?.code ?? d?.id ?? d?._id ?? d?.productCode ?? ""
+      )
+        .trim()
+        .toLowerCase();
+      if (!candidate) return false;
+      const did = d?._id ?? d?.id ?? d?.code;
+      if (excludeId && did && String(did) === String(excludeId)) return false;
+      return candidate === norm;
+    });
+  };
+  // ----------------------------------------------------------------
 
   // 🔹 Hàm mở modal chính (Thêm/Sửa Sản phẩm) - guarded
   const handleOpenProductModal = (product: any = null) => {
@@ -455,6 +493,23 @@ export default function ProductList() {
       return;
     }
 
+    // NEW: check deleted products list
+    if (isLoadingDeletedProducts) {
+      toaster.create({
+        description:
+          "Đang kiểm tra danh sách sản phẩm đã xóa — vui lòng thử lại sau",
+        type: "error",
+      });
+      return;
+    }
+    if (isCodeInDeleted(payload.code, excludeId)) {
+      toaster.create({
+        description: "Mã sản phẩm đã tồn tại trong danh sách sản phẩm đã xóa",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       if (editingProduct._id) {
         await updateProduct({
@@ -475,6 +530,23 @@ export default function ProductList() {
       handleCloseProductModal();
     } catch (error: any) {
       console.error("Không thể lưu sản phẩm:", error);
+
+      // server duplicate fallback -> show deleted-list style message if backend indicates duplicate
+      const status = error?.status ?? error?.response?.status;
+      const serverMsg = (error?.data?.message ??
+        error?.message ??
+        "") as string;
+      if (
+        status === 409 ||
+        /duplicate|already exists|unique|exists/i.test(String(serverMsg))
+      ) {
+        toaster.create({
+          description: "Mã sản phẩm đã tồn tại trong danh sách sản phẩm đã xóa",
+          type: "error",
+        });
+        return;
+      }
+
       const errorMessage =
         error?.data?.message ||
         error?.message ||

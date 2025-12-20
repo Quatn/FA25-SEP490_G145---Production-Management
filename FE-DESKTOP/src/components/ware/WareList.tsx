@@ -1,4 +1,3 @@
-// src/components/ware/WareList.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
@@ -7,6 +6,7 @@ import {
   useCreateWareMutation,
   useUpdateWareMutation,
   useDeleteWareMutation,
+  useGetDeletedWaresQuery, // <-- added
 } from "@/service/api/wareApiSlice";
 import { useGetAllFluteCombinationQuery } from "@/service/api/fluteCombinationApiSlice";
 import { useGetAllPrintColorsQuery } from "@/service/api/printColorApiSlice";
@@ -458,6 +458,27 @@ export const WareList: React.FC = () => {
   const paperSupplierList: any[] =
     paperSupplierResp?.data ?? paperSupplierResp ?? [];
 
+  // --- fetch deleted wares for client-side duplicate detection (large limit)
+  const {
+    data: deletedWaresResp,
+    isLoading: isLoadingDeletedWares,
+    refetch: refetchDeletedWares,
+  } = useGetDeletedWaresQuery({ page: 1, limit: 1000, search: "" });
+
+  // normalize deleted list to an array
+  const deletedWaresList = React.useMemo(() => {
+    const raw = deletedWaresResp?.data ?? deletedWaresResp ?? [];
+    // sometimes transformResponse returns { data: [...] } or direct array
+    const arr = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.data)
+      ? raw.data
+      : raw?.data?.data && Array.isArray(raw.data.data)
+      ? raw.data.data
+      : [];
+    return Array.isArray(arr) ? arr : [];
+  }, [deletedWaresResp]);
+
   let wares: any[] = [];
   if (waresResp?.data?.data && Array.isArray(waresResp.data.data))
     wares = waresResp.data.data;
@@ -703,6 +724,23 @@ export const WareList: React.FC = () => {
     });
   };
 
+  // check whether code exists in deleted list. excludeId optional for updates.
+  const isCodeInDeleted = (code?: string, excludeId?: string | null) => {
+    if (!code) return false;
+    const norm = String(code).trim().toLowerCase();
+    if (!norm) return false;
+    return (deletedWaresList || []).some((d: any) => {
+      const candidate = String(d?.code ?? d?.id ?? d?._id ?? d?.orderCode ?? "")
+        .trim()
+        .toLowerCase();
+      if (!candidate) return false;
+      // if excludeId provided and matches this deleted doc's id, don't treat as conflict
+      const did = getIdFromDoc(d) ?? d._id ?? d.id ?? d.code;
+      if (excludeId && did && String(did) === String(excludeId)) return false;
+      return candidate === norm;
+    });
+  };
+
   const handleCreateSubmit = async () => {
     try {
       // double-check permission before performing API action
@@ -722,9 +760,28 @@ export const WareList: React.FC = () => {
         return;
       }
 
-      // uniqueness check
+      // uniqueness check (current active list)
       if (isCodeTaken(createForm.code)) {
         toaster.create({ description: "Mã hàng đã tồn tại", type: "error" });
+        return;
+      }
+
+      // check deleted list (prevent creating a code that already existed but was soft-deleted)
+      if (isCodeInDeleted(createForm.code)) {
+        toaster.create({
+          description: "Mã hàng đã tồn tại trong danh sách mã hàng đã xóa",
+          type: "error",
+        });
+        return;
+      }
+
+      // optional guard if deleted list still loading (choose to fail-fast)
+      if (isLoadingDeletedWares) {
+        toaster.create({
+          description:
+            "Đang kiểm tra danh sách mã bị xóa — vui lòng thử lại sau",
+          type: "error",
+        });
         return;
       }
 
@@ -964,6 +1021,21 @@ export const WareList: React.FC = () => {
       });
     } catch (err: any) {
       console.error("Tạo thất bại", err);
+
+      // server duplicate fallback
+      const status = err?.status ?? err?.response?.status;
+      const serverMsg = (err?.data?.message ?? err?.message ?? "") as string;
+      if (
+        status === 409 ||
+        /duplicate|already exists|unique|exists/i.test(String(serverMsg))
+      ) {
+        toaster.create({
+          description: "Mã hàng đã tồn tại trong danh sách mã hàng đã xóa",
+          type: "error",
+        });
+        return;
+      }
+
       toaster.create({
         description: err?.data?.message ?? err?.message ?? "Tạo thất bại",
         type: "error",
@@ -998,6 +1070,15 @@ export const WareList: React.FC = () => {
       // uniqueness check (exclude current record id)
       if (isCodeTaken(editForm.code, editForm.id)) {
         toaster.create({ description: "Mã hàng đã tồn tại", type: "error" });
+        return;
+      }
+
+      // check deleted list (prevent updating code to one that was soft-deleted)
+      if (isCodeInDeleted(editForm.code, editForm.id)) {
+        toaster.create({
+          description: "Mã hàng đã tồn tại trong danh sách mã hàng đã xóa",
+          type: "error",
+        });
         return;
       }
 
@@ -1181,6 +1262,21 @@ export const WareList: React.FC = () => {
       });
     } catch (err: any) {
       console.error("Update failed", err);
+
+      // server duplicate fallback
+      const status = err?.status ?? err?.response?.status;
+      const serverMsg = (err?.data?.message ?? err?.message ?? "") as string;
+      if (
+        status === 409 ||
+        /duplicate|already exists|unique|exists/i.test(String(serverMsg))
+      ) {
+        toaster.create({
+          description: "Mã hàng đã tồn tại trong danh sách mã hàng đã xóa",
+          type: "error",
+        });
+        return;
+      }
+
       toaster.create({
         description: err?.data?.message ?? err?.message ?? "Update failed",
         type: "error",

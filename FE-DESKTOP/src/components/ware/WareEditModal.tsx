@@ -437,6 +437,7 @@ const WareEditModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       value={editForm?.code ?? ""}
+                      disabled
                       onChange={(e) =>
                         setEditForm((p: any) => ({
                           ...(p ?? {}),
