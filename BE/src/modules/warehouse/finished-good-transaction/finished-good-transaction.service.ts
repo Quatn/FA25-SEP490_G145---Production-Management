@@ -9,6 +9,8 @@ import { FinishedGood, FinishedGoodDocument } from '../schemas/finished-good.sch
 import { GetFinishedGoodTransactionsDto } from './dto/get-finished-good-transaction.dto';
 import { FinishedGoodDailyReportResponse } from '@/common/types/finished-good-types';
 import { GetFinishedGoodDailyReportDto } from './dto/get-finished-good-daily-report.dto';
+import { ManufacturingOrder } from '@/modules/production/schemas/manufacturing-order.schema';
+import { PurchaseOrderItem, PurchaseOrderItemStatus } from '@/modules/production/schemas/purchase-order-item.schema';
 
 type SoftFGTransaction = FinishedGoodTransaction & SoftDeleteDocument;
 @Injectable()
@@ -16,6 +18,8 @@ export class FinishedGoodTransactionService {
   constructor(
     @InjectModel(FinishedGoodTransaction.name) private readonly fgTransactionModel: Model<FinishedGoodTransactionDocument>,
     @InjectModel(FinishedGood.name) private readonly finishedModel: Model<FinishedGoodDocument>,
+    @InjectModel(ManufacturingOrder.name) private readonly moModel: Model<ManufacturingOrder>,
+    @InjectModel(PurchaseOrderItem.name) private readonly poiModel: Model<PurchaseOrderItem>,
   ) { }
 
   async findAdjustmentTransaction(page: number = 1, limit: number = 10, search?: string) {
@@ -335,11 +339,12 @@ export class FinishedGoodTransactionService {
   }
 
   async createOne(dto: CreateFinishedGoodTransactionDto) {
-    return (await this.createMany([dto]))[0];
+    const [result] = await this.createMany([dto]);
+    return result;
   }
 
   async createMany(dtos: CreateFinishedGoodTransactionDto[]) {
-    if (!Array.isArray(dtos) || dtos.length === 0) {
+    if (!dtos?.length) {
       throw new BadRequestException('Input must be a non-empty array.');
     }
 
@@ -348,21 +353,18 @@ export class FinishedGoodTransactionService {
 
     try {
       const results: FinishedGoodTransaction[] = [];
-
       for (const dto of dtos) {
         const result = await this._createOneInternal(dto, session);
         results.push(result);
       }
 
       await session.commitTransaction();
-      session.endSession();
-
       return results;
-
     } catch (err) {
       await session.abortTransaction();
-      session.endSession();
       throw err;
+    } finally {
+      await session.endSession();
     }
   }
 
@@ -374,35 +376,51 @@ export class FinishedGoodTransactionService {
 
     let finishedGood = await this.finishedModel
       .findOne({ manufacturingOrder: moId })
-      .session(session)
-      .exec();
+      .session(session);
 
     if (!finishedGood) {
-      finishedGood = await this.finishedModel.create(
+      [finishedGood] = await this.finishedModel.create(
         [{ manufacturingOrder: moId, importedQuantity: 0, exportedQuantity: 0, currentQuantity: 0 }],
         { session }
-      ).then(r => r[0]);
+      );
     }
 
     const initialQuantity = finishedGood!.currentQuantity ?? 0;
     let finalQuantity = initialQuantity;
 
-    if (dto.transactionType === 'IMPORT') {
-      finalQuantity += dto.quantity;
-      finishedGood!.importedQuantity += dto.quantity;
-    } else if (dto.transactionType === 'EXPORT') {
-      finalQuantity -= dto.quantity;
-      finishedGood!.exportedQuantity += dto.quantity;
-    } else if (dto.transactionType === 'ADJUSTMENT') {
-      finalQuantity = dto.quantity;
+    if (finishedGood) {
+      switch (dto.transactionType) {
+        case 'IMPORT':
+          finalQuantity += dto.quantity;
+          finishedGood.importedQuantity += dto.quantity;
+          break;
+
+        case 'EXPORT':
+
+          if (initialQuantity < dto.quantity) {
+            throw new BadRequestException(
+              `Lỗi xuất kho vượt quá số lượng tồn. Tồn kho: ${initialQuantity}, Yêu cầu xuất: ${dto.quantity}`
+            );
+          }
+
+          finalQuantity -= dto.quantity;
+          finishedGood.exportedQuantity += dto.quantity;
+
+          await this._checkAndCompletePurchaseOrderItem(moId, finishedGood.exportedQuantity, session);
+          break;
+
+        case 'ADJUSTMENT':
+          finalQuantity = dto.quantity;
+          break;
+      }
     }
 
     if (dto.transactionType != 'ADJUSTMENT' && finishedGood) {
       finishedGood.currentQuantity = finalQuantity;
-      await finishedGood.save();
+      await finishedGood.save({ session });
     }
 
-    const transaction = await this.fgTransactionModel.create(
+    const [transaction] = await this.fgTransactionModel.create(
       [{
         finishedGood: finishedGood!._id,
         employee: dto.employee ? new Types.ObjectId(dto.employee) : undefined,
@@ -413,19 +431,39 @@ export class FinishedGoodTransactionService {
         note: dto.note,
       }],
       { session }
-    ).then(r => r[0]);
+    );
 
     const populated = await this.fgTransactionModel
-      .find({ _id: transaction._id })
+      .findById(transaction._id)
       .populate(['employee', 'finishedGood'])
-      .lean()
+      .session(session)
+      .lean();
+
+    if (!populated) throw new NotFoundException('Transaction record creation failed');
+    return populated;
+  }
+
+  private async _checkAndCompletePurchaseOrderItem(
+    moId: Types.ObjectId,
+    totalExported: number,
+    session: mongoose.ClientSession
+  ) {
+    const mo = await this.moModel
+      .findById(moId)
+      .select('purchaseOrderItem')
+      .session(session)
+      .lean();
+
+    if (!mo || !mo.purchaseOrderItem) return;
+
+    const poi = await this.poiModel
+      .findById(mo.purchaseOrderItem)
       .session(session);
 
-    if (!populated || populated.length === 0) {
-      throw new NotFoundException('Transaction not found');
+    if (poi && totalExported >= poi.amount) {
+      poi.status = PurchaseOrderItemStatus.Completed;
+      await poi.save({ session });
     }
-
-    return populated[0];
   }
 
   async updateOne(id: string, dto: UpdateFinishedGoodTransactionDto) {
