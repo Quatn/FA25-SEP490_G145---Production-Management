@@ -30,7 +30,7 @@ const ProductTypeAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class ProductTypeController {
   constructor(private readonly service: ProductTypeService) { }
 
-  @UseGuards(ProductTypeGetRequestGuard)
+  // @UseGuards(ProductTypeGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated product types' })
   async findPaginated(
@@ -61,7 +61,7 @@ export class ProductTypeController {
     };
   }
 
-  @UseGuards(ProductTypeGetRequestGuard)
+  // @UseGuards(ProductTypeGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List product types' })
   async findAll(): Promise<BaseResponse<ProductType[]>> {
@@ -73,7 +73,7 @@ export class ProductTypeController {
     };
   }
 
-  @UseGuards(ProductTypeGetRequestGuard)
+  // @UseGuards(ProductTypeGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'product type detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<ProductType>> {

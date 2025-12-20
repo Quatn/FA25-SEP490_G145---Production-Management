@@ -31,7 +31,7 @@ const CustomerAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class CustomerController {
   constructor(private readonly service: CustomerService) { }
 
-  @UseGuards(CustomerGetRequestGuard)
+  // @UseGuards(CustomerGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List all customers' })
   async findAll(): Promise<BaseResponse<Customer[]>> {
@@ -43,7 +43,7 @@ export class CustomerController {
     };
   }
 
-  @UseGuards(CustomerGetRequestGuard)
+  // @UseGuards(CustomerGetRequestGuard)
   @Get("list")
   @ApiOperation({ summary: "List paginated customers" })
   async findPaginated(
@@ -75,7 +75,7 @@ export class CustomerController {
     };
   }
 
-  @UseGuards(CustomerGetRequestGuard)
+  // @UseGuards(CustomerGetRequestGuard)
   @Get("detail/:id")
   @ApiOperation({ summary: "Customer detail" })
   async findOne(@Param("id") id: string): Promise<BaseResponse<CustomerDocument>> {

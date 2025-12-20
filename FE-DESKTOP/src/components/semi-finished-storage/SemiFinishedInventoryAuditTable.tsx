@@ -67,7 +67,7 @@ const SemiFinishedInventoryAuditTable: React.FC<Props> = ({ page, limit, items }
                         <Table.ColumnHeader rowSpan={2}>
                             Ghi chú
                         </Table.ColumnHeader>
-                        
+
 
                     </Table.Row>
                     <Table.Row background={'blue.100'}>
@@ -111,16 +111,16 @@ const SemiFinishedInventoryAuditTable: React.FC<Props> = ({ page, limit, items }
                                     {item.finalQuantity}
                                 </Table.Cell>
 
-                                <Table.Cell 
-                                background={quantityGap < 0 ? 'red' : 'yellow'}
-                                color={quantityGap >= 0 ? 'black' : 'white'}
-                                fontWeight={'bold'}
+                                <Table.Cell
+                                    background={quantityGap < 0 ? 'red' : 'yellow'}
+                                    color={quantityGap >= 0 ? 'black' : 'white'}
+                                    fontWeight={'bold'}
                                 >
                                     {` ${quantityGap < 0 ? 'Thiếu' : 'Thừa'} ${Math.abs(quantityGap)}`}
                                 </Table.Cell>
 
                                 <Table.Cell>
-                                    {(item.employee as Employee).code}
+                                    {(item.employee as Employee)?.code ?? '-'}
                                 </Table.Cell>
 
                                 <Table.Cell overflow={'auto'} maxW="300px">

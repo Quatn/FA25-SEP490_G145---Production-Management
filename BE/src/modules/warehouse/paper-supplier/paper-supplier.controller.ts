@@ -30,7 +30,7 @@ const PaperSupplierAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class PaperSupplierController {
     constructor(private readonly psService: PaperSupplierService) { }
 
-    @UseGuards(PaperSupplierGetRequestGuard)
+    // @UseGuards(PaperSupplierGetRequestGuard)
     @Get("list")
     @ApiOperation({ summary: "List paginated paper suppliers" })
     async findPaginated(
@@ -46,7 +46,7 @@ export class PaperSupplierController {
         };
     }
 
-    @UseGuards(PaperSupplierGetRequestGuard)
+    // @UseGuards(PaperSupplierGetRequestGuard)
     @Get("list-all")
     @ApiOperation({ summary: "List paper suppliers" })
     async findAll(): Promise<BaseResponse<PaperSupplierDocument[]>> {
@@ -73,7 +73,7 @@ export class PaperSupplierController {
         };
     }
 
-    @UseGuards(PaperSupplierGetRequestGuard)
+    // @UseGuards(PaperSupplierGetRequestGuard)
     @Get("detail/:id")
     @ApiOperation({ summary: "Paper supplier detail" })
     async findOne(@Param("id") id: string): Promise<BaseResponse<PaperSupplierDocument>> {

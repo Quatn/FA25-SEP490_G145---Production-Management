@@ -31,7 +31,7 @@ const PrintColorAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class PrintColorController {
   constructor(private readonly pcService: PrintColorService) { }
 
-  @UseGuards(PrintColorGetRequestGuard)
+  // @UseGuards(PrintColorGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated print colors' })
   async findPaginated(
@@ -54,7 +54,7 @@ export class PrintColorController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  @UseGuards(PrintColorGetRequestGuard)
+  // @UseGuards(PrintColorGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List print colors' })
   async findAll(): Promise<BaseResponse<PrintColorDocument[]>> {
@@ -62,7 +62,7 @@ export class PrintColorController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  @UseGuards(PrintColorGetRequestGuard)
+  // @UseGuards(PrintColorGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Print color detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<PrintColorDocument>> {

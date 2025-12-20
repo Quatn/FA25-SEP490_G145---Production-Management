@@ -12,8 +12,32 @@ import SemiFinishedTransactionForm from "./SemiFinishedTransactionForm";
 import { toaster } from "@/components/ui/toaster";
 import { useGetAllManufacturingOrdersQuery } from "@/service/api/manufacturingOrderApiSlice";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import DataLoading from "../common/DataLoading";
+import check from "check-types";
+
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "semi-finished-good-readWrite",
+]
 
 const SemiFinishedList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
+
     const [page, setPage] = useState(1);
     const limit = 10;
     const [search, setSearch] = useState("");
@@ -26,7 +50,7 @@ const SemiFinishedList: React.FC = () => {
 
     const { data: sfData, error: sfError, isLoading: sfLoading } = useGetSemiFinishedGoodsQuery({ page, limit, search: debouncedSearch });
     const { data: moData, error: moError, isLoading: moLoading } = useGetAllManufacturingOrdersQuery();
-    const { data: allSFData, error: allSFError, isLoading: allSFLoading} = useGetAllSemiFinishedGoodsQuery();
+    const { data: allSFData, error: allSFError, isLoading: allSFLoading } = useGetAllSemiFinishedGoodsQuery();
     const sfGoods: SemiFinishedGood[] = sfData?.data?.data ?? [];
     const mos: ManufacturingOrder[] = moData?.data ?? [];
     const allSFGoods: SemiFinishedGood[] = allSFData?.data ?? [];
@@ -39,12 +63,28 @@ const SemiFinishedList: React.FC = () => {
 
     const inputRef = useRef<HTMLInputElement | null>(null);
 
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
+
     const handleOpenDetail = (item?: SemiFinishedGood) => {
         setSelected(item);
         setDetailOpen(true);
     };
 
     const handleOpenTx = (type: "IMPORT" | "EXPORT", item?: SemiFinishedGood) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelected(item);
         setTxType(type);
         setTxOpen(true);
@@ -60,6 +100,10 @@ const SemiFinishedList: React.FC = () => {
         setDetailOpen(false);
         setSelected(undefined);
     };
+
+    if (hydrating) {
+        return <DataLoading />
+    }
 
     if (sfLoading || moLoading || allSFLoading) return <Spinner />;
     if (sfError || moError || allSFError) {

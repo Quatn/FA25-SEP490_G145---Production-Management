@@ -30,7 +30,7 @@ const WareFinishingProcessTypeAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class WareFinishingProcessTypeController {
   constructor(private readonly service: WareFinishingProcessTypeService) { }
 
-  @UseGuards(WareFinishingProcessTypeGetRequestGuard)
+  // @UseGuards(WareFinishingProcessTypeGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated ware finishing process types' })
   async findPaginated(
@@ -61,7 +61,7 @@ export class WareFinishingProcessTypeController {
     };
   }
 
-  @UseGuards(WareFinishingProcessTypeGetRequestGuard)
+  // @UseGuards(WareFinishingProcessTypeGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List ware finishing process types' })
   async findAll(): Promise<BaseResponse<WareFinishingProcessType[]>> {
@@ -73,7 +73,7 @@ export class WareFinishingProcessTypeController {
     };
   }
 
-  @UseGuards(WareFinishingProcessTypeGetRequestGuard)
+  // @UseGuards(WareFinishingProcessTypeGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Ware finishing process type detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<WareFinishingProcessType>> {

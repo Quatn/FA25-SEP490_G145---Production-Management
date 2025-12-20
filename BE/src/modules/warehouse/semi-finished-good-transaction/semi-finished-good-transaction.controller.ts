@@ -37,7 +37,7 @@ const SemiFinishedGoodTransactionAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class SemiFinishedGoodTransactionController {
   constructor(private readonly semiFinishedGoodTransactionService: SemiFinishedGoodTransactionService) { }
 
-  @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
+  // @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated semi finished transactions' })
   async findPaginated(@Query() query: GetSemiFinishedGoodTransactionsDto) {
@@ -45,7 +45,7 @@ export class SemiFinishedGoodTransactionController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
+  // @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List all semi finished transactions' })
   async findAll(): Promise<BaseResponse<SemiFinishedGoodTransaction[]>> {
@@ -53,7 +53,7 @@ export class SemiFinishedGoodTransactionController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
+  // @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
   @Get('list-adjustment')
   @ApiOperation({ summary: 'List semi finished inventory audit transactions' })
   async findAdjustment(
@@ -65,7 +65,7 @@ export class SemiFinishedGoodTransactionController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
+  // @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Transaction detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<SemiFinishedGoodTransaction>> {
@@ -89,13 +89,13 @@ export class SemiFinishedGoodTransactionController {
     return { success: true, message: 'Updated successfully', data: doc };
   }
 
-  @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
+  // @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
   @Get("employees/daily")
   async getSFGDailyEmployees(@Query("date") date: string) {
     return this.semiFinishedGoodTransactionService.getDailyEmployees(date);
   }
 
-  @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
+  // @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
   @Get('chart/daily')
   async getDailyStats(@Query('date') date: string) {
     const data = await this.semiFinishedGoodTransactionService.getDailyStatistics(date);
@@ -105,7 +105,7 @@ export class SemiFinishedGoodTransactionController {
     };
   }
 
-  @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
+  // @UseGuards(SemiFinishedGoodTransactionGetRequestGuard)
   @Get('report/daily')
   @ApiOperation({ summary: 'Get daily report of transactions' })
   async getSFGDailyReport(

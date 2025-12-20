@@ -30,7 +30,7 @@ const FluteCombinationAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class FluteCombinationController {
   constructor(private readonly service: FluteCombinationService) { }
 
-  @UseGuards(FluteCombinationGetRequestGuard)
+  // @UseGuards(FluteCombinationGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated flute combinations' })
   async findPaginated(
@@ -46,7 +46,7 @@ export class FluteCombinationController {
     };
   }
 
-  @UseGuards(FluteCombinationGetRequestGuard)
+  // @UseGuards(FluteCombinationGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List flute combinations' })
   async findAll(): Promise<BaseResponse<FluteCombination[]>> {
@@ -73,7 +73,7 @@ export class FluteCombinationController {
     };
   }
 
-  @UseGuards(FluteCombinationGetRequestGuard)
+  // @UseGuards(FluteCombinationGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'flute combination detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<FluteCombination>> {

@@ -15,12 +15,29 @@ import { useAppSelector } from "@/service/hooks";
 import { ManufacturingOrderDialogProvider } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import ManufacturingOrderDetailsDialog from "../order-details-dialog/Dialog";
 import { useGetSemiFinishedGoodByManufacturingOrderIdQuery } from "@/service/api/semiFinishedGoodApiSlice";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import check from "check-types";
+import DataLoading from "@/components/common/DataLoading";
+
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "employee-readWrite"
+]
 
 const OrderFinishingProcessList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
 
     const userState: UserState | null = useAppSelector((state) =>
         state.auth.userState
     );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
 
     const [scheduledPage, setScheduledPage] = useState(1);
     const [inProductionPage, setInProductionPage] = useState(1);
@@ -124,6 +141,19 @@ const OrderFinishingProcessList: React.FC = () => {
     //     }
     // };
 
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
+
     const handleUpdateOne = async (
         updateId: string,
         updateStatus: OrderFinishingProcessStatus,
@@ -169,18 +199,23 @@ const OrderFinishingProcessList: React.FC = () => {
     };
 
     const handleOpenAlertDialog = (tableStatus: OrderFinishingProcessStatus, ofp: OrderFinishingProcess) => {
+
+        if (!handleValidateAccess()) return;
+
         if (tableStatus == OrderFinishingProcessStatus.Scheduled) setUpdateToStatus(OrderFinishingProcessStatus.InProduction);
         if (tableStatus == OrderFinishingProcessStatus.InProduction) setUpdateToStatus(OrderFinishingProcessStatus.FinishedProduction);
         setSelectedOFP(ofp);
         setDialogOpen(true);
     }
 
-
     const handleCloseAlertDialog = () => {
         setDialogOpen(false);
         setSelectedOFP(undefined);
     };
 
+    if (hydrating) {
+        return <DataLoading />
+    }
 
     if (scheduledLoading || inProductionLoading || finishedProductionLoading) return <Spinner />;
     if (scheduledError || inProductionError || finishedProductionError) {

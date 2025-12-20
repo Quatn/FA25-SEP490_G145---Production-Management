@@ -30,7 +30,7 @@ const SemiFinishedGoodAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class SemiFinishedGoodController {
   constructor(private readonly semiFinishedGoodService: SemiFinishedGoodService) { }
 
-  @UseGuards(SemiFinishedGoodGetRequestGuard)
+  // @UseGuards(SemiFinishedGoodGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated semi finished goods' })
   async findPaginated(
@@ -42,7 +42,7 @@ export class SemiFinishedGoodController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  @UseGuards(SemiFinishedGoodGetRequestGuard)
+  // @UseGuards(SemiFinishedGoodGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List all semi finished goods' })
   async findAll(): Promise<BaseResponse<SemiFinishedGood[]>> {
@@ -50,7 +50,7 @@ export class SemiFinishedGoodController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  @UseGuards(SemiFinishedGoodGetRequestGuard)
+  // @UseGuards(SemiFinishedGoodGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Semi finished good detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<SemiFinishedGood>> {
@@ -58,7 +58,7 @@ export class SemiFinishedGoodController {
     return { success: true, message: 'Fetch successful', data: doc };
   }
 
-  @UseGuards(SemiFinishedGoodGetRequestGuard)
+  // @UseGuards(SemiFinishedGoodGetRequestGuard)
   @Get('detail-by-mo/:moId')
   @ApiOperation({ summary: 'Get semi-finished good by manufacturing order ID' })
   async findByManufacturingOrderId(@Param('moId') moId: string): Promise<BaseResponse<SemiFinishedGood>> {
