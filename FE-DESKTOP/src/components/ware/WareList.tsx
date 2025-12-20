@@ -24,6 +24,13 @@ import { toaster } from "@/components/ui/toaster";
 import dynamic from "next/dynamic";
 import WareAdvancedSearchModal from "@/components/ware/WareAdvancedSearchModal";
 
+// --- new imports for privilege check ---
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import check from "check-types";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+// ------------------------------------------------
+
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
   if (typeof doc === "string") return doc;
@@ -376,6 +383,26 @@ const MultiSelectInline: React.FC<{
 export const WareList: React.FC = () => {
   const confirm = useConfirm();
 
+  // --- privilege check (manual as requested) ---
+  const hydrating: boolean = useAppSelector((state) => state.auth.hydrating);
+  const userState: UserState | null = useAppSelector(
+    (state) => state.auth.userState
+  );
+
+  const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "purchase-order-admin",
+    "purchase-order-readWrite",
+  ];
+
+  const writeAllowed =
+    check.nonEmptyArray(userState?.accessPrivileges) &&
+    EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
+
+  const writeDisabled = !writeAllowed;
+  // -------------------------------------------------
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(5);
@@ -678,6 +705,15 @@ export const WareList: React.FC = () => {
 
   const handleCreateSubmit = async () => {
     try {
+      // double-check permission before performing API action
+      if (writeDisabled) {
+        toaster.create({
+          description: "Bạn không có quyền thực hiện hành động này",
+          type: "error",
+        });
+        return;
+      }
+
       if (!createForm.code || String(createForm.code).trim() === "") {
         toaster.create({
           description: "Mã hàng không được để trống",
@@ -937,6 +973,15 @@ export const WareList: React.FC = () => {
 
   const handleEditSubmit = async () => {
     try {
+      // double-check permission before performing API action
+      if (writeDisabled) {
+        toaster.create({
+          description: "Bạn không có quyền thực hiện hành động này",
+          type: "error",
+        });
+        return;
+      }
+
       if (!editForm?.id) {
         toaster.create({ description: "Không tìm thấy mã này", type: "error" });
         return;
@@ -1005,35 +1050,6 @@ export const WareList: React.FC = () => {
 
       if (!volume || volume <= 0) {
         toaster.create({ description: "Thể tích phải > 0", type: "error" });
-        return;
-      }
-
-      if (warePerBlankAdjustment !== null && warePerBlankAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh số SP phải >= 1",
-          type: "error",
-        });
-        return;
-      }
-      if (flapAdjustment !== null && flapAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh tai phải >= 1",
-          type: "error",
-        });
-        return;
-      }
-      if (flapOverlapAdjustment !== null && flapOverlapAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh cộng cánh phải >= 1",
-          type: "error",
-        });
-        return;
-      }
-      if (crossCutCountAdjustment !== null && crossCutCountAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh part SX phải >= 1",
-          type: "error",
-        });
         return;
       }
 
@@ -1173,6 +1189,15 @@ export const WareList: React.FC = () => {
   };
 
   const handleSoftDelete = async (w: any) => {
+    // permission guard
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền thực hiện hành động này",
+        type: "error",
+      });
+      return;
+    }
+
     const ok = await confirm({
       title: "Delete Ware",
       description: `Delete ${w.code}?`,
@@ -1329,7 +1354,12 @@ export const WareList: React.FC = () => {
           <button
             className="btn btn-primary"
             style={{ minWidth: 69 }}
-            onClick={() => setCreateOpen(true)}
+            onClick={() => {
+              if (writeDisabled) return;
+              setCreateOpen(true);
+            }}
+            disabled={writeDisabled}
+            title={writeDisabled ? "Bạn không có quyền tạo" : "Tạo mới"}
           >
             + Tạo
           </button>
@@ -1460,13 +1490,23 @@ export const WareList: React.FC = () => {
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
                         className="btn btn-outline-secondary btn-sm"
-                        onClick={() => openEdit(w)}
+                        onClick={() => {
+                          if (writeDisabled) return;
+                          openEdit(w);
+                        }}
+                        disabled={writeDisabled}
+                        title={writeDisabled ? "Bạn không có quyền sửa" : "Sửa"}
                       >
                         Sửa
                       </button>
                       <button
                         className="btn btn-outline-danger btn-sm"
-                        onClick={() => handleSoftDelete(w)}
+                        onClick={() => {
+                          if (writeDisabled) return;
+                          handleSoftDelete(w);
+                        }}
+                        disabled={writeDisabled}
+                        title={writeDisabled ? "Bạn không có quyền xóa" : "Xóa"}
                       >
                         Xóa
                       </button>
@@ -1575,6 +1615,8 @@ export const WareList: React.FC = () => {
         handleEditSubmit={handleEditSubmit}
         getIdFromDoc={getIdFromDoc}
         MultiSelectInline={MultiSelectInline}
+        paperTypeList={paperTypeList}
+        paperSupplierList={paperSupplierList}
       />
 
       <WareAdvancedSearchModal

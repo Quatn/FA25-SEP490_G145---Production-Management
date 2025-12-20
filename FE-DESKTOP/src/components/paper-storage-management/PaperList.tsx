@@ -34,6 +34,13 @@ import { toaster } from "@/components/ui/toaster";
 import { useConfirm } from "@/components/common/ConfirmModal";
 import { PaperType } from "@/types/PaperType";
 
+// --- privilege check imports ---
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import check from "check-types";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+// ------------------------------------
+
 function uniqueIdTimeStamp() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
@@ -53,6 +60,28 @@ function getDbId(doc: any) {
 }
 
 export const PaperList: React.FC = () => {
+  // --- manual privilege check (edit list as requested) ---
+  const hydrating: boolean = useAppSelector((s) => (s as any).auth?.hydrating);
+  const userState: UserState | null = useAppSelector(
+    (s) => (s as any).auth?.userState ?? null
+  );
+
+  const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "paperRoll-admin",
+    "paperRoll-readWrite",
+    "warehouse-admin",
+    "warehouse-readWrite",
+  ];
+
+  const writeAllowed =
+    check.nonEmptyArray(userState?.accessPrivileges) &&
+    EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
+
+  const writeDisabled = !writeAllowed;
+  // -------------------------------------------------------
+
   const [query, setQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   // pagination state
@@ -319,6 +348,14 @@ export const PaperList: React.FC = () => {
       .map((r) => ({ ...r, paperRollId: computePaperRollId(r) })); // include computed id for UI
 
   const handleCreateSubmit = async () => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền tạo cuộn.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       const supplierId = String(createForm.paperSupplierId ?? "");
       if (!supplierId) {
@@ -362,10 +399,7 @@ export const PaperList: React.FC = () => {
           return;
         }
 
-        if (
-          widthNum > 2000 ||
-          grammageNum > 2000
-        ) {
+        if (widthNum > 2000 || grammageNum > 2000) {
           toaster.create({
             description: "Rộng và khổ không được vượt quá 2000",
             type: "error",
@@ -493,6 +527,14 @@ export const PaperList: React.FC = () => {
     );
 
   const handleCreateMultipleSubmit = async () => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền tạo nhiều cuộn.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       if (!createMultipleRows.length) {
         toaster.create({ description: "No rows", type: "error" });
@@ -661,6 +703,14 @@ export const PaperList: React.FC = () => {
   };
 
   const handleUpdateSubmit = async () => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền cập nhật cuộn.",
+        type: "error",
+      });
+      return;
+    }
+
     const widthStr = String(updateForm.width ?? "").trim();
     const grammageStr = String(updateForm.grammage ?? "").trim();
     const weightStr = String(updateForm.weight ?? "").trim();
@@ -755,6 +805,14 @@ export const PaperList: React.FC = () => {
   };
 
   const handleSoftDelete = async (r: any) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xóa cuộn.",
+        type: "error",
+      });
+      return;
+    }
+
     const id = getIdFromDoc(r) ?? r.paperRollId;
     if (!id) {
       toaster.create({ description: "No id", type: "error" });
@@ -784,6 +842,14 @@ export const PaperList: React.FC = () => {
   };
 
   const doSingleExport = async (roll: any) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xuất cuộn.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!roll) return;
     const w = Number(roll.weight || 0);
     if (!w || w <= 0) {
@@ -825,6 +891,14 @@ export const PaperList: React.FC = () => {
     rollOrPaperRollId: any,
     newWeight: number
   ) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền nhập lại cuộn.",
+        type: "error",
+      });
+      return;
+    }
+
     if (
       typeof newWeight !== "number" ||
       !Number.isFinite(newWeight) ||
@@ -919,6 +993,14 @@ export const PaperList: React.FC = () => {
   const doBulkReImport = async (
     updates: { paperRollId: string; newWeight: number }[]
   ) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền nhập lại hàng loạt.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!updates || updates.length === 0) return;
 
     try {
@@ -1056,6 +1138,14 @@ export const PaperList: React.FC = () => {
 
   // handle bulk export (previously inline with window.confirm)
   const handleBulkExportSelected = async () => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xuất hàng loạt.",
+        type: "error",
+      });
+      return;
+    }
+
     const sel = getSelectedRolls();
     if (!sel.length) {
       toaster.create({ description: "Select at least 1", type: "error" });
@@ -1101,12 +1191,16 @@ export const PaperList: React.FC = () => {
           <button
             className="btn btn-primary"
             onClick={() => setCreateOpen(true)}
+            disabled={writeDisabled}
+            title={writeDisabled ? "Bạn không có quyền tạo" : "Tạo cuộn"}
           >
             + Tạo
           </button>
           <button
             className="btn btn-outline-primary"
             onClick={() => setCreateMultipleOpen(true)}
+            disabled={writeDisabled}
+            title={writeDisabled ? "Bạn không có quyền tạo nhiều" : "Tạo nhiều"}
           >
             + Tạo nhiều
           </button>
@@ -1120,6 +1214,8 @@ export const PaperList: React.FC = () => {
           onClick={() => {
             handleBulkExportSelected();
           }}
+          disabled={writeDisabled}
+          title={writeDisabled ? "Bạn không có quyền xuất" : "Xuất (chọn)"}
         >
           Xuất (chọn)
         </button>
@@ -1266,28 +1362,51 @@ export const PaperList: React.FC = () => {
                       >
                         Xem chi tiết
                       </button>
+
                       <button
                         className="btn btn-danger btn-sm"
                         onClick={() => doSingleExport(r)}
+                        disabled={writeDisabled}
+                        title={
+                          writeDisabled ? "Bạn không có quyền xuất" : "Xuất"
+                        }
                       >
                         Xuất
                       </button>
+
                       <button
                         className="btn btn-secondary btn-sm"
                         onClick={() => {
+                          if (writeDisabled) {
+                            toaster.create({
+                              description: "Bạn không có quyền nhập lại cuộn.",
+                              type: "error",
+                            });
+                            return;
+                          }
                           setSingleModal({ open: true, roll: r });
                           const id = getDbId(r);
                           if (id) setSelectedIds({ [id]: true });
                         }}
+                        disabled={writeDisabled}
+                        title={
+                          writeDisabled
+                            ? "Bạn không có quyền nhập lại"
+                            : "Nhập lại"
+                        }
                       >
                         Nhập lại
                       </button>
+
                       <button
                         className="btn btn-outline-danger btn-sm"
                         onClick={() => handleSoftDelete(r)}
+                        disabled={writeDisabled}
+                        title={writeDisabled ? "Bạn không có quyền xóa" : "Xóa"}
                       >
                         Xóa
                       </button>
+
                       <button
                         className="btn btn-warning btn-sm"
                         onClick={() => handleCreateQR(r._id)}

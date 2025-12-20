@@ -1,3 +1,4 @@
+// src/components/purchase-order/PurchaseOrderList.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -22,6 +23,13 @@ import {
 } from "@/service/api/subPurchaseOrderApiSlice";
 import { toaster } from "@/components/ui/toaster";
 import { useConfirm } from "@/components/common/ConfirmModal";
+
+// --- privilege imports & check ---
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import check from "check-types";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+// -------------------------------------
 
 function makeId(prefix = "") {
   return `${prefix}${Date.now()}${Math.floor(Math.random() * 9000 + 1000)}`;
@@ -99,6 +107,27 @@ const includeCurrentStatus = (base: string[], current?: string) => {
 
 const PurchaseOrderList: React.FC = () => {
   const confirm = useConfirm();
+
+  // --- manual privilege check (same as WareList) ---
+  const hydrating: boolean = useAppSelector((state) => state.auth.hydrating);
+  const userState: UserState | null = useAppSelector(
+    (state) => state.auth.userState
+  );
+
+  const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "purchase-order-admin",
+    "purchase-order-readWrite",
+  ];
+
+  const writeAllowed =
+    check.nonEmptyArray(userState?.accessPrivileges) &&
+    EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
+
+  const writeDisabled = !writeAllowed;
+  // -----------------------------------------------------
+
   const [query, setQuery] = useState<string>("");
   const [page, setPage] = useState<number>(1);
   const [limit] = useState<number>(4);
@@ -230,6 +259,14 @@ const PurchaseOrderList: React.FC = () => {
   };
 
   const handleCreateNewPO = () => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền tạo PO.",
+        type: "error",
+      });
+      return;
+    }
+
     const newPo: PurchaseOrder = {
       id: makeId("local-"),
       poNumber: "",
@@ -255,6 +292,13 @@ const PurchaseOrderList: React.FC = () => {
 
   const handleSaveFromModal = async (updated: PurchaseOrder) => {
     try {
+      // permission guard
+      if (writeDisabled) {
+        const message = "Bạn không có quyền lưu thay đổi cho PO.";
+        toaster.create({ description: message, type: "error" });
+        return { success: false, message };
+      }
+
       const trimmedPoNumber = (updated.poNumber || "").trim();
 
       const errors: any = {};
@@ -335,6 +379,14 @@ const PurchaseOrderList: React.FC = () => {
   };
 
   const handleDeleteFromList = async (po: PurchaseOrder) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xóa PO.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!po?.id) return;
     if (po.status !== "DRAFT") {
       toaster.create({
@@ -373,6 +425,7 @@ const PurchaseOrderList: React.FC = () => {
   };
 
   const toggleExpandSubs = (poId: string) => {
+    // read-only toggle — do not restrict by writeDisabled
     setExpandedPoId((prev) => (prev === poId ? null : poId));
   };
 
@@ -381,6 +434,14 @@ const PurchaseOrderList: React.FC = () => {
     itemIdRaw: any,
     newAmount: number
   ) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền sửa số lượng sản phẩm.",
+        type: "error",
+      });
+      return;
+    }
+
     const idStr = String(resolveId(itemIdRaw));
 
     if (!expandedLocalDoc) {
@@ -459,6 +520,14 @@ const PurchaseOrderList: React.FC = () => {
     itemRaw: any,
     newStatus: string
   ) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền thay đổi trạng thái sản phẩm.",
+        type: "error",
+      });
+      return;
+    }
+
     const idStr = String(resolveId(itemRaw));
 
     if (!expandedLocalDoc) {
@@ -614,6 +683,14 @@ const PurchaseOrderList: React.FC = () => {
 
   // Delete item (only if allowed)
   const handleDeleteServerItem = async (itemRaw: any) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xóa sản phẩm.",
+        type: "error",
+      });
+      return;
+    }
+
     const idStr = String(resolveId(itemRaw));
     if (!expandedLocalDoc) {
       toaster.create({
@@ -691,6 +768,14 @@ const PurchaseOrderList: React.FC = () => {
 
   // Delete sub (only when allowed)
   const handleDeleteServerSub = async (subRaw: any) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xóa sản phẩm trong PO.",
+        type: "error",
+      });
+      return;
+    }
+
     const subId = String(resolveId(subRaw));
     if (!expandedLocalDoc) {
       toaster.create({ description: "Data not loaded.", type: "error" });
@@ -757,6 +842,14 @@ const PurchaseOrderList: React.FC = () => {
 
   // Handler: update PO status with propagation
   const handleUpdatePoStatus = async (poId: string, newStatus: string) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền thay đổi trạng thái PO.",
+        type: "error",
+      });
+      return;
+    }
+
     const po = orders.find((o) => String(o.id) === String(poId));
     if (!po) {
       toaster.create({ description: "PO not found", type: "error" });
@@ -1032,6 +1125,14 @@ const PurchaseOrderList: React.FC = () => {
 
   // Handler: update Sub status with propagation to items when going to pending
   const handleUpdateSubStatus = async (subIdRaw: any, newStatus: string) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền thay đổi trạng thái Sub-PO.",
+        type: "error",
+      });
+      return;
+    }
+
     const subId = String(resolveId(subIdRaw));
     if (!expandedLocalDoc) {
       toaster.create({ description: "Data not loaded.", type: "error" });
@@ -1217,6 +1318,14 @@ const PurchaseOrderList: React.FC = () => {
     subIdRaw: any,
     newDateStr: string
   ) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền thay đổi ngày giao Sub-PO.",
+        type: "error",
+      });
+      return;
+    }
+
     const subId = String(resolveId(subIdRaw));
     if (!expandedLocalDoc) {
       toaster.create({ description: "Data not loaded.", type: "error" });
@@ -1313,7 +1422,12 @@ const PurchaseOrderList: React.FC = () => {
           marginBottom: 12,
         }}
       >
-        <button className="btn btn-outline-primary" onClick={handleCreateNewPO}>
+        <button
+          className="btn btn-outline-primary"
+          onClick={handleCreateNewPO}
+          disabled={writeDisabled}
+          title={writeDisabled ? "Bạn không có quyền tạo PO" : "Tạo PO"}
+        >
           Tạo PO
         </button>
         <div style={{ flex: 1 }} />
@@ -1354,7 +1468,8 @@ const PurchaseOrderList: React.FC = () => {
 
             const poEditable = po.status === "DRAFT";
             const poStatusSelectable =
-              po.status === "DRAFT" || po.status === "PENDINGAPPROVAL";
+              (po.status === "DRAFT" || po.status === "PENDINGAPPROVAL") &&
+              !writeDisabled;
 
             return (
               <div key={String(po.id)} className="card mb-3">
@@ -1433,8 +1548,11 @@ const PurchaseOrderList: React.FC = () => {
                       >
                         <button
                           className="btn btn-outline-secondary btn-sm"
-                          onClick={() => setSelected(po)}
-                          disabled={!poEditable}
+                          onClick={() => {
+                            if (writeDisabled || !poEditable) return;
+                            setSelected(po);
+                          }}
+                          disabled={!poEditable || writeDisabled}
                         >
                           Chỉnh sửa
                         </button>
@@ -1447,7 +1565,7 @@ const PurchaseOrderList: React.FC = () => {
                         <button
                           className="btn btn-danger btn-sm"
                           onClick={() => handleDeleteFromList(po)}
-                          disabled={!poEditable}
+                          disabled={!poEditable || writeDisabled}
                         >
                           Xóa
                         </button>
@@ -1474,7 +1592,12 @@ const PurchaseOrderList: React.FC = () => {
                               poId: po.id,
                             })
                           }
-                          disabled={!poEditable}
+                          disabled={!poEditable || writeDisabled}
+                          title={
+                            writeDisabled
+                              ? "Bạn không có quyền thêm Sub-PO"
+                              : "+ Tạo Sub-PO (Chọn sản phẩm)"
+                          }
                         >
                           + Tạo Sub-PO (Chọn sản phẩm)
                         </button>
@@ -1494,9 +1617,10 @@ const PurchaseOrderList: React.FC = () => {
                               `sub-noid-${String(po.id)}-${sIdx}`;
                             const subStatus = s.status ?? "DRAFT";
                             const subStatusSelectable =
-                              (po.status === "DRAFT" &&
+                              ((po.status === "DRAFT" &&
                                 subStatus === "DRAFT") ||
-                              subStatus === "PENDINGAPPROVAL";
+                                subStatus === "PENDINGAPPROVAL") &&
+                              !writeDisabled;
 
                             return (
                               <div key={subKey} className="card mb-2">
@@ -1595,7 +1719,7 @@ const PurchaseOrderList: React.FC = () => {
                                             !(
                                               po.status === "DRAFT" &&
                                               (s.status ?? "DRAFT") === "DRAFT"
-                                            )
+                                            ) || writeDisabled
                                           }
                                         />
 
@@ -1608,7 +1732,7 @@ const PurchaseOrderList: React.FC = () => {
                                             !(
                                               po.status === "DRAFT" &&
                                               (s.status ?? "DRAFT") === "DRAFT"
-                                            )
+                                            ) || writeDisabled
                                           }
                                         >
                                           Xóa sản phẩm
@@ -1647,13 +1771,14 @@ const PurchaseOrderList: React.FC = () => {
                                             const itemStatus =
                                               it.status ?? "DRAFT";
                                             const itemStatusSelectable =
-                                              po.status === "DRAFT" &&
+                                              !writeDisabled &&
+                                              (po.status === "DRAFT" &&
                                               (s.status ?? "DRAFT") ===
                                                 "DRAFT" &&
                                               itemStatus === "DRAFT"
                                                 ? true
                                                 : itemStatus ===
-                                                  "PENDINGAPPROVAL";
+                                                  "PENDINGAPPROVAL");
 
                                             const amountVal = it.amount ?? 0;
                                             const unitPrice =
@@ -1813,6 +1938,7 @@ const PurchaseOrderList: React.FC = () => {
                                                     }}
                                                     disabled={
                                                       !(
+                                                        !writeDisabled &&
                                                         po.status === "DRAFT" &&
                                                         (s.status ??
                                                           "DRAFT") ===
@@ -1855,6 +1981,7 @@ const PurchaseOrderList: React.FC = () => {
                                                       }
                                                       disabled={
                                                         !(
+                                                          !writeDisabled &&
                                                           po.status ===
                                                             "DRAFT" &&
                                                           (s.status ??
@@ -1957,6 +2084,15 @@ const PurchaseOrderList: React.FC = () => {
         show={productModalOpenForPo.open}
         onHide={() => setProductModalOpenForPo({ open: false })}
         onConfirm={async (selectedProducts) => {
+          if (writeDisabled) {
+            toaster.create({
+              description: "Bạn không có quyền thêm sản phẩm vào PO.",
+              type: "error",
+            });
+            setProductModalOpenForPo({ open: false });
+            return;
+          }
+
           const poId = productModalOpenForPo.poId;
           if (!poId) {
             setProductModalOpenForPo({ open: false });
@@ -2114,6 +2250,8 @@ const PurchaseOrderList: React.FC = () => {
         onClose={() => setSelected(null)}
         onSave={handleSaveFromModal}
         onOpenSubPOSelector={() => {}}
+        // optionally you can pass a disabled prop into modal so it can render fields disabled,
+        // but by default we guard save action server-side above.
       />
     </div>
   );

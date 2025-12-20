@@ -118,6 +118,30 @@ export enum SemiFinishedGoodTransactionModuleAccessPrivilege {
   ReadWrite = "semi-finished-good-transaction-readWrite",
 }
 
+export enum PaperRollModuleAccessPrivilege {
+  Admin = "paper-roll-admin",
+  Read = "paper-roll-read",
+  ReadWrite = "paper-roll-readWrite",
+}
+
+export enum PurchaseOrderModuleAccessPrivilege {
+  Admin = "purchase-order-admin",
+  Read = "purchase-order-read",
+  ReadWrite = "purchase-order-readWrite",
+}
+
+export enum ProductModuleAccessPrivilege {
+  Admin = "product-admin",
+  Read = "product-read",
+  ReadWrite = "product-readWrite",
+}
+
+export enum WareModuleAccessPrivilege {
+  Admin = "ware-admin",
+  Read = "ware-read",
+  ReadWrite = "ware-readWrite",
+}
+
 export type AnyAccessPrivileges =
   | `${SystemAccessPrivilege}`
   | `${ProductionModuleAccessPrivilege}`
@@ -139,6 +163,10 @@ export type AnyAccessPrivileges =
   | `${PaperTypeModuleAccessPrivilege}`
   | `${SemiFinishedGoodModuleAccessPrivilege}`
   | `${SemiFinishedGoodTransactionModuleAccessPrivilege}`
+  | `${PaperRollModuleAccessPrivilege}`
+  | `${PurchaseOrderModuleAccessPrivilege}`
+  | `${ProductModuleAccessPrivilege}`
+  | `${WareModuleAccessPrivilege}`
   ;
 
 export const ALL_ACCESS_PRIVILEGE_VALUES: string[] = [
@@ -162,4 +190,8 @@ export const ALL_ACCESS_PRIVILEGE_VALUES: string[] = [
   ...Object.values(PaperTypeModuleAccessPrivilege),
   ...Object.values(SemiFinishedGoodModuleAccessPrivilege),
   ...Object.values(SemiFinishedGoodTransactionModuleAccessPrivilege),
+  ...Object.values(PaperRollModuleAccessPrivilege),
+  ...Object.values(PurchaseOrderModuleAccessPrivilege),
+  ...Object.values(ProductModuleAccessPrivilege),
+  ...Object.values(WareModuleAccessPrivilege),
 ];

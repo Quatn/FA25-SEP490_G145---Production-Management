@@ -56,7 +56,6 @@ export class CreateWareDto {
   @Type(() => Number)
   @IsOptional()
   @IsNumber()
-  @Min(1)
   warePerBlankAdjustment?: number | null = null;
 
   @ApiProperty({
@@ -69,7 +68,6 @@ export class CreateWareDto {
   @Type(() => Number)
   @IsOptional()
   @IsNumber()
-  @Min(1)
   flapAdjustment?: number | null = null;
 
   @ApiProperty({
@@ -82,7 +80,6 @@ export class CreateWareDto {
   @Type(() => Number)
   @IsOptional()
   @IsNumber()
-  @Min(1)
   flapOverlapAdjustment?: number | null = null;
 
   @ApiProperty({
@@ -95,7 +92,6 @@ export class CreateWareDto {
   @Type(() => Number)
   @IsOptional()
   @IsNumber()
-  @Min(1)
   crossCutCountAdjustment?: number | null = null;
 
   @ApiProperty({ required: false })
