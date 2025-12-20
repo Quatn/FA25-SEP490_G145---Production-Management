@@ -110,11 +110,13 @@ export class AuthController {
       sameSite: "strict",
     });
 
+    const code = check.undefined(req.user) ? undefined : req.user.code;
+
     return {
       success: true,
       message: "Logged out successfully",
       data: {
-        code: req.user.code,
+        code,
       },
     };
   }

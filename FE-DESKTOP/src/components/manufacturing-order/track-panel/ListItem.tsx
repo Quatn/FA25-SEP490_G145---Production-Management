@@ -16,6 +16,7 @@ import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";
 import CorrugatorProcessStatusBadge from "../common/CorrugatorProcessStatusBadge";
 import OrderfinishingprocessProcessStatusBadge from "../common/OrderFinishingProcessStatusBadge";
+import { dateDMYCompare } from "@/utils/dateDMYCompare";
 
 const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, getOrderStatus, OrderStatusNameMap } = manufacturingOrderComponentUtils
 
@@ -65,12 +66,32 @@ const OrderStatusStatusSymbolMap: Record<ManufacturingOrderOperativeStatus, Reac
 }
 
 const getListItems = (mo: Serialized<ManufacturingOrder>) => {
+  const currentDate = new Date()
+  const manufacturingDate = new Date(mo?.manufacturingDateAdjustment ?? mo.manufacturingDate)
+
+  const color = (() => {
+    if (check.in(mo.operativeStatus, [ManufacturingOrderOperativeStatus.COMPLETED, ManufacturingOrderOperativeStatus.CANCELLED])) return undefined
+
+    if (check.date(manufacturingDate)) {
+      switch (dateDMYCompare(currentDate, manufacturingDate)) {
+        case 1:
+          return "initial"
+        case 0:
+          return "orange"
+        case -1:
+          return "red"
+        default:
+          return undefined
+      }
+    }
+    return undefined
+  })()
 
   return [
     { label: "Khách hàng", value: getPopulatedCustomer(mo)?.code },
     { label: "Đơn hàng", value: getPopulatedPo(mo)?.code },
     { label: "Mã hàng", value: getPopulatedWare(mo)?.code },
-    { label: "Ngày nhận", value: formatDateToDDMMYYYY(getPopulatedPo(mo)?.orderDate) },
+    { label: "Ngày sản xuất", value: formatDateToDDMMYYYY(manufacturingDate), color: color },
     { label: "Ngày giao", value: formatDateToDDMMYYYY(getPopulatedSubPo(mo)?.deliveryDate) },
   ]
 }
@@ -84,7 +105,6 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
 
   const [open, setOpen] = useState(false)
   const statusDisplayName = props.mo.operativeStatus ? OrderStatusNameMap[props.mo.operativeStatus] : undefined
-  const requiredAmount = props.mo.amount
   const orderStatus = props.mo.operativeStatus
   if (check.array.of.string(props.mo.finishingProcesses)) {
     throw new UnpopulatedFieldError("mo.finishingProcesses should have been populated before reaching here ManufacturingOrderTrackPanelListItem")
@@ -141,7 +161,7 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
               {getListItems(props.mo).map((item) => (
                 <DataList.Item key={item.label}>
                   <DataList.ItemLabel><Heading size="md">{item.label}</Heading></DataList.ItemLabel>
-                  <DataList.ItemValue>{item.value}</DataList.ItemValue>
+                  <DataList.ItemValue color={item.color ?? "initial"}>{item.value}</DataList.ItemValue>
                 </DataList.Item>
               ))}
             </DataList.Root>

@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import mongoose, {
+  Connection,
   Model,
   MongooseError,
   PipelineStage,
   QueryOptions,
   Types,
 } from "mongoose";
-import { InjectModel } from "@nestjs/mongoose";
+import { InjectConnection, InjectModel } from "@nestjs/mongoose";
 import {
   CorrugatorProcessStatus,
   ManufacturingOrder,
@@ -49,7 +50,10 @@ import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
 import { DeleteResult } from "@/common/dto/delete-result.dto";
 import { PatchResult } from "@/common/dto/patch-result.dto";
 import check from "check-types";
-import { fullDetailsFilterAggregationPipeline } from "./aggregate-pipes/full-details-filter";
+import {
+  fullDetailsFilterAggregationPipeline,
+  fullDetailsFilterMultiStageAggregationPipeline,
+} from "./aggregate-pipes/full-details-filter";
 import { FinishedGood } from "@/modules/warehouse/schemas/finished-good.schema";
 import { IllogicalError } from "@/common/errors/illogical.error";
 import { recalculateManufacturingOrder } from "./business-logics/recalculate-manufacturing-orders";
@@ -66,6 +70,10 @@ import { buildQueryAllMOProductionOutputByDateRange } from "./utils/buildQueryAl
 
 type DocWithSoftDelete = ManufacturingOrder & SoftDeleteDocument;
 
+const TMP_COLLECTION_NAME = "tmp_mo_aggregates";
+const TMP_SORT_FILTERED_COLLECTION_NAME = "tmp_mo_sort_filtered_aggregates";
+const TMP_TTL_SECONDS = 300;
+
 @Injectable()
 export class ManufacturingOrderService {
   constructor(
@@ -76,7 +84,55 @@ export class ManufacturingOrderService {
     @InjectModel(FinishedGood.name)
     private readonly finishedGoodProcessModel: Model<FinishedGood>,
     private recalcService: ProductionRecalculateService,
-  ) { }
+
+    @InjectConnection()
+    private readonly connection: Connection,
+  ) {}
+
+  async onModuleInit() {
+    await this.initTmpManufacturingOrdersCollection();
+    await this.initTmpSortFilteredManufacturingOrdersCollection();
+  }
+
+  private async initTmpManufacturingOrdersCollection() {
+    if (check.undefined(this.connection.db)) return;
+
+    const collection = this.connection.db.collection(TMP_COLLECTION_NAME);
+
+    await collection.createIndex(
+      { _pipeLineId: 1 },
+      { name: "idx_pipeLineId" },
+    );
+
+    await collection.createIndex(
+      { _tmpCreatedAt: 1 },
+      {
+        expireAfterSeconds: TMP_TTL_SECONDS,
+        name: "idx_tmpCreatedAt_ttl",
+      },
+    );
+  }
+
+  private async initTmpSortFilteredManufacturingOrdersCollection() {
+    if (check.undefined(this.connection.db)) return;
+
+    const collection = this.connection.db.collection(
+      TMP_SORT_FILTERED_COLLECTION_NAME,
+    );
+
+    await collection.createIndex(
+      { _pipeLineId: 1 },
+      { name: "idx_pipeLineId" },
+    );
+
+    await collection.createIndex(
+      { _tmpCreatedAt: 1 },
+      {
+        expireAfterSeconds: TMP_TTL_SECONDS,
+        name: "idx_tmpCreatedAt_ttl",
+      },
+    );
+  }
 
   async recalCheckDocs(docs: ManufacturingOrderDocument[]) {
     // Record of resulting docs after the would check and recalc process
@@ -193,15 +249,36 @@ export class ManufacturingOrderService {
     filter?: Record<string, unknown>;
     sort?: PipelineStage[];
   }): Promise<PaginatedList<FullDetailManufacturingOrderDto>> {
+    if (check.undefined(this.connection.db)) {
+      throw new MongooseError("Unable to initialize db connection");
+    }
+
+    const col = this.connection.db.collection(TMP_COLLECTION_NAME);
+    const sortFilteredCol = this.connection.db.collection(
+      TMP_SORT_FILTERED_COLLECTION_NAME,
+    );
+
     const skip = (page - 1) * limit;
 
-    const pipeline = fullDetailsFilterAggregationPipeline({
+    const pipelines = fullDetailsFilterMultiStageAggregationPipeline({
+      tmpColName: TMP_COLLECTION_NAME,
+      tmpSortFilteredColName: TMP_SORT_FILTERED_COLLECTION_NAME,
       filter,
       skip,
       limit,
       sort,
     });
 
+    await this.manufacturingOrderModel.aggregate(pipelines.basePipeline);
+
+    await col.aggregate(pipelines.sortFilterPipeline).toArray();
+
+    const [data, countArr] = await Promise.all([
+      sortFilteredCol.aggregate(pipelines.paginatePipeline).toArray(),
+      sortFilteredCol.aggregate(pipelines.countPipeline).toArray(),
+    ]);
+
+    /*
     const [data, countArr] = await Promise.all([
       this.manufacturingOrderModel.aggregate([...pipeline]),
       this.manufacturingOrderModel.aggregate([
@@ -209,6 +286,7 @@ export class ManufacturingOrderService {
         { $count: "total" },
       ]),
     ]);
+    */
 
     const totalItems =
       (countArr[0] as { total: number } | undefined)?.total ?? 0;
@@ -766,7 +844,10 @@ export class ManufacturingOrderService {
     startDate?: Date;
     endDate?: Date;
   }): Promise<QueryAllMOProductionOutputByDateRangeResponseDto[]> {
-    const pipeline = buildQueryAllMOProductionOutputByDateRange({ startDate, endDate });
+    const pipeline = buildQueryAllMOProductionOutputByDateRange({
+      startDate,
+      endDate,
+    });
     const data = await this.manufacturingOrderModel.aggregate(pipeline);
 
     return data as QueryAllMOProductionOutputByDateRangeResponseDto[];
