@@ -2,6 +2,7 @@ import {
   PurchaseOrderItemSchema,
   PurchaseOrderItemStatus,
 } from "../../schemas/purchase-order-item.schema";
+import { PurchaseOrderStatus } from "../../schemas/purchase-order.schema";
 
 // TODO: Optimize or something, ts is definitely not optimized
 export const ordersWithUnmanufacturedItemsLeanPipe = (
@@ -73,7 +74,7 @@ export const ordersWithUnmanufacturedItemsLeanPipe = (
       },
     },
     { $unwind: "$subPurchaseOrder" },
-    { $match: { isDeleted: { $ne: true } } },
+    { $match: { "subPurchaseOrder.isDeleted": { $ne: true } } },
 
     // Group by PurchaseOrder — assemble subPurchaseOrders with item-id objects
     {
@@ -102,7 +103,13 @@ export const ordersWithUnmanufacturedItemsLeanPipe = (
       },
     },
     { $unwind: "$purchaseOrder" },
-    { $match: { isDeleted: { $ne: true } } },
+    {
+      $match: {
+        isDeleted: { $ne: true },
+        "purchaseOrder.status": PurchaseOrderStatus.Approved,
+        "purchaseOrder.isDeleted": { $ne: true },
+      },
+    },
 
     {
       $match: {

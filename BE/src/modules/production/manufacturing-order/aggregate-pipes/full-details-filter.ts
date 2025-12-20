@@ -288,10 +288,6 @@ export function fullDetailsFilterAggregationPipeline({
   return pipeline;
 }
 
-// !WARN!
-// This solution is incomplete! Due to the fact that the _id unique index is still present, the pipelineId differentiator is not working, which
-// makes every requests uses a single collection as materialized storage, which poses a risk of collision. This will be fixed at a later date.
-// !WARN!
 export function fullDetailsFilterMultiStageAggregationPipeline({
   tmpColName = "tmp_mo_aggregates",
   tmpSortFilteredColName = "tmp_mo_sort_filtered_aggregates",
@@ -312,6 +308,12 @@ export function fullDetailsFilterMultiStageAggregationPipeline({
   const basePipeline: PipelineStage[] = [
     ...BASE_PIPELINE,
     { $addFields: { _pipeLineId: pipeLineId, _tmpCreatedAt: new Date() } },
+    {
+      $addFields: {
+        originalId: "$_id",
+        _id: { $concat: [{ $toString: "$_id" }, "::", pipeLineId] },
+      },
+    },
     {
       $merge: {
         into: tmpColName,
@@ -378,5 +380,19 @@ export function fullDetailsFilterMultiStageAggregationPipeline({
     ],
     paginatePipeline: [...matchIdPipe, ...paginatePipeline],
     countPipeline: [...matchIdPipe, ...countPipeline],
+    cleanupPipeline: [
+      {
+        $addFields: {
+          _id: "$originalId",
+        },
+      },
+      {
+        $project: {
+          originalId: 0,
+          _pipeLineId: 0,
+          _tmpCreatedAt: 0,
+        },
+      },
+    ],
   };
 }

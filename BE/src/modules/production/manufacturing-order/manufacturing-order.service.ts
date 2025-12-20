@@ -274,7 +274,12 @@ export class ManufacturingOrderService {
     await col.aggregate(pipelines.sortFilterPipeline).toArray();
 
     const [data, countArr] = await Promise.all([
-      sortFilteredCol.aggregate(pipelines.paginatePipeline).toArray(),
+      sortFilteredCol
+        .aggregate([
+          ...pipelines.paginatePipeline,
+          ...pipelines.cleanupPipeline,
+        ])
+        .toArray(),
       sortFilteredCol.aggregate(pipelines.countPipeline).toArray(),
     ]);
 

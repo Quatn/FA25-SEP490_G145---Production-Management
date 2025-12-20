@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useMemo, useState } from "react"
 import { manufacturingOrderComponentUtils } from "../utils"
 import { WareFinishingProcessType } from "@/types/WareFinishingProcessType"
-import { formatDateToDDMMYYYY, formatDateTohhmmDDMMYYYY } from "@/utils/dateUtils"
+import { formatDateTohhmmDDMMYYYY } from "@/utils/dateUtils"
 import OrderfinishingprocessProcessStatusBadge from "../common/OrderFinishingProcessStatusBadge"
 
 export type ManufacturingOrderDetailsDialogFinishingProcessDetailsCardProps = {
