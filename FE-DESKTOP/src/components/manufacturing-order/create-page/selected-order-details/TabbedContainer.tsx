@@ -1,14 +1,13 @@
 "use client";
 
-import { Box, Button, Center, Group, HStack, Stack, Tabs, Text } from "@chakra-ui/react";
-import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
+import { Box, Button, Center, Stack, Tabs, Text } from "@chakra-ui/react";
+import { LuCalendarDays, LuChartLine } from "react-icons/lu";
 import CreatePageManufacturingOrderTable from "./details-table-tab/Table";
 import MaterialRequirementContainer from "./material-requirement-summary-tab/Container";
 import { useGetAllByPaperTypesUsageQuery, useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
-import { FullDetailManufacturingOrderDTO } from "@/types/DTO/FullDetailManufactureOrder";
-import React, { createContext, Dispatch, useContext, useEffect, useMemo, useReducer } from "react";
+import React, { createContext, useMemo } from "react";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
-import { ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
+import { ManufacturingCreatePageTabType, ManufacturingOrderCreatePageReducerStore } from "@/context/manufacturing-order/manufacturingOrderCreatePageContext";
 import DataLoading from "@/components/common/DataLoading";
 import DataFetchError from "@/components/common/DataFetchError";
 import check from "check-types";
@@ -204,13 +203,16 @@ function compileChartData(
 export const CreatePageStoreContext = createContext<Store<CreatePageState> | null>(null);
 
 export default function ManufacturingOrderCreatePageSelectedOrdersDetails() {
-  const { useSelector } = ManufacturingOrderCreatePageReducerStore;
+  const { useSelector, useDispatch } = ManufacturingOrderCreatePageReducerStore;
+  const dispatch = useDispatch()
   const selectedPOIsIds = useSelector(s => s.selectedPOIsIds);
+  const tab = useSelector(s => s.tab);
 
   const {
     data: fullDetailMOsResponse,
     error: fetchError,
-    isLoading: isFetchingList,
+    isFetching: isFetchingList,
+    refetch: refetchList,
   } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
     ids: selectedPOIsIds,
   });
@@ -237,7 +239,8 @@ export default function ManufacturingOrderCreatePageSelectedOrdersDetails() {
   const {
     data: paperrollsByTypeListResponse,
     error: paperrollsByTypeListFetchError,
-    isLoading: paperrollsByTypeListIsFetchingList,
+    isFetching: paperrollsByTypeListIsFetchingList,
+    refetch: refetchPaperRolls,
   } = useGetInventoryByWarePaperTypeCodesQuery({
     codes: paperTypesList,
   });
@@ -245,7 +248,8 @@ export default function ManufacturingOrderCreatePageSelectedOrdersDetails() {
   const {
     data: moByTypeListResponse,
     error: moByTypeListFetchError,
-    isLoading: moByTypeListIsFetchingList,
+    isFetching: moByTypeListIsFetchingList,
+    refetch: refetchChartData,
   } = useGetAllByPaperTypesUsageQuery({
     paperTypes: paperTypesList,
   }, { skip: paperTypesList.length < 1 });
@@ -267,11 +271,11 @@ export default function ManufacturingOrderCreatePageSelectedOrdersDetails() {
     return new Store<CreatePageState>(state)
   }, [state]);
 
-  if (isFetchingList) {
+  if (isFetchingList || paperrollsByTypeListIsFetchingList || moByTypeListIsFetchingList) {
     return <DataLoading />
   }
 
-  if (fetchError) {
+  if (fetchError || paperrollsByTypeListFetchError || moByTypeListFetchError) {
     return <DataFetchError />
   }
 
@@ -287,29 +291,41 @@ export default function ManufacturingOrderCreatePageSelectedOrdersDetails() {
     )
   }
 
+  const refetch = () => {
+    refetchList()
+    refetchPaperRolls()
+    refetchChartData()
+  }
+
+  const switchTab = (tab: ManufacturingCreatePageTabType) => {
+    dispatch({ type: "SET_TAB", payload: tab })
+  }
+
   return (
     <CreatePageStoreContext value={store}>
-      <Tabs.Root defaultValue="members">
+      <Tabs.Root value={tab}>
         <Tabs.List>
-          <Tabs.Trigger value="members">
-            <LuUser />
+          <Tabs.Trigger value={"selectedOrderDetails"} onClick={() => switchTab("selectedOrderDetails")}>
+            <LuCalendarDays />
             Thông tin các lệnh sẽ tạo
           </Tabs.Trigger>
-          <Tabs.Trigger value="projects">
-            <LuFolder />
+          <Tabs.Trigger value={"materialRequirementSummary"} onClick={() => switchTab("materialRequirementSummary")}>
+            <LuChartLine />
             Kiểm tra nguyên phụ liệu
           </Tabs.Trigger>
-          <Tabs.Trigger value="tasks">
-            <LuSquareCheck />
-            Kiểm tra tồn kho hàng
-          </Tabs.Trigger>
+
+          <Box flexGrow={1} />
+
+          <Center>
+            <Button onClick={refetch} colorPalette={"blue"} size={"xs"}>
+              Tải lại
+            </Button>
+          </Center>
         </Tabs.List>
-        <Tabs.Content value="members">
+        <Tabs.Content value="selectedOrderDetails">
           <CreatePageManufacturingOrderTable />
         </Tabs.Content>
-        <Tabs.Content value="projects"><MaterialRequirementContainer /></Tabs.Content>
-        <Tabs.Content value="tasks">
-        </Tabs.Content>
+        <Tabs.Content value="materialRequirementSummary"><MaterialRequirementContainer /></Tabs.Content>
       </Tabs.Root>
     </CreatePageStoreContext>
   );

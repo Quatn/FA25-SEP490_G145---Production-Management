@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import mongoose, {
   Connection,
   Model,
@@ -50,10 +54,7 @@ import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
 import { DeleteResult } from "@/common/dto/delete-result.dto";
 import { PatchResult } from "@/common/dto/patch-result.dto";
 import check from "check-types";
-import {
-  fullDetailsFilterAggregationPipeline,
-  fullDetailsFilterMultiStageAggregationPipeline,
-} from "./aggregate-pipes/full-details-filter";
+import { fullDetailsFilterMultiStageAggregationPipeline } from "./aggregate-pipes/full-details-filter";
 import { FinishedGood } from "@/modules/warehouse/schemas/finished-good.schema";
 import { IllogicalError } from "@/common/errors/illogical.error";
 import { recalculateManufacturingOrder } from "./business-logics/recalculate-manufacturing-orders";
@@ -62,7 +63,6 @@ import { WareFinishingProcessType } from "../schemas/ware-finishing-process-type
 import { queryAllByPaperTypesUsagePipeline } from "./aggregate-pipes/query-all-by-paper-types-usage";
 import { recalculateWare } from "../ware/business-logics/recalculate-ware";
 import { recalculatePurchaseOrderItem } from "../purchase-order-item/business-logics/recalculate-poi";
-import { CompileMOOperativeStatusPipe } from "./aggregate-pipes/compile-operative-status-pipe";
 import { buildQueryAllMOStatusesByDateRange } from "./utils/buildQueryAllStatusesByDateRangePipeline";
 import { QueryAllMOStatusesByDateRangeResponseDto } from "./dto/query-all-mo-statuses-by-date-range.dto";
 import { QueryAllMOProductionOutputByDateRangeResponseDto } from "./dto/query-all-mo-production-output-by-date-range.dto";
@@ -87,7 +87,7 @@ export class ManufacturingOrderService {
 
     @InjectConnection()
     private readonly connection: Connection,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     await this.initTmpManufacturingOrdersCollection();
@@ -278,16 +278,6 @@ export class ManufacturingOrderService {
       sortFilteredCol.aggregate(pipelines.countPipeline).toArray(),
     ]);
 
-    /*
-    const [data, countArr] = await Promise.all([
-      this.manufacturingOrderModel.aggregate([...pipeline]),
-      this.manufacturingOrderModel.aggregate([
-        ...pipeline.filter((stage) => !("$skip" in stage || "$limit" in stage)),
-        { $count: "total" },
-      ]),
-    ]);
-    */
-
     const totalItems =
       (countArr[0] as { total: number } | undefined)?.total ?? 0;
 
@@ -464,6 +454,11 @@ export class ManufacturingOrderService {
 
     const moCreateRes = await this.manufacturingOrderModel.create(mos);
 
+    /* 
+     * !WARN!
+     * no longer create processes on mo create
+     * !WARN!
+     *
     const finishingProcessesCreateRes = await Promise.all(
       moCreateRes.map(async (mo) => {
         const ware = dtos.find(
@@ -497,7 +492,9 @@ export class ManufacturingOrderService {
         return await this.orderFinishingProcessModel.create(processes);
       }),
     );
+    */
 
+    /*
     const finishingProcessesCreatedAmount = finishingProcessesCreateRes
       .map((res) => res.length)
       .reduce((acc, res) => acc + res, 0);
@@ -505,19 +502,23 @@ export class ManufacturingOrderService {
     const finishingProcessesRequestedAmount = dtos
       .map((dto) => dto.purchaseOrderItem.ware.finishingProcesses.length)
       .reduce((acc, res) => acc + res, 0);
+    */
 
     return {
       requestedAmount: dtos.length,
       createdAmount: moCreateRes.length,
       echo: {
-        codes: moCreateRes.map((item) => item.code),
+        codes: [], // moCreateRes.map((item) => item.code),
         processesCreateResult: {
-          createdAmount: finishingProcessesCreatedAmount,
-          requestedAmount: finishingProcessesRequestedAmount,
+          createdAmount: 0, // finishingProcessesCreatedAmount,
+          requestedAmount: 0, // finishingProcessesRequestedAmount,
           echo: {
-            codes: finishingProcessesCreateRes.flatMap((res) =>
+            codes: [],
+            /* 
+             finishingProcessesCreateRes.flatMap((res) =>
               res.map((res2) => res2.code),
-            ),
+            ), 
+            */
           },
         },
       },
@@ -583,6 +584,12 @@ export class ManufacturingOrderService {
 
       const poi = doc.purchaseOrderItem as FullDetailPurchaseOrderItemDto;
 
+      if (!check.undefined(dto.amount) && dto.amount < poi.amount) {
+        throw new BadRequestException(
+          `ManufacturingOrder's manufacture amount (${dto.amount}) must not be less than purchaseOrderItem's amount (${poi.amount})`,
+        );
+      }
+
       doc.manufacturingDate = getManufacturingDate(
         poi.subPurchaseOrder.deliveryDate,
         poi.subPurchaseOrder.purchaseOrder.customer.code,
@@ -631,6 +638,7 @@ export class ManufacturingOrderService {
               pro.status === OrderFinishingProcessStatus.Approved
             ) {
               pro.set("status", OrderFinishingProcessStatus.Scheduled);
+              pro.set("requiredAmount", doc.amount);
             }
           });
 

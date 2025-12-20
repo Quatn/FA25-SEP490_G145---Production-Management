@@ -11,6 +11,7 @@ import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import ManufacturingOrderTableActionColumn from "./ActionColumn";
 import { manufacturingOrderComponentUtils as utils } from "../utils"
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
+import { formatDateTohhmmDDMMYYYY } from "@/utils/dateUtils";
 
 const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, OrderStatusNameMap, OrderApprovalStatusNameMap } = utils
 
@@ -376,10 +377,12 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
 
   columnHelper.defineDataTableAccessorColumn({
     id: "requestedDatetime",
-    accessorKey: "requestedDatetime",
+    accessorFn: (mo) => {
+      return formatDateTohhmmDDMMYYYY(mo.requestedDatetime)
+    },
     header: "Ngày và giờ cần",
     enablePinning: true,
-    cellType: DataTableCellType.Date,
+    cellType: DataTableCellType.Readonly,
     options: {
       getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
     },

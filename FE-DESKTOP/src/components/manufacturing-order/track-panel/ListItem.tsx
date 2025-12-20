@@ -2,14 +2,14 @@
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { Alert, Box, Button, Card, Collapsible, DataList, Heading, HStack, Progress, Stack, Text } from "@chakra-ui/react";
 import { manufacturingOrderComponentUtils } from "../utils";
-import { formatDateToDDMMYYYY } from "@/utils/dateUtils";
+import { formatDateToDDMMYYYY, formatDateTohhmmDDMMYYYY } from "@/utils/dateUtils";
 import { ManufacturingOrderDirectives } from "@/types/enums/ManufacturingOrderDirectives";
 import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
 import check from "check-types";
 import { OrderFinishingProcess } from "@/types/OrderFinishingProcess";
 import { OrderFinishingProcessStatus } from "@/types/enums/OrderFinishingProcessStatus";
 import { LuChevronsDown, LuChevronsDownUp, LuCircleCheckBig, LuCircleMinus, LuCircleX, LuPause, LuPlay } from "react-icons/lu";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { ManufacturingOrderOperativeStatus } from "@/types/enums/ManufacturingOrderOperativeStatus";
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
@@ -17,6 +17,7 @@ import { WareFinishingProcessType } from "@/types/WareFinishingProcessType";
 import CorrugatorProcessStatusBadge from "../common/CorrugatorProcessStatusBadge";
 import OrderfinishingprocessProcessStatusBadge from "../common/OrderFinishingProcessStatusBadge";
 import { dateDMYCompare } from "@/utils/dateDMYCompare";
+import { datehmDMYCompare } from "@/utils/datehmDMYCompare";
 
 const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, getOrderStatus, OrderStatusNameMap } = manufacturingOrderComponentUtils
 
@@ -68,8 +69,10 @@ const OrderStatusStatusSymbolMap: Record<ManufacturingOrderOperativeStatus, Reac
 const getListItems = (mo: Serialized<ManufacturingOrder>) => {
   const currentDate = new Date()
   const manufacturingDate = new Date(mo?.manufacturingDateAdjustment ?? mo.manufacturingDate)
+  const subPO = getPopulatedSubPo(mo)
+  const deliveryDate = new Date(subPO.deliveryDate)
 
-  const color = (() => {
+  const mdColor = (() => {
     if (check.in(mo.operativeStatus, [ManufacturingOrderOperativeStatus.COMPLETED, ManufacturingOrderOperativeStatus.CANCELLED])) return undefined
 
     if (check.date(manufacturingDate)) {
@@ -87,12 +90,30 @@ const getListItems = (mo: Serialized<ManufacturingOrder>) => {
     return undefined
   })()
 
+  const ddColor = (() => {
+    if (check.in(mo.operativeStatus, [ManufacturingOrderOperativeStatus.COMPLETED, ManufacturingOrderOperativeStatus.CANCELLED])) return undefined
+
+    if (check.date(deliveryDate)) {
+      switch (dateDMYCompare(currentDate, deliveryDate)) {
+        case 1:
+          return "initial"
+        case 0:
+          return "orange"
+        case -1:
+          return "red"
+        default:
+          return undefined
+      }
+    }
+    return undefined
+  })()
+
   return [
     { label: "Khách hàng", value: getPopulatedCustomer(mo)?.code },
     { label: "Đơn hàng", value: getPopulatedPo(mo)?.code },
     { label: "Mã hàng", value: getPopulatedWare(mo)?.code },
-    { label: "Ngày sản xuất", value: formatDateToDDMMYYYY(manufacturingDate), color: color },
-    { label: "Ngày giao", value: formatDateToDDMMYYYY(getPopulatedSubPo(mo)?.deliveryDate) },
+    { label: "Ngày sản xuất", value: formatDateToDDMMYYYY(manufacturingDate), color: mdColor },
+    { label: "Ngày giao", value: formatDateToDDMMYYYY(deliveryDate), color: ddColor },
   ]
 }
 
@@ -149,6 +170,19 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
     }
   }
 
+  const requestedDatetimePassed = useMemo(() => {
+    if (check.in(props.mo.operativeStatus, [ManufacturingOrderOperativeStatus.COMPLETED, ManufacturingOrderOperativeStatus.CANCELLED])) return false
+    const currentDate = new Date()
+    const requestedDatetime = new Date(props.mo.requestedDatetime ?? "-----")
+
+    if (check.string(props.mo.requestedDatetime) && check.date(requestedDatetime)) {
+      return (datehmDMYCompare(currentDate, requestedDatetime) ?? 0) < 0
+    }
+
+    return false
+
+  }, [props.mo.operativeStatus, props.mo.requestedDatetime])
+
   return (
     <Card.Root size="sm">
       <Card.Header>
@@ -172,6 +206,10 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
               })
             }>Chi tiết lệnh</Button>
           </HStack>
+          {check.assigned(props.mo.requestedDatetime) && <HStack mt={2}>
+            <Heading color={requestedDatetimePassed ? "red" : "initial"} size={"md"}>Thời gian cần: {" "}</Heading>
+            <Text color={requestedDatetimePassed ? "red" : "initial"}>{formatDateTohhmmDDMMYYYY(props.mo.requestedDatetime)}</Text>
+          </HStack>}
           <HStack justifyContent={"space-between"} gapX={20}>
             {orderStatus && <Alert.Root colorPalette={OrderStatusAlertColorMap[orderStatus]} w="10rem">
               <Alert.Indicator>

@@ -35,9 +35,6 @@ export const ManufacturingOrderDailyProductionOutputChartBarList = () => {
     })
   })
 
-  console.log(response?.data)
-  console.log(accValue)
-
   const data = Object.keys(accValue).map(key => ({
     name: key,
     value: accValue[key as "Bộ phận sóng" | "Bộ phận in" | "Bộ phận chế biến" | "Bộ phận ghim dán"],

@@ -16,6 +16,8 @@ export default function ManufacturingOrderCreatePageConfirmSaveDialog() {
   const insufficientOrderBufferTimes = useSelector(s => s.insufficientOrderBufferTimes);
   const currentDate = new Date()
 
+  const shouldDisableSubmitButton = check.nonEmptyArray(insufficientPaperTypes) && check.nonEmptyArray(insufficientOrderBufferTimes)
+
   return (
     <Dialog.Root
       size="lg"
@@ -60,7 +62,7 @@ export default function ManufacturingOrderCreatePageConfirmSaveDialog() {
                     ))}
                   </DataList.Root>
                 </Stack>}
-                {check.nonEmptyArray(insufficientOrderBufferTimes) && <Stack>
+                {shouldDisableSubmitButton && <Stack>
                   <HStack>
                     {/*<LuX color={"#ee6666"} />*/}
                     <Text colorPalette={"red"} color={"colorPalette.fg"}>Các lệnh sau có ngày sản xuất cách thời điểm hiện tại ít hơn khoảng thời gian cho phép đối với các lệnh không đủ nguyên vật liệu ({productionModuleConfigs.MIN_SCHEDULE_TIME_MS_DISTANCE_ALLOWED_FOR_UNFULFILLED_MATERIAL_REQUIREMENTS / (24 * 60 * 60 * 1000)} ngày)</Text>
@@ -74,14 +76,19 @@ export default function ManufacturingOrderCreatePageConfirmSaveDialog() {
                     </DataList.Item>
 
                     {insufficientOrderBufferTimes?.map((item, index) => {
-                      const bufferTime = Math.floor((item.date.getTime() - currentDate.getTime()) / (24 * 60 * 60 * 1000))
+                      const time = (item.date.getTime() - currentDate.getTime()) / (24 * 60 * 60 * 1000)
+                      const bufferTime = time < 0 ? Math.ceil(time) : Math.floor(time)
 
                       return (
                         <DataList.Item key={item.code + index}>
                           <DataList.ItemLabel>{item.code}</DataList.ItemLabel>
                           <DataList.ItemValue>
                             <Text colorPalette={"red"} color={"colorPalette.fg"}>
-                              {formatDateToDDMMYYYY(item.date)} (sản xuất {(bufferTime > 0) ? "trong" : "muộn"} {Math.abs(bufferTime)} ngày)
+                              {formatDateToDDMMYYYY(item.date)} (sản xuất {
+                                (bufferTime == 0) ? "trong hôm nay"
+                                  : (bufferTime > 0) ? `trong  ${Math.abs(bufferTime)} ngày`
+                                    : `muộn ${Math.abs(bufferTime)} ngày`
+                              })
                             </Text></DataList.ItemValue>
                         </DataList.Item>
                       )
@@ -93,10 +100,10 @@ export default function ManufacturingOrderCreatePageConfirmSaveDialog() {
                     showArrow
                     content="Không thể tạo lệnh, hãy bỏ chọn các lệnh không đủ khối lượng giấy hoặc điều chỉnh thời gian sản xuất của lệnh"
                     contentProps={{ css: { "--tooltip-bg": "colors.red.solid" } }}
-                    disabled={!check.nonEmptyArray(insufficientOrderBufferTimes)}
+                    disabled={!shouldDisableSubmitButton}
                   >
                     <Button
-                      disabled={check.nonEmptyArray(insufficientOrderBufferTimes)}
+                      disabled={shouldDisableSubmitButton}
                       onClick={() => {
                         if (preparedSubmitFunction) preparedSubmitFunction()
                         dispatch({ type: "SET_PREPARED_SUBMIT_FUNCTION", payload: undefined })

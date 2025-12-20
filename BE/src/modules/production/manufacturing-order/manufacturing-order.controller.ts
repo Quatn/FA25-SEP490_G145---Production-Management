@@ -54,7 +54,11 @@ import {
   QueryAllMOStatusesByDateRangeRequestDto,
   QueryAllMOStatusesByDateRangeResponseDto,
 } from "./dto/query-all-mo-statuses-by-date-range.dto";
-import { QueryAllMOProductionOutputByDateRangeRequestDto, QueryAllMOProductionOutputByDateRangeResponseDto } from "./dto/query-all-mo-production-output-by-date-range.dto";
+import {
+  QueryAllMOProductionOutputByDateRangeRequestDto,
+  QueryAllMOProductionOutputByDateRangeResponseDto,
+} from "./dto/query-all-mo-production-output-by-date-range.dto";
+import { throws } from "assert";
 
 const ManufacturingOrderGetRequestGuard = PrivilegedJwtAuthGuard({
   requiredPrivileges: manufacturingOrderGetPrivileges,
@@ -170,10 +174,19 @@ export class ManufacturingOrderController {
     }
 
     const assembledDto: AssembledCreateManufacturingOrderRequestDto[] =
-      body.orders.map((mo, i) => ({
-        ...mo,
-        purchaseOrderItem: pois[i],
-      }));
+      body.orders.map((mo, i) => {
+        const poi = pois[i];
+        if (mo.amount < poi.amount) {
+          throw new BadRequestException(
+            `ManufacturingOrder's manufacture amount must not be less than purchaseOrderItem's amount ${poi.amount}`,
+          );
+        }
+
+        return {
+          ...mo,
+          purchaseOrderItem: poi,
+        };
+      });
 
     const docs = await this.moService.createMany(assembledDto);
     return {
@@ -191,10 +204,22 @@ export class ManufacturingOrderController {
     @Body() body: UpdateManyManufacturingOrdersRequestDto,
   ): Promise<UpdateManyManufacturingOrdersResponseDto> {
     const assembledDto: AssembledUpdateManufacturingOrderRequestDto[] =
-      body.orders.map((mo, _i) => ({
-        ...mo,
-        // purchaseOrderItem: pois[i],
-      }));
+      body.orders.map((mo, _i) => {
+        /*
+        if (check.number(mo.amount)) {
+          if (mo.amount <= 0) {
+            throw new BadRequestException(
+              "Update amount must not be less than or equal to 0",
+            );
+          }
+        }
+      */
+
+        return {
+          ...mo,
+          // purchaseOrderItem: pois[i],
+        };
+      });
 
     const docs = await this.moService.updateMany(assembledDto);
     return {

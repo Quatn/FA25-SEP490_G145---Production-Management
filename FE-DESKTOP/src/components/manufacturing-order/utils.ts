@@ -14,7 +14,7 @@ const getPopulatedPoi = (mo: Serialized<ManufacturingOrder>) => {
 }
 
 const getPopulatedSubPo = (mo: Serialized<ManufacturingOrder>) => {
-  if (check.string(mo.purchaseOrderItem) || check.string(mo.purchaseOrderItem.subPurchaseOrder)
+  if (check.string(mo.purchaseOrderItem) || check.undefined(mo.purchaseOrderItem.subPurchaseOrder) || check.string(mo.purchaseOrderItem.subPurchaseOrder)
   ) throw new UnpopulatedFieldError("mo.purchaseOrderItem must be populated: purchaseOrderItem -> subPurchaseOrder");
   return mo.purchaseOrderItem.subPurchaseOrder
 }
