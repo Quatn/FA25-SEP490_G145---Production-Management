@@ -11,6 +11,7 @@ import {
   useCreatePurchaseOrderMutation,
   useUpdatePurchaseOrderMutation,
   useDeletePurchaseOrderMutation,
+  useGetDeletedPurchaseOrdersQuery,
 } from "@/service/api/purchaseOrderApiSlice";
 import {
   useUpdatePurchaseOrderItemMutation,
@@ -151,6 +152,9 @@ const PurchaseOrderList: React.FC = () => {
     search: query || undefined,
   });
 
+  const { data: deletedResp, isLoading: isLoadingDeleted } =
+    useGetDeletedPurchaseOrdersQuery({ page: 1, limit: 1000 });
+
   const [createPo] = useCreatePurchaseOrderMutation();
   const [updatePo] = useUpdatePurchaseOrderMutation();
   const [deletePo] = useDeletePurchaseOrderMutation();
@@ -164,6 +168,11 @@ const PurchaseOrderList: React.FC = () => {
 
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [expandedLocalDoc, setExpandedLocalDoc] = useState<any | null>(null);
+
+  const deletedList = useMemo(() => {
+    const raw = (deletedResp && (deletedResp.data || deletedResp)) || [];
+    return Array.isArray(raw) ? raw : [];
+  }, [deletedResp]);
 
   // expanded PO id to show server-side sub-POs; fetch details only when expanded
   const [expandedPoId, setExpandedPoId] = useState<string | null>(null);
@@ -243,20 +252,7 @@ const PurchaseOrderList: React.FC = () => {
     );
   };
 
-  // Since server handles search (we pass `search`), the currently returned `orders` are the page results.
-  // We'll render `orders` directly (server-side paging + filtering).
   const displayList = orders;
-
-  const updatePOLocal = (
-    poId: string,
-    updater: (po: PurchaseOrder) => PurchaseOrder
-  ) => {
-    setOrders((prev) =>
-      prev.map((p) =>
-        p.id === poId ? updater(JSON.parse(JSON.stringify(p))) : p
-      )
-    );
-  };
 
   const handleCreateNewPO = () => {
     if (writeDisabled) {
@@ -327,12 +323,30 @@ const PurchaseOrderList: React.FC = () => {
             trimmedPoNumber.toLowerCase() && String(o.id) !== String(updated.id)
       );
 
+      const isCodeInDeleted = (code?: string) => {
+        if (!code) return false;
+        return deletedList.some(
+          (d: any) =>
+            (d.code || d.orderCode || d._id) === code ||
+            (d.code || d.orderCode) === code
+        );
+      };
+
       if (conflict) {
         return {
           success: false,
           errors: { poNumberDuplicate: true },
           message: `PO number "${trimmedPoNumber}" already exists (PO id: ${conflict.id}). Please use a different PO number.`,
         };
+      }
+
+      if (isCodeInDeleted(trimmedPoNumber)) {
+        toaster.create({
+          description:
+            "Mã đơn hàng đã tồn tại trong danh sách bị xóa, liên hệ admin để khôi phục",
+          type: "error",
+        });
+        return;
       }
 
       const payload: any = {

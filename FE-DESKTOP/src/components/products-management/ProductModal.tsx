@@ -49,6 +49,8 @@ export default function ProductModal({
 
   if (!editingProduct) return null;
 
+  const isEditMode = Boolean(editingProduct?._id);
+
   return (
     <Modal
       show={show}
@@ -80,6 +82,8 @@ export default function ProductModal({
                     })
                   }
                   placeholder="VD: VN-BOX-999"
+                  disabled={isEditMode}
+                  aria-disabled={isEditMode}
                 />
               </Form.Group>
             </Col>
@@ -230,11 +234,13 @@ export default function ProductModal({
             ) : (
               filteredModalItems.map((item) => {
                 const itemId = item._id || item.id;
-                const isSelected = (editingProduct.wares || []).some((i: any) => {
-                  const existingId =
-                    typeof i === "string" ? i : i?._id || i?.id;
-                  return String(existingId) === String(itemId);
-                });
+                const isSelected = (editingProduct.wares || []).some(
+                  (i: any) => {
+                    const existingId =
+                      typeof i === "string" ? i : i?._id || i?.id;
+                    return String(existingId) === String(itemId);
+                  }
+                );
                 return (
                   <Card
                     key={itemId}
