@@ -19,7 +19,11 @@ import { UserState } from "@/types/UserState";
 import DataLoading from "../common/DataLoading";
 import check from "check-types";
 
-const EDIT_PRIVS: AnyAccessPrivileges[] = ["system-admin", "system-readWrite", "customer-admin", "customer-readWrite"]
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "customer-readWrite",
+]
 
 const CustomerList: React.FC = () => {
 
@@ -30,6 +34,10 @@ const CustomerList: React.FC = () => {
     const userState: UserState | null = useAppSelector((state) =>
         state.auth.userState
     );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
 
     const [addCustomer] = useAddCustomerMutation();
     const [updateCustomer] = useUpdateCustomerMutation();
@@ -63,7 +71,23 @@ const CustomerList: React.FC = () => {
 
     const inputRef = useRef<HTMLInputElement | null>(null);
 
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
+
     const handleOpenFormDialog = (customer?: Customer) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelectedcustomer(customer);
         setFormDialogOpen(true);
     };
@@ -74,6 +98,9 @@ const CustomerList: React.FC = () => {
     };
 
     const handleOpenAlertDialog = (customer: Customer) => {
+
+        handleValidateAccess();
+
         setSelectedcustomer(customer);
         setAlertDialogOpen(true);
     }
@@ -165,8 +192,6 @@ const CustomerList: React.FC = () => {
         </IconButton>
     );
 
-    const disabled = !(check.nonEmptyArray(userState?.accessPrivileges) && EDIT_PRIVS.find(priv => userState!.accessPrivileges.includes(priv)))
-
     if (hydrating) {
         return <DataLoading />
     }
@@ -210,7 +235,7 @@ const CustomerList: React.FC = () => {
                         }} />
                 </InputGroup>
                 <Spacer />
-                <Button disabled={disabled} colorPalette={"green"} onClick={() => handleOpenFormDialog()}><Icon><FaPlus /></Icon>Thêm khách hàng</Button>
+                <Button colorPalette={"green"} onClick={() => handleOpenFormDialog()}><Icon><FaPlus /></Icon>Thêm khách hàng</Button>
             </Flex>
             {iscustomersLoading ? (<Spinner />) : (
                 <>

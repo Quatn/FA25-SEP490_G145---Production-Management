@@ -35,7 +35,7 @@ export class OrderFinishingProcessController {
     private readonly service: OrderFinishingProcessService,
   ) { }
 
-  @UseGuards(OrderFinishingProcessGetRequestGuard)
+  // @UseGuards(OrderFinishingProcessGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated finishing processes' })
   async findPaginated(
@@ -50,7 +50,7 @@ export class OrderFinishingProcessController {
     };
   }
 
-  @UseGuards(OrderFinishingProcessGetRequestGuard)
+  // @UseGuards(OrderFinishingProcessGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List all finishing processes' })
   async findAll(): Promise<BaseResponse<OrderFinishingProcessDocument[]>> {
@@ -63,7 +63,7 @@ export class OrderFinishingProcessController {
     };
   }
 
-  @UseGuards(OrderFinishingProcessGetRequestGuard)
+  // @UseGuards(OrderFinishingProcessGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Get finishing process detail' })
   async findOne(
@@ -172,7 +172,7 @@ export class OrderFinishingProcessController {
     };
   }
 
-  @UseGuards(OrderFinishingProcessGetRequestGuard)
+  // @UseGuards(OrderFinishingProcessGetRequestGuard)
   @Get("find-by-manufacturing-order-id")
   @ApiOperation({ summary: "Find all order finishing process that have which have mo ids in the query" })
   async findByManufacturingOrderId(

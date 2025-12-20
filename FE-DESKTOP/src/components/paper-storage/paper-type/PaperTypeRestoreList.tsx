@@ -9,9 +9,30 @@ import PaperTypeRestoreTable from "./PaperTypeRestoreTable";
 import PaperTypeDetailDialog from "./PaperTypeDetailDialog";
 import { useGetDeletedPaperTypeQuery, useRestorePaperTypeMutation } from "@/service/api/paperTypeApiSlice";
 import { PaperColor } from "@/types/PaperColor";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import check from "check-types";
+import DataLoading from "@/components/common/DataLoading";
 
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+]
 
 const PaperTypeRestoreList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
 
     const [restoreItem] = useRestorePaperTypeMutation();
 
@@ -25,6 +46,19 @@ const PaperTypeRestoreList: React.FC = () => {
 
     const [detailOpen, setDetailOpen] = useState(false);
     const [selected, setSelected] = useState<PaperType | undefined>(undefined);
+
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
 
     const handleOpenDetail = (item?: PaperType) => {
         setSelected(item);
@@ -61,12 +95,19 @@ const PaperTypeRestoreList: React.FC = () => {
     };
 
     const handleRestore = async (data: PaperType) => {
+
+        if (!handleValidateAccess()) return;
+
         const color = data.paperColor as PaperColor;
         handleMutation(
             () => restoreItem(data).unwrap(),
             `Đã khôi phục loại giấy ${color.code}/${data.width}/${data.grammage}`,
             'Khôi phục thất bại',
         );
+    }
+
+    if (hydrating) {
+        return <DataLoading />
     }
 
     if (isLoading) return <Text>Đang tải dữ liệu...</Text>;

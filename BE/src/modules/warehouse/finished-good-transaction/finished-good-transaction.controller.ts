@@ -33,7 +33,7 @@ const FinishedGoodTransactionAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class FinishedGoodTransactionController {
   constructor(private readonly fgtService: FinishedGoodTransactionService) { }
 
-  @UseGuards(FinishedGoodTransactionGetRequestGuard)
+  // @UseGuards(FinishedGoodTransactionGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated transactions formatted for table view' })
   @ApiResponse({ status: 200, description: 'Returns formatted table data' })
@@ -46,7 +46,7 @@ export class FinishedGoodTransactionController {
     };
   }
 
-  @UseGuards(FinishedGoodTransactionGetRequestGuard)
+  // @UseGuards(FinishedGoodTransactionGetRequestGuard)
   @Get('list-adjustment')
   @ApiOperation({ summary: 'List finished inventory audit transactions' })
   async findAdjustment(
@@ -58,7 +58,7 @@ export class FinishedGoodTransactionController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  @UseGuards(FinishedGoodTransactionGetRequestGuard)
+  // @UseGuards(FinishedGoodTransactionGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List all finished good transactions' })
   async findAll(): Promise<BaseResponse<FinishedGoodTransaction[]>> {
@@ -66,7 +66,7 @@ export class FinishedGoodTransactionController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  @UseGuards(FinishedGoodTransactionGetRequestGuard)
+  // @UseGuards(FinishedGoodTransactionGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Transaction detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<FinishedGoodTransaction>> {
@@ -98,7 +98,7 @@ export class FinishedGoodTransactionController {
     return { success: true, message: 'Updated successfully', data: doc };
   }
 
-  @UseGuards(FinishedGoodTransactionGetRequestGuard)
+  // @UseGuards(FinishedGoodTransactionGetRequestGuard)
   @Get('report/daily')
   @ApiOperation({ summary: 'Get daily report of transactions' })
   async getDailyReport(@Query() dto: GetFinishedGoodDailyReportDto): Promise<BaseResponse<FinishedGoodDailyReportResponse>> {

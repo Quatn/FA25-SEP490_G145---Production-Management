@@ -30,7 +30,7 @@ const PaperColorAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class PaperColorController {
     constructor(private readonly pcService: PaperColorService) { }
 
-    @UseGuards(PaperColorGetRequestGuard)
+    // @UseGuards(PaperColorGetRequestGuard)
     @Get("list")
     @ApiOperation({ summary: "List paginated paper colors" })
     async findPaginated(
@@ -61,7 +61,7 @@ export class PaperColorController {
         };
     }
 
-    @UseGuards(PaperColorGetRequestGuard)
+    // @UseGuards(PaperColorGetRequestGuard)
     @Get("list-all")
     @ApiOperation({ summary: "List paper colors" })
     async findAll(): Promise<BaseResponse<PaperColorDocument[]>> {
@@ -73,7 +73,7 @@ export class PaperColorController {
         };
     }
 
-    @UseGuards(PaperColorGetRequestGuard)
+    // @UseGuards(PaperColorGetRequestGuard)
     @Get("detail/:id")
     @ApiOperation({ summary: "Paper color detail" })
     async findOne(@Param("id") id: string): Promise<BaseResponse<PaperColorDocument>> {

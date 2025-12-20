@@ -30,7 +30,7 @@ const WareManufacturingProcessTypeAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class WareManufacturingProcessTypeController {
   constructor(private readonly service: WareManufacturingProcessTypeService) { }
 
-  @UseGuards(WareManufacturingProcessTypeGetRequestGuard)
+  // @UseGuards(WareManufacturingProcessTypeGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated ware manufacturing process types' })
   async findPaginated(
@@ -61,7 +61,7 @@ export class WareManufacturingProcessTypeController {
     };
   }
 
-  @UseGuards(WareManufacturingProcessTypeGetRequestGuard)
+  // @UseGuards(WareManufacturingProcessTypeGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List ware manufacturing process types' })
   async findAll(): Promise<BaseResponse<WareManufacturingProcessType[]>> {
@@ -73,7 +73,7 @@ export class WareManufacturingProcessTypeController {
     };
   }
 
-  @UseGuards(WareManufacturingProcessTypeGetRequestGuard)
+  // @UseGuards(WareManufacturingProcessTypeGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Ware manufacturing process type detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<WareManufacturingProcessType>> {

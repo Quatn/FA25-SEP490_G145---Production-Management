@@ -15,8 +15,31 @@ import PaperTypeTable from "./PaperTypeTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import PaperTypeFormDialog from "./PaperTypeFormDialog";
 import PaperTypeDetailDialog from "./PaperTypeDetailDialog";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import DataLoading from "@/components/common/DataLoading";
+import check from "check-types";
+
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "paper-type-readWrite",
+]
 
 const PaperTypeList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
 
     const [addPaperType] = useAddPaperTypeMutation();
     const [updatePaperType] = useUpdatePaperTypeMutation();
@@ -48,7 +71,23 @@ const PaperTypeList: React.FC = () => {
 
     const inputRef = useRef<HTMLInputElement | null>(null);
 
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
+
     const handleOpenFormDialog = (type?: PaperType) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelectedType(type);
         setFormDialogOpen(true);
     };
@@ -60,6 +99,9 @@ const PaperTypeList: React.FC = () => {
 
 
     const handleOpenAlertDialog = (type: PaperType) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelectedType(type);
         setAlertDialogOpen(true);
     }
@@ -165,6 +207,10 @@ const PaperTypeList: React.FC = () => {
             <FaSearch />
         </IconButton>
     );
+
+    if (hydrating) {
+        return <DataLoading />
+    }
 
     if (isTypesLoading || isColorsLoading) return <Text>Đang tải dữ liệu...</Text>;
     if (typesError || colorsError) return <Text>Không thể tải dữ liệu. Vui lòng thử lại.</Text>;

@@ -31,7 +31,7 @@ const PaperTypeAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class PaperTypeController {
     constructor(private readonly ptService: PaperTypeService) { }
 
-    @UseGuards(PaperTypeGetRequestGuard)
+    // @UseGuards(PaperTypeGetRequestGuard)
     @Get("list")
     @ApiOperation({ summary: "List paginated paper types" })
     async findPaginated(
@@ -47,7 +47,7 @@ export class PaperTypeController {
         };
     }
 
-    @UseGuards(PaperTypeGetRequestGuard)
+    // @UseGuards(PaperTypeGetRequestGuard)
     @Get("list-all")
     @ApiOperation({ summary: "List paper types" })
     async findAll(): Promise<BaseResponse<PaperTypeDocument[]>> {
@@ -74,7 +74,7 @@ export class PaperTypeController {
         };
     }
 
-    @UseGuards(PaperTypeGetRequestGuard)
+    // @UseGuards(PaperTypeGetRequestGuard)
     @Get("detail/:id")
     @ApiOperation({ summary: "Paper type detail" })
     async findOne(@Param("id") id: string): Promise<BaseResponse<PaperTypeDocument>> {

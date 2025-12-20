@@ -30,7 +30,7 @@ const FinishedGoodAdminRequestGuard = PrivilegedJwtAuthGuard({
 export class FinishedGoodController {
   constructor(private readonly finishedGoodService: FinishedGoodService) { }
 
-  @UseGuards(FinishedGoodGetRequestGuard)
+  // @UseGuards(FinishedGoodGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated finished goods' })
   async findPaginated(
@@ -42,7 +42,7 @@ export class FinishedGoodController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  @UseGuards(FinishedGoodGetRequestGuard)
+  // @UseGuards(FinishedGoodGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List all finished goods' })
   async findAll(): Promise<BaseResponse<FinishedGood[]>> {
@@ -50,7 +50,7 @@ export class FinishedGoodController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
-  @UseGuards(FinishedGoodGetRequestGuard)
+  // @UseGuards(FinishedGoodGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Finished good detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<FinishedGood>> {
