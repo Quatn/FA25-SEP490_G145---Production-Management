@@ -394,6 +394,8 @@ export const WareList: React.FC = () => {
     "system-readWrite",
     "purchase-order-admin",
     "purchase-order-readWrite",
+    "ware-admin",
+    "ware-readWrite",
   ];
 
   const writeAllowed =

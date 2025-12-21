@@ -1,5 +1,5 @@
 import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
-import { customerAdminPrivileges, customerGetPrivileges, finishedGoodGetPrivileges, fluteCombinationGetPrivileges, manufacturingOrderGetPrivileges, manufacturingOrderReadWritePrivileges, orderFinishingProcessGetPrivileges, orderFinishingProcessReadWritePrivileges, paperColorGetPrivileges, paperRollAdminPrivileges, paperRollGetPrivileges, paperSupplierGetPrivileges, paperTypeGetPrivileges, printColorGetPrivileges, productAdminPrivileges, productGetPrivileges, productTypeGetPrivileges, purchaseOrderAdminPrivileges, purchaseOrderGetPrivileges, semiFinishedGoodGetPrivileges, systemAdminPrivileges, wareAdminPrivileges, wareManufacturingProcessTypeGetPrivileges } from "@/types/CascadingAccessPrivileges";
+import { customerAdminPrivileges, customerGetPrivileges, finishedGoodGetPrivileges, fluteCombinationGetPrivileges, manufacturingOrderGetPrivileges, manufacturingOrderReadWritePrivileges, orderFinishingProcessGetPrivileges, orderFinishingProcessReadWritePrivileges, paperColorGetPrivileges, paperRollAdminPrivileges, paperRollGetPrivileges, paperSupplierGetPrivileges, paperTypeGetPrivileges, printColorGetPrivileges, productAdminPrivileges, productGetPrivileges, productTypeGetPrivileges, purchaseOrderAdminPrivileges, purchaseOrderGetPrivileges, semiFinishedGoodGetPrivileges, systemAdminPrivileges, wareAdminPrivileges, wareGetPrivileges, wareManufacturingProcessTypeGetPrivileges } from "@/types/CascadingAccessPrivileges";
 import { createTreeCollection } from "@chakra-ui/react";
 import check from "check-types";
 
@@ -90,7 +90,7 @@ export const fullTree: NodeWithPrivilege[] = [
         id: "product-list",
         name: "Danh sách sản phẩm",
         href: "/products",
-        requiredPrivileges: [...productGetPrivileges],
+        requiredPrivileges: [...productGetPrivileges, ...purchaseOrderGetPrivileges],
       },
       {
         id: "product-type-list",
@@ -102,7 +102,7 @@ export const fullTree: NodeWithPrivilege[] = [
         id: "ware-list",
         name: "Danh sách mã hàng",
         href: "/ware",
-        requiredPrivileges: [...purchaseOrderGetPrivileges],
+        requiredPrivileges: [...purchaseOrderGetPrivileges, ...wareGetPrivileges],
       },
     ],
   },

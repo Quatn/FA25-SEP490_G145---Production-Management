@@ -39,6 +39,8 @@ export default function ProductList() {
     "system-readWrite",
     "purchaseOrder-admin",
     "purchaseOrder-readWrite",
+    "product-admin",
+    "product-readWrite",
   ];
   const writeAllowed =
     Array.isArray(userState?.accessPrivileges) &&
