@@ -12,6 +12,12 @@ export interface NodeWithPrivilege {
 }
 
 export const fullTree: NodeWithPrivilege[] = [
+  {
+    id: "dashboard",
+    name: "Dashboard",
+    href: "/dashboard",
+  },
+
   /* =========================
      QUẢN TRỊ
   ========================= */
@@ -305,8 +311,8 @@ function filterNodesByPrivileges(
 
       // Keep node if:
       // - it has required privilege
-      // - OR it has at least one visible child
-      if (hasPrivilege || (filteredChildren && filteredChildren.length > 0)) {
+      // - AND it has at least one visible child
+      if (hasPrivilege && (check.string(node.href) || (filteredChildren && filteredChildren.length > 0))) {
         return {
           ...node,
           children: filteredChildren,
