@@ -38,6 +38,15 @@ export const SemiFinishedGoodApiSlice = apiSlice.injectEndpoints({
             providesTags: ["SemiFinishedGood"],
         }),
 
+        getSemiFinishedGoodByManufacturingOrderId: builder.query<BaseResponse<SemiFinishedGood>, { moId?: string }>({
+            query: ({ moId }) => ({
+                url: `${SEMI_FINISHED_GOOD_URL}/detail-by-mo/${moId}`,
+                method: "GET",
+                credentials: "include",
+            }),
+            providesTags: ["SemiFinishedGood"],
+        }),
+
         createSemiFinishedGood: builder.mutation<BaseResponse<SemiFinishedGood>, Partial<SemiFinishedGood>>({
             query: (body) => ({
                 url: `${SEMI_FINISHED_GOOD_URL}/create`,
@@ -86,4 +95,5 @@ export const {
     useDeleteSemiFinishedGoodMutation,
     useRestoreSemiFinishedGoodMutation,
     useGetAllSemiFinishedGoodsQuery,
+    useGetSemiFinishedGoodByManufacturingOrderIdQuery,
 } = SemiFinishedGoodApiSlice;

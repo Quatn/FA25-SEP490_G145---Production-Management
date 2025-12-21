@@ -28,7 +28,10 @@ export class ProductTypeService {
 
     if (orConditions.length === 0) return;
 
-    const query: FilterQuery<ProductTypeDocument> = { $or: orConditions };
+    const query: FilterQuery<ProductTypeDocument> = { 
+      $or: orConditions,
+      isDeleted: { $in: [true, false] }, 
+     };
 
     if (excludeId) {
       query._id = { $ne: excludeId };

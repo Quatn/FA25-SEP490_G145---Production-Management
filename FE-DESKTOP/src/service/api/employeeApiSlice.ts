@@ -61,7 +61,7 @@ export const employeeApiSlice = apiSlice.injectEndpoints({
         body,
         credentials: "include",
       }),
-      invalidatesTags: [{ type: "Employee", id: "LIST" }, { type: "Employee", id: "DELETED_LIST" }],
+      invalidatesTags: [{ type: "Employee", id: "LIST" }, { type: "Employee", id: "DELETED_LIST" }, "User"],
     }),
 
     updateEmployee: builder.mutation<any, { id: string; body: Partial<any> }>({
@@ -71,7 +71,7 @@ export const employeeApiSlice = apiSlice.injectEndpoints({
         body,
         credentials: "include",
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "Employee", id }, { type: "Employee", id: "LIST" }],
+      invalidatesTags: (result, error, { id }) => [{ type: "Employee", id }, { type: "Employee", id: "LIST" }, "User"],
     }),
 
     deleteEmployee: builder.mutation<any, string>({
@@ -80,7 +80,7 @@ export const employeeApiSlice = apiSlice.injectEndpoints({
         method: "DELETE",
         credentials: "include",
       }),
-      invalidatesTags: [{ type: "Employee", id: "LIST" }, { type: "Employee", id: "DELETED_LIST" }],
+      invalidatesTags: [{ type: "Employee", id: "LIST" }, { type: "Employee", id: "DELETED_LIST" }, "User"],
     }),
 
     restoreEmployee: builder.mutation<any, string>({
@@ -89,7 +89,7 @@ export const employeeApiSlice = apiSlice.injectEndpoints({
         method: "POST",
         credentials: "include",
       }),
-      invalidatesTags: [{ type: "Employee", id: "LIST" }, { type: "Employee", id: "DELETED_LIST" }],
+      invalidatesTags: [{ type: "Employee", id: "LIST" }, { type: "Employee", id: "DELETED_LIST" }, "User"],
     }),
   }),
 });

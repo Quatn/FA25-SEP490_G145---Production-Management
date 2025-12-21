@@ -1,4 +1,3 @@
-// src/components/ware/WareList.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
@@ -7,6 +6,7 @@ import {
   useCreateWareMutation,
   useUpdateWareMutation,
   useDeleteWareMutation,
+  useGetDeletedWaresQuery, // <-- added
 } from "@/service/api/wareApiSlice";
 import { useGetAllFluteCombinationQuery } from "@/service/api/fluteCombinationApiSlice";
 import { useGetAllPrintColorsQuery } from "@/service/api/printColorApiSlice";
@@ -21,6 +21,15 @@ import {
 import { useGetAllPaperSuppliersQuery } from "@/service/api/paperSupplierApiSlice";
 import { useConfirm } from "@/components/common/ConfirmModal";
 import { toaster } from "@/components/ui/toaster";
+import dynamic from "next/dynamic";
+import WareAdvancedSearchModal from "@/components/ware/WareAdvancedSearchModal";
+
+// --- new imports for privilege check ---
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import check from "check-types";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+// ------------------------------------------------
 
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
@@ -374,15 +383,45 @@ const MultiSelectInline: React.FC<{
 export const WareList: React.FC = () => {
   const confirm = useConfirm();
 
+  // --- privilege check (manual as requested) ---
+  const hydrating: boolean = useAppSelector((state) => state.auth.hydrating);
+  const userState: UserState | null = useAppSelector(
+    (state) => state.auth.userState
+  );
+
+  const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "purchase-order-admin",
+    "purchase-order-readWrite",
+  ];
+
+  const writeAllowed =
+    check.nonEmptyArray(userState?.accessPrivileges) &&
+    EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
+
+  const writeDisabled = !writeAllowed;
+  // -------------------------------------------------
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(5);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<any | null>(null);
+
+  const waresQueryParams = React.useMemo(() => {
+    if (activeFilters && Object.keys(activeFilters).length > 0) {
+      return { ...activeFilters, page, limit };
+    }
+    // fallback to simple search field (maps to 'code' param for backend)
+    return { page, limit, code: search ?? undefined };
+  }, [activeFilters, page, limit, search]);
 
   const {
     data: waresResp,
     refetch: refetchWares,
     isLoading: waresLoading,
-  } = useGetWaresQuery({ page, limit, search });
+  } = useGetWaresQuery(waresQueryParams);
 
   const { data: fluteResp } = useGetAllFluteCombinationQuery();
   const fluteList: any[] = fluteResp?.data ?? fluteResp ?? [];
@@ -418,6 +457,27 @@ export const WareList: React.FC = () => {
   const { data: paperSupplierResp } = useGetAllPaperSuppliersQuery();
   const paperSupplierList: any[] =
     paperSupplierResp?.data ?? paperSupplierResp ?? [];
+
+  // --- fetch deleted wares for client-side duplicate detection (large limit)
+  const {
+    data: deletedWaresResp,
+    isLoading: isLoadingDeletedWares,
+    refetch: refetchDeletedWares,
+  } = useGetDeletedWaresQuery({ page: 1, limit: 1000, search: "" });
+
+  // normalize deleted list to an array
+  const deletedWaresList = React.useMemo(() => {
+    const raw = deletedWaresResp?.data ?? deletedWaresResp ?? [];
+    // sometimes transformResponse returns { data: [...] } or direct array
+    const arr = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.data)
+      ? raw.data
+      : raw?.data?.data && Array.isArray(raw.data.data)
+      ? raw.data.data
+      : [];
+    return Array.isArray(arr) ? arr : [];
+  }, [deletedWaresResp]);
 
   let wares: any[] = [];
   if (waresResp?.data?.data && Array.isArray(waresResp.data.data))
@@ -664,8 +724,34 @@ export const WareList: React.FC = () => {
     });
   };
 
+  // check whether code exists in deleted list. excludeId optional for updates.
+  const isCodeInDeleted = (code?: string, excludeId?: string | null) => {
+    if (!code) return false;
+    const norm = String(code).trim().toLowerCase();
+    if (!norm) return false;
+    return (deletedWaresList || []).some((d: any) => {
+      const candidate = String(d?.code ?? d?.id ?? d?._id ?? d?.orderCode ?? "")
+        .trim()
+        .toLowerCase();
+      if (!candidate) return false;
+      // if excludeId provided and matches this deleted doc's id, don't treat as conflict
+      const did = getIdFromDoc(d) ?? d._id ?? d.id ?? d.code;
+      if (excludeId && did && String(did) === String(excludeId)) return false;
+      return candidate === norm;
+    });
+  };
+
   const handleCreateSubmit = async () => {
     try {
+      // double-check permission before performing API action
+      if (writeDisabled) {
+        toaster.create({
+          description: "Bạn không có quyền thực hiện hành động này",
+          type: "error",
+        });
+        return;
+      }
+
       if (!createForm.code || String(createForm.code).trim() === "") {
         toaster.create({
           description: "Mã hàng không được để trống",
@@ -674,9 +760,28 @@ export const WareList: React.FC = () => {
         return;
       }
 
-      // uniqueness check
+      // uniqueness check (current active list)
       if (isCodeTaken(createForm.code)) {
         toaster.create({ description: "Mã hàng đã tồn tại", type: "error" });
+        return;
+      }
+
+      // check deleted list (prevent creating a code that already existed but was soft-deleted)
+      if (isCodeInDeleted(createForm.code)) {
+        toaster.create({
+          description: "Mã hàng đã tồn tại trong danh sách mã hàng đã xóa",
+          type: "error",
+        });
+        return;
+      }
+
+      // optional guard if deleted list still loading (choose to fail-fast)
+      if (isLoadingDeletedWares) {
+        toaster.create({
+          description:
+            "Đang kiểm tra danh sách mã bị xóa — vui lòng thử lại sau",
+          type: "error",
+        });
         return;
       }
 
@@ -916,6 +1021,21 @@ export const WareList: React.FC = () => {
       });
     } catch (err: any) {
       console.error("Tạo thất bại", err);
+
+      // server duplicate fallback
+      const status = err?.status ?? err?.response?.status;
+      const serverMsg = (err?.data?.message ?? err?.message ?? "") as string;
+      if (
+        status === 409 ||
+        /duplicate|already exists|unique|exists/i.test(String(serverMsg))
+      ) {
+        toaster.create({
+          description: "Mã hàng đã tồn tại trong danh sách mã hàng đã xóa",
+          type: "error",
+        });
+        return;
+      }
+
       toaster.create({
         description: err?.data?.message ?? err?.message ?? "Tạo thất bại",
         type: "error",
@@ -925,6 +1045,15 @@ export const WareList: React.FC = () => {
 
   const handleEditSubmit = async () => {
     try {
+      // double-check permission before performing API action
+      if (writeDisabled) {
+        toaster.create({
+          description: "Bạn không có quyền thực hiện hành động này",
+          type: "error",
+        });
+        return;
+      }
+
       if (!editForm?.id) {
         toaster.create({ description: "Không tìm thấy mã này", type: "error" });
         return;
@@ -941,6 +1070,15 @@ export const WareList: React.FC = () => {
       // uniqueness check (exclude current record id)
       if (isCodeTaken(editForm.code, editForm.id)) {
         toaster.create({ description: "Mã hàng đã tồn tại", type: "error" });
+        return;
+      }
+
+      // check deleted list (prevent updating code to one that was soft-deleted)
+      if (isCodeInDeleted(editForm.code, editForm.id)) {
+        toaster.create({
+          description: "Mã hàng đã tồn tại trong danh sách mã hàng đã xóa",
+          type: "error",
+        });
         return;
       }
 
@@ -993,35 +1131,6 @@ export const WareList: React.FC = () => {
 
       if (!volume || volume <= 0) {
         toaster.create({ description: "Thể tích phải > 0", type: "error" });
-        return;
-      }
-
-      if (warePerBlankAdjustment !== null && warePerBlankAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh số SP phải >= 1",
-          type: "error",
-        });
-        return;
-      }
-      if (flapAdjustment !== null && flapAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh tai phải >= 1",
-          type: "error",
-        });
-        return;
-      }
-      if (flapOverlapAdjustment !== null && flapOverlapAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh cộng cánh phải >= 1",
-          type: "error",
-        });
-        return;
-      }
-      if (crossCutCountAdjustment !== null && crossCutCountAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh part SX phải >= 1",
-          type: "error",
-        });
         return;
       }
 
@@ -1153,6 +1262,21 @@ export const WareList: React.FC = () => {
       });
     } catch (err: any) {
       console.error("Update failed", err);
+
+      // server duplicate fallback
+      const status = err?.status ?? err?.response?.status;
+      const serverMsg = (err?.data?.message ?? err?.message ?? "") as string;
+      if (
+        status === 409 ||
+        /duplicate|already exists|unique|exists/i.test(String(serverMsg))
+      ) {
+        toaster.create({
+          description: "Mã hàng đã tồn tại trong danh sách mã hàng đã xóa",
+          type: "error",
+        });
+        return;
+      }
+
       toaster.create({
         description: err?.data?.message ?? err?.message ?? "Update failed",
         type: "error",
@@ -1161,6 +1285,15 @@ export const WareList: React.FC = () => {
   };
 
   const handleSoftDelete = async (w: any) => {
+    // permission guard
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền thực hiện hành động này",
+        type: "error",
+      });
+      return;
+    }
+
     const ok = await confirm({
       title: "Delete Ware",
       description: `Delete ${w.code}?`,
@@ -1302,12 +1435,27 @@ export const WareList: React.FC = () => {
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(1);
+              if (activeFilters) setActiveFilters(null);
             }}
             style={{ minWidth: 300 }}
           />
           <button
+            className="btn btn-outline-secondary"
+            onClick={() => setAdvancedOpen(true)}
+            title="Advanced search"
+            style={{ marginLeft: 8, minWidth: 170 }}
+          >
+            Tìm kiếm nâng cao
+          </button>
+          <button
             className="btn btn-primary"
-            onClick={() => setCreateOpen(true)}
+            style={{ minWidth: 69 }}
+            onClick={() => {
+              if (writeDisabled) return;
+              setCreateOpen(true);
+            }}
+            disabled={writeDisabled}
+            title={writeDisabled ? "Bạn không có quyền tạo" : "Tạo mới"}
           >
             + Tạo
           </button>
@@ -1438,13 +1586,23 @@ export const WareList: React.FC = () => {
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
                         className="btn btn-outline-secondary btn-sm"
-                        onClick={() => openEdit(w)}
+                        onClick={() => {
+                          if (writeDisabled) return;
+                          openEdit(w);
+                        }}
+                        disabled={writeDisabled}
+                        title={writeDisabled ? "Bạn không có quyền sửa" : "Sửa"}
                       >
                         Sửa
                       </button>
                       <button
                         className="btn btn-outline-danger btn-sm"
-                        onClick={() => handleSoftDelete(w)}
+                        onClick={() => {
+                          if (writeDisabled) return;
+                          handleSoftDelete(w);
+                        }}
+                        disabled={writeDisabled}
+                        title={writeDisabled ? "Bạn không có quyền xóa" : "Xóa"}
                       >
                         Xóa
                       </button>
@@ -1553,6 +1711,37 @@ export const WareList: React.FC = () => {
         handleEditSubmit={handleEditSubmit}
         getIdFromDoc={getIdFromDoc}
         MultiSelectInline={MultiSelectInline}
+        paperTypeList={paperTypeList}
+        paperSupplierList={paperSupplierList}
+      />
+
+      <WareAdvancedSearchModal
+        show={advancedOpen}
+        onClose={() => setAdvancedOpen(false)}
+        onSearch={(filters: any) => {
+          // normalize filters slightly: convert numeric strings to numbers where appropriate
+          const normalized: any = { ...(filters || {}) };
+          ["wareWidth", "wareLength", "wareHeight"].forEach((k) => {
+            const v = (normalized as any)[k];
+            if (v === "" || v === undefined || v === null)
+              delete (normalized as any)[k];
+            else if (typeof v === "string") {
+              const n = Number(v);
+              if (!Number.isFinite(n)) delete (normalized as any)[k];
+              else (normalized as any)[k] = n;
+            }
+          });
+          setActiveFilters(
+            Object.keys(normalized).length === 0 ? null : normalized
+          );
+          setPage(1);
+        }}
+        initial={activeFilters ?? {}}
+        fluteList={fluteList}
+        printColorList={printColorList}
+        manufList={manufList}
+        MultiSelectInline={MultiSelectInline}
+        getIdFromDoc={getIdFromDoc}
       />
     </div>
   );

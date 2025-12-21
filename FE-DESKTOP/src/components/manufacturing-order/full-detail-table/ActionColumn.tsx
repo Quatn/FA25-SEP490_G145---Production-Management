@@ -6,6 +6,7 @@ import { ManufacturingOrderTableReducerStore } from "@/context/manufacturing-ord
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { useDeleteManufacturingOrderMutation, useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
+import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
@@ -115,6 +116,8 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
     })
   }
 
+  const disabled = mo.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
+
   return (
     <Popover.Root size="xs">
       <Box>
@@ -132,21 +135,20 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
             Chi tiết
           </Button>
 
-          <Popover.Trigger asChild>
+          {!disabled && <Popover.Trigger asChild>
             <Button variant="solid" size="xs" colorPalette={"gray"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }}>
               <BiSolidDownArrow />
             </Button>
-          </Popover.Trigger>
+          </Popover.Trigger>}
         </Group>
 
         <Portal>
           <Popover.Positioner>
             <Popover.Content>
               <Stack p={2}>
-                <Button disabled={!props.isEdited} size="xs" colorPalette={"green"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.muted" }} onClick={handleUpdateOrder}>Lưu</Button>
-                {props.meta?.resetRow && <Button size="xs" disabled={!props.isEdited} colorPalette={"yellow"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }} onClick={handleResetRow}>Hoàn tác</Button>}
-                <Button size="xs" colorPalette={"blue"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }}>Ghim lệnh</Button>
-                <Button size="xs" colorPalette={"red"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }} onClick={handleDeleteOrder}>Xóa</Button>
+                {!disabled && <Button disabled={!props.isEdited} size="xs" colorPalette={"green"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.muted" }} onClick={handleUpdateOrder}>Lưu</Button>}
+                {!disabled && props.meta?.resetRow && <Button size="xs" disabled={!props.isEdited} colorPalette={"yellow"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }} onClick={handleResetRow}>Hoàn tác</Button>}
+                {!disabled && <Button size="xs" colorPalette={"red"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }} onClick={handleDeleteOrder}>Xóa</Button>}
               </Stack>
             </Popover.Content>
           </Popover.Positioner>

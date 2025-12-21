@@ -28,7 +28,7 @@ export function AddUserForm(props: AddUserFormProps) {
     if (!interactFlag) return undefined
 
     if (code.length < 1) {
-      return "code is required";
+      return "Mã đăng nhập là bắt buộc";
     }
 
     return undefined
@@ -38,11 +38,11 @@ export function AddUserForm(props: AddUserFormProps) {
     if (!interactFlag) return undefined
 
     if (!check.inRange(password.length, 8, 200)) {
-      return "Password must be between 8 and 200 characters";
+      return "Mật khẩu phải dài từ 8 đến 200 kí tự";
     }
 
     if (!PASSWORD_REGEX.test(password)) {
-      return "Password must contain least one lowercase, uppercase, digit, and special character"
+      return "Mật khẩu phải bao gồm một chữ cái viết hoa, viết thường, một chữ số vào một kí tự đặc biệt"
     }
 
     return undefined
@@ -54,7 +54,7 @@ export function AddUserForm(props: AddUserFormProps) {
 
   const handleSubmit = async () => {
     if (!interactFlag || !!codeErr || !!newPasswordErr) {
-      setAlert(interactFlag ? "Invalid operation" : "Please fill in the empoyee's code and login password")
+      setAlert(interactFlag ? "Dữ liệu không hợp lệ" : "Hãy điền mã đăng nhập và mật khẩu cho tài khoản")
       setInteractFlag(true)
       return false
     }
@@ -93,7 +93,7 @@ export function AddUserForm(props: AddUserFormProps) {
     <Stack>
       <form >
         <Stack gap="4" w="full">
-          <Field label="Current password" invalid={!!codeErr} errorText={codeErr}>
+          <Field label="Mã đăng nhập" invalid={!!codeErr} errorText={codeErr} required>
             <Input
               size="sm"
               name="code"
@@ -102,7 +102,7 @@ export function AddUserForm(props: AddUserFormProps) {
               onBlur={setFormInteractedWith}
             />
           </Field>
-          <Field label="New password" invalid={!!newPasswordErr} errorText={newPasswordErr}>
+          <Field label="Mật khẩu" invalid={!!newPasswordErr} errorText={newPasswordErr} required>
             <PasswordInput
               size="sm"
               name="password"
@@ -114,7 +114,7 @@ export function AddUserForm(props: AddUserFormProps) {
         </Stack>
       </form >
       <HStack w="full" justifyContent={"end"}>
-        <Button variant="outline" onClick={handleReset}>Reset</Button>
+        <Button variant="outline" onClick={handleReset}>Hủy</Button>
         <Button
           colorPalette={"blue"}
           variant="solid"
@@ -122,7 +122,7 @@ export function AddUserForm(props: AddUserFormProps) {
           loading={creating}
           disabled={!!codeErr || !!newPasswordErr}
         >
-          Confirm
+          Xác nhận
         </Button>
       </HStack>
     </Stack>

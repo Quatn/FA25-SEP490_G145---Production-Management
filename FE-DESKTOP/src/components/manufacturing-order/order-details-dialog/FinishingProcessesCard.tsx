@@ -6,7 +6,8 @@ import Link from "next/link"
 import { useMemo, useState } from "react"
 import { manufacturingOrderComponentUtils } from "../utils"
 import { WareFinishingProcessType } from "@/types/WareFinishingProcessType"
-import { formatDateToDDMMYYYY, formatDateTommhhDDMMYYYY } from "@/utils/dateUtils"
+import { formatDateTohhmmDDMMYYYY } from "@/utils/dateUtils"
+import OrderfinishingprocessProcessStatusBadge from "../common/OrderFinishingProcessStatusBadge"
 
 export type ManufacturingOrderDetailsDialogFinishingProcessDetailsCardProps = {
   order: Serialized<ManufacturingOrder>
@@ -105,13 +106,13 @@ export default function ManufacturingOrderDetailsDialogFinishingProcessDetailsCa
                     {process.completedAmount}
                   </Table.Cell>
                   <Table.Cell>
-                    {process.status}
+                    <OrderfinishingprocessProcessStatusBadge process={process} />
                   </Table.Cell>
                   <Table.Cell>
-                    {formatDateTommhhDDMMYYYY(process.startedAt)}
+                    {formatDateTohhmmDDMMYYYY(process.startedAt)}
                   </Table.Cell>
                   <Table.Cell>
-                    {formatDateTommhhDDMMYYYY(process.completedAt)}
+                    {formatDateTohhmmDDMMYYYY(process.completedAt)}
                   </Table.Cell>
                   <Table.Cell>
                     <Editable.Root bg={"bg.muted"} value={process.note} placeholder={"Nhấn để nhập"} onValueChange={(v) => setNote(v.value, index)}>
@@ -134,7 +135,7 @@ export default function ManufacturingOrderDetailsDialogFinishingProcessDetailsCa
           // loading={!!updating}
           // disabled={!!updateError}
           >
-            Confirm
+            Cập nhật
           </Button>
         </HStack>}
 

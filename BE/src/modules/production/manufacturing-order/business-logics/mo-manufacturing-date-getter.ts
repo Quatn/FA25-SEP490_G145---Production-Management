@@ -1,3 +1,4 @@
+import { dateDMYCompare } from "@/common/utils/dateDMYCompare";
 import check from "check-types";
 
 const specialCustomerArray = [
@@ -18,9 +19,14 @@ export const getManufacturingDate = (
   deliveryDate: Date,
   customerCode: string,
 ) => {
-  return new Date(
+  const adjustedDate = new Date(
     deliveryDate.getTime() -
     (check.in(customerCode, specialCustomerArray) ? aDay * 2 : aDay),
   );
-};
 
+  const currentDate = new Date();
+
+  return (dateDMYCompare(currentDate, adjustedDate) ?? 0) < 0
+    ? currentDate
+    : adjustedDate;
+};

@@ -84,7 +84,24 @@ export function formatDateToDDMMYYYY(date: Date | string | null | undefined) {
   return `${day}/${month}/${year}`;
 }
 
-export function formatDateTommhhDDMMYYYY(date: Date | string | null | undefined) {
+export function formatDateTohhmm(date: Date | string | null | undefined) {
+  if (!check.assigned(date)) {
+    return "";
+  }
+
+  const d = check.date(date) ? date : new Date(date as string);
+
+  if (!check.date(d)) {
+    return "";
+  }
+
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+
+  return `${hours}:${minutes}`;
+}
+
+export function formatDateTohhmmDDMMYYYY(date: Date | string | null | undefined) {
   if (!check.assigned(date)) {
     return "";
   }

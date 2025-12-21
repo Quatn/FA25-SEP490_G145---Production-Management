@@ -13,6 +13,11 @@ import { UpdateManyManufacturingOrdersRequestDto, UpdateManyManufacturingOrdersR
 import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
+import { QueryAllMOStatusesByDateRangeRequestDto, QueryAllMOStatusesByDateRangeResponseDto } from "@/types/DTO/manufacturing-order/QueryAllMOStatusesByDateRangeRequestDto";
+import check from "check-types";
+import { start } from "repl";
+import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
+import { QueryAllMOProductionOutputByDateRangeRequestDto, QueryAllMOProductionOutputByDateRangeResponseDto } from "@/types/DTO/manufacturing-order/QueryAllMOProductionOutputByDateRangeDto";
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -110,6 +115,39 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: ["ManufacturingOrder"],
     }),
+
+    getAllMOStatusesByDateRange: builder.query<
+      BaseResponse<QueryAllMOStatusesByDateRangeResponseDto[]>,
+      Serialized<QueryAllMOStatusesByDateRangeRequestDto>
+    >({
+      query: ({ startDate, endDate }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/query/all-statuses-by-date-range`,
+        method: "GET",
+        params: {
+          startDate: check.string(startDate) ? formatDateToYYYYMMDD(startDate) : undefined,
+          endDate: check.string(endDate) ? formatDateToYYYYMMDD(endDate) : undefined
+        },
+        credentials: "include",
+      }),
+      providesTags: ["ManufacturingOrder"],
+    }),
+
+
+    getAllMOProductionOutputByDateRange: builder.query<
+      BaseResponse<QueryAllMOProductionOutputByDateRangeResponseDto[]>,
+      Serialized<QueryAllMOProductionOutputByDateRangeRequestDto>
+    >({
+      query: ({ startDate, endDate }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/query/all-production-output-by-date-range`,
+        method: "GET",
+        params: {
+          startDate: check.string(startDate) ? formatDateToYYYYMMDD(startDate) : undefined,
+          endDate: check.string(endDate) ? formatDateToYYYYMMDD(endDate) : undefined
+        },
+        credentials: "include",
+      }),
+      providesTags: ["ManufacturingOrder"],
+    }),
   }),
 });
 
@@ -121,4 +159,6 @@ export const {
   useUpdateManyManufacturingOrdersMutation,
   useGetAllManufacturingOrdersQuery,
   useGetAllByPaperTypesUsageQuery,
+  useGetAllMOStatusesByDateRangeQuery,
+  useGetAllMOProductionOutputByDateRangeQuery,
 } = manufacturingOrderApiSlice;

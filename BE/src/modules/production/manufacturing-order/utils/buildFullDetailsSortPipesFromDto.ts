@@ -3,13 +3,10 @@ import { QueryListFullDetailsManufacturingOrderRequestSortOptions as Options } f
 import { PipelineStage } from "mongoose";
 import { enumObjectToPrioritySortPipe } from "@/common/utils/enum-object-to-priority-sort-pipe";
 import {
-  CorrugatorProcess,
-  CorrugatorProcessStatus,
   ManufacturingOrderApprovalStatus,
   ManufacturingOrderDirectives,
   ManufacturingOrderOperativeStatus,
 } from "../../schemas/manufacturing-order.schema";
-import { OrderFinishingProcessStatus } from "../../schemas/order-finishing-process.schema";
 
 // Had to make this else n in $sort would be counted as a number, which forces you to waste time adding an assertion
 const valAssert = (n: number): 1 | -1 => {

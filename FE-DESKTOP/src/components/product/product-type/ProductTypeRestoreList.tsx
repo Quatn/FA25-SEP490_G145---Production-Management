@@ -8,8 +8,30 @@ import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import ProductTypeRestoreTable from "./ProductTypeRestoreTable";
 import ProductTypeDetailDialog from "./ProductTypeDetailDialog";
 import { useGetDeletedProductTypeQuery, useRestoreProductTypeMutation } from "@/service/api/productTypeApiSlice";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import check from "check-types";
+import DataLoading from "@/components/common/DataLoading";
+
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+]
 
 const ProductTypeRestoreList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
 
     const [restoreItem] = useRestoreProductTypeMutation();
 
@@ -23,6 +45,19 @@ const ProductTypeRestoreList: React.FC = () => {
 
     const [detailOpen, setDetailOpen] = useState(false);
     const [selected, setSelected] = useState<ProductType | undefined>(undefined);
+
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
 
     const handleOpenDetail = (item?: ProductType) => {
         setSelected(item);
@@ -59,11 +94,18 @@ const ProductTypeRestoreList: React.FC = () => {
     };
 
     const handleRestore = async (data: ProductType) => {
+
+        if (!handleValidateAccess()) return;
+
         handleMutation(
             () => restoreItem(data).unwrap(),
             `Đã khôi phục loại sản phẩm ${data.code}`,
             'Khôi phục thất bại',
         );
+    }
+
+    if (hydrating) {
+        return <DataLoading />
     }
 
     if (isLoading) return <Text>Đang tải dữ liệu...</Text>;

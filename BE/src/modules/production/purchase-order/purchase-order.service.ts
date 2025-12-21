@@ -45,37 +45,56 @@ export class PurchaseOrderService {
     page: number;
     limit: number;
   }): Promise<PaginatedList<PurchaseOrder>> {
-    const skip = (page - 1) * limit;
-
-    // temp
+    // main filter for purchase orders (adjust as needed)
     const filter = {};
 
-    // temp
-    const populate = [];
+    // compute total first
+    const totalItems = await this.purchaseOrderModel.countDocuments(filter);
+    // ensure totalPages is at least 1 (useful for clients that expect >=1)
+    const totalPages = Math.max(1, Math.ceil(totalItems / limit || 0));
 
-    const [totalItems, data] = await Promise.all([
-      this.purchaseOrderModel.countDocuments(filter),
-      this.purchaseOrderModel
-        .find(filter)
-        .skip(skip)
-        .limit(limit)
-        .populate(populate || []),
-    ]);
+    // clamp the requested page to [1, totalPages]
+    const safePage = Math.max(1, Math.min(page || 1, totalPages));
 
-    const totalPages = Math.ceil(totalItems / limit);
-    const hasNextPage = page < totalPages;
-    const hasPrevPage = page > 1;
+    // recompute skip using the clamped page so we always return a real page
+    const skip = (safePage - 1) * limit;
 
+    // populate customer and explicitly include both deleted and non-deleted docs
+    const populate = [
+      {
+        path: "customer",
+        model: "Customer",
+        match: { isDeleted: { $in: [true, false] } },
+        select:
+          "_id code name address email contactNumber note isDeleted deletedAt createdAt updatedAt",
+      },
+    ];
+
+    const data = await this.purchaseOrderModel
+      .find(filter)
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate(populate);
+
+    // compute hasNext/hasPrev based on safePage & totalPages
+    const hasNextPage = safePage < totalPages;
+    const hasPrevPage = safePage > 1;
+
+    // return consistent paginated shape + meta for frontend compatibility
     return {
-      page,
+      page: safePage,
       limit,
       totalItems,
       totalPages,
       hasNextPage,
       hasPrevPage,
       data,
-    };
+      meta: { total: totalItems, count: data.length },
+    } as any;
   }
+
+
 
   async queryOrdersWithUnmanufacturedItems({
     page,
@@ -86,10 +105,19 @@ export class PurchaseOrderService {
     limit: number;
     search: string;
   }): Promise<PaginatedList<QueryOrdersWithUnmanufacturedItemsResponseDto>> {
-    const data = await this.purchaseOrderItemModel.aggregate(
-      ordersWithUnmanufacturedItemsLeanPipe(1, 20, search),
-    );
+    const [data, countArr] = await Promise.all([
+      this.purchaseOrderItemModel.aggregate(
+        ordersWithUnmanufacturedItemsLeanPipe(1, 20, search),
+      ),
+      this.purchaseOrderItemModel.aggregate([
+        ...ordersWithUnmanufacturedItemsLeanPipe(1, 20, search).filter(
+          (stage) => !("$skip" in stage || "$limit" in stage),
+        ),
+        { $count: "total" },
+      ]),
+    ]);
 
+    // TODO: Move this into the aggregate pipe
     await this.customerModel.populate(data, [
       { path: "purchaseOrder.customer" },
     ]);
@@ -107,8 +135,8 @@ export class PurchaseOrderService {
     ]);
     // console.log(populatedData)
 
-    // temp
-    const totalItems = 0;
+    const totalItems =
+      (countArr[0] as { total: number } | undefined)?.total ?? 0;
     const totalPages = Math.ceil(totalItems / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
@@ -206,7 +234,7 @@ export class PurchaseOrderService {
   async restore(id: string) {
     const doc = (await this.purchaseOrderModel.findOne({
       _id: id,
-      isDeleted: true
+      isDeleted: true,
     })) as SoftPurchaseOrder;
     if (!doc) throw new NotFoundException("Purchase order not found");
     await doc.restore();

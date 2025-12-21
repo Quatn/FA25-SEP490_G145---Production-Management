@@ -13,9 +13,31 @@ import CustomerTable from "./CustomerTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import CustomerDetailDialog from "./CustomerDetailDialog";
 import { useAddCustomerMutation, useDeleteCustomerMutation, useGetCustomerQuery, useUpdateCustomerMutation } from "@/service/api/customerApiSlice";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import DataLoading from "../common/DataLoading";
+import check from "check-types";
 
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "customer-readWrite",
+]
 
 const CustomerList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
 
     const [addCustomer] = useAddCustomerMutation();
     const [updateCustomer] = useUpdateCustomerMutation();
@@ -49,7 +71,23 @@ const CustomerList: React.FC = () => {
 
     const inputRef = useRef<HTMLInputElement | null>(null);
 
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
+
     const handleOpenFormDialog = (customer?: Customer) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelectedcustomer(customer);
         setFormDialogOpen(true);
     };
@@ -60,6 +98,9 @@ const CustomerList: React.FC = () => {
     };
 
     const handleOpenAlertDialog = (customer: Customer) => {
+
+        handleValidateAccess();
+
         setSelectedcustomer(customer);
         setAlertDialogOpen(true);
     }
@@ -150,6 +191,10 @@ const CustomerList: React.FC = () => {
             <FaSearch />
         </IconButton>
     );
+
+    if (hydrating) {
+        return <DataLoading />
+    }
 
     if (iscustomersLoading) return <Text>Đang tải dữ liệu...</Text>;
     if (customersError) return <Text>Không thể tải dữ liệu. Vui lòng thử lại.</Text>;

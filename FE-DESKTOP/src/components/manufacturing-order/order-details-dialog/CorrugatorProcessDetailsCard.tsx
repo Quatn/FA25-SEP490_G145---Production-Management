@@ -1,6 +1,6 @@
 "use client"
 import { ManufacturingOrder } from "@/types/ManufacturingOrder"
-import { Alert, Button, Card, createListCollection, DataList, Editable, Heading, HStack, Menu, NumberInput, Portal, Select, Stack } from "@chakra-ui/react"
+import { Alert, Button, Card, createListCollection, DataList, Editable, Heading, HStack, Menu, NumberInput, Portal, Select, Stack, Textarea } from "@chakra-ui/react"
 import check from "check-types"
 import { useMemo, useState } from "react"
 import { manufacturingOrderComponentUtils as utils } from "../utils"
@@ -150,20 +150,19 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
         updateOrders(dto).unwrap().then((res) => {
           if (check.greaterOrEqual(res.data?.patchedAmount as number, 1)) {
             toaster.success({
-              title: "Success",
-              description: "Updated order successfully",
+              title: "Cập nhật quy trình sóng thành công",
             })
             setFormValue(prev => ({ ...prev, isEdited: false }))
           }
           else {
             toaster.warning({
-              title: "Order not updated",
+              title: "Không cập nhật được quy trình sóng",
             })
           }
-        }).catch(error => {
-          toaster.warning({
-            title: "Error updating order",
-            description: (error as Error).message,
+        }).catch(() => {
+          toaster.error({
+            title: "Có lỗi xảy ra trong quá trình cập nhật quy trình sóng",
+            // description: (error as Error).message,
           })
         })
       }
@@ -181,6 +180,7 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
 
       <Card.Body justifyContent={"space-between"} gap={8}>
         <HStack gap={20}>
+          {/*
           <Menu.Root>
             <Menu.Trigger asChild>
               <Alert.Root cursor={"pointer"} colorPalette={CorrugatorProcessProgressColorMap[props.order.corrugatorProcess.status]} w="10rem">
@@ -202,6 +202,13 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
               </Menu.Positioner>
             </Portal>
           </Menu.Root>
+          */}
+          <Alert.Root colorPalette={CorrugatorProcessProgressColorMap[props.order.corrugatorProcess.status]} w="10rem">
+            <Alert.Indicator>
+              {CorrugatorProcessProgressSymbolMap[props.order.corrugatorProcess.status]}
+            </Alert.Indicator>
+            <Alert.Title>{CorrugatorProcessProgressNameMap[props.order.corrugatorProcess.status]}</Alert.Title>
+          </Alert.Root>
 
           <Stack>
             <Heading size={"xs"}>Dàn sóng</Heading>
@@ -261,9 +268,7 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
         </DataList.Root>
         <Stack mt={5}>
           <Heading size="lg">Ghi chú</Heading>
-          <Editable.Root value={po?.note} readOnly >
-            <Editable.Preview w={"full"} />
-          </Editable.Root>
+          <Textarea variant="subtle" value={formValue.note} onChange={(v) => setNote(v.target.value)} autoresize />
         </Stack>
 
         {formValue.isEdited && <HStack>
@@ -275,7 +280,7 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
             loading={!!updating}
             disabled={!!updateError}
           >
-            Confirm
+            Cập nhật
           </Button>
         </HStack>}
 

@@ -6,6 +6,7 @@ import { useAppDispatch } from "@/service/hooks";
 import { Button } from "@chakra-ui/react";
 import { toaster } from "../ui/toaster";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
+import check from "check-types";
 
 export default function LogoutButton() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function LogoutButton() {
       const response = await logout({}).unwrap();
       dispatch(clearCredentials());
       toaster.create({
-        title: `Logged out sucessfully as ${response.data?.code}`,
+        title: `Logged out sucessfully${check.undefined(response.data?.code) ? "" : ` ${response.data.code}`}`,
         type: "success",
       });
       router.push("/login");

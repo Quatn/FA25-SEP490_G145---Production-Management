@@ -35,7 +35,7 @@ export function EditUserForm(props: EditUserFormProps) {
     if (!interactFlag) return undefined
 
     if (code.length < 1) {
-      return "code is required";
+      return "";
     }
 
     return undefined
@@ -105,7 +105,7 @@ export function EditUserForm(props: EditUserFormProps) {
 
   return (
     <Stack>
-      <Field label="Login code" invalid={!!codeErr} errorText={codeErr}>
+      <Field label="Mã đăng nhập" invalid={!!codeErr} errorText={codeErr} required>
         <Input
           colorPalette={interactFlag ? "yellow" : undefined}
           borderColor={"colorPalette.emphasized"}
@@ -122,13 +122,13 @@ export function EditUserForm(props: EditUserFormProps) {
         setFormInteractedWith()
       }} collection={privilegeCol} size="sm" >
         <Select.HiddenSelect />
-        <Select.Label>Select access privileges</Select.Label>
+        <Select.Label>Các quyền truy cập</Select.Label>
         <Select.Control>
           <Select.Trigger
             colorPalette={interactFlag ? "yellow" : undefined}
             borderColor={"colorPalette.emphasized"}
           >
-            <Select.ValueText placeholder="Select access privileges" />
+            <Select.ValueText placeholder="Chọn các quyền" />
           </Select.Trigger>
           <Select.IndicatorGroup>
             <Select.Indicator />
@@ -148,7 +148,7 @@ export function EditUserForm(props: EditUserFormProps) {
         </Portal>
       </Select.Root>
 
-      <Field label="New password" invalid={!!newPasswordErr} errorText={newPasswordErr}>
+      <Field label="Mật khẩu mới" invalid={!!newPasswordErr} errorText={newPasswordErr}>
         <PasswordInput
           {... (interactFlag && newPassword.length > 0 && !newPasswordErr) ? { colorPalette: "yellow", borderColor: "colorPalette.emphasized" } : undefined}
           size="sm"

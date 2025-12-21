@@ -44,7 +44,9 @@ const getColorIdFromPaperType = (pt: any, findType?: (id?: string) => any) => {
   if (ptObj.paperColor && typeof ptObj.paperColor === "object")
     return getIdFromDoc(ptObj.paperColor);
   return (
-    getIdFromDoc(ptObj.paperColor) ?? getIdFromDoc(ptObj.paperColor) ?? undefined
+    getIdFromDoc(ptObj.paperColor) ??
+    getIdFromDoc(ptObj.paperColor) ??
+    undefined
   );
 };
 
@@ -66,16 +68,27 @@ const computePaperRollId = (
 
   const supplierObj =
     r.paperSupplier ??
-    (r.paperSupplierId ? supplierMap.get(String(getIdFromDoc(r.paperSupplierId))) : undefined);
-  const supplierCode = supplierObj?.code ?? r.paperSupplier?.code ?? supplierObj?.name;
+    (r.paperSupplierId
+      ? supplierMap.get(String(getIdFromDoc(r.paperSupplierId)))
+      : undefined);
+  const supplierCode =
+    supplierObj?.code ?? r.paperSupplier?.code ?? supplierObj?.name;
 
   const width = pt?.width ?? r.width;
   const grammage = pt?.grammage ?? r.grammage;
   const seq = r.sequenceNumber ?? r.sequence;
   const receiving = r.receivingDate ?? r.createdAt;
-  const yy = receiving ? new Date(receiving).getFullYear() % 100 : new Date().getFullYear() % 100;
+  const yy = receiving
+    ? new Date(receiving).getFullYear() % 100
+    : new Date().getFullYear() % 100;
 
-  if (colorCode && supplierCode && width != null && grammage != null && seq != null) {
+  if (
+    colorCode &&
+    supplierCode &&
+    width != null &&
+    grammage != null &&
+    seq != null
+  ) {
     if (seq > 0 && seq < 10) {
       return `${colorCode}/${supplierCode}/${width}/${grammage}/${supplierCode}0000${seq}XC${String(
         yy
@@ -126,7 +139,8 @@ export const PaperDailyUsageReport: React.FC = () => {
     limit,
     search: "",
   });
-  const transactions: any[] = txResp?.data?.data ?? txResp?.data ?? txResp ?? [];
+  const transactions: any[] =
+    txResp?.data?.data ?? txResp?.data ?? txResp ?? [];
 
   // fetch rolls (to help compute display id and other metadata)
   const {
@@ -136,8 +150,10 @@ export const PaperDailyUsageReport: React.FC = () => {
   } = useGetPaperRollsQuery({
     page: 1,
     limit: 2000,
+    includeDeleted: true,
   });
-  const rollsRaw: any[] = rollsResp?.data?.data ?? rollsResp?.data ?? rollsResp ?? [];
+  const rollsRaw: any[] =
+    rollsResp?.data?.data ?? rollsResp?.data ?? rollsResp ?? [];
 
   // reference lists
   const { data: colorsResp } = useGetAllPaperColorsQuery();
@@ -152,13 +168,17 @@ export const PaperDailyUsageReport: React.FC = () => {
   // maps
   const colorMap = useMemo(() => {
     const m = new Map<string, any>();
-    (allColors || []).forEach((c: any) => m.set(String(getIdFromDoc(c) ?? c.code ?? c.title), c));
+    (allColors || []).forEach((c: any) =>
+      m.set(String(getIdFromDoc(c) ?? c.code ?? c.title), c)
+    );
     return m;
   }, [allColors]);
 
   const supplierMap = useMemo(() => {
     const m = new Map<string, any>();
-    (allSuppliers || []).forEach((s: any) => m.set(String(getIdFromDoc(s) ?? s.code ?? s.name), s));
+    (allSuppliers || []).forEach((s: any) =>
+      m.set(String(getIdFromDoc(s) ?? s.code ?? s.name), s)
+    );
     return m;
   }, [allSuppliers]);
 
@@ -166,14 +186,19 @@ export const PaperDailyUsageReport: React.FC = () => {
     const m = new Map<string, any>();
     (allTypes || []).forEach((t: any) =>
       m.set(
-        String(getIdFromDoc(t) ?? t._id ?? `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColor)}`),
+        String(
+          getIdFromDoc(t) ??
+            t._id ??
+            `${t.width}_${t.grammage}_${getIdFromDoc(t.paperColor)}`
+        ),
         t
       )
     );
     return m;
   }, [allTypes]);
 
-  const findType = (id?: string) => (allTypes || []).find((t: any) => String(getIdFromDoc(t)) === String(id));
+  const findType = (id?: string) =>
+    (allTypes || []).find((t: any) => String(getIdFromDoc(t)) === String(id));
 
   // normalized rolls for quick lookup
   const rolls = useMemo(() => {
@@ -323,7 +348,9 @@ export const PaperDailyUsageReport: React.FC = () => {
         key,
         displayId:
           (roll?.paperRollId ??
-            (String(t.paperRollId ?? t.paperRoll?.paperRollId ?? dbIdCandidate) as string)) ||
+            (String(
+              t.paperRollId ?? t.paperRoll?.paperRollId ?? dbIdCandidate
+            ) as string)) ||
           key,
         color: undefined,
         supplier: undefined,
@@ -363,7 +390,10 @@ export const PaperDailyUsageReport: React.FC = () => {
         existing.color = colorObj?.title ?? colorObj?.code ?? undefined;
         if (!existing.color) {
           existing.color =
-            t.paperColorTitle ?? t.paperColor?.title ?? t.paperType?.paperColor?.title ?? undefined;
+            t.paperColorTitle ??
+            t.paperColor?.title ??
+            t.paperType?.paperColor?.title ??
+            undefined;
         }
       }
 
@@ -376,25 +406,42 @@ export const PaperDailyUsageReport: React.FC = () => {
             t.paperSupplier ??
             null
         );
-        const sObj = supplierId ? supplierMap.get(String(supplierId)) : undefined;
+        const sObj = supplierId
+          ? supplierMap.get(String(supplierId))
+          : undefined;
         existing.supplier =
-          sObj?.name ?? sObj?.code ?? t.paperSupplierName ?? t.paperSupplier?.name ?? undefined;
+          sObj?.name ??
+          sObj?.code ??
+          t.paperSupplierName ??
+          t.paperSupplier?.name ??
+          undefined;
       }
 
       // ensure width/grammage are resolved (prefer type values)
       existing.width =
-        existing.width ?? roll?.paperType?.width ?? roll?.width ?? t.width ?? "-";
+        existing.width ??
+        roll?.paperType?.width ??
+        roll?.width ??
+        t.width ??
+        "-";
       existing.grammage =
-        existing.grammage ?? roll?.paperType?.grammage ?? roll?.grammage ?? t.grammage ?? "-";
+        existing.grammage ??
+        roll?.paperType?.grammage ??
+        roll?.grammage ??
+        t.grammage ??
+        "-";
 
       m.set(key, existing);
     });
 
-    const arr = Array.from(m.values()).sort((a, b) => b.netChange - a.netChange);
+    const arr = Array.from(m.values()).sort(
+      (a, b) => b.netChange - a.netChange
+    );
     return arr;
   }, [txsInRange, rolls, colorMap, supplierMap, findType]);
 
-  const formatNum = (n: number) => (Number.isFinite(n) ? String(Math.round(n * 100) / 100) : "-");
+  const formatNum = (n: number) =>
+    Number.isFinite(n) ? String(Math.round(n * 100) / 100) : "-";
 
   /* ----------------------------- export (template layout) ----------------------------- */
 
@@ -481,7 +528,9 @@ export const PaperDailyUsageReport: React.FC = () => {
       // Optionally set column widths (simple)
       ws["!cols"] = new Array(numCols).fill({ wpx: 90 });
       // Make the header bold-ish by setting the cell style for the header row (row index = aoa header row index)
-      const headerRowIndex = aoa.findIndex((r) => Array.isArray(r) && r.length && r[0] === "STT");
+      const headerRowIndex = aoa.findIndex(
+        (r) => Array.isArray(r) && r.length && r[0] === "STT"
+      );
       if (headerRowIndex >= 0) {
         for (let c = 0; c < numCols; c++) {
           const cellAddress = xlsx.utils.encode_cell({ r: headerRowIndex, c });
@@ -495,7 +544,9 @@ export const PaperDailyUsageReport: React.FC = () => {
       const wb = xlsx.utils.book_new();
       xlsx.utils.book_append_sheet(wb, ws, "Sheet1");
 
-      const filename = `paper-daily-usage-${startDate}${startDate !== endDate ? `-to-${endDate}` : ""}.xlsx`;
+      const filename = `paper-daily-usage-${startDate}${
+        startDate !== endDate ? `-to-${endDate}` : ""
+      }.xlsx`;
       xlsx.writeFile(wb, filename);
     } catch (err) {
       // fallback CSV with the same columns (best-effort)
@@ -537,13 +588,17 @@ export const PaperDailyUsageReport: React.FC = () => {
         endDate,
       ];
 
-      const csvBody = rows.map((r) => r.map((c) => `"${String(c ?? "")}"`).join(",")).join("\r\n");
+      const csvBody = rows
+        .map((r) => r.map((c) => `"${String(c ?? "")}"`).join(","))
+        .join("\r\n");
       const csvWithBom = "\uFEFF" + csvBody;
       const blob = new Blob([csvWithBom], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
       const url = URL.createObjectURL(blob);
       a.href = url;
-      a.download = `paper-daily-usage-${startDate}${startDate !== endDate ? `-to-${endDate}` : ""}.csv`;
+      a.download = `paper-daily-usage-${startDate}${
+        startDate !== endDate ? `-to-${endDate}` : ""
+      }.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -619,8 +674,7 @@ export const PaperDailyUsageReport: React.FC = () => {
         <>
           <div style={{ marginBottom: 8 }}>
             Hiển thị các cuộn được sử dụng từ <strong>{startDate}</strong> đến{" "}
-            <strong>{endDate}</strong> — {usageByRoll.length} cuộn được
-            sử dụng.
+            <strong>{endDate}</strong> — {usageByRoll.length} cuộn được sử dụng.
           </div>
 
           <div style={{ overflowX: "auto" }}>
@@ -635,7 +689,9 @@ export const PaperDailyUsageReport: React.FC = () => {
                   <th style={{ textAlign: "right" }}>Khổ</th>
                   <th style={{ textAlign: "right" }}>Tồn đầu (kg)</th>
                   <th style={{ textAlign: "right" }}>Tồn cuối (kg)</th>
-                  <th style={{ textAlign: "right" }}>Trọng lượng sử dụng (kg)</th>
+                  <th style={{ textAlign: "right" }}>
+                    Trọng lượng sử dụng (kg)
+                  </th>
                   <th style={{ textAlign: "right" }}>Số lần thao tác</th>
                 </tr>
               </thead>

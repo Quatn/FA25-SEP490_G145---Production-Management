@@ -13,7 +13,7 @@ import { createListCollection } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import ManufacturingOrderCorrugatorOperatePageTableActionColumn from "./ActionColumn";
 
-const { getPopulatedPo, getPopulatedWare, getPopulatedSubPo, corrugatorProcessStatusNameMap } = utils
+const { getPopulatedPo, getPopulatedWare, getPopulatedSubPo } = utils
 
 export type ManufacturingOrderCorrugatorOperatePageTableData = {
   _id: string,
@@ -230,9 +230,7 @@ export function manufacturingOrderCorrugatorOperatePageTableColumns(dataVariant:
 
     columnHelper.defineDataTableAccessorColumn({
       id: "manufacturedAmount",
-      accessorFn: (mo) => {
-        return mo.corrugatorProcess.manufacturedAmount
-      },
+      accessorKey: "manufacturedAmount",
       header: "Số lượng đã sản xuất",
       enablePinning: true,
       cellType: DataTableCellType.Number,

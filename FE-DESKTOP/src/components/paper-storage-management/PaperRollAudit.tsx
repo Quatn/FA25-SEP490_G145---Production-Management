@@ -16,6 +16,9 @@ import { useGetAllPaperTypesQuery } from "@/service/api/paperTypeApiSlice";
 import { toaster } from "@/components/ui/toaster";
 import { PaperType } from "@/types/PaperType";
 
+// privilege hook
+import { useAppSelector } from "@/service/hooks";
+
 function getIdFromDoc(doc: any): string | undefined {
   if (!doc && doc !== 0) return undefined;
   if (typeof doc === "string") return doc;
@@ -47,6 +50,24 @@ const getColorIdFromPaperType = (pt: PaperType) => {
 };
 
 export const PaperRollAudit: React.FC = () => {
+  // --- PRIVILEGE CHECK (same as PaperList) ---
+  const userState: any = useAppSelector(
+    (s) => (s as any).auth?.userState ?? null
+  );
+  const EDIT_PRIVS = [
+    "system-admin",
+    "system-readWrite",
+    "paperRoll-admin",
+    "paperRoll-readWrite",
+    "warehouse-admin",
+    "warehouse-readWrite",
+  ];
+  const writeAllowed =
+    Array.isArray(userState?.accessPrivileges) &&
+    userState.accessPrivileges.some((p: string) => EDIT_PRIVS.includes(p));
+  const writeDisabled = !writeAllowed;
+  // ------------------------------------------------
+
   // paging for listing paper rolls
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
@@ -223,6 +244,14 @@ export const PaperRollAudit: React.FC = () => {
   }, [rows]);
 
   const handleChangeClick = async (row: any) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền kiểm kê / thay đổi trọng lượng.",
+        type: "error",
+      });
+      return;
+    }
+
     const dbId = row.dbId;
     const value = inputs[dbId];
     if (value === undefined || value === null || String(value).trim() === "") {
@@ -352,6 +381,12 @@ export const PaperRollAudit: React.FC = () => {
                         setInputs((p) => ({ ...p, [dbId]: e.target.value }))
                       }
                       style={{ textAlign: "right" }}
+                      disabled={writeDisabled}
+                      title={
+                        writeDisabled
+                          ? "Bạn không có quyền chỉnh trọng lượng"
+                          : "Nhập trọng lượng hiện tại"
+                      }
                     />
                   </td>
                   <td style={{ textAlign: "right" }}>
@@ -364,8 +399,12 @@ export const PaperRollAudit: React.FC = () => {
                     <button
                       className="btn btn-sm btn-primary"
                       onClick={() => handleChangeClick(r)}
-                      disabled={pending[dbId]}
-                      title="Lưu thay đổi trọng lượng (Kiểm kê)"
+                      disabled={pending[dbId] || writeDisabled}
+                      title={
+                        writeDisabled
+                          ? "Bạn không có quyền kiểm kê / thay đổi"
+                          : "Lưu thay đổi trọng lượng (Kiểm kê)"
+                      }
                     >
                       {pending[dbId] ? "Đang..." : "Thay đổi"}
                     </button>

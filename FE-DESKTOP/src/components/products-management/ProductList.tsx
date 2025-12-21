@@ -16,6 +16,7 @@ import {
   useCreateProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
+  useGetDeletedProductsQuery, // <-- added
 } from "@/service/api/productApiSlice";
 import { useGetWaresQuery } from "@/service/api/wareApiSlice";
 import { useGetAllCustomersQuery } from "@/service/api/customerApiSlice";
@@ -27,7 +28,24 @@ import ProductAddItemCodeModal from "./ProductAddItemCodeModal";
 import { toaster } from "@/components/ui/toaster";
 import { useConfirm } from "@/components/common/ConfirmModal";
 
+// privilege hook (same path as used elsewhere in your project)
+import { useAppSelector } from "@/service/hooks";
+
 export default function ProductList() {
+  // --- Privilege check ---
+  const userState: any = useAppSelector((s: any) => s.auth?.userState ?? null);
+  const EDIT_PRIVS = [
+    "system-admin",
+    "system-readWrite",
+    "purchaseOrder-admin",
+    "purchaseOrder-readWrite",
+  ];
+  const writeAllowed =
+    Array.isArray(userState?.accessPrivileges) &&
+    userState.accessPrivileges.some((p: string) => EDIT_PRIVS.includes(p));
+  const writeDisabled = !writeAllowed;
+  // ------------------------
+
   // Load wares from API instead of mock data
   const { data: waresData, isLoading: isLoadingWares } = useGetWaresQuery({
     page: 1,
@@ -128,8 +146,52 @@ export default function ProductList() {
   // confirm hook (ConfirmProvider must be mounted above this component)
   const showConfirm = useConfirm();
 
-  // 🔹 Hàm mở modal chính (Thêm/Sửa Sản phẩm)
+  // --- NEW: fetch deleted products for duplicate detection ---
+  const {
+    data: deletedProductsResp,
+    isLoading: isLoadingDeletedProducts,
+    refetch: refetchDeletedProducts,
+  } = useGetDeletedProductsQuery({ page: 1, limit: 1000 });
+
+  const deletedProductsList = useMemo(() => {
+    const raw = deletedProductsResp?.data ?? deletedProductsResp ?? [];
+    const arr = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.data)
+      ? raw.data
+      : raw?.data?.data && Array.isArray(raw.data.data)
+      ? raw.data.data
+      : [];
+    return Array.isArray(arr) ? arr : [];
+  }, [deletedProductsResp]);
+
+  const isCodeInDeleted = (code?: string, excludeId?: string | null) => {
+    if (!code) return false;
+    const norm = String(code).trim().toLowerCase();
+    if (!norm) return false;
+    return (deletedProductsList || []).some((d: any) => {
+      const candidate = String(
+        d?.code ?? d?.id ?? d?._id ?? d?.productCode ?? ""
+      )
+        .trim()
+        .toLowerCase();
+      if (!candidate) return false;
+      const did = d?._id ?? d?.id ?? d?.code;
+      if (excludeId && did && String(did) === String(excludeId)) return false;
+      return candidate === norm;
+    });
+  };
+  // ----------------------------------------------------------------
+
+  // 🔹 Hàm mở modal chính (Thêm/Sửa Sản phẩm) - guarded
   const handleOpenProductModal = (product: any = null) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền tạo/cập nhật sản phẩm.",
+        type: "error",
+      });
+      return;
+    }
     if (product) {
       setEditingProduct({
         ...product,
@@ -144,8 +206,15 @@ export default function ProductList() {
   // 🔹 Hàm đóng modal chính
   const handleCloseProductModal = () => setEditingProduct(null);
 
-  // 🆕 Hàm mở modal thêm mã hàng
+  // 🆕 Hàm mở modal thêm mã hàng - guarded
   const handleShowAddItemCodeModal = (product: any) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền thêm mã hàng cho sản phẩm.",
+        type: "error",
+      });
+      return;
+    }
     setProductToUpdateWareCodes(product); // Lưu sản phẩm cần cập nhật
     setModalSearchTerm(""); // Reset thanh tìm kiếm
     setShowAddItemCodeModal(true);
@@ -157,8 +226,16 @@ export default function ProductList() {
     setProductToUpdateWareCodes(null);
   };
 
-  // 🆕 Hàm thêm mã hàng vào sản phẩm (nhận itemId từ child modal)
+  // 🆕 Hàm thêm mã hàng vào sản phẩm (nhận itemId từ child modal) - guarded
   const handleAddItemCodeToProduct = async (selectedItemId: string) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền thêm mã hàng.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!productToUpdateWareCodes || !selectedItemId) return;
 
     // Get existing wares IDs
@@ -220,12 +297,20 @@ export default function ProductList() {
     }
   };
 
-  // 🆕 Hàm xóa mã hàng khỏi sản phẩm
+  // 🆕 Hàm xóa mã hàng khỏi sản phẩm - guarded
   const handleRemoveItemCode = async (
     productId: string,
     itemCodeId: string,
     itemCode?: string
   ) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xóa mã hàng.",
+        type: "error",
+      });
+      return;
+    }
+
     const product = products.find((p: any) => p._id === productId);
     if (!product) return;
 
@@ -313,8 +398,16 @@ export default function ProductList() {
     }
   };
 
-  // 1. Thêm/Cập nhật Sản phẩm (Create/Update)
+  // 1. Thêm/Cập nhật Sản phẩm (Create/Update) - guarded inside
   const handleSaveProduct = async () => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền tạo/cập nhật sản phẩm.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!editingProduct) return;
 
     // Convert wares to array of ObjectId strings
@@ -400,6 +493,23 @@ export default function ProductList() {
       return;
     }
 
+    // NEW: check deleted products list
+    if (isLoadingDeletedProducts) {
+      toaster.create({
+        description:
+          "Đang kiểm tra danh sách sản phẩm đã xóa — vui lòng thử lại sau",
+        type: "error",
+      });
+      return;
+    }
+    if (isCodeInDeleted(payload.code, excludeId)) {
+      toaster.create({
+        description: "Mã sản phẩm đã tồn tại trong danh sách sản phẩm đã xóa",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       if (editingProduct._id) {
         await updateProduct({
@@ -420,6 +530,23 @@ export default function ProductList() {
       handleCloseProductModal();
     } catch (error: any) {
       console.error("Không thể lưu sản phẩm:", error);
+
+      // server duplicate fallback -> show deleted-list style message if backend indicates duplicate
+      const status = error?.status ?? error?.response?.status;
+      const serverMsg = (error?.data?.message ??
+        error?.message ??
+        "") as string;
+      if (
+        status === 409 ||
+        /duplicate|already exists|unique|exists/i.test(String(serverMsg))
+      ) {
+        toaster.create({
+          description: "Mã sản phẩm đã tồn tại trong danh sách sản phẩm đã xóa",
+          type: "error",
+        });
+        return;
+      }
+
       const errorMessage =
         error?.data?.message ||
         error?.message ||
@@ -428,11 +555,19 @@ export default function ProductList() {
     }
   };
 
-  // 2. Xóa Sản phẩm (Delete)
+  // 2. Xóa Sản phẩm (Delete) - guarded
   const handleDeleteProduct = async (
     productId: string,
     productCode?: string
   ) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xóa sản phẩm.",
+        type: "error",
+      });
+      return;
+    }
+
     const ok = await showConfirm({
       title: "Xóa sản phẩm",
       description: `Bạn có chắc chắn muốn xóa sản phẩm ${
@@ -493,7 +628,14 @@ export default function ProductList() {
       {/* Header, Search and Filter Section (Giữ nguyên) */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Quản Lý Sản Phẩm</h2>
-        <Button variant="success" onClick={() => handleOpenProductModal()}>
+        <Button
+          variant="success"
+          onClick={() => handleOpenProductModal()}
+          disabled={writeDisabled}
+          title={
+            writeDisabled ? "Bạn không có quyền tạo sản phẩm" : "Thêm sản phẩm"
+          }
+        >
           <i className="bi bi-plus-circle me-2"></i> Thêm sản phẩm
         </Button>
       </div>
@@ -613,8 +755,11 @@ export default function ProductList() {
                 alignItems: "center",
                 justifyContent: "center",
               }}
-              title="Cập nhật"
+              title={
+                writeDisabled ? "Bạn không có quyền chỉnh sửa" : "Cập nhật"
+              }
               onClick={() => handleOpenProductModal(product)}
+              disabled={writeDisabled}
             >
               <i className="bi bi-pencil-square"></i>
             </Button>
@@ -629,8 +774,9 @@ export default function ProductList() {
                 alignItems: "center",
                 justifyContent: "center",
               }}
-              title="Xóa"
+              title={writeDisabled ? "Bạn không có quyền xóa" : "Xóa"}
               onClick={() => handleDeleteProduct(product._id, product.code)}
+              disabled={writeDisabled}
             >
               <i className="bi bi-trash3"></i>
             </Button>
@@ -867,7 +1013,12 @@ export default function ProductList() {
                                 borderRadius: "50%",
                                 flexShrink: 0,
                               }}
-                              title="Xóa mã hàng này"
+                              title={
+                                writeDisabled
+                                  ? "Bạn không có quyền xóa mã hàng"
+                                  : "Xóa mã hàng này"
+                              }
+                              disabled={writeDisabled}
                             >
                               <i className="bi bi-trash3"></i>
                             </Button>
@@ -883,6 +1034,12 @@ export default function ProductList() {
                           borderStyle: "dashed",
                         }}
                         onClick={() => handleShowAddItemCodeModal(product)}
+                        title={
+                          writeDisabled
+                            ? "Bạn không có quyền thêm mã hàng"
+                            : "Thêm mã hàng mới"
+                        }
+                        disabled={writeDisabled}
                       >
                         <i className="bi bi-plus-circle me-2"></i>
                         Thêm mã hàng mới

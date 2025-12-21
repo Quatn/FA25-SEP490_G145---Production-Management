@@ -10,30 +10,42 @@ import {
   Platform,
   TouchableOpacity,
 } from "react-native";
-import {
-  CameraView,
-  CameraType,
-  useCameraPermissions,
-} from "expo-camera";
+import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 type RootStackParamList = {
-  Scan: undefined;
-  Detail: { qrText: string };
+  ImportExportButton: undefined;
+  Scan: { action?: "import" | "export" } | undefined;
+  Detail: { qrText: string; action?: "import" | "export" };
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, "Scan">;
 
-export default function ScanScreen({ navigation }: Props) {
+export default function ScanScreen({ route, navigation }: Props) {
+  // --- Hooks (always called in the same order) ---
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>("back");
   const [scanned, setScanned] = useState(false);
   const [manual, setManual] = useState("");
 
-  // If permissions are still loading
+  const chosenAction = route.params?.action; // not a hook, ok here
+
+  useEffect(() => {
+    // If this screen was opened without a chosen action, redirect back to the selector.
+    // This effect is safe because it's a hook and always runs in the same order.
+    if (!chosenAction) {
+      const t = setTimeout(() => {
+        // use replace so user can't press back to get to an invalid state
+        navigation.replace("ImportExportButton");
+      }, 250);
+      return () => clearTimeout(t);
+    }
+    return;
+  }, [chosenAction, navigation]);
+
+  // --- Permission UI (can return early but after hooks are declared) ---
   if (!permission) return <Text>Requesting camera permission...</Text>;
 
-  // Not granted yet
   if (!permission.granted)
     return (
       <View style={styles.permissionContainer}>
@@ -42,16 +54,24 @@ export default function ScanScreen({ navigation }: Props) {
       </View>
     );
 
-  const handleBarcodeScanned = ({ type, data }: { type?: string; data: string }) => {
+  // --- Handlers ---
+  const handleBarcodeScanned = ({
+    type,
+    data,
+  }: {
+    type?: string;
+    data: string;
+  }) => {
     if (!data) return;
     setScanned(true);
-    navigation.navigate("Detail", { qrText: data });
+    // forward chosen action to Detail
+    navigation.navigate("Detail", { qrText: data, action: chosenAction });
   };
 
   const onManualGo = () => {
     const t = manual.trim();
     if (!t) return Alert.alert("Vui lòng nhập mã cuộn");
-    navigation.navigate("Detail", { qrText: t });
+    navigation.navigate("Detail", { qrText: t, action: chosenAction });
   };
 
   function toggleCameraFacing() {
@@ -65,31 +85,36 @@ export default function ScanScreen({ navigation }: Props) {
       <View style={styles.scannerBox}>
         <CameraView
           facing={facing}
-          // new API name for the event
           onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
-          // prefer QR codes
           barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
           style={StyleSheet.absoluteFillObject}
         />
 
-        {/* simple visual guide + flip button */}
         <View pointerEvents="none" style={styles.overlay}>
           <View style={styles.focusBox} />
         </View>
 
         <View style={styles.controlsOverlay} pointerEvents="box-none">
-          <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
+          <TouchableOpacity
+            style={styles.flipButton}
+            onPress={toggleCameraFacing}
+          >
             <Text style={styles.flipText}>Flip</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={{ marginTop: 12 }}>
-        <Button title={scanned ? "Quét lại" : "Đang chờ quét"} onPress={() => setScanned(false)} />
+        <Button
+          title={scanned ? "Quét lại" : "Đang chờ quét"}
+          onPress={() => setScanned(false)}
+        />
       </View>
 
       <View style={{ marginTop: 18 }}>
-        <Text style={{ marginBottom: 8 }}>Nhập mã giấy thủ công (nếu không quét được)</Text>
+        <Text style={{ marginBottom: 8 }}>
+          Nhập mã giấy thủ công (nếu không quét được)
+        </Text>
         <TextInput
           placeholder="K/VT/120/110/..."
           value={manual}
@@ -101,9 +126,10 @@ export default function ScanScreen({ navigation }: Props) {
         </View>
       </View>
 
-      {/* tip for iOS if useful */}
       {Platform.OS === "ios" && (
-        <Text style={styles.iosTip}>iOS: use a physical device (Simulator has no camera).</Text>
+        <Text style={styles.iosTip}>
+          iOS: use a physical device (Simulator has no camera).
+        </Text>
       )}
     </View>
   );
