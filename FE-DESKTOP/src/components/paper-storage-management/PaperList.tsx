@@ -69,8 +69,8 @@ export const PaperList: React.FC = () => {
   const EDIT_PRIVS: AnyAccessPrivileges[] = [
     "system-admin",
     "system-readWrite",
-    "paperRoll-admin",
-    "paperRoll-readWrite",
+    "paper-roll-admin",
+    "paper-roll-readWrite",
     "warehouse-admin",
     "warehouse-readWrite",
   ];
