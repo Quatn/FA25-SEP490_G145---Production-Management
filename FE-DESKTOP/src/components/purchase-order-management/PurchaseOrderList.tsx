@@ -1,7 +1,7 @@
 // src/components/purchase-order/PurchaseOrderList.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { PurchaseOrder } from "@/types/PurchaseOrderTypes";
 import PurchaseOrderDetailModal from "./PurchaseOrderDetailModal";
 import ProductSelectorModal from "./SubPOSelectorModal";
@@ -93,13 +93,30 @@ const SearchInput: React.FC<{
   />
 );
 
-// reduced statuses (selectable)
-const PO_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
-const SUBPO_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
-const POITEM_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
+// selectable statuses — added PARTIAL/COMPLETED to allow manual selection
+const PO_STATUS_OPTIONS = [
+  "DRAFT",
+  "PENDINGAPPROVAL",
+  "APPROVED",
+  "PARTIALLYCOMPLETED",
+  "COMPLETED",
+];
+const SUBPO_STATUS_OPTIONS = [
+  "DRAFT",
+  "PENDINGAPPROVAL",
+  "APPROVED",
+  "PARTIALLYCOMPLETED",
+  "COMPLETED",
+];
+const POITEM_STATUS_OPTIONS = [
+  "DRAFT",
+  "PENDINGAPPROVAL",
+  "APPROVED",
+  "PARTIALLYCOMPLETED",
+  "COMPLETED",
+];
 
-// read-only statuses (displayed but not selectable)
-// include common variants to be safe
+// read-only statuses (displayed but not forcibly excluded from selection anymore)
 const READONLY_STATUSES = [
   "COMPLETED",
   "PARTIALLYCOMPLETE",
@@ -337,7 +354,11 @@ const PurchaseOrderList: React.FC = () => {
     }
   }, [poResp]);
 
+  // Keep track of which PO ids we already attempted auto-updates for
+  const autoUpdatedPoIds = useRef<Set<string>>(new Set());
+
   // When expandedPoResp arrives, compute derived statuses and set expandedLocalDoc
+  // Also attempt to auto-update sub/po statuses in DB (once per expanded PO) when needed
   useEffect(() => {
     if (!expandedPoResp) {
       setExpandedLocalDoc(null);
@@ -349,19 +370,125 @@ const PurchaseOrderList: React.FC = () => {
       return;
     }
     // deep clone then compute derived statuses
+    let computed: any = null;
     try {
       const cloned = JSON.parse(JSON.stringify(rawDoc));
-      const computed = computeDerivedStatuses(cloned);
+      computed = computeDerivedStatuses(cloned);
       setExpandedLocalDoc(computed ? computed : null);
       syncTotalsToOrders(computed);
     } catch (err) {
       // fallback to original if JSON parse fails
       const copied = typeof rawDoc === "object" ? rawDoc : rawDoc;
-      const computed = computeDerivedStatuses(copied);
+      computed = computeDerivedStatuses(copied);
       setExpandedLocalDoc(computed ? computed : null);
       syncTotalsToOrders(computed);
     }
-  }, [expandedPoResp]);
+
+    // Attempt to auto-update DB statuses for derived PARTIALLYCOMPLETE / COMPLETED
+    (async () => {
+      try {
+        // do not attempt auto-updates if no write permission
+        if (writeDisabled) return;
+
+        const poId = String(resolveId(rawDoc));
+        if (!poId) return;
+        if (autoUpdatedPoIds.current.has(poId)) return;
+
+        // rawSubs may be under subPurchaseOrders or subPOs depending on server shape
+        const rawSubs: any[] =
+          Array.isArray(rawDoc.subPurchaseOrders) ||
+          Array.isArray(rawDoc.subPOs)
+            ? rawDoc.subPurchaseOrders || rawDoc.subPOs || []
+            : [];
+
+        const computedSubs: any[] = Array.isArray(computed.subPurchaseOrders)
+          ? computed.subPurchaseOrders
+          : [];
+
+        const subUpdates: Array<{ id: string; status: string }> = [];
+
+        // For each computed sub, compare to raw sub status and update if needed
+        for (const s of computedSubs) {
+          const sid = String(resolveId(s));
+          if (!sid) continue;
+          const derivedStatus = (s.status ?? "DRAFT").toString().toUpperCase();
+          // normalize PARTIALLYCOMPLETE -> PARTIALLYCOMPLETED for server if needed
+          const derivedNormalized =
+            derivedStatus === "PARTIALLYCOMPLETE"
+              ? "PARTIALLYCOMPLETED"
+              : derivedStatus;
+
+          // find raw sub by id to compare
+          const rawSub =
+            rawSubs.find((r: any) => String(resolveId(r)) === String(sid)) ??
+            null;
+          const rawStatus = (rawSub?.status ?? "DRAFT")
+            .toString()
+            .toUpperCase();
+
+          // Allow updating to derived statuses from ANY current status
+          const shouldSet = derivedNormalized !== rawStatus;
+
+          if (shouldSet) {
+            subUpdates.push({ id: sid, status: derivedNormalized });
+          }
+        }
+
+        // Execute sub updates (parallel)
+        if (subUpdates.length > 0) {
+          await Promise.all(
+            subUpdates.map(async (u) => {
+              try {
+                await updateSub({
+                  id: u.id,
+                  body: { status: u.status },
+                }).unwrap();
+              } catch (err: any) {
+                console.warn("Auto updateSub failed for", u.id, err);
+              }
+            })
+          );
+        }
+
+        // Now check parent PO derived status
+        const derivedPoStatus = (computed?.status ?? "DRAFT")
+          .toString()
+          .toUpperCase();
+        const derivedPoNormalized =
+          derivedPoStatus === "PARTIALLYCOMPLETE"
+            ? "PARTIALLYCOMPLETED"
+            : derivedPoStatus;
+        const rawPoStatus = (rawDoc.status ?? "DRAFT").toString().toUpperCase();
+
+        // Allow updating parent PO from ANY current status to derived status
+        const shouldUpdatePo = derivedPoNormalized !== rawPoStatus;
+
+        if (shouldUpdatePo) {
+          try {
+            await updatePo({
+              id: poId,
+              body: { status: derivedPoNormalized },
+            }).unwrap();
+          } catch (err: any) {
+            console.warn("Auto updatePo failed for", poId, err);
+          }
+        }
+
+        // mark this PO as attempted so we don't loop
+        autoUpdatedPoIds.current.add(poId);
+
+        // finally refetch to sync caches
+        await safeRefetchSubs();
+        try {
+          if (typeof refetch === "function") await refetch();
+        } catch (e) {
+          console.warn("refetch purchase orders failed", e);
+        }
+      } catch (err) {
+        console.error("Auto-update derived statuses failed", err);
+      }
+    })();
+  }, [expandedPoResp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const displayList = orders;
 
@@ -693,10 +820,42 @@ const PurchaseOrderList: React.FC = () => {
 
     const parentSubStatus = parentSub?.status ?? "DRAFT";
 
-    // Allowed flows:
-    // - If parent PO and parent Sub are DRAFT and item is DRAFT -> allow changes (to PENDINGAPPROVAL or APPROVED) as before.
-    // - If item is PENDINGAPPROVAL -> allow only APPROVED (confirm).
-    // Otherwise deny.
+    // Keep existing safe flows but also allow switching to PARTIALLYCOMPLETED/COMPLETED from any status
+    const allowedDirect = ["PARTIALLYCOMPLETED", "COMPLETED"];
+
+    if (allowedDirect.includes(newStatus.toUpperCase())) {
+      // allow forcing these statuses from anywhere
+      setExpandedLocalDoc((prev: any) => {
+        if (!prev) return prev;
+        const copy = JSON.parse(JSON.stringify(prev));
+        (copy.subPurchaseOrders || []).forEach((s: any) => {
+          (s.items || []).forEach((it: any) => {
+            if (String(resolveId(it)) === idStr) {
+              it.status = newStatus;
+            }
+          });
+        });
+        const derived = computeDerivedStatuses(copy);
+        syncTotalsToOrders(derived);
+        return derived;
+      });
+
+      try {
+        await updatePoItem({ id: idStr, body: { status: newStatus } }).unwrap();
+      } catch (err: any) {
+        console.error("Update item status failed", err);
+        await safeRefetchSubs();
+        toaster.create({
+          description:
+            "Update failed: " +
+            (err?.data?.message || err?.message || "unknown"),
+          type: "error",
+        });
+      }
+      return;
+    }
+
+    // previous rules: DRAFT -> PENDINGAPPROVAL/APPROVED; PENDINGAPPROVAL -> APPROVED
     if (
       parentPO.status === "DRAFT" &&
       parentSubStatus === "DRAFT" &&
@@ -990,6 +1149,70 @@ const PurchaseOrderList: React.FC = () => {
     if (newStatus === po.status) return;
 
     try {
+      // If user explicitly selects COMPLETED/PARTIALLYCOMPLETED, allow from any status
+      const normalizedTarget = (
+        newStatus === "PARTIALLYCOMPLETE" ? "PARTIALLYCOMPLETED" : newStatus
+      ).toUpperCase();
+
+      if (
+        normalizedTarget === "COMPLETED" ||
+        normalizedTarget === "PARTIALLYCOMPLETED"
+      ) {
+        try {
+          await updatePo({
+            id: poId,
+            body: { status: normalizedTarget },
+          }).unwrap();
+          // also attempt to update subs status if derived
+          if (
+            expandedLocalDoc &&
+            String(resolveId(expandedLocalDoc)) === String(poId)
+          ) {
+            // try to set each sub to derived value as well
+            const subs = expandedLocalDoc.subPurchaseOrders || [];
+            await Promise.all(
+              subs.map(async (s: any) => {
+                const sid = String(resolveId(s));
+                const sDerived = (s.status ?? "DRAFT").toString().toUpperCase();
+                const sNormalized =
+                  sDerived === "PARTIALLYCOMPLETE"
+                    ? "PARTIALLYCOMPLETED"
+                    : sDerived;
+                if (
+                  sid &&
+                  sNormalized !== (s.status ?? "").toString().toUpperCase()
+                ) {
+                  try {
+                    await updateSub({
+                      id: sid,
+                      body: { status: sNormalized },
+                    }).unwrap();
+                  } catch (e) {
+                    /* ignore */
+                  }
+                }
+              })
+            );
+          }
+
+          await safeRefetchSubs();
+          try {
+            if (typeof refetch === "function") await refetch();
+          } catch (e) {
+            /* ignore */
+          }
+          toaster.create({
+            description: `PO updated to ${statusLabel(normalizedTarget)}`,
+            type: "success",
+          });
+        } catch (err: any) {
+          console.warn("Force update PO to completed failed", err);
+          toaster.create({ description: "Update failed", type: "error" });
+        }
+        return;
+      }
+
+      // Otherwise keep previous flows for PENDINGAPPROVAL / APPROVED transitions
       // === Case: PO is DRAFT (existing behavior) ===
       if (po.status === "DRAFT") {
         // Only allow transition from DRAFT. If target is PENDINGAPPROVAL, propagate.
@@ -1289,6 +1512,32 @@ const PurchaseOrderList: React.FC = () => {
     if (newStatus === current) return;
 
     try {
+      // Allow manual set to PARTIALLYCOMPLETED/COMPLETED from any status
+      const normalizedTarget = (
+        newStatus === "PARTIALLYCOMPLETE" ? "PARTIALLYCOMPLETED" : newStatus
+      ).toUpperCase();
+      if (
+        normalizedTarget === "COMPLETED" ||
+        normalizedTarget === "PARTIALLYCOMPLETED"
+      ) {
+        try {
+          await updateSub({
+            id: subId,
+            body: { status: normalizedTarget },
+          }).unwrap();
+          // optionally update items too if needed
+          await safeRefetchSubs();
+          toaster.create({
+            description: `Sub-PO set to ${statusLabel(normalizedTarget)}`,
+            type: "success",
+          });
+        } catch (err: any) {
+          console.warn("Force updateSub failed", err);
+          toaster.create({ description: "Update failed", type: "error" });
+        }
+        return;
+      }
+
       if (poSnapshot.status === "DRAFT" && current === "DRAFT") {
         if (newStatus === "PENDINGAPPROVAL") {
           const ok = await confirm({
@@ -1669,13 +1918,11 @@ const PurchaseOrderList: React.FC = () => {
                               po.status === "PENDINGAPPROVAL" &&
                               s !== "APPROVED" &&
                               s !== po.status;
-                            const globallyDisabled =
-                              READONLY_STATUSES.includes(s);
                             return (
                               <option
                                 key={s}
                                 value={s}
-                                disabled={optionDisabled || globallyDisabled}
+                                disabled={optionDisabled}
                               >
                                 {statusLabel(s)}
                               </option>
@@ -1781,7 +2028,16 @@ const PurchaseOrderList: React.FC = () => {
                               !parentPoIsReadOnly;
 
                             return (
-                              <div key={subKey} className="card mb-2">
+                              <div
+                                key={subKey}
+                                className="card mb-2"
+                                style={{
+                                  backgroundColor:
+                                    subStatus === "COMPLETED"
+                                      ? "#e6ffed"
+                                      : undefined,
+                                }}
+                              >
                                 <div className="card-body">
                                   <div
                                     style={{
@@ -1827,16 +2083,11 @@ const PurchaseOrderList: React.FC = () => {
                                               subStatus === "PENDINGAPPROVAL" &&
                                               st !== "APPROVED" &&
                                               st !== subStatus;
-                                            const globallyDisabled =
-                                              READONLY_STATUSES.includes(st);
                                             return (
                                               <option
                                                 key={st}
                                                 value={st}
-                                                disabled={
-                                                  optionDisabled ||
-                                                  globallyDisabled
-                                                }
+                                                disabled={optionDisabled}
                                               >
                                                 {statusLabel(st)}
                                               </option>
@@ -1951,7 +2202,15 @@ const PurchaseOrderList: React.FC = () => {
                                             const unitPrice =
                                               it.ware?.unitPrice ?? 0;
                                             return (
-                                              <tr key={stableKey}>
+                                              <tr
+                                                key={stableKey}
+                                                style={{
+                                                  backgroundColor:
+                                                    itemStatus === "COMPLETED"
+                                                      ? "#e6ffed"
+                                                      : undefined,
+                                                }}
+                                              >
                                                 <td>
                                                   {s.product?.code ??
                                                     it.id ??
@@ -1986,18 +2245,12 @@ const PurchaseOrderList: React.FC = () => {
                                                           "PENDINGAPPROVAL" &&
                                                         opt !== "APPROVED" &&
                                                         opt !== itemStatus;
-                                                      // For items, COMPLETED also should be read-only:
-                                                      const globallyDisabled =
-                                                        READONLY_STATUSES.includes(
-                                                          opt
-                                                        );
                                                       return (
                                                         <option
                                                           key={opt}
                                                           value={opt}
                                                           disabled={
-                                                            optionDisabled ||
-                                                            globallyDisabled
+                                                            optionDisabled
                                                           }
                                                         >
                                                           {statusLabel(opt)}

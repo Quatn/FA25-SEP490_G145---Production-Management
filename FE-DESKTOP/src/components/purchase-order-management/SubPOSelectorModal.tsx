@@ -70,9 +70,7 @@ const SubPOSelectorModal: React.FC<Props> = ({
   const products: ProductCard[] =
     (productsResp?.data ?? productsResp?.data?.data ?? productsResp?.data) ||
     [];
-
-  console.log("product resp: ", productsResp);
-
+    
   const toggleCollapse = (id: string) => {
     setOpenIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
