@@ -632,9 +632,7 @@ export default function ProductList() {
           variant="success"
           onClick={() => handleOpenProductModal()}
           disabled={writeDisabled}
-          title={
-            writeDisabled ? "Bạn không có quyền tạo sản phẩm" : "Thêm sản phẩm"
-          }
+          title={"Thêm sản phẩm"}
         >
           <i className="bi bi-plus-circle me-2"></i> Thêm sản phẩm
         </Button>
@@ -755,9 +753,7 @@ export default function ProductList() {
                 alignItems: "center",
                 justifyContent: "center",
               }}
-              title={
-                writeDisabled ? "Bạn không có quyền chỉnh sửa" : "Cập nhật"
-              }
+              title={"Cập nhật"}
               onClick={() => handleOpenProductModal(product)}
               disabled={writeDisabled}
             >
@@ -774,7 +770,7 @@ export default function ProductList() {
                 alignItems: "center",
                 justifyContent: "center",
               }}
-              title={writeDisabled ? "Bạn không có quyền xóa" : "Xóa"}
+              title={"Xóa"}
               onClick={() => handleDeleteProduct(product._id, product.code)}
               disabled={writeDisabled}
             >
@@ -1013,11 +1009,7 @@ export default function ProductList() {
                                 borderRadius: "50%",
                                 flexShrink: 0,
                               }}
-                              title={
-                                writeDisabled
-                                  ? "Bạn không có quyền xóa mã hàng"
-                                  : "Xóa mã hàng này"
-                              }
+                              title={"Xóa mã hàng này"}
                               disabled={writeDisabled}
                             >
                               <i className="bi bi-trash3"></i>
@@ -1034,11 +1026,7 @@ export default function ProductList() {
                           borderStyle: "dashed",
                         }}
                         onClick={() => handleShowAddItemCodeModal(product)}
-                        title={
-                          writeDisabled
-                            ? "Bạn không có quyền thêm mã hàng"
-                            : "Thêm mã hàng mới"
-                        }
+                        title={"Thêm mã hàng mới"}
                         disabled={writeDisabled}
                       >
                         <i className="bi bi-plus-circle me-2"></i>

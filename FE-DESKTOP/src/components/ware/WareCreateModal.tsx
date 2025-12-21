@@ -719,7 +719,7 @@ const WareCreateModal: React.FC<Props> = ({
                 {/* ROW 1: faceLayer if present */}
                 {displayedFlutes.includes("faceLayer") && (
                   <div style={{ marginBottom: 10 }}>
-                    <Label label="Mặt (Paper type)" required>
+                    <Label label="Mặt" required>
                       <div
                         style={{
                           display: "flex",
@@ -811,7 +811,7 @@ const WareCreateModal: React.FC<Props> = ({
                 {/* ROW 3: backLayer if present */}
                 {displayedFlutes.includes("backLayer") && (
                   <div>
-                    <Label label="Đáy (Paper type)" required>
+                    <Label label="Đáy" required>
                       <div
                         style={{
                           display: "flex",

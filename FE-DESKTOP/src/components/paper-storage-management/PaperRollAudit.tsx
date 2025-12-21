@@ -68,6 +68,18 @@ export const PaperRollAudit: React.FC = () => {
   const writeDisabled = !writeAllowed;
   // ------------------------------------------------
 
+  // Header style constants (plain light blue, no gradient)
+  const HEADER_BG = "#e6f7ff"; // plain light blue
+  const HEADER_TEXT = "#02296a"; // dark/navy text for contrast
+  const headerCellBaseStyle: React.CSSProperties = {
+    background: HEADER_BG,
+    color: HEADER_TEXT,
+    verticalAlign: "middle",
+    fontWeight: 600,
+    borderColor: "#d1e7ff",
+    textAlign: "center",
+  };
+
   // paging for listing paper rolls
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
@@ -355,11 +367,17 @@ export const PaperRollAudit: React.FC = () => {
         <table className="table table-bordered">
           <thead>
             <tr>
-              <th>Cuộn giấy</th>
-              <th style={{ textAlign: "right" }}>TL hiện tại (kg)</th>
-              <th style={{ textAlign: "right" }}>TL hệ thống (kg)</th>
-              <th style={{ textAlign: "right" }}>Chênh</th>
-              <th>Thao tác</th>
+              <th style={headerCellBaseStyle}>Cuộn giấy</th>
+              <th style={{ ...headerCellBaseStyle, textAlign: "right" }}>
+                TL hiện tại (kg)
+              </th>
+              <th style={{ ...headerCellBaseStyle, textAlign: "right" }}>
+                TL hệ thống (kg)
+              </th>
+              <th style={{ ...headerCellBaseStyle, textAlign: "right" }}>
+                Chênh
+              </th>
+              <th style={headerCellBaseStyle}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -382,11 +400,7 @@ export const PaperRollAudit: React.FC = () => {
                       }
                       style={{ textAlign: "right" }}
                       disabled={writeDisabled}
-                      title={
-                        writeDisabled
-                          ? "Bạn không có quyền chỉnh trọng lượng"
-                          : "Nhập trọng lượng hiện tại"
-                      }
+                      title={"Nhập trọng lượng hiện tại"}
                     />
                   </td>
                   <td style={{ textAlign: "right" }}>
@@ -400,11 +414,7 @@ export const PaperRollAudit: React.FC = () => {
                       className="btn btn-sm btn-primary"
                       onClick={() => handleChangeClick(r)}
                       disabled={pending[dbId] || writeDisabled}
-                      title={
-                        writeDisabled
-                          ? "Bạn không có quyền kiểm kê / thay đổi"
-                          : "Lưu thay đổi trọng lượng (Kiểm kê)"
-                      }
+                      title={"Lưu thay đổi trọng lượng"}
                     >
                       {pending[dbId] ? "Đang..." : "Thay đổi"}
                     </button>

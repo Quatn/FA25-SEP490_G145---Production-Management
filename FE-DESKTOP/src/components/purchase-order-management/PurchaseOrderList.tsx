@@ -648,10 +648,10 @@ const PurchaseOrderList: React.FC = () => {
       return;
     }
     const ok = await confirm({
-      title: "Delete Purchase Order",
-      description: "Delete this Purchase Order?",
-      confirmText: "Delete",
-      cancelText: "Cancel",
+      title: "Xóa Purchase Order",
+      description: "Xóa Purchase Order này?",
+      confirmText: "Xóa",
+      cancelText: "Hủy",
       destructive: true,
     });
     if (!ok) return;
@@ -863,11 +863,11 @@ const PurchaseOrderList: React.FC = () => {
     ) {
       if (newStatus === "PENDINGAPPROVAL") {
         const ok = await confirm({
-          title: "Confirm change",
+          title: "Xác nhận thay đổi",
           description:
             "Xác nhận chuyển item này sang trạng thái PENDINGAPPROVAL? Sau khi xác nhận, không thể chỉnh sửa.",
-          confirmText: "Confirm",
-          cancelText: "Cancel",
+          confirmText: "Xác nhận",
+          cancelText: "Hủy",
           destructive: true,
         });
         if (!ok) {
@@ -877,11 +877,11 @@ const PurchaseOrderList: React.FC = () => {
 
       if (newStatus === "APPROVED") {
         const ok = await confirm({
-          title: "Confirm approve item",
+          title: "Xác nhận duyệt",
           description:
             "Xác nhận duyệt item này (APPROVED)? Sau khi duyệt, không thể chỉnh sửa.",
-          confirmText: "Confirm",
-          cancelText: "Cancel",
+          confirmText: "Xác nhận",
+          cancelText: "Hủy",
           destructive: true,
         });
         if (!ok) return;
@@ -920,11 +920,11 @@ const PurchaseOrderList: React.FC = () => {
 
     if (itemStatus === "PENDINGAPPROVAL" && newStatus === "APPROVED") {
       const ok = await confirm({
-        title: "Confirm approve item",
+        title: "Xác nhận duyệt",
         description:
           "Xác nhận duyệt item này (APPROVED)? Sau khi duyệt, không thể chỉnh sửa.",
-        confirmText: "Confirm",
-        cancelText: "Cancel",
+        confirmText: "Xác nhận",
+        cancelText: "Hủy",
         destructive: true,
       });
       if (!ok) return;
@@ -1018,10 +1018,10 @@ const PurchaseOrderList: React.FC = () => {
     }
 
     const ok = await confirm({
-      title: "Delete item",
-      description: "Delete this item?",
-      confirmText: "Delete",
-      cancelText: "Cancel",
+      title: "Xóa item này",
+      description: "Xác nhận xóa item này?",
+      confirmText: "Xóa",
+      cancelText: "Hủy",
       destructive: true,
     });
     if (!ok) return;
@@ -1094,10 +1094,10 @@ const PurchaseOrderList: React.FC = () => {
     }
 
     const ok = await confirm({
-      title: "Delete Sub-PO",
+      title: "Xóa sản phẩm",
       description: "Xác nhận xóa sản phẩm này?",
-      confirmText: "Delete",
-      cancelText: "Cancel",
+      confirmText: "Xóa",
+      cancelText: "Hủy",
       destructive: true,
     });
     if (!ok) return;
@@ -1218,11 +1218,11 @@ const PurchaseOrderList: React.FC = () => {
         // Only allow transition from DRAFT. If target is PENDINGAPPROVAL, propagate.
         if (newStatus === "PENDINGAPPROVAL") {
           const ok = await confirm({
-            title: "Confirm change PO",
+            title: "Xác nhận thay đổi trạng thái PO",
             description:
               "Xác nhận chuyển PO này sang PENDINGAPPROVAL? Sau khi xác nhận, PO và toàn bộ Sub-PO và Item sẽ được khoá.",
-            confirmText: "Confirm",
-            cancelText: "Cancel",
+            confirmText: "Xác nhận",
+            cancelText: "Hủy",
             destructive: true,
           });
           if (!ok) {
@@ -1297,11 +1297,11 @@ const PurchaseOrderList: React.FC = () => {
         } else {
           if (newStatus === "APPROVED") {
             const ok = await confirm({
-              title: "Confirm approve PO",
+              title: "Xác nhận duyệt PO",
               description:
                 "Xác nhận chuyển PO này sang APPROVED? Sau khi xác nhận, PO và tất cả Sub-PO và Item liên quan sẽ được cập nhật thành APPROVED và không thể chỉnh sửa.",
-              confirmText: "Confirm",
-              cancelText: "Cancel",
+              confirmText: "Xác nhận",
+              cancelText: "Hủy",
               destructive: true,
             });
             if (!ok) return;
@@ -1386,11 +1386,11 @@ const PurchaseOrderList: React.FC = () => {
         }
 
         const ok = await confirm({
-          title: "Confirm approve PO",
+          title: "Xác nhận duyệt PO",
           description:
             "Xác nhận duyệt PO này (APPROVED)? Sau khi xác nhận, PO và tất cả Sub-PO và Item liên quan sẽ được cập nhật thành APPROVED và không thể chỉnh sửa.",
-          confirmText: "Confirm",
-          cancelText: "Cancel",
+          confirmText: "Xác nhận",
+          cancelText: "Hủy",
           destructive: true,
         });
         if (!ok) return;
@@ -1541,11 +1541,11 @@ const PurchaseOrderList: React.FC = () => {
       if (poSnapshot.status === "DRAFT" && current === "DRAFT") {
         if (newStatus === "PENDINGAPPROVAL") {
           const ok = await confirm({
-            title: "Confirm change Sub-PO",
+            title: "Xác nhận thay đổi trạng thái Sub-PO",
             description:
               "Xác nhận chuyển Sub-PO này sang PENDINGAPPROVAL? Sau khi xác nhận, Sub-PO và toàn bộ Item bên trong sẽ bị khoá.",
-            confirmText: "Confirm",
-            cancelText: "Cancel",
+            confirmText: "Xác nhận",
+            cancelText: "Hủy",
             destructive: true,
           });
           if (!ok) {
@@ -1584,11 +1584,11 @@ const PurchaseOrderList: React.FC = () => {
 
         if (newStatus === "APPROVED") {
           const ok = await confirm({
-            title: "Confirm approve Sub-PO",
+            title: "Xác nhận duyệt Sub-PO",
             description:
               "Xác nhận duyệt Sub-PO này (APPROVED)? Sau khi xác nhận, Sub-PO sẽ được khoá và không thể chỉnh sửa.",
-            confirmText: "Confirm",
-            cancelText: "Cancel",
+            confirmText: "Xác nhận",
+            cancelText: "Hủy",
             destructive: true,
           });
           if (!ok) return;
@@ -1641,11 +1641,11 @@ const PurchaseOrderList: React.FC = () => {
           return;
         }
         const ok = await confirm({
-          title: "Confirm approve Sub-PO",
+          title: "Xác nhận duyệt Sub-PO",
           description:
             "Xác nhận duyệt Sub-PO này (APPROVED)? Sau khi xác nhận, Sub-PO và tất cả Item bên trong sẽ được cập nhật thành APPROVED và không thể chỉnh sửa.",
-          confirmText: "Confirm",
-          cancelText: "Cancel",
+          confirmText: "Xác nhận",
+          cancelText: "Hủy",
           destructive: true,
         });
         if (!ok) return;
@@ -1808,7 +1808,7 @@ const PurchaseOrderList: React.FC = () => {
           className="btn btn-outline-primary"
           onClick={handleCreateNewPO}
           disabled={writeDisabled}
-          title={writeDisabled ? "Bạn không có quyền tạo PO" : "Tạo PO"}
+          title={"Tạo PO"}
         >
           Tạo PO
         </button>
@@ -1986,11 +1986,7 @@ const PurchaseOrderList: React.FC = () => {
                             })
                           }
                           disabled={!poEditable || writeDisabled}
-                          title={
-                            writeDisabled
-                              ? "Bạn không có quyền thêm Sub-PO"
-                              : "+ Tạo Sub-PO (Chọn sản phẩm)"
-                          }
+                          title={"+ Tạo Sub-PO (Chọn sản phẩm)"}
                         >
                           + Tạo Sub-PO (Chọn sản phẩm)
                         </button>
