@@ -92,6 +92,12 @@ export const fullTree: NodeWithPrivilege[] = [
         href: "/product-type/list",
         requiredPrivileges: [...productTypeGetPrivileges],
       },
+      {
+        id: "ware-list",
+        name: "Danh sách mã hàng",
+        href: "/ware",
+        requiredPrivileges: [...purchaseOrderGetPrivileges],
+      },
     ],
   },
 

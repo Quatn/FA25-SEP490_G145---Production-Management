@@ -656,7 +656,7 @@ const WareEditModal: React.FC<Props> = ({
                       getLabel={(o: any) =>
                         o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
                       }
-                      placeholder="-- choose print colors --"
+                      placeholder="-- chọn màu in --"
                     />
                   </Label>
 
@@ -674,7 +674,7 @@ const WareEditModal: React.FC<Props> = ({
                       getLabel={(o: any) =>
                         o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
                       }
-                      placeholder="-- choose finishing processes --"
+                      placeholder="-- chọn công đoạn hoàn thiện --"
                     />
                   </Label>
 
@@ -715,7 +715,7 @@ const WareEditModal: React.FC<Props> = ({
               >
                 {displayedFlutes.includes("faceLayer") && (
                   <div style={{ marginBottom: 10 }}>
-                    <Label label="Mặt (Paper type)" required>
+                    <Label label="Mặt" required>
                       <div
                         style={{
                           display: "flex",
@@ -814,7 +814,7 @@ const WareEditModal: React.FC<Props> = ({
 
                 {displayedFlutes.includes("backLayer") && (
                   <div>
-                    <Label label="Đáy (Paper type)" required>
+                    <Label label="Đáy" required>
                       <div
                         style={{
                           display: "flex",

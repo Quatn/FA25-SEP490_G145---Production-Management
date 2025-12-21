@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   useGetWaresQuery,
   useCreateWareMutation,
@@ -300,7 +300,7 @@ const MultiSelectInline: React.FC<{
           })
         ) : (
           <span className="text-muted" style={{ fontSize: 14 }}>
-            {placeholder ?? "-- choose --"}
+            {placeholder ?? "-- chọn --"}
           </span>
         )}
 
@@ -338,7 +338,7 @@ const MultiSelectInline: React.FC<{
         >
           {avail.length === 0 ? (
             <div className="text-muted" style={{ padding: 8 }}>
-              No options
+              Không có mục chọn
             </div>
           ) : (
             avail.map((opt) => {
@@ -402,6 +402,27 @@ export const WareList: React.FC = () => {
 
   const writeDisabled = !writeAllowed;
   // -------------------------------------------------
+
+  // Header style constants (light blue plain)
+  const HEADER_BG = "#e6f7ff"; // plain light blue
+  const HEADER_TEXT = "#02296a"; // dark/navy text for contrast
+  const headerCellBaseStyle: React.CSSProperties = {
+    background: HEADER_BG,
+    color: HEADER_TEXT,
+    verticalAlign: "middle",
+    fontWeight: 600,
+    borderColor: "#d1e7ff",
+    textAlign: "center",
+  };
+  const topHeaderBarStyle: React.CSSProperties = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    color: HEADER_TEXT,
+    padding: "10px 12px",
+    borderRadius: 6,
+  };
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState<number>(1);
@@ -548,7 +569,62 @@ export const WareList: React.FC = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
 
+  // --- helper: parse stored paper layer value into base 3-part paperType and supplier
+  // Accepts strings like:
+  // "color/width/grammage" => { paperType: "color/width/grammage", supplier: "" }
+  // "color/supplier/width/grammage" => { paperType: "color/width/grammage", supplier: "supplier" }
+  function parsePaperLayerValue(val: any) {
+    if (val === undefined || val === null)
+      return { paperType: "", supplier: "" };
+    const s = String(val ?? "");
+    if (!s) return { paperType: "", supplier: "" };
+    const parts = s.split("/").map((p) => p ?? "");
+    if (parts.length === 4) {
+      const [color, supplier, width, grammage] = parts;
+      return {
+        paperType: `${String(color)}/${String(width)}/${String(grammage)}`,
+        supplier: supplier || "",
+      };
+    }
+    if (parts.length === 3) {
+      const [color, width, grammage] = parts;
+      return {
+        paperType: `${String(color)}/${String(width)}/${String(grammage)}`,
+        supplier: "",
+      };
+    }
+    // fallback: return whole string as paperType (UI will try to match)
+    return { paperType: s, supplier: "" };
+  }
+
   const openEdit = (ware: any) => {
+    // parse face/back in case ware stores merged value
+    const rawFace =
+      ware.faceLayerPaperType ??
+      ware.faceLayerPaper ??
+      ware.faceLayerPaperMerged ??
+      "";
+    const rawBack =
+      ware.backLayerPaperType ??
+      ware.backLayerPaper ??
+      ware.backLayerPaperMerged ??
+      "";
+
+    const faceParsed = parsePaperLayerValue(rawFace);
+    // prefer explicit supplier field if present on document
+    const explicitFaceSupplier =
+      ware.faceLayerPaperSupplier ?? ware.faceLayerPaperSupplierCode ?? "";
+    if (explicitFaceSupplier && String(explicitFaceSupplier).trim() !== "") {
+      faceParsed.supplier = String(explicitFaceSupplier);
+    }
+
+    const backParsed = parsePaperLayerValue(rawBack);
+    const explicitBackSupplier =
+      ware.backLayerPaperSupplier ?? ware.backLayerPaperSupplierCode ?? "";
+    if (explicitBackSupplier && String(explicitBackSupplier).trim() !== "") {
+      backParsed.supplier = String(explicitBackSupplier);
+    }
+
     setEditForm({
       id: getIdFromDoc(ware) ?? ware._id ?? ware.code,
       code: ware.code ?? "",
@@ -622,15 +698,16 @@ export const WareList: React.FC = () => {
           (p: any) => getIdFromDoc(p) ?? p
         ) ?? [],
       note: ware.note ?? "",
-      faceLayerPaperType: ware.faceLayerPaperType ?? "",
-      faceLayerPaperSupplier: ware.faceLayerPaperSupplier ?? "", // note: may not exist yet
+      // set parsed values (paperType = base 3-part, supplier separate)
+      faceLayerPaperType: faceParsed.paperType ?? "",
+      faceLayerPaperSupplier: faceParsed.supplier ?? "",
       EFlutePaperType: ware.EFlutePaperType ?? "",
       EBLinerLayerPaperType: ware.EBLinerLayerPaperType ?? "",
       BFlutePaperType: ware.BFlutePaperType ?? "",
       BACLinerLayerPaperType: ware.BACLinerLayerPaperType ?? "",
       ACFlutePaperType: ware.ACFlutePaperType ?? "",
-      backLayerPaperType: ware.backLayerPaperType ?? "",
-      backLayerPaperSupplier: ware.backLayerPaperSupplier ?? "",
+      backLayerPaperType: backParsed.paperType ?? "",
+      backLayerPaperSupplier: backParsed.supplier ?? "",
     });
     setEditOpen(true);
   };
@@ -1261,7 +1338,7 @@ export const WareList: React.FC = () => {
         type: "success",
       });
     } catch (err: any) {
-      console.error("Update failed", err);
+      console.error("Thay đổi thất bại", err);
 
       // server duplicate fallback
       const status = err?.status ?? err?.response?.status;
@@ -1278,7 +1355,7 @@ export const WareList: React.FC = () => {
       }
 
       toaster.create({
-        description: err?.data?.message ?? err?.message ?? "Update failed",
+        description: err?.data?.message ?? err?.message ?? "Thay đổi thất bại",
         type: "error",
       });
     }
@@ -1295,10 +1372,10 @@ export const WareList: React.FC = () => {
     }
 
     const ok = await confirm({
-      title: "Delete Ware",
-      description: `Delete ${w.code}?`,
-      confirmText: "Delete",
-      cancelText: "Cancel",
+      title: "Xóa mã hàng",
+      description: `Xóa ${w.code}?`,
+      confirmText: "Xóa",
+      cancelText: "Hủy",
       destructive: true,
     });
     if (!ok) return;
@@ -1325,9 +1402,9 @@ export const WareList: React.FC = () => {
         type: "success",
       });
     } catch (err: any) {
-      console.error("delete failed", err);
+      console.error("Xóa thất bại", err);
       toaster.create({
-        description: err?.data?.message ?? err?.message ?? "Delete failed",
+        description: err?.data?.message ?? err?.message ?? "Xóa thất bại",
         type: "error",
       });
     }
@@ -1416,16 +1493,9 @@ export const WareList: React.FC = () => {
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 12,
-        }}
-      >
+      <div style={topHeaderBarStyle}>
         <div>
-          <strong>Mã hàng </strong>
+          <strong style={{ color: HEADER_TEXT }}>Mã hàng </strong>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
@@ -1442,7 +1512,7 @@ export const WareList: React.FC = () => {
           <button
             className="btn btn-outline-secondary"
             onClick={() => setAdvancedOpen(true)}
-            title="Advanced search"
+            title="Tìm kiếm nâng cao"
             style={{ marginLeft: 8, minWidth: 170 }}
           >
             Tìm kiếm nâng cao
@@ -1455,7 +1525,7 @@ export const WareList: React.FC = () => {
               setCreateOpen(true);
             }}
             disabled={writeDisabled}
-            title={writeDisabled ? "Bạn không có quyền tạo" : "Tạo mới"}
+            title={"Tạo mới"}
           >
             + Tạo
           </button>
@@ -1489,30 +1559,77 @@ export const WareList: React.FC = () => {
           <thead>
             {/* first header row */}
             <tr>
-              <th rowSpan={2}>Mã hàng</th>
-              <th rowSpan={2}>Sóng</th>
-              <th rowSpan={2}>Đơn giá (đồng)</th>
-              <th rowSpan={2}>Rộng (mm)</th>
-              <th rowSpan={2}>Dài (mm)</th>
-              <th rowSpan={2}>Cao (mm)</th>
-              <th rowSpan={2}>Thể tích (m2)</th>
-              <th rowSpan={2}>Kiểu SP gia công</th>
-              <th rowSpan={2}>Công đoạn hoàn thiện</th>
-              <th rowSpan={2}>Màu in</th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Mã hàng
+              </th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Sóng
+              </th>
+              <th
+                rowSpan={2}
+                style={{ ...headerCellBaseStyle, textAlign: "right" }}
+              >
+                Đơn giá (đồng)
+              </th>
+              <th
+                rowSpan={2}
+                style={{ ...headerCellBaseStyle, textAlign: "right" }}
+              >
+                Rộng (mm)
+              </th>
+              <th
+                rowSpan={2}
+                style={{ ...headerCellBaseStyle, textAlign: "right" }}
+              >
+                Dài (mm)
+              </th>
+              <th
+                rowSpan={2}
+                style={{ ...headerCellBaseStyle, textAlign: "right" }}
+              >
+                Cao (mm)
+              </th>
+              <th
+                rowSpan={2}
+                style={{ ...headerCellBaseStyle, textAlign: "right" }}
+              >
+                Thể tích (m2)
+              </th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Kiểu SP gia công
+              </th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Công đoạn hoàn thiện
+              </th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Màu in
+              </th>
               <th
                 colSpan={PAPER_LAYER_KEYS.length}
-                style={{ textAlign: "center", verticalAlign: "middle" }}
+                style={{
+                  ...headerCellBaseStyle,
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                }}
               >
                 Mặt giấy
               </th>
-              <th rowSpan={2}>Máy in</th>
-              <th rowSpan={2}>Ghi chú</th>
-              <th rowSpan={2}>Thao tác</th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Máy in
+              </th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Ghi chú
+              </th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Thao tác
+              </th>
             </tr>
 
             <tr>
               {PAPER_LAYER_KEYS.map((k) => (
-                <th key={k.key}>{k.label}</th>
+                <th key={k.key} style={headerCellBaseStyle}>
+                  {k.label}
+                </th>
               ))}
             </tr>
           </thead>
@@ -1591,7 +1708,7 @@ export const WareList: React.FC = () => {
                           openEdit(w);
                         }}
                         disabled={writeDisabled}
-                        title={writeDisabled ? "Bạn không có quyền sửa" : "Sửa"}
+                        title={"Sửa"}
                       >
                         Sửa
                       </button>
@@ -1602,7 +1719,7 @@ export const WareList: React.FC = () => {
                           handleSoftDelete(w);
                         }}
                         disabled={writeDisabled}
-                        title={writeDisabled ? "Bạn không có quyền xóa" : "Xóa"}
+                        title={"Xóa"}
                       >
                         Xóa
                       </button>

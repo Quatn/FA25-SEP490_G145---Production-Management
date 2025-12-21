@@ -82,6 +82,18 @@ export const PaperList: React.FC = () => {
   const writeDisabled = !writeAllowed;
   // -------------------------------------------------------
 
+  // Header style constants (match WareList: plain light blue)
+  const HEADER_BG = "#e6f7ff"; // plain light blue
+  const HEADER_TEXT = "#02296a"; // dark/navy text for contrast
+  const headerCellBaseStyle: React.CSSProperties = {
+    background: HEADER_BG,
+    color: HEADER_TEXT,
+    verticalAlign: "middle",
+    fontWeight: 600,
+    borderColor: "#d1e7ff",
+    textAlign: "center",
+  };
+
   const [query, setQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   // pagination state
@@ -819,10 +831,10 @@ export const PaperList: React.FC = () => {
       return;
     }
     const ok = await showConfirm({
-      title: "Delete roll",
-      description: `Delete ${computePaperRollId(r)}?`,
-      confirmText: "Delete",
-      cancelText: "Cancel",
+      title: "Xóa cuộn",
+      description: `Xóa ${computePaperRollId(r)}?`,
+      confirmText: "Xóa",
+      cancelText: "Hủy",
       destructive: true,
     });
     if (!ok) return;
@@ -1121,7 +1133,7 @@ export const PaperList: React.FC = () => {
       return;
     }
     w.document.write(`
-      <html><head><title>QR Print</title></head>
+      <html><head><title>In QR</title></head>
       <body style="text-align:center;font-family:sans-serif;margin-top:40px">
         <img src="${qrDataUrl}" style="width:300px;height:300px" />
         <div class="code">${qrModal.text ?? ""}</div>
@@ -1192,7 +1204,8 @@ export const PaperList: React.FC = () => {
             className="btn btn-primary"
             onClick={() => setCreateOpen(true)}
             disabled={writeDisabled}
-            title={writeDisabled ? "Bạn không có quyền tạo" : "Tạo cuộn"}
+            title={"Tạo cuộn"}
+            style={{ minWidth: 67 }}
           >
             + Tạo
           </button>
@@ -1200,7 +1213,8 @@ export const PaperList: React.FC = () => {
             className="btn btn-outline-primary"
             onClick={() => setCreateMultipleOpen(true)}
             disabled={writeDisabled}
-            title={writeDisabled ? "Bạn không có quyền tạo nhiều" : "Tạo nhiều"}
+            title={"Tạo nhiều"}
+            style={{ minWidth: 127 }}
           >
             + Tạo nhiều
           </button>
@@ -1215,7 +1229,7 @@ export const PaperList: React.FC = () => {
             handleBulkExportSelected();
           }}
           disabled={writeDisabled}
-          title={writeDisabled ? "Bạn không có quyền xuất" : "Xuất (chọn)"}
+          title={"Xuất (chọn)"}
         >
           Xuất (chọn)
         </button>
@@ -1237,7 +1251,7 @@ export const PaperList: React.FC = () => {
         <table className="table table-bordered">
           <thead>
             <tr>
-              <th style={{ width: 36 }}>
+              <th style={{ ...headerCellBaseStyle, width: 36 }}>
                 <input
                   type="checkbox"
                   onChange={(e) => selectAllVisible(e.target.checked)}
@@ -1247,14 +1261,20 @@ export const PaperList: React.FC = () => {
                   }
                 />
               </th>
-              <th>Mã cuộn</th>
-              <th>Màu</th>
-              <th>Nhà cung cấp</th>
-              <th style={{ textAlign: "right" }}>Khổ</th>
-              <th style={{ textAlign: "right" }}>Định lượng</th>
-              <th style={{ textAlign: "right" }}>Trọng lượng</th>
-              <th>Ngày nhập</th>
-              <th style={{ width: 360 }}>Actions</th>
+              <th style={headerCellBaseStyle}>Mã cuộn</th>
+              <th style={headerCellBaseStyle}>Màu</th>
+              <th style={headerCellBaseStyle}>Nhà cung cấp</th>
+              <th style={{ ...headerCellBaseStyle, textAlign: "right" }}>
+                Khổ
+              </th>
+              <th style={{ ...headerCellBaseStyle, textAlign: "right" }}>
+                Định lượng
+              </th>
+              <th style={{ ...headerCellBaseStyle, textAlign: "right" }}>
+                Trọng lượng
+              </th>
+              <th style={headerCellBaseStyle}>Ngày nhập</th>
+              <th style={{ ...headerCellBaseStyle, width: 360 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -1367,9 +1387,7 @@ export const PaperList: React.FC = () => {
                         className="btn btn-danger btn-sm"
                         onClick={() => doSingleExport(r)}
                         disabled={writeDisabled}
-                        title={
-                          writeDisabled ? "Bạn không có quyền xuất" : "Xuất"
-                        }
+                        title={"Xuất"}
                       >
                         Xuất
                       </button>
@@ -1389,11 +1407,7 @@ export const PaperList: React.FC = () => {
                           if (id) setSelectedIds({ [id]: true });
                         }}
                         disabled={writeDisabled}
-                        title={
-                          writeDisabled
-                            ? "Bạn không có quyền nhập lại"
-                            : "Nhập lại"
-                        }
+                        title={"Nhập lại"}
                       >
                         Nhập lại
                       </button>
@@ -1402,7 +1416,7 @@ export const PaperList: React.FC = () => {
                         className="btn btn-outline-danger btn-sm"
                         onClick={() => handleSoftDelete(r)}
                         disabled={writeDisabled}
-                        title={writeDisabled ? "Bạn không có quyền xóa" : "Xóa"}
+                        title={"Xóa"}
                       >
                         Xóa
                       </button>
