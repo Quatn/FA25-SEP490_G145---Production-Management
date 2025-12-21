@@ -2,6 +2,7 @@
 "use client";
 
 import React from "react";
+import { toaster } from "../ui/toaster";
 
 type EditForm = any;
 
@@ -407,7 +408,10 @@ const WareEditModal: React.FC<Props> = ({
       }
     });
     if (missing.length > 0) {
-      alert(`Vui lòng chọn giá trị cho: ${missing.map((m) => m).join(", ")}`);
+      toaster.create({
+        description: `Vui lòng chọn giá trị cho: ${missing.join(", ")}`,
+        type: "error",
+      });
       return;
     }
     try {

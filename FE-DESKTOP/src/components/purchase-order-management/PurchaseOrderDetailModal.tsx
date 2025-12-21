@@ -293,16 +293,6 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
     }
   };
 
-  const handleOpenSubPOSelector = (subId?: string) => {
-    if (onOpenSubPOSelector) {
-      onOpenSubPOSelector(local?.id, subId);
-      return;
-    }
-    alert(
-      "Sub-PO selector not implemented here. Parent can inject it via onOpenSubPOSelector."
-    );
-  };
-
   if (!local) return null;
 
   const selectedCustomerId = (() => {
