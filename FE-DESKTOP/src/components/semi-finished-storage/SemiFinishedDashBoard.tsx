@@ -15,9 +15,13 @@ const SemiFinishedDashBoard: React.FC = () => {
 
     const [volumeChartDate, setVolumeChartDate] = useState(localDate);
 
-    const { data, isLoading, error } = useGetSemiFinishedGoodVolumeChartDataQuery({ date: inventoryChartDate });
+    const { data: inventoryChartData, isLoading: isInventoryChartLoading, error: inventoryError } = useGetSemiFinishedGoodVolumeChartDataQuery({ date: inventoryChartDate });
 
-    const chartData = data?.data || [];
+    const { data: volumeChartData, isLoading: isVolumeChartLoading, error: volumeError } = useGetSemiFinishedGoodVolumeChartDataQuery({ date: volumeChartDate });
+
+    const inventoryData = inventoryChartData?.data || [];
+
+    const volumeData = volumeChartData?.data || [];
 
     const handleInvalidDate = (value: string) => {
         if (value) {
@@ -25,8 +29,9 @@ const SemiFinishedDashBoard: React.FC = () => {
         } else toaster.create({ title: "Nhắc nhở", description: "Không được phép xóa ngày", type: "error", closable: true });
     }
 
-    if (isLoading) return <Spinner />;
-    if (error) {
+    if (isInventoryChartLoading || isVolumeChartLoading) return <Spinner />;
+
+    if (inventoryError) {
         toaster.create({ title: "Lỗi", description: "Không thể tải dữ liệu", type: "error", closable: true });
         return <div>Không thể tải dữ liệu.</div>;
     }
@@ -64,7 +69,7 @@ const SemiFinishedDashBoard: React.FC = () => {
                                 }}
                             />
                         </HStack>
-                        <SemiFinishedInventoryChart chartData={chartData} />
+                        <SemiFinishedInventoryChart chartData={inventoryData} />
                     </Box>
                 </GridItem>
 
@@ -84,7 +89,7 @@ const SemiFinishedDashBoard: React.FC = () => {
                                 width="200px"
                             />
                         </HStack>
-                        <SemiFinishedVolumeChart chartData={chartData} />
+                        <SemiFinishedVolumeChart chartData={volumeData} />
                     </Box>
                 </GridItem>
 
