@@ -722,7 +722,7 @@ export const PaperDailyUsageReport: React.FC = () => {
                         {r.finalWeight != null ? formatNum(r.finalWeight) : "-"}
                       </td>
                       <td style={{ textAlign: "right" }}>
-                        {formatNum(r.netChange)}
+                        {Math.abs(parseFloat(formatNum(r.netChange)))}
                       </td>
                       <td style={{ textAlign: "right" }}>
                         {r.transactionsCount}
