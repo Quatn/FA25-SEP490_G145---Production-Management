@@ -47,7 +47,7 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
     const { contains } = useFilter({ sensitivity: "base" });
     const initialMOs = manufacturingOrders.map((mo) => {
         const poi: PurchaseOrderItem = mo.purchaseOrderItem as PurchaseOrderItem;
-        const subPO = poi.subPurchaseOrder;
+        const subPO = poi?.subPurchaseOrder;
         const po = subPO?.purchaseOrder;
         const customer = po?.customer;
         return ({
