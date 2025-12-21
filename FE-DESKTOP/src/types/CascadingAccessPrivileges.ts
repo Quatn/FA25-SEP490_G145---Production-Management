@@ -7,6 +7,7 @@ import { CustomerModuleAccessPrivilege, EmployeeModuleAccessPrivilege, FinishedG
 export const systemGetPrivileges = [
   SystemAccessPrivilege.Admin,
   SystemAccessPrivilege.Read,
+  SystemAccessPrivilege.ReadWrite,
 ];
 
 export const systemReadWritePrivileges = [
@@ -26,6 +27,7 @@ export const productionGetPrivileges = [
   ...systemGetPrivileges,
   ProductionModuleAccessPrivilege.Admin,
   ProductionModuleAccessPrivilege.Read,
+  ProductionModuleAccessPrivilege.ReadWrite,
 ];
 
 export const productionReadWritePrivileges = [
@@ -43,6 +45,7 @@ export const warehouseGetPrivileges = [
   ...systemGetPrivileges,
   WarehouseModuleAccessPrivilege.Admin,
   WarehouseModuleAccessPrivilege.Read,
+  WarehouseModuleAccessPrivilege.ReadWrite,
 ];
 
 export const warehouseReadWritePrivileges = [
@@ -60,6 +63,7 @@ export const employeeGetPrivileges = [
   ...systemGetPrivileges,
   EmployeeModuleAccessPrivilege.Admin,
   EmployeeModuleAccessPrivilege.Read,
+  EmployeeModuleAccessPrivilege.ReadWrite,
 ];
 
 export const employeeReadWritePrivileges = [
@@ -77,6 +81,7 @@ export const userGetPrivileges = [
   ...systemGetPrivileges,
   UserModuleAccessPrivilege.Admin,
   UserModuleAccessPrivilege.Read,
+  UserModuleAccessPrivilege.ReadWrite,
 ];
 
 export const userReadWritePrivileges = [
@@ -98,6 +103,7 @@ export const manufacturingOrderGetPrivileges = [
   ...productionGetPrivileges,
   ManufacturingOrderModuleAccessPrivilege.Admin,
   ManufacturingOrderModuleAccessPrivilege.Read,
+  ManufacturingOrderModuleAccessPrivilege.ReadWrite,
 ];
 
 export const manufacturingOrderReadWritePrivileges = [
@@ -115,6 +121,7 @@ export const customerGetPrivileges = [
   ...productionGetPrivileges,
   CustomerModuleAccessPrivilege.Admin,
   CustomerModuleAccessPrivilege.Read,
+  CustomerModuleAccessPrivilege.ReadWrite,
 ];
 
 export const customerReadWritePrivileges = [
@@ -132,6 +139,7 @@ export const printColorGetPrivileges = [
   ...productionGetPrivileges,
   PrintColorModuleAccessPrivilege.Admin,
   PrintColorModuleAccessPrivilege.Read,
+  PrintColorModuleAccessPrivilege.ReadWrite,
 ];
 
 export const printColorReadWritePrivileges = [
@@ -149,6 +157,7 @@ export const fluteCombinationGetPrivileges = [
   ...productionGetPrivileges,
   FluteCombinationModuleAccessPrivilege.Admin,
   FluteCombinationModuleAccessPrivilege.Read,
+  FluteCombinationModuleAccessPrivilege.ReadWrite,
 ];
 
 export const fluteCombinationReadWritePrivileges = [
@@ -166,6 +175,7 @@ export const orderFinishingProcessGetPrivileges = [
   ...productionGetPrivileges,
   OrderFinishingProcessModuleAccessPrivilege.Admin,
   OrderFinishingProcessModuleAccessPrivilege.Read,
+  OrderFinishingProcessModuleAccessPrivilege.ReadWrite,
 ];
 
 export const orderFinishingProcessReadWritePrivileges = [
@@ -183,6 +193,7 @@ export const productTypeGetPrivileges = [
   ...productionGetPrivileges,
   ProductTypeModuleAccessPrivilege.Admin,
   ProductTypeModuleAccessPrivilege.Read,
+  ProductTypeModuleAccessPrivilege.ReadWrite,
 ];
 
 export const productTypeReadWritePrivileges = [
@@ -200,6 +211,7 @@ export const wareManufacturingProcessTypeGetPrivileges = [
   ...productionGetPrivileges,
   WareManufacturingProcessTypeModuleAccessPrivilege.Admin,
   WareManufacturingProcessTypeModuleAccessPrivilege.Read,
+  WareManufacturingProcessTypeModuleAccessPrivilege.ReadWrite,
 ];
 
 export const wareManufacturingProcessTypeReadWritePrivileges = [
@@ -217,6 +229,7 @@ export const productGetPrivileges = [
   ...productionGetPrivileges,
   ProductModuleAccessPrivilege.Admin,
   ProductModuleAccessPrivilege.Read,
+  ProductModuleAccessPrivilege.ReadWrite,
 ];
 
 export const productReadWritePrivileges = [
@@ -238,6 +251,7 @@ export const finishedGoodGetPrivileges = [
   ...warehouseGetPrivileges,
   FinishedGoodModuleAccessPrivilege.Admin,
   FinishedGoodModuleAccessPrivilege.Read,
+  FinishedGoodModuleAccessPrivilege.ReadWrite,
 ];
 
 export const finishedGoodReadWritePrivileges = [
@@ -255,6 +269,7 @@ export const finishedGoodTransactionGetPrivileges = [
   ...warehouseGetPrivileges,
   FinishedGoodTransactionModuleAccessPrivilege.Admin,
   FinishedGoodTransactionModuleAccessPrivilege.Read,
+  FinishedGoodTransactionModuleAccessPrivilege.ReadWrite,
 ];
 
 export const finishedGoodTransactionReadWritePrivileges = [
@@ -272,6 +287,7 @@ export const paperColorGetPrivileges = [
   ...warehouseGetPrivileges,
   PaperColorModuleAccessPrivilege.Admin,
   PaperColorModuleAccessPrivilege.Read,
+  PaperColorModuleAccessPrivilege.ReadWrite,
 ];
 
 export const paperColorReadWritePrivileges = [
@@ -289,6 +305,7 @@ export const paperSupplierGetPrivileges = [
   ...warehouseGetPrivileges,
   PaperSupplierModuleAccessPrivilege.Admin,
   PaperSupplierModuleAccessPrivilege.Read,
+  PaperSupplierModuleAccessPrivilege.ReadWrite,
 ];
 
 export const paperSupplierReadWritePrivileges = [
@@ -306,6 +323,7 @@ export const paperTypeGetPrivileges = [
   ...warehouseGetPrivileges,
   PaperTypeModuleAccessPrivilege.Admin,
   PaperTypeModuleAccessPrivilege.Read,
+  PaperTypeModuleAccessPrivilege.ReadWrite,
 ];
 
 export const paperTypeReadWritePrivileges = [
@@ -323,6 +341,7 @@ export const paperRollGetPrivileges = [
   ...warehouseGetPrivileges,
   PaperRollModuleAccessPrivilege.Admin,
   PaperRollModuleAccessPrivilege.Read,
+  PaperRollModuleAccessPrivilege.ReadWrite,
 ];
 
 export const paperRollReadWritePrivileges = [
@@ -340,6 +359,7 @@ export const semiFinishedGoodGetPrivileges = [
   ...warehouseGetPrivileges,
   SemiFinishedGoodModuleAccessPrivilege.Admin,
   SemiFinishedGoodModuleAccessPrivilege.Read,
+  SemiFinishedGoodModuleAccessPrivilege.ReadWrite,
 ];
 
 export const semiFinishedGoodReadWritePrivileges = [
@@ -357,6 +377,7 @@ export const semiFinishedGoodTransactionGetPrivileges = [
   ...warehouseGetPrivileges,
   SemiFinishedGoodTransactionModuleAccessPrivilege.Admin,
   SemiFinishedGoodTransactionModuleAccessPrivilege.Read,
+  SemiFinishedGoodTransactionModuleAccessPrivilege.ReadWrite,
 ];
 
 export const semiFinishedGoodTransactionReadWritePrivileges = [
@@ -374,6 +395,7 @@ export const purchaseOrderGetPrivileges = [
   ...warehouseGetPrivileges,
   PurchaseOrderModuleAccessPrivilege.Admin,
   PurchaseOrderModuleAccessPrivilege.Read,
+  PurchaseOrderModuleAccessPrivilege.ReadWrite,
 ];
 
 export const purchaseOrderReadWritePrivileges = [
@@ -391,6 +413,7 @@ export const wareGetPrivileges = [
   ...warehouseGetPrivileges,
   WareModuleAccessPrivilege.Admin,
   WareModuleAccessPrivilege.Read,
+  WareModuleAccessPrivilege.ReadWrite,
 ];
 
 export const wareReadWritePrivileges = [
@@ -408,6 +431,7 @@ export const wareFinishingProcessTypeGetPrivileges = [
   ...warehouseGetPrivileges,
   WareFinishingProcessTypeModuleAccessPrivilege.Admin,
   WareFinishingProcessTypeModuleAccessPrivilege.Read,
+  WareFinishingProcessTypeModuleAccessPrivilege.ReadWrite,
 ];
 
 export const wareFinishingProcessTypeReadWritePrivileges = [

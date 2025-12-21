@@ -8,14 +8,18 @@ import {
 
 export const manufacturingOrderGetPrivileges = [
   ...productionGetPrivileges,
+  ManufacturingOrderModuleAccessPrivilege.Admin,
   ManufacturingOrderModuleAccessPrivilege.Read,
+  ManufacturingOrderModuleAccessPrivilege.ReadWrite,
 ];
 export const manufacturingOrderCreatePrivileges = [
   ...productionCreatePrivileges,
+  ManufacturingOrderModuleAccessPrivilege.Admin,
   ManufacturingOrderModuleAccessPrivilege.ReadWrite,
 ];
 export const manufacturingOrderUpdatePrivileges = [
   ...productionUpdatePrivileges,
+  ManufacturingOrderModuleAccessPrivilege.Admin,
   ManufacturingOrderModuleAccessPrivilege.ReadWrite,
 ];
 export const manufacturingOrderAdminPrivileges = [

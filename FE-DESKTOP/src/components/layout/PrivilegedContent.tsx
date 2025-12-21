@@ -35,11 +35,7 @@ export default function PrivilegedContent(
         throw throwErrorAction()
       }
       */
-      return (
-        <div>
-          {unauthenticatedContent}
-        </div>
-      );
+      return unauthenticatedContent
     }
     return (
       <div />
