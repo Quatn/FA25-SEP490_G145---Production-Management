@@ -10,6 +10,7 @@ export const productionGetPrivileges = [
   ...systemGetPrivileges,
   ProductionModuleAccessPrivilege.Admin,
   ProductionModuleAccessPrivilege.Read,
+  ProductionModuleAccessPrivilege.ReadWrite,
 ];
 export const productionCreatePrivileges = [
   ...systemCreatePrivileges,

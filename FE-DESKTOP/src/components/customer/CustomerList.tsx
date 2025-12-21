@@ -99,7 +99,7 @@ const CustomerList: React.FC = () => {
 
     const handleOpenAlertDialog = (customer: Customer) => {
 
-        handleValidateAccess();
+        if (!handleValidateAccess()) return;
 
         setSelectedcustomer(customer);
         setAlertDialogOpen(true);

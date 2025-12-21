@@ -126,7 +126,7 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
     const dto: UpdateManyManufacturingOrdersRequestDto = {
       orders: [{
         id: props.order._id,
-        corrugatorLineAdjustment: props.order.corrugatorLineAdjustment,
+        corrugatorLineAdjustment: formValue.corrugatorLineAdjustment,
         corrugatorProcess: {
           manufacturedAmount: formValue.manufacturedAmount,
           status: formValue.status,

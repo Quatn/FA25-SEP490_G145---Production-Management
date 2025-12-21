@@ -1,6 +1,6 @@
 "use client";
 
-import { ManufacturingOrderCorrugatorProcessOperateReducerStore } from "@/context/manufacturing-order/manufacturingOrderCorrugatorProcessOperateContext";
+import { ManufacturingOrderCorrugatorProcessOperateTableReducerStore } from "@/context/manufacturing-order/manufacturingOrderCorrugatorProcessOperateTableContext";
 import {
   Button,
   ButtonGroup,
@@ -28,7 +28,7 @@ const pageOptions = createListCollection({
 });
 
 export default function ManufacturingOrderCorrugatorOperatePagePagination() {
-  const { useDispatch, useSelector } = ManufacturingOrderCorrugatorProcessOperateReducerStore;
+  const { useDispatch, useSelector } = ManufacturingOrderCorrugatorProcessOperateTableReducerStore;
   const dispatch = useDispatch();
   const page = useSelector(s => s.page);
   const limit = useSelector(s => s.limit);
