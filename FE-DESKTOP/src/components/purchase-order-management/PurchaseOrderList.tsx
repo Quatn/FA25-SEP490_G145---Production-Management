@@ -93,17 +93,43 @@ const SearchInput: React.FC<{
   />
 );
 
-// reduced statuses
+// reduced statuses (selectable)
 const PO_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
 const SUBPO_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
 const POITEM_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
 
-const READONLY_STATUSES = ["COMPLETED", "PARTIALLYCOMPLETE"];
+// read-only statuses (displayed but not selectable)
+// include common variants to be safe
+const READONLY_STATUSES = [
+  "COMPLETED",
+  "PARTIALLYCOMPLETE",
+  "PARTIALLYCOMPLETED",
+];
 
 const includeCurrentStatus = (base: string[], current?: string) => {
   if (!current) return base;
   if (base.includes(current)) return base;
   return [...base, current];
+};
+
+// Map english status tokens -> Vietnamese label
+const statusLabel = (status?: string) => {
+  const s = (status ?? "DRAFT").toString().toUpperCase();
+  switch (s) {
+    case "DRAFT":
+      return "Nháp";
+    case "PENDINGAPPROVAL":
+      return "Chờ duyệt";
+    case "APPROVED":
+      return "Đã duyệt";
+    case "PARTIALLYCOMPLETED":
+    case "PARTIALLYCOMPLETE":
+      return "Sắp hoàn thành";
+    case "COMPLETED":
+      return "Đã hoàn thành";
+    default:
+      return status ?? "";
+  }
 };
 
 const PurchaseOrderList: React.FC = () => {
@@ -198,25 +224,7 @@ const PurchaseOrderList: React.FC = () => {
     }
   };
 
-  // Normalize server response -> orders for the current page
-  useEffect(() => {
-    const payload = poResp?.data?.data ?? poResp?.data ?? [];
-    if (Array.isArray(payload)) {
-      setOrders(payload.map(normalizeServerPo));
-    } else {
-      setOrders([]);
-    }
-  }, [poResp]);
-
-  useEffect(() => {
-    if (!expandedPoResp) {
-      setExpandedLocalDoc(null);
-      return;
-    }
-    const doc = expandedPoResp?.data ?? expandedPoResp ?? null;
-    setExpandedLocalDoc(doc ? JSON.parse(JSON.stringify(doc)) : null);
-  }, [expandedPoResp]);
-
+  // Helper: resolve id from server shapes
   const resolveId = (x: any) => {
     if (x == null) return "";
     const candidate = x?._id?.$oid ?? x?._id ?? x?.id ?? null;
@@ -230,9 +238,68 @@ const PurchaseOrderList: React.FC = () => {
     return "";
   };
 
+  // Helper: check if a status is read-only (treat the PARTIAL variants)
+  const isReadOnlyStatus = (s?: string) =>
+    !s ? false : READONLY_STATUSES.includes(String(s).toUpperCase());
+
+  // Helper: compute derived statuses (display only) from items -> subs -> po
+  const computeDerivedStatuses = (doc: any) => {
+    if (!doc) return doc;
+    const copy = doc;
+
+    // Ensure arrays exist
+    copy.subPurchaseOrders = Array.isArray(copy.subPurchaseOrders)
+      ? copy.subPurchaseOrders
+      : [];
+
+    // Flag if any item completed anywhere
+    let anyItemCompletedGlobal = false;
+
+    // Compute each sub
+    copy.subPurchaseOrders.forEach((s: any) => {
+      s.items = Array.isArray(s.items) ? s.items : [];
+      const itemStatuses = s.items.map((it: any) =>
+        (it?.status ?? "DRAFT").toString().toUpperCase()
+      );
+      const completedCount = itemStatuses.filter(
+        (st) => st === "COMPLETED"
+      ).length;
+      if (completedCount === itemStatuses.length && itemStatuses.length > 0) {
+        s.status = "COMPLETED";
+      } else if (completedCount > 0) {
+        s.status = "PARTIALLYCOMPLETE";
+      } else {
+        // leave existing status if not derived
+        // keep s.status as-is (usually DRAFT / PENDINGAPPROVAL / APPROVED)
+      }
+      if (completedCount > 0) anyItemCompletedGlobal = true;
+    });
+
+    // Compute parent PO status
+    const subStatuses = copy.subPurchaseOrders.map((s: any) =>
+      (s?.status ?? "DRAFT").toString().toUpperCase()
+    );
+    const allSubsCompleted =
+      subStatuses.length > 0 && subStatuses.every((st) => st === "COMPLETED");
+    const anySubPartial = subStatuses.some(
+      (st) => st === "PARTIALLYCOMPLETE" || st === "PARTIALLYCOMPLETED"
+    );
+    if (allSubsCompleted) {
+      copy.status = "COMPLETED";
+    } else if (anySubPartial || anyItemCompletedGlobal) {
+      copy.status = "PARTIALLYCOMPLETE";
+    } else {
+      // otherwise leave current status
+    }
+
+    return copy;
+  };
+
+  // Sync totals and also propagate any derived status from expanded local doc into 'orders' list for display
   const syncTotalsToOrders = (localDoc: any | null) => {
     if (!localDoc) return;
-    const poId = String(localDoc._id ?? localDoc._id?.$oid ?? "") || "";
+    const poId =
+      String(localDoc._id ?? localDoc._id?.$oid ?? localDoc.id ?? "") || "";
     const totals = { items: 0, value: 0 };
     (localDoc.subPurchaseOrders || []).forEach((s: any) => {
       (s.items || []).forEach((it: any) => {
@@ -246,11 +313,55 @@ const PurchaseOrderList: React.FC = () => {
     setOrders((prev) =>
       prev.map((p) =>
         String(p.id) === String(poId)
-          ? { ...p, totalItems: totals.items, totalValue: totals.value }
+          ? {
+              ...p,
+              totalItems: totals.items,
+              totalValue: totals.value,
+              // also reflect derived status for display
+              status: localDoc.status ?? p.status,
+              // and update subPOs preview (if you want)
+              subPOs: localDoc.subPurchaseOrders || p.subPOs,
+            }
           : p
       )
     );
   };
+
+  // Normalize server response -> orders for the current page
+  useEffect(() => {
+    const payload = poResp?.data?.data ?? poResp?.data ?? [];
+    if (Array.isArray(payload)) {
+      setOrders(payload.map(normalizeServerPo));
+    } else {
+      setOrders([]);
+    }
+  }, [poResp]);
+
+  // When expandedPoResp arrives, compute derived statuses and set expandedLocalDoc
+  useEffect(() => {
+    if (!expandedPoResp) {
+      setExpandedLocalDoc(null);
+      return;
+    }
+    const rawDoc = expandedPoResp?.data ?? expandedPoResp ?? null;
+    if (!rawDoc) {
+      setExpandedLocalDoc(null);
+      return;
+    }
+    // deep clone then compute derived statuses
+    try {
+      const cloned = JSON.parse(JSON.stringify(rawDoc));
+      const computed = computeDerivedStatuses(cloned);
+      setExpandedLocalDoc(computed ? computed : null);
+      syncTotalsToOrders(computed);
+    } catch (err) {
+      // fallback to original if JSON parse fails
+      const copied = typeof rawDoc === "object" ? rawDoc : rawDoc;
+      const computed = computeDerivedStatuses(copied);
+      setExpandedLocalDoc(computed ? computed : null);
+      syncTotalsToOrders(computed);
+    }
+  }, [expandedPoResp]);
 
   const displayList = orders;
 
@@ -512,8 +623,10 @@ const PurchaseOrderList: React.FC = () => {
         });
       });
       if (touched) {
-        syncTotalsToOrders(copy);
-        return copy;
+        // recompute derived statuses after change (no actual state change of statuses, but keep in sync)
+        const derived = computeDerivedStatuses(copy);
+        syncTotalsToOrders(derived);
+        return derived;
       }
       return prev;
     });
@@ -625,8 +738,10 @@ const PurchaseOrderList: React.FC = () => {
             }
           });
         });
-        syncTotalsToOrders(copy);
-        return copy;
+        // recompute derived statuses after change
+        const derived = computeDerivedStatuses(copy);
+        syncTotalsToOrders(derived);
+        return derived;
       });
 
       try {
@@ -665,8 +780,9 @@ const PurchaseOrderList: React.FC = () => {
             }
           });
         });
-        syncTotalsToOrders(copy);
-        return copy;
+        const derived = computeDerivedStatuses(copy);
+        syncTotalsToOrders(derived);
+        return derived;
       });
 
       try {
@@ -762,8 +878,9 @@ const PurchaseOrderList: React.FC = () => {
           (it: any) => String(resolveId(it)) !== idStr
         );
       });
-      syncTotalsToOrders(copy);
-      return copy;
+      const derived = computeDerivedStatuses(copy);
+      syncTotalsToOrders(derived);
+      return derived;
     });
 
     try {
@@ -835,8 +952,9 @@ const PurchaseOrderList: React.FC = () => {
       copy.subPurchaseOrders = (copy.subPurchaseOrders || []).filter(
         (s: any) => resolveId(s) !== subId
       );
-      syncTotalsToOrders(copy);
-      return copy;
+      const derived = computeDerivedStatuses(copy);
+      syncTotalsToOrders(derived);
+      return derived;
     });
 
     try {
@@ -1373,7 +1491,8 @@ const PurchaseOrderList: React.FC = () => {
       (copy.subPurchaseOrders || []).forEach((s: any) => {
         if (resolveId(s) === subId) s.deliveryDate = newDateStr || null;
       });
-      return copy;
+      const derived = computeDerivedStatuses(copy);
+      return derived;
     });
 
     try {
@@ -1480,13 +1599,23 @@ const PurchaseOrderList: React.FC = () => {
               value: po.totalValue ?? 0,
             };
 
+            // PO editable only in DRAFT (read-only statuses and APPROVED disallow editing)
             const poEditable = po.status === "DRAFT";
             const poStatusSelectable =
               (po.status === "DRAFT" || po.status === "PENDINGAPPROVAL") &&
               !writeDisabled;
 
+            const poStatusUpper = (po.status ?? "").toString().toUpperCase();
+            const poIsCompleted = poStatusUpper === "COMPLETED";
+
             return (
-              <div key={String(po.id)} className="card mb-3">
+              <div
+                key={String(po.id)}
+                className="card mb-3"
+                style={{
+                  backgroundColor: poIsCompleted ? "#e6ffed" : undefined,
+                }}
+              >
                 <div className="card-body">
                   <div
                     style={{ display: "flex", justifyContent: "space-between" }}
@@ -1503,7 +1632,10 @@ const PurchaseOrderList: React.FC = () => {
                       >
                         <div style={{ minWidth: 0 }}>
                           <strong>{po.poNumber}</strong>
-                          <span className="text-muted"> ({po.status})</span>
+                          <span className="text-muted">
+                            {" "}
+                            ({statusLabel(po.status)})
+                          </span>
                           <small className="text-muted"> • {po.poDate}</small>
                           <div className="small text-muted">{po.customer}</div>
                           <div className="small text-muted">{po.address}</div>
@@ -1545,7 +1677,7 @@ const PurchaseOrderList: React.FC = () => {
                                 value={s}
                                 disabled={optionDisabled || globallyDisabled}
                               >
-                                {s}
+                                {statusLabel(s)}
                               </option>
                             );
                           })}
@@ -1629,12 +1761,24 @@ const PurchaseOrderList: React.FC = () => {
                             const subKey =
                               resolveId(s) ||
                               `sub-noid-${String(po.id)}-${sIdx}`;
-                            const subStatus = s.status ?? "DRAFT";
+                            const subStatus = (s.status ?? "DRAFT")
+                              .toString()
+                              .toUpperCase();
+                            const poStatusUpper = (po.status ?? "")
+                              .toString()
+                              .toUpperCase();
+
+                            // If PO is read-only (COMPLETED / PARTIALLY* / APPROVED), disable sub actions
+                            const parentPoIsReadOnly =
+                              poStatusUpper === "APPROVED" ||
+                              READONLY_STATUSES.includes(poStatusUpper);
+
                             const subStatusSelectable =
                               ((po.status === "DRAFT" &&
                                 subStatus === "DRAFT") ||
                                 subStatus === "PENDINGAPPROVAL") &&
-                              !writeDisabled;
+                              !writeDisabled &&
+                              !parentPoIsReadOnly;
 
                             return (
                               <div key={subKey} className="card mb-2">
@@ -1694,7 +1838,7 @@ const PurchaseOrderList: React.FC = () => {
                                                   globallyDisabled
                                                 }
                                               >
-                                                {st}
+                                                {statusLabel(st)}
                                               </option>
                                             );
                                           })}
@@ -1731,6 +1875,7 @@ const PurchaseOrderList: React.FC = () => {
                                           }
                                           disabled={
                                             !(
+                                              !parentPoIsReadOnly &&
                                               po.status === "DRAFT" &&
                                               (s.status ?? "DRAFT") === "DRAFT"
                                             ) || writeDisabled
@@ -1744,6 +1889,7 @@ const PurchaseOrderList: React.FC = () => {
                                           }
                                           disabled={
                                             !(
+                                              !parentPoIsReadOnly &&
                                               po.status === "DRAFT" &&
                                               (s.status ?? "DRAFT") === "DRAFT"
                                             ) || writeDisabled
@@ -1782,10 +1928,17 @@ const PurchaseOrderList: React.FC = () => {
                                               : `noid-${
                                                   resolveId(s) || String(po.id)
                                                 }-${idx}`;
-                                            const itemStatus =
-                                              it.status ?? "DRAFT";
-                                            const itemStatusSelectable =
+                                            const itemStatus = (
+                                              it.status ?? "DRAFT"
+                                            )
+                                              .toString()
+                                              .toUpperCase();
+
+                                            // Disable item actions if parent PO is read-only (COMPLETED / PARTIALLY* / APPROVED)
+                                            const itemSelectable =
                                               !writeDisabled &&
+                                              !isReadOnlyStatus(po.status) &&
+                                              po.status !== "APPROVED" &&
                                               (po.status === "DRAFT" &&
                                               (s.status ?? "DRAFT") ===
                                                 "DRAFT" &&
@@ -1822,9 +1975,7 @@ const PurchaseOrderList: React.FC = () => {
                                                         e.target.value
                                                       )
                                                     }
-                                                    disabled={
-                                                      !itemStatusSelectable
-                                                    }
+                                                    disabled={!itemSelectable}
                                                   >
                                                     {includeCurrentStatus(
                                                       POITEM_STATUS_OPTIONS,
@@ -1849,7 +2000,7 @@ const PurchaseOrderList: React.FC = () => {
                                                             globallyDisabled
                                                           }
                                                         >
-                                                          {opt}
+                                                          {statusLabel(opt)}
                                                         </option>
                                                       );
                                                     })}
@@ -1925,10 +2076,14 @@ const PurchaseOrderList: React.FC = () => {
                                                               );
                                                             }
                                                           );
+                                                          const derived =
+                                                            computeDerivedStatuses(
+                                                              copy
+                                                            );
                                                           syncTotalsToOrders(
-                                                            copy
+                                                            derived
                                                           );
-                                                          return copy;
+                                                          return derived;
                                                         }
                                                       );
                                                     }}
@@ -2192,9 +2347,10 @@ const PurchaseOrderList: React.FC = () => {
                 copy.subPurchaseOrders = (copy.subPurchaseOrders || []).concat(
                   createdSubs
                 );
-                // update totals for display
-                syncTotalsToOrders(copy);
-                return copy;
+                // recompute derived statuses and update totals for display
+                const derived = computeDerivedStatuses(copy);
+                syncTotalsToOrders(derived);
+                return derived;
               });
             }
 
@@ -2264,8 +2420,6 @@ const PurchaseOrderList: React.FC = () => {
         onClose={() => setSelected(null)}
         onSave={handleSaveFromModal}
         onOpenSubPOSelector={() => {}}
-        // optionally you can pass a disabled prop into modal so it can render fields disabled,
-        // but by default we guard save action server-side above.
       />
     </div>
   );
