@@ -53,6 +53,8 @@ export default function CreatePageManufacturingOrderTable(
   if (!store) throw new Error("Must be used inside CreatePageStoreContext");
   const draftedMOs = useStore(store, (s) => s.draftedMOs)
   const paperUsageChartData = useStore(store, (s) => s.paperUsageChartData)
+  const facePaperUsage = useStore(store, (s) => s.facePaperUsage)
+  const rawPaperUsage = useStore(store, (s) => s.rawPaperUsage)
 
   const rawTableData: (Omit<ManufacturingOrderTableDataType, "isEdited">)[] = draftedMOs ?? []
 
@@ -163,7 +165,23 @@ export default function CreatePageManufacturingOrderTable(
       payload: `Xác nhận tạo ${formValue.orders.length} lệnh?`
     });
 
-    const accumulatedCalc = paperUsageChartData.data.at(-1)
+    const accumulatedCalc: Record<string, number> = {}
+
+    if (paperUsageChartData.data.at(-1)) {
+      Object.assign(accumulatedCalc, paperUsageChartData.data.at(-1))
+    }
+    else {
+      [...facePaperUsage, ...rawPaperUsage].forEach(usage => {
+        if (check.number(accumulatedCalc[usage.code])) {
+          accumulatedCalc[usage.code] += usage.inventoryWeight
+        }
+        else {
+          accumulatedCalc[usage.code] = usage.inventoryWeight
+        }
+      })
+
+    }
+
     if (accumulatedCalc) {
       const requirementMap: Map<string, number> = new Map();
 
@@ -273,31 +291,24 @@ export default function CreatePageManufacturingOrderTable(
       >
         <Tabs.List ms={`${getTabBarOffset()}px`}>
           <Tabs.Trigger value="all">
-            <LuUser />
             Tổng quan
           </Tabs.Trigger>
           <Tabs.Trigger value="order">
-            <LuUser />
             Thông tin đơn hàng
           </Tabs.Trigger>
           <Tabs.Trigger value="manufacture">
-            <LuFolder />
             Gia công
           </Tabs.Trigger>
           <Tabs.Trigger value="layers">
-            <LuSquareCheck />
             Cấu trúc lớp
           </Tabs.Trigger>
           <Tabs.Trigger value="notes">
-            <LuSquareCheck />
             Ghi chú
           </Tabs.Trigger>
           <Tabs.Trigger value="weight">
-            <LuSquareCheck />
             Trọng lượng giấy sử dụng
           </Tabs.Trigger>
           <Tabs.Trigger value="processes">
-            <LuSquareCheck />
             Công đoạn hoàn thiện
           </Tabs.Trigger>
         </Tabs.List>

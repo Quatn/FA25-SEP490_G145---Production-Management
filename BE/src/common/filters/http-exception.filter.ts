@@ -62,6 +62,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
         body.error.message = exception.name;
         body.error.stack = exception.stack;
       }
+    } else {
+      if (exception instanceof HttpException) {
+        status = exception.getStatus();
+        const res = exception.getResponse();
+
+        if (typeof res === "string") {
+          body.message = res;
+        } else if (check.containsKey(res, "message")) {
+          body.message =
+            (res as { message: string }).message ?? JSON.stringify(res);
+        }
+      }
     }
 
     response.status(status).json(body);

@@ -8,6 +8,7 @@ import ManufacturingOrderTrackPanelListItem from "./ListItem";
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 import DataFetchError from "@/components/common/DataFetchError";
 import { QueryListFullDetailsManufacturingOrderRequestSortOptions } from "@/types/enums/QueryListFullDetailsManufacturingOrderRequestSortOptions";
+import DataEmpty from "@/components/common/DataEmpty";
 
 export default function ManufacturingOrderTrackPanelList() {
   const { useDispatch, useSelector } = ManufacturingOrderTrackPanelListReducerStore;
@@ -49,6 +50,10 @@ export default function ManufacturingOrderTrackPanelList() {
 
   if (check.undefined(fullDetailMOPaginatedResponse?.data?.data)) {
     return <DataFetchError h={"full"} flexGrow={1} />;
+  }
+
+  if (moList.length <= 0) {
+    return <DataEmpty h={"full"} flexGrow={1} text={"Không có lệnh"} />
   }
 
   return (

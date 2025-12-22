@@ -70,14 +70,14 @@ export function AddUserForm(props: AddUserFormProps) {
       }).unwrap()
       setAlert(null)
       toaster.create({
-        description: `Added user to employee ${props.employee.name} successfully`,
+        description: `Tạo tài khoản cho nhân viên ${props.employee.name} thành công`,
         type: "success",
       });
     } catch (e) {
       const errorMsg = showAlert ? showAlert : tryGetApiErrorMsg(e as Error)
 
       toaster.create({
-        description: check.string(errorMsg) ? errorMsg : `Failed to add user to emploee ${props.employee.name}`,
+        description: check.string(errorMsg) ? errorMsg : `Không thể tạo tài khoản cho nhân viên ${props.employee.name}`,
         type: "error",
       });
     }
