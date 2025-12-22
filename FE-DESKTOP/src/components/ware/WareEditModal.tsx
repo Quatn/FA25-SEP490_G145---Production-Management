@@ -1,4 +1,3 @@
-// src/components/ware/WareEditModal.tsx
 "use client";
 
 import React from "react";
@@ -351,6 +350,33 @@ const WareEditModal: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editForm?.faceLayerPaperType, editForm?.backLayerPaperType]);
 
+  // compute volume when dimensions change (same formula & zero->1 rule)
+  React.useEffect(() => {
+    if (!editForm) return;
+
+    const toNum = (v: any) => {
+      if (v === "" || v == null) return 0;
+      const n = Number(v);
+      return Number.isNaN(n) ? 0 : n;
+    };
+
+    const w = toNum(editForm?.wareWidth);
+    const h = toNum(editForm?.wareHeight);
+    const l = toNum(editForm?.wareLength);
+
+    const wForFormula = w === 0 ? 1 : w;
+    const hForFormula = h === 0 ? 1 : h;
+    const lForFormula = l === 0 ? 1 : l;
+
+    let newVol = (wForFormula * hForFormula * lForFormula) / 1000000000;
+    newVol = Number(parseFloat(String(newVol)).toFixed(3));
+
+    if (editForm?.volume !== newVol) {
+      setEditForm((p: any) => ({ ...(p ?? {}), volume: newVol }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editForm?.wareWidth, editForm?.wareHeight, editForm?.wareLength]);
+
   React.useEffect(() => {
     try {
       console.debug(
@@ -566,10 +592,7 @@ const WareEditModal: React.FC<Props> = ({
                       step="any"
                       inputMode="numeric"
                       value={editForm?.volume ?? ""}
-                      onChange={handleNumberChange("volume", false)}
-                      onKeyDown={makeOnKeyDown(true)}
-                      onPaste={makeOnPaste(true, false)}
-                      onWheel={onWheelPreventChange}
+                      disabled
                     />
                   </Label>
                 </div>

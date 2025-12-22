@@ -1,4 +1,3 @@
-// src/components/ware/WareCreateModal.tsx
 "use client";
 
 import React from "react";
@@ -358,6 +357,38 @@ const WareCreateModal: React.FC<Props> = ({
     });
   };
 
+  // Compute volume automatically and store in createForm.volume
+  React.useEffect(() => {
+    // defensive: createForm may be null
+    const wRaw = createForm?.wareWidth;
+    const hRaw = createForm?.wareHeight;
+    const lRaw = createForm?.wareLength;
+
+    const toNum = (v: any) => {
+      if (v === "" || v == null) return 0;
+      const n = Number(v);
+      return Number.isNaN(n) ? 0 : n;
+    };
+
+    const w = toNum(wRaw);
+    const h = toNum(hRaw);
+    const l = toNum(lRaw);
+
+    const wForFormula = w === 0 ? 1 : w;
+    const hForFormula = h === 0 ? 1 : h;
+    const lForFormula = l === 0 ? 1 : l;
+
+    let newVol = (wForFormula * hForFormula * lForFormula) / 1000000000; // m3
+    // round to 3 decimal places
+    newVol = Number(parseFloat(String(newVol)).toFixed(5));
+
+    // Only update if different (loose compare to handle "" -> number)
+    if (createForm?.volume !== newVol) {
+      setCreateForm((p: any) => ({ ...(p ?? {}), volume: newVol }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createForm?.wareWidth, createForm?.wareHeight, createForm?.wareLength]);
+
   // submit wrapper: require that all displayed layers have value (face/back also need supplier)
   const onSubmitWrapper = async () => {
     const missing: string[] = [];
@@ -569,10 +600,7 @@ const WareCreateModal: React.FC<Props> = ({
                       step="any"
                       inputMode="numeric"
                       value={createForm?.volume ?? ""}
-                      onChange={handleNumberChange("volume", false)}
-                      onKeyDown={makeOnKeyDown(true)}
-                      onPaste={makeOnPaste(true, false)}
-                      onWheel={onWheelPreventChange}
+                      disabled
                     />
                   </Label>
                 </div>
