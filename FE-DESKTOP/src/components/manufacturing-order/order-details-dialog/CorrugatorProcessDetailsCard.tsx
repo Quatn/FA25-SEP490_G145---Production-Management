@@ -14,6 +14,9 @@ import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError"
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto"
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem"
 import { toaster } from "@/components/ui/toaster"
+import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus"
+import { ManufacturingOrderOperativeStatus } from "@/types/enums/ManufacturingOrderOperativeStatus"
+import { URLMatch } from "@/components/layout/URLMatch"
 
 const corrugatorLines: { label: string, value: string }[] = [
   { label: "Dàn 5", value: CorrugatorLine.L5 },
@@ -65,6 +68,9 @@ type FormValue = {
 
 export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCard(props: ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCardProps) {
   const po = utils.getPopulatedPo(props.order)
+  const disabled = props.order.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
+  const finished = (props.order.operativeStatus === ManufacturingOrderOperativeStatus.COMPLETED) || (props.order.operativeStatus === ManufacturingOrderOperativeStatus.CANCELLED)
+
   const stats: { label: string, value: string }[] = useMemo(() => {
     if (check.null(props.order)) return []
 
@@ -175,6 +181,11 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
       <Card.Header>
         <HStack justifyContent={"space-between"}>
           <Heading size="md">Quy trình sóng</Heading>
+          <URLMatch path="/manufacturing-order/corrugator-process-operate" notMatched={
+            <Link href={`/manufacturing-order/corrugator-process-operate${check.string(props.order?._id) ? "?id=" + props.order._id : ""}`}>
+              <Button colorPalette={"blue"} size="xs">Thao tác</Button>
+            </Link>
+          } />
         </HStack>
       </Card.Header>
 
@@ -218,6 +229,7 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
               width="320px"
               value={check.null(formValue.corrugatorLineAdjustment) ? undefined : [formValue.corrugatorLineAdjustment]}
               onValueChange={(v) => setCorrugatorLine(v.value.at(0))}
+              disabled={finished || disabled}
             >
               <Select.HiddenSelect />
               <Select.Control>
@@ -268,7 +280,13 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
         </DataList.Root>
         <Stack mt={5}>
           <Heading size="lg">Ghi chú</Heading>
-          <Textarea variant="subtle" value={formValue.note} onChange={(v) => setNote(v.target.value)} autoresize />
+          <Textarea
+            variant="subtle"
+            value={formValue.note}
+            placeholder={finished ? "" : "Nhấn để nhập"}
+            onChange={(v) => setNote(v.target.value)}
+            readOnly={finished}
+          />
         </Stack>
 
         {formValue.isEdited && <HStack>

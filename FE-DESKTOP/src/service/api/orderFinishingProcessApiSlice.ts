@@ -25,7 +25,7 @@ export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
                 method: "GET",
                 credentials: "include",
             }),
-            providesTags: ["OrderFinishingProcess"],
+            providesTags: ["OrderFinishingProcess", "ManufacturingOrder"],
         }),
 
         createOrderFinishingProcess: builder.mutation<BaseResponse<OrderFinishingProcess>, Partial<OrderFinishingProcess>>({
@@ -35,7 +35,7 @@ export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
                 body,
                 credentials: "include",
             }),
-            invalidatesTags: ["OrderFinishingProcess"],
+            invalidatesTags: ["OrderFinishingProcess", "ManufacturingOrder"],
         }),
 
         updateOrderFinishingProcess: builder.mutation<BaseResponse<OrderFinishingProcess>, { id: string; data: Partial<OrderFinishingProcess> }>({
@@ -45,7 +45,7 @@ export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
                 body: data,
                 credentials: "include",
             }),
-            invalidatesTags: ["OrderFinishingProcess"],
+            invalidatesTags: ["OrderFinishingProcess", "ManufacturingOrder"],
         }),
 
         updateManyOrderFinishingProcess: builder.mutation<
@@ -61,7 +61,7 @@ export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
                 },
                 credentials: "include",
             }),
-            invalidatesTags: ["OrderFinishingProcess"],
+            invalidatesTags: ["OrderFinishingProcess", "ManufacturingOrder"],
         }),
 
         deleteOrderFinishingProcess: builder.mutation<BaseResponse<OrderFinishingProcess>, { id: string }>({
@@ -70,7 +70,7 @@ export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
                 method: "DELETE",
                 credentials: "include",
             }),
-            invalidatesTags: ["OrderFinishingProcess"],
+            invalidatesTags: ["OrderFinishingProcess", "ManufacturingOrder"],
         }),
 
         restoreOrderFinishingProcess: builder.mutation<BaseResponse<OrderFinishingProcess>, { id: string }>({
@@ -79,7 +79,7 @@ export const OrderFinishingProcessApiSlice = apiSlice.injectEndpoints({
                 method: "PATCH",
                 credentials: "include",
             }),
-            invalidatesTags: ["OrderFinishingProcess"],
+            invalidatesTags: ["OrderFinishingProcess", "ManufacturingOrder"],
         }),
 
     findManyOrderFinishingProcesssByManufacturingOrderId: createApiEndpoint<

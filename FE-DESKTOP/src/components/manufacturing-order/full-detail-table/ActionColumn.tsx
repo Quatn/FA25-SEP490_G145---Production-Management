@@ -66,19 +66,19 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
     dispatch({
       type: "SET_PREPARED_SUBMIT_FUNCTION", payload: () => {
         updateOrders(dto).unwrap().then((res) => {
-          if (check.greaterOrEqual(res.data?.patchedAmount as number, 1)) {
+          if (check.greaterOrEqual(res.data?.patchedAmount as number, res.data?.patchedAmount as number)) {
             toaster.success({
-              title: "Success",
-              description: "Updated order successfully",
+              description: "Cập nhật lệnh thành công",
             })
-          } else {
+          }
+          else {
             toaster.warning({
-              title: "Order not updated",
+              title: "Cập nhật lệnh không thành công",
             })
           }
         }).catch(error => {
           toaster.warning({
-            title: "Error updating order",
+            title: "Có lỗi xảy ra trong quá trình cập nhật lệnh",
             description: tryGetApiErrorMsg(error),
           })
         })
@@ -99,24 +99,23 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
         if (check.equal(res.data?.deletedAmount, 1)) {
           toaster.success({
             title: "Success",
-            description: "Order deleted successfully",
+            description: "Xóa lệnh thành công",
           })
         }
         else {
           toaster.warning({
-            title: "Order not deleted",
+            title: "Không thể xóa lệnh",
           })
         }
-      }).catch(error => {
+      }).catch(() => {
         toaster.warning({
-          title: "Error deleting order",
-          description: (error as Error).message,
+          title: "Có lỗi xảy ra trong khi xóa lệnh",
         })
       })
     })
   }
 
-  const disabled = mo.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
+  const disabled = true // mo.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
 
   return (
     <Popover.Root size="xs">
@@ -127,8 +126,8 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
             colorPalette={"blue"}
             onClick={() =>
               dialogDispatch({
-                type: "OPEN_DIALOG_WITH_ORDER",
-                payload: moObj,
+                type: "OPEN_DIALOG_WITH_ORDER_ID",
+                payload: moObj.order._id,
               })
             }
           >

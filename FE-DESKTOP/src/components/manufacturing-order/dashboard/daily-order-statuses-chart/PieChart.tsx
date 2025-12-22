@@ -28,6 +28,7 @@ export const ManufacturingOrderDailyStatusesPieChart = () => {
   const runningOrderAmount = data?.filter(order => order.operativeStatus === ManufacturingOrderOperativeStatus.RUNNING).length ?? 0
   const cancelledOrderAmount = data?.filter(order => order.operativeStatus === ManufacturingOrderOperativeStatus.CANCELLED).length ?? 0
   const completedOrderAmount = data?.filter(order => order.operativeStatus === ManufacturingOrderOperativeStatus.COMPLETED).length ?? 0
+  const notStartedOrderAmount = data?.filter(order => order.operativeStatus === ManufacturingOrderOperativeStatus.NOTSTARTED).length ?? 0
 
   const chart = useChart({
     data: [
@@ -35,6 +36,7 @@ export const ManufacturingOrderDailyStatusesPieChart = () => {
       { name: OrderStatusNameMap.RUNNING, value: runningOrderAmount, color: "blue.solid" },
       { name: OrderStatusNameMap.CANCELLED, value: cancelledOrderAmount, color: "red.solid" },
       { name: OrderStatusNameMap.COMPLETED, value: completedOrderAmount, color: "green.solid" },
+      { name: OrderStatusNameMap.NOTSTARTED, value: notStartedOrderAmount, color: "teal.solid" },
     ].filter(d => d.value > 0),
   })
 

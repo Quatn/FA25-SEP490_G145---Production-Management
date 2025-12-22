@@ -84,10 +84,13 @@ type FormValue = {
 }
 
 export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(props: ManufacturingOrderDetailsDialogManufacturingDetailsCardProps) {
-  const disabled = props.order.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
-
-  const { useDispatch } = ManufacturingOrderDetailsDialogReducerStore;
+  const { useDispatch, useSelector } = ManufacturingOrderDetailsDialogReducerStore;
   const dispatch = useDispatch();
+  const allowValueEdit = useSelector(s => s.allowValueEdit)
+
+  const disabled = props.order.approvalStatus !== ManufacturingOrderApprovalStatus.Draft || !allowValueEdit
+  const finished = (props.order.operativeStatus === ManufacturingOrderOperativeStatus.COMPLETED) || (props.order.operativeStatus === ManufacturingOrderOperativeStatus.CANCELLED)
+
   const [updateOrders, { isLoading: updating, error: updateError }] = useUpdateManyManufacturingOrdersMutation();
 
   const ware = utils.getPopulatedWare(props.order)
@@ -345,7 +348,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     width="320px"
                     value={check.null(formValue.approvalStatus) ? undefined : [formValue.approvalStatus]}
                     onValueChange={(v) => setApprovalStatus(v.value.at(0))}
-                    disabled={disabled && props.order.approvalStatus !== ManufacturingOrderApprovalStatus.PendingApproval}
+                    disabled={finished || disabled && props.order.approvalStatus !== ManufacturingOrderApprovalStatus.PendingApproval}
                   >
                     <Select.HiddenSelect />
                     <Select.Control>
@@ -381,6 +384,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     width="320px"
                     value={check.null(formValue.manufacturingDirective) ? undefined : [formValue.manufacturingDirective]}
                     onValueChange={(v) => setManufacturingDirective(v.value.at(0))}
+                    disabled={finished}
                   >
                     <Select.HiddenSelect />
                     <Select.Control>
@@ -417,7 +421,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     width="320px"
                     value={check.null(formValue.corrugatorLineAdjustment) ? undefined : [formValue.corrugatorLineAdjustment]}
                     onValueChange={(v) => setCorrugatorLine(v.value.at(0))}
-                    disabled={disabled}
+                    disabled={finished || disabled}
                   >
                     <Select.HiddenSelect />
                     <Select.Control>
@@ -453,7 +457,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                       value={(formValue.amount ?? "") + ""}
                       onValueChange={(ev) => setAmount(ev.value)}
                       w="full"
-                      disabled={disabled}
+                      disabled={finished || disabled}
                     >
                       <NumberInput.Control />
                       <NumberInput.Input />
@@ -476,7 +480,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                       onChange={(ev) => {
                         return setManufacturingDateAdjustment(ev.target.value)
                       }}
-                      disabled={disabled}
+                      disabled={finished || disabled}
                     />
                   </Field>
 
@@ -498,7 +502,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                         onChange={(ev) => {
                           return setRequestedDatetime(ev.target.value)
                         }}
-                        disabled={!shouldEnableTimeSelector}
+                        disabled={finished || !shouldEnableTimeSelector}
                       />
 
                       <Input
@@ -511,6 +515,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                         onChange={(ev) => {
                           return setRequestedDatetime(ev.target.value)
                         }}
+                        disabled={finished}
                       />
                     </HStack>
                   </Field>
@@ -520,7 +525,13 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
             </DataList.Root>
             <Stack mt={2}>
               <Heading size="lg">Ghi chú</Heading>
-              <Textarea variant="subtle" value={formValue.note} placeholder={"Nhấn để nhập"} onChange={(v) => setNote(v.target.value)} />
+              <Textarea
+                variant="subtle"
+                value={formValue.note}
+                placeholder={finished ? "" : "Nhấn để nhập"}
+                onChange={(v) => setNote(v.target.value)}
+                readOnly={finished}
+              />
             </Stack>
             {formValue.isEdited && <HStack>
               <Button variant="outline" onClick={handleReset}>Hủy</Button>
@@ -529,7 +540,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                 variant="solid"
                 onClick={handleSubmit}
                 loading={!!updating}
-                disabled={formErr}
+                disabled={finished || formErr}
               >
                 Cập nhật
               </Button>
@@ -645,9 +656,6 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
             <ManufacturingOrderDetailsDialogManufacturingDetailsAdditionalDetails order={props.order} />
 
           </Stack>
-        </HStack>
-        <HStack>
-          {props.order.corrugatorProcess.note}
         </HStack>
       </Card.Body>
     </Card.Root>

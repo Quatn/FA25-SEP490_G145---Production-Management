@@ -7,7 +7,6 @@ import { PASSWORD_REGEX } from "@/constants/password-regex";
 import { useChangePasswordMutation } from "@/service/api/userApiSlice";
 import { useAppSelector } from "@/service/hooks";
 import { UserState } from "@/types/UserState";
-import { devlog } from "@/utils/devlog";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import {
   Alert,
@@ -36,7 +35,7 @@ export default function ChangePasswordBox() {
     if (!interactFlag) return undefined
 
     if (password.length < 1) {
-      return "Current password is required";
+      return "Mật khẩu hiện tại là bắt buộc";
     }
 
     return undefined
@@ -46,15 +45,15 @@ export default function ChangePasswordBox() {
     if (!interactFlag) return undefined
 
     if (newPassword === password) {
-      return "New password must not be the same as old password";
+      return "Mất khẩu mới không trùng với mật khẩu cũ";
     }
 
     if (!check.inRange(newPassword.length, 8, 200)) {
-      return "New password must be between 8 and 200 characters";
+      return "Mật khẩu mới phải dài từ 8 đến 200 ký tự";
     }
 
     if (!PASSWORD_REGEX.test(newPassword)) {
-      return "Password must contain least one lowercase, uppercase, digit, and special character"
+      return "Mật khẩu phải bao gồm một chữ cái viết hoa, viết thường, một chữ số vào một kí tự đặc biệt"
     }
 
     return undefined
@@ -64,7 +63,7 @@ export default function ChangePasswordBox() {
     if (!interactFlag) return undefined
 
     if (confirmPassword !== newPassword) {
-      return "Confirm password must match new password";
+      return "Mật khẩu nhập lại phải trùng với mật khẩu mới";
     }
 
     return undefined
@@ -109,7 +108,7 @@ export default function ChangePasswordBox() {
       <CardBody>
         <form>
           <Stack gap="4" w="full">
-            <Field label="Current password" invalid={!!passwordErr} errorText={passwordErr}>
+            <Field label="Mật khẩu hiện tại" invalid={!!passwordErr} errorText={passwordErr}>
               <PasswordInput
                 name="password"
                 value={password}
@@ -117,7 +116,7 @@ export default function ChangePasswordBox() {
                 onBlur={setFormInteractedWith}
               />
             </Field>
-            <Field label="New password" invalid={!!newPasswordErr} errorText={newPasswordErr}>
+            <Field label="Mật khẩu mới" invalid={!!newPasswordErr} errorText={newPasswordErr}>
               <PasswordInput
                 name="newPassword"
                 value={newPassword}
@@ -125,7 +124,7 @@ export default function ChangePasswordBox() {
                 onBlur={setFormInteractedWith}
               />
             </Field>
-            <Field label="Confirm password" invalid={!!confirmPasswordErr} errorText={confirmPasswordErr}>
+            <Field label="Nhập lại mật khẩu" invalid={!!confirmPasswordErr} errorText={confirmPasswordErr}>
               <PasswordInput
                 name="confirmPassword"
                 value={confirmPassword}
@@ -148,7 +147,7 @@ export default function ChangePasswordBox() {
         </form>
       </CardBody>
       <CardFooter justifyContent="flex-end">
-        <Button variant="outline" onClick={handleReset}>Reset</Button>
+        <Button variant="outline" onClick={handleReset}>Hủy</Button>
         <Button
           colorPalette={"blue"}
           variant="solid"
@@ -156,7 +155,7 @@ export default function ChangePasswordBox() {
           loading={updating}
           disabled={!!passwordErr || !!newPasswordErr || !!confirmPasswordErr}
         >
-          Confirm
+          Xác nhận
         </Button>
       </CardFooter>
     </CardRoot>

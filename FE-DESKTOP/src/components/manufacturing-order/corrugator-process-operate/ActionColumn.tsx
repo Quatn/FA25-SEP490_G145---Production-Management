@@ -124,8 +124,8 @@ export default function ManufacturingOrderCorrugatorOperatePageTableActionColumn
             colorPalette={"blue"}
             onClick={() =>
               dialogDispatch({
-                type: "OPEN_DIALOG_WITH_ORDER",
-                payload: moObj,
+                type: "OPEN_DIALOG_WITH_ORDER_ID",
+                payload: moObj.order._id,
               })
             }
           >

@@ -200,10 +200,11 @@ export default function ManufacturingOrderTrackPanelListItem(props: Manufacturin
               ))}
             </DataList.Root>
             <Button colorPalette={"blue"} size="sm" onClick={
-              () => dialogDispatch({
-                type: "OPEN_DIALOG_WITH_ORDER",
-                payload: { order: props.mo },
-              })
+              () =>
+                dialogDispatch({
+                  type: "OPEN_DIALOG_WITH_ORDER_ID",
+                  payload: props.mo._id,
+                })
             }>Chi tiết lệnh</Button>
           </HStack>
           {check.assigned(props.mo.requestedDatetime) && <HStack mt={2}>

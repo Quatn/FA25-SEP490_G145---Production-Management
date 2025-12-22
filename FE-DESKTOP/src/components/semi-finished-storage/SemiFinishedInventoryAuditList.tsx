@@ -20,6 +20,8 @@ import DataLoading from "../common/DataLoading";
 const EDIT_PRIVS: AnyAccessPrivileges[] = [
     "system-admin",
     "system-readWrite",
+    "semi-finished-good-readWrite",
+    "semi-finished-good-transaction-readWrite",
 ]
 
 const SemiFinishedInventoryAuditList: React.FC = () => {

@@ -6,7 +6,7 @@ import DataLoading from "@/components/common/DataLoading"
 import { ManufacturingOrderDailyProductionOutputChartReducerStore } from "@/context/manufacturing-order/dashboard/manufacturingOrderDailyProductionOutputChartContext"
 import { useGetAllMOProductionOutputByDateRangeQuery } from "@/service/api/manufacturingOrderApiSlice"
 import { BarList, BarListData, useChart } from "@chakra-ui/charts"
-import { Stack } from "@chakra-ui/react"
+import { Box, Heading, Stack } from "@chakra-ui/react"
 import check from "check-types"
 
 export const ManufacturingOrderDailyProductionOutputChartBarList = () => {
@@ -54,19 +54,22 @@ export const ManufacturingOrderDailyProductionOutputChartBarList = () => {
     return <DataFetchError h="full" />
   }
 
-  if (chart.data.length < 1) {
+  if (!check.greater(response?.data?.length as number, 0)) {
     return <DataEmpty h="full" text="Không có lệnh nào sản xuất trong khoảng thời gian đã chọn" />
   }
 
   return (
-    <Stack gap={8} justifyContent={"space-between"}>
+    <Stack gap={8} justifyContent={"space-between"} h="full">
       <BarList.Root chart={chart}>
         <BarList.Content>
           <BarList.Bar />
           <BarList.Value />
         </BarList.Content>
       </BarList.Root>
-      {/*<Heading size={"md"}>Tổng sản lượng: {data.reduce((acc, i) => acc + i.value, 0)}</Heading>*/}
+      {response?.data?.length && <Box mb={2}>
+        <Heading size={"md"}>Số lệnh: {response?.data?.length}</Heading>
+        <Heading size={"md"}>Tổng sản lượng: {data.reduce((acc, i) => acc + i.value, 0)}</Heading>
+      </Box>}
     </Stack>
   )
 }

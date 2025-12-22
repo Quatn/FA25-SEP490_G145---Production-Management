@@ -21,6 +21,7 @@ const EDIT_PRIVS: AnyAccessPrivileges[] = [
     "system-admin",
     "system-readWrite",
     "finished-good-readWrite",
+    "finished-good-transaction-readWrite",
 ]
 
 const FinishedInventoryAuditList: React.FC = () => {

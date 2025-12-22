@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -59,6 +60,8 @@ import {
   QueryAllMOProductionOutputByDateRangeResponseDto,
 } from "./dto/query-all-mo-production-output-by-date-range.dto";
 import { throws } from "assert";
+import { FindFullDetailsManufacturingOrderRequestDto } from "./dto/find-full-details-order-request.dto";
+import { CancelManufacturingOrderRequestDto } from "./dto/cancel-order-request.dto";
 
 const ManufacturingOrderGetRequestGuard = PrivilegedJwtAuthGuard({
   requiredPrivileges: manufacturingOrderGetPrivileges,
@@ -232,7 +235,9 @@ export class ManufacturingOrderController {
   @UseGuards(ManufacturingOrderUpdateRequestGuard)
   @Delete("id/:id")
   @ApiOperation({ summary: "Delete one manufacturing order" })
-  async deleteOne(@Param() param: DeleteManufacturingOrderRequestDto): Promise<
+  async deleteOne(
+    @Param() param: DeleteManufacturingOrderRequestDto,
+  ): Promise<
     BaseResponse<
       DeleteResult<{
         code: string;
@@ -240,6 +245,7 @@ export class ManufacturingOrderController {
       }>
     >
   > {
+
     const result = await this.moService.deleteOne(param.id);
     return {
       success: true,
@@ -314,6 +320,51 @@ export class ManufacturingOrderController {
       success: true,
       message: "Fetch successful",
       data: docs,
+    };
+  }
+
+  @UseGuards(ManufacturingOrderGetRequestGuard)
+  @Get("find/full-details/:id")
+  @ApiOperation({ summary: "Query fully populated manufacturing orders by id" })
+  async findByIdFullDetails(
+    @Param() param: FindFullDetailsManufacturingOrderRequestDto,
+  ): Promise<BaseResponse<FullDetailManufacturingOrderDto>> {
+    const doc = await this.moService.findByIdFullDetails({
+      id: param.id,
+    });
+
+    if (!doc) {
+      throw new NotFoundException(
+        `Manufacturing Order with id "${param.id.toString()}" not found`,
+      );
+    }
+
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: doc,
+    };
+  }
+
+  @UseGuards(ManufacturingOrderUpdateRequestGuard)
+  @Patch("cancel/:id")
+  @ApiOperation({ summary: "Cancel one manufacturing order" })
+  async cancelOne(
+    @Param() param: CancelManufacturingOrderRequestDto,
+  ): Promise<
+    BaseResponse<
+      PatchResult<{
+        code: string;
+        orderProcessUpdateResult: PatchResult;
+      }>
+    >
+  > {
+
+    const result = await this.moService.cancelOne(param.id);
+    return {
+      success: true,
+      message: "Fetch successful",
+      data: result,
     };
   }
 }

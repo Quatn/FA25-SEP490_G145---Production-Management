@@ -1,5 +1,5 @@
 import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
-import { customerAdminPrivileges, customerGetPrivileges, finishedGoodGetPrivileges, fluteCombinationGetPrivileges, manufacturingOrderGetPrivileges, manufacturingOrderReadWritePrivileges, orderFinishingProcessGetPrivileges, orderFinishingProcessReadWritePrivileges, paperColorGetPrivileges, paperRollAdminPrivileges, paperRollGetPrivileges, paperSupplierGetPrivileges, paperTypeGetPrivileges, printColorGetPrivileges, productAdminPrivileges, productGetPrivileges, productTypeGetPrivileges, purchaseOrderAdminPrivileges, purchaseOrderGetPrivileges, semiFinishedGoodGetPrivileges, systemAdminPrivileges, wareAdminPrivileges, wareGetPrivileges, wareManufacturingProcessTypeGetPrivileges } from "@/types/CascadingAccessPrivileges";
+import { customerAdminPrivileges, customerGetPrivileges, finishedGoodGetPrivileges, fluteCombinationGetPrivileges, manufacturingOrderGetPrivileges, manufacturingOrderReadWritePrivileges, orderFinishingProcessGetPrivileges, orderFinishingProcessReadWritePrivileges, paperColorGetPrivileges, paperRollAdminPrivileges, paperRollGetPrivileges, paperSupplierGetPrivileges, paperTypeGetPrivileges, printColorGetPrivileges, productAdminPrivileges, productGetPrivileges, productTypeGetPrivileges, purchaseOrderAdminPrivileges, purchaseOrderGetPrivileges, semiFinishedGoodGetPrivileges, semiFinishedGoodReadWritePrivileges, systemAdminPrivileges, wareAdminPrivileges, wareGetPrivileges, wareManufacturingProcessTypeGetPrivileges } from "@/types/CascadingAccessPrivileges";
 import { createTreeCollection } from "@chakra-ui/react";
 import check from "check-types";
 
@@ -265,7 +265,7 @@ export const fullTree: NodeWithPrivilege[] = [
         id: "sfg-audit",
         name: "Kiểm kê kho phôi",
         href: "/semi-finished-good/inventory-audit-list",
-        requiredPrivileges: [...semiFinishedGoodGetPrivileges],
+        requiredPrivileges: [...semiFinishedGoodReadWritePrivileges],
       },
     ],
   },

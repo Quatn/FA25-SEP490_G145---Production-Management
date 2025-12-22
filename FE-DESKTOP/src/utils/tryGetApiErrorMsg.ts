@@ -29,6 +29,9 @@ export const defaultAltHandler = (err: object): string | undefined => {
         case 400:
           return "Dữ liệu không hợp lệ"
 
+        case 404:
+          return "Không tìm thấy tài nguyên"
+
         case 403:
           return "Không được phép truy cập"
 
