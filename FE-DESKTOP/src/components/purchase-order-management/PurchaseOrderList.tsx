@@ -377,114 +377,106 @@ const PurchaseOrderList: React.FC = () => {
       setExpandedLocalDoc(computed ? computed : null);
       syncTotalsToOrders(computed);
     }
+    withAutoUpdating(async () => {
+      try {
+        const poId = String(resolveId(rawDoc));
+        if (!poId) return;
+        if (autoUpdatedPoIds.current.has(poId)) return;
 
-    // Attempt to auto-update DB statuses for derived PARTIALLYCOMPLETE / COMPLETED
-    if (!writeDisabled) {
-      withAutoUpdating(async () => {
-        try {
-          const poId = String(resolveId(rawDoc));
-          if (!poId) return;
-          if (autoUpdatedPoIds.current.has(poId)) return;
-
-          // rawSubs may be under subPurchaseOrders or subPOs depending on server shape
-          const rawSubs: any[] =
-            Array.isArray(rawDoc.subPurchaseOrders) ||
-            Array.isArray(rawDoc.subPOs)
-              ? rawDoc.subPurchaseOrders || rawDoc.subPOs || []
-              : [];
-
-          const computedSubs: any[] = Array.isArray(computed.subPurchaseOrders)
-            ? computed.subPurchaseOrders
+        // rawSubs may be under subPurchaseOrders or subPOs depending on server shape
+        const rawSubs: any[] =
+          Array.isArray(rawDoc.subPurchaseOrders) ||
+          Array.isArray(rawDoc.subPOs)
+            ? rawDoc.subPurchaseOrders || rawDoc.subPOs || []
             : [];
 
-          const subUpdates: Array<{ id: string; status: string }> = [];
+        const computedSubs: any[] = Array.isArray(computed.subPurchaseOrders)
+          ? computed.subPurchaseOrders
+          : [];
 
-          // For each computed sub, compare to raw sub status and update if needed
-          for (const s of computedSubs) {
-            const sid = String(resolveId(s));
-            if (!sid) continue;
-            const derivedStatus = (s.status ?? "DRAFT")
-              .toString()
-              .toUpperCase();
-            // normalize PARTIALLYCOMPLETE -> PARTIALLYCOMPLETED for server if needed
-            const derivedNormalized =
-              derivedStatus === "PARTIALLYCOMPLETE"
-                ? "PARTIALLYCOMPLETED"
-                : derivedStatus;
+        const subUpdates: Array<{ id: string; status: string }> = [];
 
-            // find raw sub by id to compare
-            const rawSub =
-              rawSubs.find((r: any) => String(resolveId(r)) === String(sid)) ??
-              null;
-            const rawStatus = (rawSub?.status ?? "DRAFT")
-              .toString()
-              .toUpperCase();
-
-            // Allow updating to derived statuses from ANY current status
-            const shouldSet = derivedNormalized !== rawStatus;
-
-            if (shouldSet) {
-              subUpdates.push({ id: sid, status: derivedNormalized });
-            }
-          }
-
-          // Execute sub updates (parallel)
-          if (subUpdates.length > 0) {
-            await Promise.all(
-              subUpdates.map(async (u) => {
-                try {
-                  await updateSub({
-                    id: u.id,
-                    body: { status: u.status },
-                  }).unwrap();
-                } catch (err: any) {
-                  console.warn("Auto updateSub failed for", u.id, err);
-                }
-              })
-            );
-          }
-
-          // Now check parent PO derived status
-          const derivedPoStatus = (computed?.status ?? "DRAFT")
-            .toString()
-            .toUpperCase();
-          const derivedPoNormalized =
-            derivedPoStatus === "PARTIALLYCOMPLETE"
+        // For each computed sub, compare to raw sub status and update if needed
+        for (const s of computedSubs) {
+          const sid = String(resolveId(s));
+          if (!sid) continue;
+          const derivedStatus = (s.status ?? "DRAFT").toString().toUpperCase();
+          // normalize PARTIALLYCOMPLETE -> PARTIALLYCOMPLETED for server if needed
+          const derivedNormalized =
+            derivedStatus === "PARTIALLYCOMPLETE"
               ? "PARTIALLYCOMPLETED"
-              : derivedPoStatus;
-          const rawPoStatus = (rawDoc.status ?? "DRAFT")
+              : derivedStatus;
+
+          // find raw sub by id to compare
+          const rawSub =
+            rawSubs.find((r: any) => String(resolveId(r)) === String(sid)) ??
+            null;
+          const rawStatus = (rawSub?.status ?? "DRAFT")
             .toString()
             .toUpperCase();
 
-          // Allow updating parent PO from ANY current status to derived status
-          const shouldUpdatePo = derivedPoNormalized !== rawPoStatus;
+          // Allow updating to derived statuses from ANY current status
+          const shouldSet = derivedNormalized !== rawStatus;
 
-          if (shouldUpdatePo) {
-            try {
-              await updatePo({
-                id: poId,
-                body: { status: derivedPoNormalized },
-              }).unwrap();
-            } catch (err: any) {
-              console.warn("Auto updatePo failed for", poId, err);
-            }
+          if (shouldSet) {
+            subUpdates.push({ id: sid, status: derivedNormalized });
           }
-
-          // mark this PO as attempted so we don't loop
-          autoUpdatedPoIds.current.add(poId);
-
-          // finally refetch to sync caches
-          await safeRefetchSubs();
-          try {
-            if (typeof refetch === "function") await refetch();
-          } catch (e) {
-            console.warn("refetch purchase orders failed", e);
-          }
-        } catch (err) {
-          console.error("Auto-update derived statuses failed", err);
         }
-      });
-    }
+
+        // Execute sub updates (parallel)
+        if (subUpdates.length > 0) {
+          await Promise.all(
+            subUpdates.map(async (u) => {
+              try {
+                await updateSub({
+                  id: u.id,
+                  body: { status: u.status },
+                }).unwrap();
+              } catch (err: any) {
+                console.warn("Auto updateSub failed for", u.id, err);
+              }
+            })
+          );
+        }
+
+        // Now check parent PO derived status
+        const derivedPoStatus = (computed?.status ?? "DRAFT")
+          .toString()
+          .toUpperCase();
+        const derivedPoNormalized =
+          derivedPoStatus === "PARTIALLYCOMPLETE"
+            ? "PARTIALLYCOMPLETED"
+            : derivedPoStatus;
+        const rawPoStatus = (rawDoc.status ?? "DRAFT").toString().toUpperCase();
+
+        // Allow updating parent PO from ANY current status to derived status
+        const shouldUpdatePo = derivedPoNormalized !== rawPoStatus;
+
+        if (shouldUpdatePo) {
+          try {
+            await updatePo({
+              id: poId,
+              body: { status: derivedPoNormalized },
+            }).unwrap();
+          } catch (err: any) {
+            console.warn("Auto updatePo failed for", poId, err);
+          }
+        }
+
+        // mark this PO as attempted so we don't loop
+        autoUpdatedPoIds.current.add(poId);
+
+        // finally refetch to sync caches
+        await safeRefetchSubs();
+        try {
+          if (typeof refetch === "function") await refetch();
+        } catch (e) {
+          console.warn("refetch purchase orders failed", e);
+        }
+      } catch (err) {
+        console.error("Auto-update derived statuses failed", err);
+      }
+    });
   }, [expandedPoResp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const displayList = orders;
