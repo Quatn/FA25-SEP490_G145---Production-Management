@@ -328,6 +328,7 @@ export function manufacturingOrderCorrugatorOperatePageTableColumns(dataVariant:
     columnHelper.defineDataTableDisplayColumn({
       id: "actions-column",
       header: undefined,
+      ...colSize.sm,
       cell: ({ cell, table }) => ManufacturingOrderCorrugatorOperatePageTableActionColumn({ rowId: cell.row.id, isEdited: cell.row.original.isEdited, getOrder: cell.row.original.getOrder, meta: table.options.meta })
     }),
   ]

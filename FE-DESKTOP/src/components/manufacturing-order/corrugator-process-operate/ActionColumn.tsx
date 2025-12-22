@@ -132,11 +132,13 @@ export default function ManufacturingOrderCorrugatorOperatePageTableActionColumn
             Chi tiết
           </Button>
 
+          {/*
           <Popover.Trigger asChild>
             <Button variant="solid" size="xs" colorPalette={"gray"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }}>
               <BiSolidDownArrow />
             </Button>
           </Popover.Trigger>
+          */}
         </Group>
 
         <Portal>

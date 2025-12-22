@@ -353,6 +353,8 @@ export class ManufacturingOrderService {
 
         const shouldAdjustTime = nonPeggedDate.getTime() !== peggedDate.getTime()
 
+        console.log(recalculateWare(poi.ware))
+
         return {
         code: codeGenerator.getCode(index),
         purchaseOrderItem: recalculatePurchaseOrderItem({

@@ -174,9 +174,6 @@ export const buildFullDetailsMOSortPipesFromDto = (
     }
   });
 
-  console.log(
-    JSON.stringify([...precedeStages, { $sort: sortStage }, ...cleanupStages]),
-  );
   if (Object.keys(sortStage).length) {
     return [...precedeStages, { $sort: sortStage }, ...cleanupStages];
   }
