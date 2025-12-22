@@ -1295,6 +1295,8 @@ const PurchaseOrderList: React.FC = () => {
             });
           }
         } else {
+          // New branch adaption for DRAFT -> APPROVED:
+          // Build a union of possible sub lists (orders snapshot + expandedLocalDoc)
           if (newStatus === "APPROVED") {
             const ok = await confirm({
               title: "Xác nhận duyệt PO",
@@ -1310,21 +1312,37 @@ const PurchaseOrderList: React.FC = () => {
           try {
             await updatePo({ id: poId, body: { status: "APPROVED" } }).unwrap();
 
-            let subsToUpdate: any[] = [];
+            // Build union of subs from the PO snapshot and expandedLocalDoc (deduplicated)
+            let subsFromSnapshot: any[] = [];
             const poSnapshot =
               orders.find((o) => String(o.id) === String(poId)) ?? po;
-            const subsFromSnapshot = (poSnapshot as any).subPOs ?? [];
-            subsToUpdate = subsFromSnapshot;
+            subsFromSnapshot = (poSnapshot as any).subPOs ?? [];
 
-            if (
+            const expandedSubs =
               expandedLocalDoc &&
               String(resolveId(expandedLocalDoc)) === String(poId)
-            ) {
-              subsToUpdate = expandedLocalDoc.subPurchaseOrders || subsToUpdate;
-            }
+                ? expandedLocalDoc.subPurchaseOrders || []
+                : [];
 
+            // dedupe by resolved id
+            const map = new Map<string, any>();
+            [...subsFromSnapshot, ...expandedSubs].forEach((s: any) => {
+              const sid = String(resolveId(s));
+              if (!sid) {
+                // still store object keyed by random to keep its items if any
+                const tempKey = `empty-${Math.random()}`;
+                if (!map.has(tempKey)) map.set(tempKey, s);
+              } else {
+                if (!map.has(sid)) map.set(sid, s);
+              }
+            });
+
+            const subsToUpdate = Array.from(map.values());
+
+            // update each sub -> APPROVED and update items under it when items are present
             for (const s of subsToUpdate) {
               const sid = String(resolveId(s));
+              if (!sid) continue;
               try {
                 await updateSub({
                   id: sid,
@@ -1334,20 +1352,24 @@ const PurchaseOrderList: React.FC = () => {
                 console.warn("updateSub failed for", sid, e);
               }
 
+              // if the sub object has items in our local copy, update them too
               const items = s.items || [];
               for (const it of items) {
                 const iid = String(resolveId(it));
                 try {
-                  await updatePoItem({
-                    id: iid,
-                    body: { status: "APPROVED" },
-                  }).unwrap();
+                  if (iid) {
+                    await updatePoItem({
+                      id: iid,
+                      body: { status: "APPROVED" },
+                    }).unwrap();
+                  }
                 } catch (e) {
                   console.warn("updatePoItem failed for", iid, e);
                 }
               }
             }
 
+            // final sync: refresh expanded subs and the orders list
             await safeRefetchSubs();
             try {
               if (typeof refetch === "function") await refetch();
@@ -2641,7 +2663,8 @@ const PurchaseOrderList: React.FC = () => {
               );
             }
 
-            // Keep the server / cache in sync (still call refetch)
+            // Expand the PO and refresh subs so the UI shows created subs reliably
+            setExpandedPoId(String(poId));
             await safeRefetchSubs();
             try {
               if (typeof refetch === "function") await refetch();

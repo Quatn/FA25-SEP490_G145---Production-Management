@@ -884,12 +884,12 @@ export const PaperList: React.FC = () => {
     try {
       await createTransaction({
         paperRollId: id,
-        employeeId: "69146dd889bf8e8ca320bcff",
+        employeeId: userState?.employeeId ?? "69146dd889bf8e8ca320bcff",
         transactionType: "XUAT",
         initialWeight: w,
         finalWeight: 0,
         timeStamp: new Date().toISOString(),
-        inCharge: "Operator A",
+        inCharge: userState?.name ?? "Operator A",
       }).unwrap();
       await updatePaperRoll({ id, data: { weight: 0 } }).unwrap();
       toaster.create({ description: "Xuất thành công", type: "success" });
@@ -974,12 +974,12 @@ export const PaperList: React.FC = () => {
     try {
       await createTransaction({
         paperRollId: dbId,
-        employeeId: "69146dd889bf8e8ca320bcff",
+        employeeId: userState?.employeeId ?? "69146dd889bf8e8ca320bcff",
         transactionType: "NHAPLAI",
         initialWeight: prev,
         finalWeight: newW,
         timeStamp: new Date().toISOString(),
-        inCharge: "Operator A",
+        inCharge: userState?.name ?? "Operator A",
       }).unwrap();
 
       await updatePaperRoll({ id: dbId, data: { weight: newW } }).unwrap();
@@ -1026,12 +1026,12 @@ export const PaperList: React.FC = () => {
 
           await createTransaction({
             paperRollId: dbId,
-            employeeId: "69146dd889bf8e8ca320bcff",
+            employeeId: userState?.employeeId ?? "69146dd889bf8e8ca320bcff",
             transactionType: "NHAPLAI",
             initialWeight: prev,
             finalWeight: newW,
             timeStamp: new Date().toISOString(),
-            inCharge: "Operator A",
+            inCharge: userState?.name ?? "Operator A",
           }).unwrap();
 
           await updatePaperRoll({ id: dbId, data: { weight: newW } }).unwrap();
@@ -1186,8 +1186,16 @@ export const PaperList: React.FC = () => {
           marginBottom: 12,
         }}
       >
-        <div>
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <strong>List cuộn giấy</strong>
+          {/* show small hydrating indicator if auth still resolving */}
+          {hydrating && (
+            <div style={{ display: "inline-flex", alignItems: "center" }}>
+              <div className="spinner-border spinner-border-sm" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input

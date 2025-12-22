@@ -13,7 +13,7 @@ type SoftTx = PaperRollTransaction & SoftDeleteDocument;
 export class PaperRollTransactionService {
   constructor(
     @InjectModel(PaperRollTransaction.name) private readonly txModel: Model<PaperRollTransactionDocument>,
-  ) {}
+  ) { }
 
   /**
    * Paginated list with optional filtering by paperRollId or search on fields.
@@ -22,47 +22,69 @@ export class PaperRollTransactionService {
     const skip = (page - 1) * limit;
     const pipeline: any[] = [];
 
-    // populate paperRoll and optional employee
+    // --- OPTIONAL: if you want to restrict txModel itself by paperRollId (ObjectId)
+    if (paperRollId) {
+      // ensure we match transaction documents that reference that paperRollId
+      pipeline.push({
+        $match: { paperRollId: new Types.ObjectId(paperRollId) },
+      });
+    }
+
+    // lookup paperRoll (keeps your previous behavior)
     pipeline.push({
       $lookup: {
-        from: 'paperrolls', // collection name; ensure matches actual collection if different
-        localField: 'paperRollId',
-        foreignField: '_id',
-        as: 'paperRoll',
+        from: "paperrolls",
+        let: { prId: "$paperRollId" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$prId"] } } },
+          // project what you need from paper roll
+          { $project: { /* include fields you want: name:1, sequenceNumber:1, ... */ } },
+        ],
+        as: "paperRoll",
       },
     });
-    pipeline.push({ $unwind: { path: '$paperRoll', preserveNullAndEmptyArrays: true } });
+    pipeline.push({ $unwind: { path: "$paperRoll", preserveNullAndEmptyArrays: true } });
 
+    // lookup employee — this uses a lookup pipeline so Mongoose soft-delete pre-find won't hide deleted employees
     pipeline.push({
       $lookup: {
-        from: 'employees',
-        localField: 'employeeId',
-        foreignField: '_id',
-        as: 'employee',
+        from: "employees",
+        let: { empId: "$employeeId" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$empId"] } } },
+
+          // If employeeId is stored as a string (not ObjectId) in transactions, replace the above line with:
+          // { $match: { $expr: { $eq: ["$_id", { $toObjectId: "$$empId" }] } } },
+
+          // drop fields you don't want to return (example)
+          { $project: { password: 0, someSecretField: 0 } },
+        ],
+        as: "employee",
       },
     });
-    pipeline.push({ $unwind: { path: '$employee', preserveNullAndEmptyArrays: true } });
+    pipeline.push({ $unwind: { path: "$employee", preserveNullAndEmptyArrays: true } });
 
-    // filtering
+    // Build search match (search across transactionType, inCharge, paperRoll.name, paperRoll.sequenceNumber)
     const match: any = {};
-    if (paperRollId) match.paperRollId = new Types.ObjectId(paperRollId);
-    if (search && search.trim() !== '') {
-      const regex = new RegExp(search.trim(), 'i');
+    if (search && search.trim() !== "") {
+      const regex = new RegExp(search.trim(), "i");
       match.$or = [
         { transactionType: regex },
         { inCharge: regex },
-        { 'paperRoll.name': regex },
-        { 'paperRoll.sequenceNumber': regex },
+        { "paperRoll.name": regex },
+        { "paperRoll.sequenceNumber": regex },
       ];
     }
+
     if (Object.keys(match).length) pipeline.push({ $match: match });
 
+    // sort + facet for pagination
     pipeline.push({ $sort: { timeStamp: -1 } });
 
     pipeline.push({
       $facet: {
         data: [{ $skip: skip }, { $limit: limit }],
-        totalCount: [{ $count: 'count' }],
+        totalCount: [{ $count: "count" }],
       },
     });
 
@@ -75,7 +97,37 @@ export class PaperRollTransactionService {
   }
 
   async findAll() {
-    return await this.txModel.find().exec();
+    const pipeline: any[] = [];
+
+    // lookup paperRoll
+    pipeline.push({
+      $lookup: {
+        from: "paperrolls",
+        let: { prId: "$paperRollId" },
+        pipeline: [{ $match: { $expr: { $eq: ["$_id", "$$prId"] } } }],
+        as: "paperRoll",
+      },
+    });
+    pipeline.push({ $unwind: { path: "$paperRoll", preserveNullAndEmptyArrays: true } });
+
+    // lookup employee (will include deleted employees)
+    pipeline.push({
+      $lookup: {
+        from: "employees",
+        let: { empId: "$employeeId" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$empId"] } } },
+          // if empId stored as string, use $toObjectId conversion as noted above
+        ],
+        as: "employee",
+      },
+    });
+    pipeline.push({ $unwind: { path: "$employee", preserveNullAndEmptyArrays: true } });
+
+    // optional: sort (same as paginated results)
+    pipeline.push({ $sort: { timeStamp: -1 } });
+
+    return await this.txModel.aggregate(pipeline).exec();
   }
 
   async findOne(id: string) {

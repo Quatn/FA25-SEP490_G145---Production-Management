@@ -16,8 +16,9 @@ import { useGetAllPaperTypesQuery } from "@/service/api/paperTypeApiSlice";
 import { toaster } from "@/components/ui/toaster";
 import { PaperType } from "@/types/PaperType";
 
-// privilege hook
+// privilege hook & types
 import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
 
 function getIdFromDoc(doc: any): string | undefined {
   if (!doc && doc !== 0) return undefined;
@@ -51,14 +52,19 @@ const getColorIdFromPaperType = (pt: PaperType) => {
 
 export const PaperRollAudit: React.FC = () => {
   // --- PRIVILEGE CHECK (same as PaperList) ---
-  const userState: any = useAppSelector(
+  // get typed userState and hydrating flag (same logic as your UserAvatar)
+  const userState: UserState | null = useAppSelector(
     (s) => (s as any).auth?.userState ?? null
   );
+  const hydrating: boolean = useAppSelector(
+    (s) => (s as any).auth?.hydrating ?? false
+  );
+
   const EDIT_PRIVS = [
     "system-admin",
     "system-readWrite",
-    "paperRoll-admin",
-    "paperRoll-readWrite",
+    "paper-roll-admin",
+    "paper-roll-readWrite",
     "warehouse-admin",
     "warehouse-readWrite",
   ];
@@ -288,12 +294,14 @@ export const PaperRollAudit: React.FC = () => {
     try {
       const txPayload = {
         paperRollId: dbId,
-        employeeId: "69146dd889bf8e8ca320bcff",
+        // use logged-in user's employee id if available, else fallback to legacy id
+        employeeId: userState?.employeeId ?? "69480337908b48362a5ced03",
         transactionType: "KIEMKE",
         initialWeight: Number(row.systemWeight ?? 0),
         finalWeight: newW,
         timeStamp: new Date().toISOString(),
-        inCharge: "Operator A",
+        // use logged-in user's name as inCharge if available
+        inCharge: userState?.name ?? "Operator A",
       };
       const txResp = await createTransaction(txPayload).unwrap();
 
@@ -336,6 +344,17 @@ export const PaperRollAudit: React.FC = () => {
 
   return (
     <div>
+      {/* show hydrating spinner if auth data still hydrating */}
+      {hydrating && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <div className="spinner-border spinner-border-sm" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         style={{
           display: "flex",
