@@ -7,6 +7,7 @@ import ProductSelectorModal from "./SubPOSelectorModal";
 import {
   useGetPurchaseOrdersQuery,
   useGetPurchaseOrderWithSubsQuery,
+  useLazyGetPurchaseOrderWithSubsQuery, // <-- added lazy hook
   useCreatePurchaseOrderMutation,
   useUpdatePurchaseOrderMutation,
   useDeletePurchaseOrderMutation,
@@ -64,7 +65,7 @@ function normalizeServerPo(raw: any): PurchaseOrder {
     customer: customerName || raw.customer?.name || "",
     customerId,
     address: raw.deliveryAddress ?? raw.deliveryAdress ?? "",
-    phone: raw.customer?.contactNumber ?? raw.phone ?? "",
+    phone: raw.customer?.contactNumber ?? raw.phone ?? raw.phone ?? "",
     email: raw.customer?.email ?? raw.email ?? "",
     taxTemplate: (raw as any).paymentTerms ?? "",
     poType: (raw as any).poType ?? "",
@@ -221,6 +222,12 @@ const PurchaseOrderList: React.FC = () => {
     skip: !expandedPoId,
   });
 
+  // --- NEW: lazy query to fetch a PO with subs without changing expandedPoId ---
+  const [
+    triggerGetPurchaseOrderWithSubs,
+    { data: lazyPoResp, isFetching: isFetchingLazy },
+  ] = useLazyGetPurchaseOrderWithSubsQuery();
+
   // guard for creating sub-POs to avoid double submissions
   const [isCreatingSubs, setIsCreatingSubs] = useState(false);
 
@@ -351,6 +358,9 @@ const PurchaseOrderList: React.FC = () => {
   // Keep track of which PO ids we already attempted auto-updates for
   const autoUpdatedPoIds = useRef<Set<string>>(new Set());
 
+  // Track which PO ids we've triggered the silent lazy fetch for (avoid double-trigger)
+  const autoFetchTriggered = useRef<Set<string>>(new Set());
+
   // When expandedPoResp arrives, compute derived statuses and set expandedLocalDoc
   // Also attempt to auto-update sub/po statuses in DB (once per expanded PO) when needed
   useEffect(() => {
@@ -478,6 +488,138 @@ const PurchaseOrderList: React.FC = () => {
       }
     });
   }, [expandedPoResp]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // --- NEW: silent/lazy fetch for the first PO to compute+persist derived statuses without UI expand ---
+  useEffect(() => {
+    try {
+      if (!orders || orders.length === 0) return;
+      const first = orders[0];
+      if (!first) return;
+      const firstId = String(first.id);
+      if (!firstId) return;
+      if (autoUpdatedPoIds.current.has(firstId)) return; // already processed
+      if (autoFetchTriggered.current.has(firstId)) return; // already triggered
+      autoFetchTriggered.current.add(firstId);
+      // trigger lazy fetch (won't change expandedPoId so UI won't flicker)
+      triggerGetPurchaseOrderWithSubs(firstId);
+    } catch (err) {
+      /* ignore */
+    }
+  }, [orders, triggerGetPurchaseOrderWithSubs]);
+
+  // Process lazy fetch response (silent, no UI expand)
+  useEffect(() => {
+    if (!lazyPoResp) return;
+    const rawDoc = lazyPoResp?.data ?? lazyPoResp ?? null;
+    if (!rawDoc) return;
+
+    // deep clone and compute derived statuses just like expandedPoResp path
+    let computed: any = null;
+    try {
+      const cloned = JSON.parse(JSON.stringify(rawDoc));
+      computed = computeDerivedStatuses(cloned);
+      // IMPORTANT: do NOT call setExpandedLocalDoc here (keeps UI collapsed)
+      // but update totals for display in the PO card
+      syncTotalsToOrders(computed);
+    } catch (err) {
+      const copied = typeof rawDoc === "object" ? rawDoc : rawDoc;
+      computed = computeDerivedStatuses(copied);
+      syncTotalsToOrders(computed);
+    }
+
+    // perform the same auto-update flow as expandedPoResp effect, using withAutoUpdating
+    withAutoUpdating(async () => {
+      try {
+        const poId = String(resolveId(rawDoc));
+        if (!poId) return;
+        if (autoUpdatedPoIds.current.has(poId)) return;
+
+        // rawSubs may be under subPurchaseOrders or subPOs depending on server shape
+        const rawSubs: any[] =
+          Array.isArray(rawDoc.subPurchaseOrders) ||
+          Array.isArray(rawDoc.subPOs)
+            ? rawDoc.subPurchaseOrders || rawDoc.subPOs || []
+            : [];
+
+        const computedSubs: any[] = Array.isArray(computed.subPurchaseOrders)
+          ? computed.subPurchaseOrders
+          : [];
+
+        const subUpdates: Array<{ id: string; status: string }> = [];
+
+        for (const s of computedSubs) {
+          const sid = String(resolveId(s));
+          if (!sid) continue;
+          const derivedStatus = (s.status ?? "DRAFT").toString().toUpperCase();
+          const derivedNormalized =
+            derivedStatus === "PARTIALLYCOMPLETE"
+              ? "PARTIALLYCOMPLETED"
+              : derivedStatus;
+
+          const rawSub =
+            rawSubs.find((r: any) => String(resolveId(r)) === String(sid)) ??
+            null;
+          const rawStatus = (rawSub?.status ?? "DRAFT")
+            .toString()
+            .toUpperCase();
+
+          const shouldSet = derivedNormalized !== rawStatus;
+          if (shouldSet) {
+            subUpdates.push({ id: sid, status: derivedNormalized });
+          }
+        }
+
+        if (subUpdates.length > 0) {
+          await Promise.all(
+            subUpdates.map(async (u) => {
+              try {
+                await updateSub({
+                  id: u.id,
+                  body: { status: u.status },
+                }).unwrap();
+              } catch (err: any) {
+                console.warn("Auto updateSub failed for", u.id, err);
+              }
+            })
+          );
+        }
+
+        const derivedPoStatus = (computed?.status ?? "DRAFT")
+          .toString()
+          .toUpperCase();
+        const derivedPoNormalized =
+          derivedPoStatus === "PARTIALLYCOMPLETE"
+            ? "PARTIALLYCOMPLETED"
+            : derivedPoStatus;
+        const rawPoStatus = (rawDoc.status ?? "DRAFT").toString().toUpperCase();
+
+        const shouldUpdatePo = derivedPoNormalized !== rawPoStatus;
+
+        if (shouldUpdatePo) {
+          try {
+            await updatePo({
+              id: poId,
+              body: { status: derivedPoNormalized },
+            }).unwrap();
+          } catch (err: any) {
+            console.warn("Auto updatePo failed for", poId, err);
+          }
+        }
+
+        autoUpdatedPoIds.current.add(poId);
+
+        // refresh caches
+        await safeRefetchSubs();
+        try {
+          if (typeof refetch === "function") await refetch();
+        } catch (e) {
+          console.warn("refetch purchase orders failed", e);
+        }
+      } catch (err) {
+        console.error("Auto-update (lazy) derived statuses failed", err);
+      }
+    });
+  }, [lazyPoResp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const displayList = orders;
 
@@ -1848,7 +1990,7 @@ const PurchaseOrderList: React.FC = () => {
         <div style={{ flex: 1 }} />
 
         <div style={{ width: 360 }}>
-          <SearchInput value={query} onChange={onSearchChange} />
+          <SearchInput value={query} onChange={setQuery} />
         </div>
       </div>
 
