@@ -32,6 +32,7 @@ export enum ManufacturingOrderModuleAccessPrivilege {
   Admin = "manufacturing-order-admin",
   Read = "manufacturing-order-read",
   ReadWrite = "manufacturing-order-readWrite",
+  Operate = "manufacturing-order-operate",
 }
 
 export enum CustomerModuleAccessPrivilege {

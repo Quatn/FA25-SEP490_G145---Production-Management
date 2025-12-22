@@ -106,6 +106,12 @@ export const manufacturingOrderGetPrivileges = [
   ManufacturingOrderModuleAccessPrivilege.ReadWrite,
 ];
 
+export const manufacturingOrderOperatePrivileges = [
+  ...productionAdminPrivileges,
+  ManufacturingOrderModuleAccessPrivilege.Admin,
+  ManufacturingOrderModuleAccessPrivilege.Operate,
+];
+
 export const manufacturingOrderReadWritePrivileges = [
   ...productionReadWritePrivileges,
   ManufacturingOrderModuleAccessPrivilege.Admin,

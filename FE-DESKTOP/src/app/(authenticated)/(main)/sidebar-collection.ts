@@ -1,5 +1,5 @@
-import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
-import { customerAdminPrivileges, customerGetPrivileges, finishedGoodGetPrivileges, fluteCombinationGetPrivileges, manufacturingOrderGetPrivileges, manufacturingOrderReadWritePrivileges, orderFinishingProcessGetPrivileges, orderFinishingProcessReadWritePrivileges, paperColorGetPrivileges, paperRollAdminPrivileges, paperRollGetPrivileges, paperSupplierGetPrivileges, paperTypeGetPrivileges, printColorGetPrivileges, productAdminPrivileges, productGetPrivileges, productTypeGetPrivileges, purchaseOrderAdminPrivileges, purchaseOrderGetPrivileges, semiFinishedGoodGetPrivileges, semiFinishedGoodReadWritePrivileges, systemAdminPrivileges, wareAdminPrivileges, wareGetPrivileges, wareManufacturingProcessTypeGetPrivileges } from "@/types/CascadingAccessPrivileges";
+import { AnyAccessPrivileges, ManufacturingOrderModuleAccessPrivilege } from "@/types/AccessPrivileges";
+import { customerAdminPrivileges, customerGetPrivileges, finishedGoodGetPrivileges, fluteCombinationGetPrivileges, manufacturingOrderAdminPrivileges, manufacturingOrderGetPrivileges, manufacturingOrderOperatePrivileges, manufacturingOrderReadWritePrivileges, orderFinishingProcessGetPrivileges, orderFinishingProcessReadWritePrivileges, paperColorGetPrivileges, paperRollAdminPrivileges, paperRollGetPrivileges, paperSupplierGetPrivileges, paperTypeGetPrivileges, printColorGetPrivileges, productAdminPrivileges, productGetPrivileges, productTypeGetPrivileges, purchaseOrderAdminPrivileges, purchaseOrderGetPrivileges, semiFinishedGoodGetPrivileges, semiFinishedGoodReadWritePrivileges, systemAdminPrivileges, wareAdminPrivileges, wareGetPrivileges, wareManufacturingProcessTypeGetPrivileges } from "@/types/CascadingAccessPrivileges";
 import { createTreeCollection } from "@chakra-ui/react";
 import check from "check-types";
 
@@ -172,7 +172,7 @@ export const fullTree: NodeWithPrivilege[] = [
         id: "corrugator-operate",
         name: "Thao tác quy trình sóng",
         href: "/manufacturing-order/corrugator-process-operate",
-        requiredPrivileges: [...manufacturingOrderReadWritePrivileges],
+        requiredPrivileges: [...manufacturingOrderOperatePrivileges],
       },
     ],
   },
