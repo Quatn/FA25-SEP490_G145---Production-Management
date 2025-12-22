@@ -22,7 +22,7 @@ import DataLoading from "@/components/common/DataLoading";
 const EDIT_PRIVS: AnyAccessPrivileges[] = [
     "system-admin",
     "system-readWrite",
-    "employee-readWrite"
+    "manufacturing-order-readWrite",
 ]
 
 const OrderFinishingProcessList: React.FC = () => {
