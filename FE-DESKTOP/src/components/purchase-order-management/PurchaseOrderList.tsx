@@ -1,4 +1,3 @@
-// src/components/purchase-order/PurchaseOrderList.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -94,27 +93,9 @@ const SearchInput: React.FC<{
 );
 
 // selectable statuses — added PARTIAL/COMPLETED to allow manual selection
-const PO_STATUS_OPTIONS = [
-  "DRAFT",
-  "PENDINGAPPROVAL",
-  "APPROVED",
-  "PARTIALLYCOMPLETED",
-  "COMPLETED",
-];
-const SUBPO_STATUS_OPTIONS = [
-  "DRAFT",
-  "PENDINGAPPROVAL",
-  "APPROVED",
-  "PARTIALLYCOMPLETED",
-  "COMPLETED",
-];
-const POITEM_STATUS_OPTIONS = [
-  "DRAFT",
-  "PENDINGAPPROVAL",
-  "APPROVED",
-  "PARTIALLYCOMPLETED",
-  "COMPLETED",
-];
+const PO_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
+const SUBPO_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
+const POITEM_STATUS_OPTIONS = ["DRAFT", "PENDINGAPPROVAL", "APPROVED"];
 
 // read-only statuses (displayed but not forcibly excluded from selection anymore)
 const READONLY_STATUSES = [
@@ -212,6 +193,18 @@ const PurchaseOrderList: React.FC = () => {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [expandedLocalDoc, setExpandedLocalDoc] = useState<any | null>(null);
 
+  // block UI during automatic updates to avoid flash
+  const [isAutoUpdating, setIsAutoUpdating] = useState(false);
+  const withAutoUpdating = async <T,>(fn: () => Promise<T>): Promise<T> => {
+    setIsAutoUpdating(true);
+    try {
+      return await fn();
+    } finally {
+      // small debounce so very-short operations don't create a flicker
+      window.setTimeout(() => setIsAutoUpdating(false), 120);
+    }
+  };
+
   const deletedList = useMemo(() => {
     const raw = (deletedResp && (deletedResp.data || deletedResp)) || [];
     return Array.isArray(raw) ? raw : [];
@@ -219,6 +212,7 @@ const PurchaseOrderList: React.FC = () => {
 
   // expanded PO id to show server-side sub-POs; fetch details only when expanded
   const [expandedPoId, setExpandedPoId] = useState<string | null>(null);
+
   const {
     data: expandedPoResp,
     isFetching: isFetchingSubs,
@@ -385,109 +379,112 @@ const PurchaseOrderList: React.FC = () => {
     }
 
     // Attempt to auto-update DB statuses for derived PARTIALLYCOMPLETE / COMPLETED
-    (async () => {
-      try {
-        // do not attempt auto-updates if no write permission
-        if (writeDisabled) return;
+    if (!writeDisabled) {
+      withAutoUpdating(async () => {
+        try {
+          const poId = String(resolveId(rawDoc));
+          if (!poId) return;
+          if (autoUpdatedPoIds.current.has(poId)) return;
 
-        const poId = String(resolveId(rawDoc));
-        if (!poId) return;
-        if (autoUpdatedPoIds.current.has(poId)) return;
+          // rawSubs may be under subPurchaseOrders or subPOs depending on server shape
+          const rawSubs: any[] =
+            Array.isArray(rawDoc.subPurchaseOrders) ||
+            Array.isArray(rawDoc.subPOs)
+              ? rawDoc.subPurchaseOrders || rawDoc.subPOs || []
+              : [];
 
-        // rawSubs may be under subPurchaseOrders or subPOs depending on server shape
-        const rawSubs: any[] =
-          Array.isArray(rawDoc.subPurchaseOrders) ||
-          Array.isArray(rawDoc.subPOs)
-            ? rawDoc.subPurchaseOrders || rawDoc.subPOs || []
+          const computedSubs: any[] = Array.isArray(computed.subPurchaseOrders)
+            ? computed.subPurchaseOrders
             : [];
 
-        const computedSubs: any[] = Array.isArray(computed.subPurchaseOrders)
-          ? computed.subPurchaseOrders
-          : [];
+          const subUpdates: Array<{ id: string; status: string }> = [];
 
-        const subUpdates: Array<{ id: string; status: string }> = [];
+          // For each computed sub, compare to raw sub status and update if needed
+          for (const s of computedSubs) {
+            const sid = String(resolveId(s));
+            if (!sid) continue;
+            const derivedStatus = (s.status ?? "DRAFT")
+              .toString()
+              .toUpperCase();
+            // normalize PARTIALLYCOMPLETE -> PARTIALLYCOMPLETED for server if needed
+            const derivedNormalized =
+              derivedStatus === "PARTIALLYCOMPLETE"
+                ? "PARTIALLYCOMPLETED"
+                : derivedStatus;
 
-        // For each computed sub, compare to raw sub status and update if needed
-        for (const s of computedSubs) {
-          const sid = String(resolveId(s));
-          if (!sid) continue;
-          const derivedStatus = (s.status ?? "DRAFT").toString().toUpperCase();
-          // normalize PARTIALLYCOMPLETE -> PARTIALLYCOMPLETED for server if needed
-          const derivedNormalized =
-            derivedStatus === "PARTIALLYCOMPLETE"
+            // find raw sub by id to compare
+            const rawSub =
+              rawSubs.find((r: any) => String(resolveId(r)) === String(sid)) ??
+              null;
+            const rawStatus = (rawSub?.status ?? "DRAFT")
+              .toString()
+              .toUpperCase();
+
+            // Allow updating to derived statuses from ANY current status
+            const shouldSet = derivedNormalized !== rawStatus;
+
+            if (shouldSet) {
+              subUpdates.push({ id: sid, status: derivedNormalized });
+            }
+          }
+
+          // Execute sub updates (parallel)
+          if (subUpdates.length > 0) {
+            await Promise.all(
+              subUpdates.map(async (u) => {
+                try {
+                  await updateSub({
+                    id: u.id,
+                    body: { status: u.status },
+                  }).unwrap();
+                } catch (err: any) {
+                  console.warn("Auto updateSub failed for", u.id, err);
+                }
+              })
+            );
+          }
+
+          // Now check parent PO derived status
+          const derivedPoStatus = (computed?.status ?? "DRAFT")
+            .toString()
+            .toUpperCase();
+          const derivedPoNormalized =
+            derivedPoStatus === "PARTIALLYCOMPLETE"
               ? "PARTIALLYCOMPLETED"
-              : derivedStatus;
-
-          // find raw sub by id to compare
-          const rawSub =
-            rawSubs.find((r: any) => String(resolveId(r)) === String(sid)) ??
-            null;
-          const rawStatus = (rawSub?.status ?? "DRAFT")
+              : derivedPoStatus;
+          const rawPoStatus = (rawDoc.status ?? "DRAFT")
             .toString()
             .toUpperCase();
 
-          // Allow updating to derived statuses from ANY current status
-          const shouldSet = derivedNormalized !== rawStatus;
+          // Allow updating parent PO from ANY current status to derived status
+          const shouldUpdatePo = derivedPoNormalized !== rawPoStatus;
 
-          if (shouldSet) {
-            subUpdates.push({ id: sid, status: derivedNormalized });
+          if (shouldUpdatePo) {
+            try {
+              await updatePo({
+                id: poId,
+                body: { status: derivedPoNormalized },
+              }).unwrap();
+            } catch (err: any) {
+              console.warn("Auto updatePo failed for", poId, err);
+            }
           }
-        }
 
-        // Execute sub updates (parallel)
-        if (subUpdates.length > 0) {
-          await Promise.all(
-            subUpdates.map(async (u) => {
-              try {
-                await updateSub({
-                  id: u.id,
-                  body: { status: u.status },
-                }).unwrap();
-              } catch (err: any) {
-                console.warn("Auto updateSub failed for", u.id, err);
-              }
-            })
-          );
-        }
+          // mark this PO as attempted so we don't loop
+          autoUpdatedPoIds.current.add(poId);
 
-        // Now check parent PO derived status
-        const derivedPoStatus = (computed?.status ?? "DRAFT")
-          .toString()
-          .toUpperCase();
-        const derivedPoNormalized =
-          derivedPoStatus === "PARTIALLYCOMPLETE"
-            ? "PARTIALLYCOMPLETED"
-            : derivedPoStatus;
-        const rawPoStatus = (rawDoc.status ?? "DRAFT").toString().toUpperCase();
-
-        // Allow updating parent PO from ANY current status to derived status
-        const shouldUpdatePo = derivedPoNormalized !== rawPoStatus;
-
-        if (shouldUpdatePo) {
+          // finally refetch to sync caches
+          await safeRefetchSubs();
           try {
-            await updatePo({
-              id: poId,
-              body: { status: derivedPoNormalized },
-            }).unwrap();
-          } catch (err: any) {
-            console.warn("Auto updatePo failed for", poId, err);
+            if (typeof refetch === "function") await refetch();
+          } catch (e) {
+            console.warn("refetch purchase orders failed", e);
           }
+        } catch (err) {
+          console.error("Auto-update derived statuses failed", err);
         }
-
-        // mark this PO as attempted so we don't loop
-        autoUpdatedPoIds.current.add(poId);
-
-        // finally refetch to sync caches
-        await safeRefetchSubs();
-        try {
-          if (typeof refetch === "function") await refetch();
-        } catch (e) {
-          console.warn("refetch purchase orders failed", e);
-        }
-      } catch (err) {
-        console.error("Auto-update derived statuses failed", err);
-      }
-    })();
+      });
+    }
   }, [expandedPoResp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const displayList = orders;
@@ -1816,8 +1813,30 @@ const PurchaseOrderList: React.FC = () => {
     setPage(1);
   };
 
+  // combined loading indicator (initial list load OR auto-updating flows OR hydrating)
+  const globalLoading = isLoading || isAutoUpdating || hydrating;
+
   return (
     <div style={{ padding: 16 }}>
+      {globalLoading && (
+        <div
+          style={{
+            position: "fixed",
+            left: 0,
+            top: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(255,255,255,0.7)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div className="spinner-border" role="status" aria-hidden="true" />
+        </div>
+      )}
+
       <div
         style={{
           display: "flex",

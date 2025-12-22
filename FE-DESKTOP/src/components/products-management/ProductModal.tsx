@@ -309,10 +309,6 @@ export default function ProductModal({
                           item.fluteCombination?.code
                             ? item.fluteCombination.code
                             : "N/A"}
-                        </span>{" "}
-                        | Khổ giấy:{" "}
-                        <span className="text-danger fw-semibold">
-                          {item.paperWidth || "N/A"}
                         </span>
                       </div>
                     </Card.Body>

@@ -18,13 +18,15 @@ export class PaperRollTransactionService {
   /**
    * Paginated list with optional filtering by paperRollId or search on fields.
    */
-  async findPaginated(page = 1, limit = 10, search?: string, paperRollId?: string) {
+  async findPaginated(page = 1, limit = 1000, search?: string, paperRollId?: string) {
     const skip = (page - 1) * limit;
     const pipeline: any[] = [];
 
-    // --- OPTIONAL: if you want to restrict txModel itself by paperRollId (ObjectId)
     if (paperRollId) {
-      // ensure we match transaction documents that reference that paperRollId
+      if (!Types.ObjectId.isValid(paperRollId)) {
+        return { data: [], page, limit, totalItems: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false };
+      }
+
       pipeline.push({
         $match: { paperRollId: new Types.ObjectId(paperRollId) },
       });
@@ -37,8 +39,6 @@ export class PaperRollTransactionService {
         let: { prId: "$paperRollId" },
         pipeline: [
           { $match: { $expr: { $eq: ["$_id", "$$prId"] } } },
-          // project what you need from paper roll
-          { $project: { /* include fields you want: name:1, sequenceNumber:1, ... */ } },
         ],
         as: "paperRoll",
       },

@@ -976,17 +976,6 @@ export default function ProductList() {
                                   }}
                                 >
                                   {fluteCombination}
-                                </span>{" "}
-                                | Khổ giấy:{" "}
-                                <span
-                                  style={{
-                                    fontSize: "12px",
-                                    fontWeight: "500",
-                                    color: "red",
-                                    textDecoration: "underline",
-                                  }}
-                                >
-                                  {paperSize}
                                 </span>
                               </div>
                             </div>
