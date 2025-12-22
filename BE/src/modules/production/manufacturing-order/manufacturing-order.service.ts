@@ -54,7 +54,10 @@ import { SoftDeleteDocument } from "@/common/types/soft-delete-document";
 import { DeleteResult } from "@/common/dto/delete-result.dto";
 import { PatchResult } from "@/common/dto/patch-result.dto";
 import check from "check-types";
-import { fullDetailsFilterMultiStageAggregationPipeline } from "./aggregate-pipes/full-details-filter";
+import {
+  fullDetailsFilterAggregationPipeline,
+  fullDetailsFilterMultiStageAggregationPipeline,
+} from "./aggregate-pipes/full-details-filter";
 import { FinishedGood } from "@/modules/warehouse/schemas/finished-good.schema";
 import { IllogicalError } from "@/common/errors/illogical.error";
 import { recalculateManufacturingOrder } from "./business-logics/recalculate-manufacturing-orders";
@@ -336,7 +339,21 @@ export class ManufacturingOrderService {
     const codeGenerator = new MOCodeGenerator(lastOrder?.code);
 
     const mos: FullDetailManufacturingOrderDto[] = purchaseOrderItems.map(
-      (poi, index): FullDetailManufacturingOrderDto => ({
+      (poi, index): FullDetailManufacturingOrderDto => {  
+        const nonPeggedDate = getManufacturingDate(
+          poi.subPurchaseOrder.deliveryDate,
+          poi.subPurchaseOrder.purchaseOrder.customer.code,
+        )
+
+        const peggedDate =  getManufacturingDate(
+          poi.subPurchaseOrder.deliveryDate,
+          poi.subPurchaseOrder.purchaseOrder.customer.code,
+          true,
+        )
+
+        const shouldAdjustTime = nonPeggedDate.getTime() !== peggedDate.getTime()
+
+        return {
         code: codeGenerator.getCode(index),
         purchaseOrderItem: recalculatePurchaseOrderItem({
           ...poi,
@@ -351,11 +368,8 @@ export class ManufacturingOrderService {
           actualRunningLength: 0,
           note: "",
         },
-        manufacturingDate: getManufacturingDate(
-          poi.subPurchaseOrder.deliveryDate,
-          poi.subPurchaseOrder.purchaseOrder.customer.code,
-        ),
-        manufacturingDateAdjustment: null,
+        manufacturingDate: nonPeggedDate,
+        manufacturingDateAdjustment: shouldAdjustTime ? peggedDate : null,
         requestedDatetime: null,
         corrugatorLine: getCorrugatorLine(
           poi.ware.fluteCombination.code,
@@ -379,7 +393,7 @@ export class ManufacturingOrderService {
         note: "",
         recalculateFlag: true,
         isDeleted: false,
-      }),
+      } },
     );
 
     return mos.map(
@@ -595,15 +609,6 @@ export class ManufacturingOrderService {
         );
       }
 
-      doc.manufacturingDate = getManufacturingDate(
-        poi.subPurchaseOrder.deliveryDate,
-        poi.subPurchaseOrder.purchaseOrder.customer.code,
-      );
-      doc.corrugatorLine = getCorrugatorLine(
-        poi.ware.fluteCombination.code,
-        poi.subPurchaseOrder.purchaseOrder.customer.code,
-      );
-
       if (
         doc.approvalStatus !== dto.approvalStatus &&
         dto.approvalStatus === ManufacturingOrderApprovalStatus.Approved
@@ -750,6 +755,12 @@ export class ManufacturingOrderService {
       id,
     )) as DocWithSoftDelete;
     if (!doc) throw new NotFoundException("Manufacturing Order not found");
+    if (doc.approvalStatus === ManufacturingOrderApprovalStatus.Approved) {
+      throw new BadRequestException(
+        "Approved orders cannot be deleted, only cancelled",
+      );
+    }
+
     const code = doc.code;
     await doc.softDelete();
 
@@ -864,5 +875,91 @@ export class ManufacturingOrderService {
     const data = await this.manufacturingOrderModel.aggregate(pipeline);
 
     return data as QueryAllMOProductionOutputByDateRangeResponseDto[];
+  }
+
+  async findByIdFullDetails({
+    id,
+  }: {
+    id: Types.ObjectId;
+  }): Promise<FullDetailManufacturingOrderDto | undefined> {
+    const pipelines = fullDetailsFilterAggregationPipeline({
+      filter: {},
+      limit: 1,
+      skip: 0,
+    });
+
+    const data = await this.manufacturingOrderModel.aggregate([
+      {
+        $match: {
+          _id: new Types.ObjectId(id),
+        },
+      },
+      ...pipelines,
+    ]);
+
+    if (data.length < 1) {
+      return undefined;
+    }
+
+    const moDocs = (data as ManufacturingOrderDocument[]).map((mo) =>
+      this.manufacturingOrderModel.hydrate(mo),
+    );
+
+    const recalCheckedOrders = await this.recalCheckDocs(moDocs);
+
+    const ids = recalCheckedOrders.map((mo) => mo._id);
+
+    const finishedGoodRecords = await this.finishedGoodProcessModel.find({
+      manufacturingOrder: { $in: ids },
+    });
+
+    const mappedData: FullDetailManufacturingOrderDto[] =
+      recalCheckedOrders.map((mo) => {
+        return new FullDetailManufacturingOrderDto({
+          ...mo.toJSON(),
+          finishedGoodRecord: finishedGoodRecords.find((record) =>
+            (record.manufacturingOrder as Types.ObjectId).equals(mo._id),
+          ),
+        });
+      });
+
+    if (mappedData.length > 0) {
+      return mappedData[0];
+    }
+    return undefined;
+  }
+
+  async cancelOne(id: mongoose.Types.ObjectId): Promise<
+    PatchResult<{
+      code: string;
+      orderProcessUpdateResult: PatchResult;
+    }>
+  > {
+    const doc = await this.manufacturingOrderModel.findById(id);
+    if (!doc) throw new NotFoundException("Manufacturing Order not found");
+    const code = doc.code;
+    doc.set("corrugatorProcess.status", CorrugatorProcessStatus.CANCELLED);
+    await doc.save();
+
+    const processDeleteCount =
+      await this.orderFinishingProcessModel.countDocuments({
+        manufacturingOrder: id,
+      });
+    const processDeleteRes = await this.orderFinishingProcessModel.updateMany(
+      { manufacturingOrder: id },
+      { $set: { status: OrderFinishingProcessStatus.Cancelled } },
+    );
+
+    return {
+      patchedAmount: 1,
+      requestedAmount: 1,
+      echo: {
+        code,
+        orderProcessUpdateResult: {
+          requestedAmount: processDeleteCount,
+          patchedAmount: processDeleteRes.upsertedCount,
+        },
+      },
+    };
   }
 }

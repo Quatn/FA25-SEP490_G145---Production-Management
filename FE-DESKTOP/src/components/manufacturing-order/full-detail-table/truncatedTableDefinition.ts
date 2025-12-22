@@ -12,6 +12,7 @@ import ManufacturingOrderTableActionColumn from "./ActionColumn";
 import { manufacturingOrderComponentUtils as utils } from "../utils"
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 import { formatDateTohhmmDDMMYYYY } from "@/utils/dateUtils";
+import { ManufacturingOrderOperativeStatus } from "@/types/enums/ManufacturingOrderOperativeStatus";
 
 const { getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, OrderStatusNameMap, OrderApprovalStatusNameMap } = utils
 
@@ -43,6 +44,7 @@ export type TruncatedManufacturingOrderTableData = {
   note: string,
   getOrder: (id: string) => { order: Serialized<ManufacturingOrder> } | undefined,
   purchaseOrderItemId: string,
+  operativeStatus: ManufacturingOrderOperativeStatus | undefined,
   orderStatusDisplay: string,
 }
 
@@ -100,6 +102,7 @@ export const convertSerializedMOToTruncatedManufacturingOrderTableData = (
     note: mo.note,
     getOrder,
     purchaseOrderItemId: poi._id,
+    operativeStatus: mo.operativeStatus,
     orderStatusDisplay: mo.operativeStatus ? OrderStatusNameMap[mo.operativeStatus] : ""
   }
 }
@@ -172,6 +175,17 @@ export const truncatedManufacturingOrderTableMergedHeaders = [
   ["actions-column", "1_actions-column_actions-column"],
 ]
 
+const getDisabled = (mo: TruncatedManufacturingOrderTableData, type: "ALL" | "REVIEW" | "VALUE") => {
+  const disableAllFields = check.in(mo.operativeStatus, [ManufacturingOrderOperativeStatus.CANCELLED, ManufacturingOrderOperativeStatus.COMPLETED])
+  if (type === "ALL") return disableAllFields
+
+  const disableReviewFields = mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+  if (type === "REVIEW") return disableAllFields || disableReviewFields
+
+  const disableValueFields = mo.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
+  return disableAllFields || disableReviewFields || disableValueFields
+}
+
 export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufacturingOrderTableData & { isEdited: boolean }>)[] = [
   columnHelper.defineDataTableAccessorColumn({
     id: "manufacturingDirective",
@@ -179,6 +193,9 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     header: "Kế hoạch giao",
     enablePinning: true,
     cellType: DataTableCellType.Select,
+    options: {
+      getDisabled: (mo) => getDisabled(mo, "ALL")
+    },
     selectCollection: manufacturingDirectivesCol,
     ...colSize.md,
   }),
@@ -227,7 +244,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     cellType: DataTableCellType.Select,
     selectCollection: approvalStatusesCol,
     options: {
-      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+      getDisabled: (mo) => getDisabled(mo, "REVIEW")
     },
     ...colSize.md,
   }),
@@ -356,7 +373,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     enablePinning: true,
     cellType: DataTableCellType.Text,
     options: {
-      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+      getDisabled: (mo) => getDisabled(mo, "ALL")
     },
     ...colSize.lg,
   }),
@@ -370,7 +387,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     enablePinning: true,
     cellType: DataTableCellType.Date,
     options: {
-      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+      getDisabled: (mo) => getDisabled(mo, "VALUE")
     },
     ...colSize.md,
   }),
@@ -384,7 +401,7 @@ export const truncatedManufacturingOrderTableColumns: (ColumnDef<TruncatedManufa
     enablePinning: true,
     cellType: DataTableCellType.Readonly,
     options: {
-      getDisabled: (mo) => mo.approvalStatus === ManufacturingOrderApprovalStatus.Approved
+      getDisabled: (mo) => getDisabled(mo, "ALL")
     },
     ...colSize.md,
   }),

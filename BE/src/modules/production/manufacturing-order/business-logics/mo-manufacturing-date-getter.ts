@@ -18,11 +18,14 @@ const aDay = 24 * 60 * 60 * 1000;
 export const getManufacturingDate = (
   deliveryDate: Date,
   customerCode: string,
+  pegDate: boolean = false,
 ) => {
   const adjustedDate = new Date(
     deliveryDate.getTime() -
     (check.in(customerCode, specialCustomerArray) ? aDay * 2 : aDay),
   );
+
+  if (!pegDate) return adjustedDate;
 
   const currentDate = new Date();
 

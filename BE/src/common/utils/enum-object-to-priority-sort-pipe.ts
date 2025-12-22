@@ -1,31 +1,40 @@
+import { SortOrder } from "mongoose";
 import { PipelineStage } from "mongoose";
 
 export function enumObjectToPrioritySortPipe(
   field: string,
   priorityArray: string[],
-  sortDirection: 1 | -1 = 1,
-): PipelineStage[] {
-  if (priorityArray.length < 1) return [];
+  sortDirection: SortOrder = 1,
+): {
+  precedeStages: PipelineStage[];
+  sortStage: Record<string, SortOrder>;
+  cleanupStages: PipelineStage[];
+} | null {
+  if (priorityArray.length < 1) return null;
 
-  return [
-    {
-      $addFields: {
-        sortPriority: {
-          $switch: {
-            branches: priorityArray.map((p, index) => ({
-              case: { $eq: [field, p] },
-              then: index,
-            })),
-            default: priorityArray.length + 1,
+  const sortField = field.replace(/[^a-zA-Z]/g, "") + "_SortPriority";
+
+  return {
+    precedeStages: [
+      {
+        $addFields: {
+          [sortField]: {
+            $switch: {
+              branches: priorityArray.toReversed().map((p, index) => ({
+                case: { $eq: [field, p] },
+                then: index,
+              })),
+              default: -1,
+            },
           },
         },
       },
-    },
-    {
-      $sort: { sortPriority: -sortDirection },
-    },
-    {
-      $unset: "sortPriority",
-    },
-  ] as PipelineStage[];
+    ],
+    sortStage: { [sortField]: sortDirection },
+    cleanupStages: [
+      {
+        $unset: [sortField],
+      },
+    ],
+  };
 }

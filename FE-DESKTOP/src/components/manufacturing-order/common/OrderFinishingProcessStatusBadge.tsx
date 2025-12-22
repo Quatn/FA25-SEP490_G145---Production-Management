@@ -14,7 +14,7 @@ const OrderFinishingProcessProcessProgressColorMap: Record<OrderFinishingProcess
   ONHOLD: "blue",
   PAUSED: "yellow",
   FINISHEDPRODUCTION: "green",
-  CANCELLED: "green",
+  CANCELLED: "red",
   QUALITYCHECK: "teal",
   COMPLETED: "green",
 }
@@ -39,7 +39,7 @@ export default function OrderfinishingprocessProcessStatusBadge({ process }: Ord
   }
 
   return (
-    <Badge variant="solid" colorPalette={color} >
+    <Badge variant={color === "gray" ? "surface" : "solid"} colorPalette={color} >
       {text}
     </Badge>
   )

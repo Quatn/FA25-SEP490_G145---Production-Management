@@ -13,7 +13,7 @@ export default function DataEmpty(props: DataEmptyProps) {
       <Stack alignItems={"center"}>
         {props.searched && <LuSearchX color={"gray"} strokeWidth={1} size={"10rem"} />}
         {!props.searched && <LuArchiveX color={"gray"} strokeWidth={1} size={"10rem"} />}
-        <Text colorPalette={"gray"}>{(!check.undefined(props.text)) ? props.text : props.searched ? "Không có dữ liệu hoặc tất cả đều bị ẩn bởi bộ lọc" : "Không có dữ liệu"}</Text>
+        <Text colorPalette={"gray"} color={"colorPalette.600"} >{(!check.undefined(props.text)) ? props.text : props.searched ? "Không có dữ liệu hoặc tất cả đều bị ẩn bởi bộ lọc" : "Không có dữ liệu"}</Text>
       </Stack>
     </Center>
   )

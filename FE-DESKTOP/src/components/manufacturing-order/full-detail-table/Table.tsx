@@ -186,31 +186,24 @@ export default function ManufacturingOrderTable(
       >
         <Tabs.List ms={`${getTabBarOffset()}px`}>
           <Tabs.Trigger value="all">
-            <LuUser />
             Tổng quan
           </Tabs.Trigger>
           <Tabs.Trigger value="order">
-            <LuUser />
             Thông tin đơn hàng
           </Tabs.Trigger>
           <Tabs.Trigger value="manufacture">
-            <LuFolder />
             Gia công
           </Tabs.Trigger>
           <Tabs.Trigger value="layers">
-            <LuSquareCheck />
             Cấu trúc lớp
           </Tabs.Trigger>
           <Tabs.Trigger value="notes">
-            <LuSquareCheck />
             Ghi chú
           </Tabs.Trigger>
           <Tabs.Trigger value="weight">
-            <LuSquareCheck />
             Trọng lượng giấy sử dụng
           </Tabs.Trigger>
           <Tabs.Trigger value="processes">
-            <LuSquareCheck />
             Công đoạn hoàn thiện
           </Tabs.Trigger>
         </Tabs.List>

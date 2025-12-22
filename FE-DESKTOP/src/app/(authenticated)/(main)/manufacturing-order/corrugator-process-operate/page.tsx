@@ -12,7 +12,7 @@ export default function ManufacturingOrderCorrugatorProcessOperate() {
   return (
     <Box>
       <ManufacturingOrderCorrugatorProcessOperateProvider>
-        <ManufacturingOrderDialogProvider>
+        <ManufacturingOrderDialogProvider initialState={{ tab: "processes" }}>
           <Box m={5}>
             <Heading size="2xl">Chi tiết quy trình sóng</Heading>
           </Box>

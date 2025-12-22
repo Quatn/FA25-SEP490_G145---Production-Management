@@ -87,19 +87,15 @@ export function recalculateManufacturingOrder(
     );
   }
 
-  const manufacturingDate =
-    mo.manufacturingDateAdjustment ??
-    getManufacturingDate(
-      subpo.deliveryDate,
-      item.subPurchaseOrder.purchaseOrder.customer.code,
-    );
+  const manufacturingDate = getManufacturingDate(
+    subpo.deliveryDate,
+    item.subPurchaseOrder.purchaseOrder.customer.code,
+  );
 
-  const corrugatorLine =
-    mo.corrugatorLineAdjustment ??
-    getCorrugatorLine(
-      ware.fluteCombination.code,
-      item.subPurchaseOrder.purchaseOrder.customer.code,
-    );
+  const corrugatorLine = getCorrugatorLine(
+    ware.fluteCombination.code,
+    item.subPurchaseOrder.purchaseOrder.customer.code,
+  );
 
   const numberOfBlanks = Math.ceil(mo.amount / ware.warePerBlank);
   const longitudinalCutCount = Math.ceil(numberOfBlanks / ware.crossCutCount);

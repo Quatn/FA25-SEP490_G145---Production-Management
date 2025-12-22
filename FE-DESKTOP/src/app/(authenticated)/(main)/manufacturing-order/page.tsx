@@ -9,7 +9,7 @@ import { ManufacturingOrderDailyProductionOutputChartProvider } from "@/context/
 import { ManufacturingOrderDailyOrderStatusesChartProvider } from "@/context/manufacturing-order/dashboard/manufacturingOrderDailyStatusesPieChartContext";
 import { ManufacturingOrderDialogProvider } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { ManufacturingOrderTrackPanelListProvider } from "@/context/manufacturing-order/manufacturingOrderTrackPanelContext";
-import { Box, GridItem, Heading, HStack, SimpleGrid } from "@chakra-ui/react";
+import { Box, GridItem, Heading, HStack, SimpleGrid, Stack } from "@chakra-ui/react";
 
 export default function ManufacturingOrderDashboard() {
   return (
@@ -23,12 +23,16 @@ export default function ManufacturingOrderDashboard() {
           <GridItem colSpan={{ base: 1 }}>
             <ManufacturingOrderDailyProductionOutputChartProvider>
               <Box bg="bg.muted" p={2} rounded={"sm"} h={"full"}>
-                <HStack mb={5} justifyContent={"space-between"}>
-                  <Heading size={"sm"}>Tổng quan sản lượng của các khâu sản xuất theo ngày</Heading>
-                  <ManufacturingOrderDailyProductionOutputChartDateSelector />
-                </HStack>
+                <Stack h={"full"}>
+                  <HStack mb={5} justifyContent={"space-between"}>
+                    <Heading size={"sm"}>Tổng quan sản lượng của các khâu sản xuất theo ngày</Heading>
+                    <ManufacturingOrderDailyProductionOutputChartDateSelector />
+                  </HStack>
 
-                <ManufacturingOrderDailyProductionOutputChartBarList />
+                  <Box flexGrow={1}>
+                    <ManufacturingOrderDailyProductionOutputChartBarList />
+                  </Box>
+                </Stack>
               </Box>
             </ManufacturingOrderDailyProductionOutputChartProvider>
           </GridItem>
@@ -36,12 +40,16 @@ export default function ManufacturingOrderDashboard() {
           <GridItem colSpan={{ base: 1 }}>
             <ManufacturingOrderDailyOrderStatusesChartProvider>
               <Box bg="bg.muted" p={2} rounded={"sm"} h={"full"}>
-                <HStack mb={5} justifyContent={"space-between"}>
-                  <Heading size={"sm"}>Tổng quan trạng thái của các lệnh sản xuất theo ngày</Heading>
-                  <ManufacturingOrderDailyStatusesPieChartDateSelector />
-                </HStack>
+                <Stack h={"full"}>
+                  <HStack mb={5} justifyContent={"space-between"}>
+                    <Heading size={"sm"}>Tổng quan trạng thái của các lệnh sản xuất theo ngày</Heading>
+                    <ManufacturingOrderDailyStatusesPieChartDateSelector />
+                  </HStack>
 
-                <ManufacturingOrderDailyStatusesPieChart />
+                  <Box flexGrow={1}>
+                    <ManufacturingOrderDailyStatusesPieChart />
+                  </Box>
+                </Stack>
               </Box>
             </ManufacturingOrderDailyOrderStatusesChartProvider>
           </GridItem>

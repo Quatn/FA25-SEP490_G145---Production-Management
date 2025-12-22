@@ -249,7 +249,7 @@ const OrderFinishingProcessList: React.FC = () => {
                 </InputGroup>
             </Flex>
 
-            <ManufacturingOrderDialogProvider>
+            <ManufacturingOrderDialogProvider initialState={{ tab: "processes" }}>
                 <Tabs.Root
                     lazyMount
                     unmountOnExit
