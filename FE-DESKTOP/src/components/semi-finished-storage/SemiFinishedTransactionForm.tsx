@@ -127,6 +127,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
         }
 
         try {
+            const mo = manufacturingOrders.find(item => item._id == transaction.manufacturingOrder) as ManufacturingOrder;
             await createSemiTransaction({
                 manufacturingOrder: transaction.manufacturingOrder,
                 transactionType: transaction.transactionType,
@@ -139,7 +140,7 @@ const SemiFinishedTransactionForm: React.FC<Props> = ({ isOpen, onClose, initial
             toaster.create({
                 title: "Thành công",
                 description: `${transaction.transactionType === "IMPORT" ? "Nhập" : "Xuất"} kho 
-                ${transaction.quantity} phôi lệnh ${transaction.manufacturingOrderCode}`,
+                ${transaction.quantity} phôi lệnh ${mo?.code}`,
                 type: "success",
                 closable: true
             });
