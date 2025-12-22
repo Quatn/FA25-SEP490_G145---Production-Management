@@ -249,23 +249,23 @@ export default function CreatePageManufacturingOrderTable(
           if (check.greaterOrEqual(res.data?.createdAmount as number, res.data?.createdAmount as number)) {
             toaster.success({
               title: "Success",
-              description: "All orders created successfully",
+              description: "Tạo tất cả lệnh thành công",
             })
           }
           else if (check.greaterOrEqual(res.data?.createdAmount as number, 1)) {
             toaster.warning({
-              title: "Some orders was not created",
+              title: "Một vài lệnh chưa được tạo",
             })
           }
           else {
             toaster.warning({
-              title: "No orders created",
+              title: "Tạo lệnh không thành công",
             })
           }
           dispatch({ type: "RESET_TREE_STATE" })
         }).catch(error => {
           toaster.warning({
-            title: "Error creating order",
+            title: "Có vấn đề xảy ra trong lúc tạo lệnh",
             description: tryGetApiErrorMsg(error),
           })
         })

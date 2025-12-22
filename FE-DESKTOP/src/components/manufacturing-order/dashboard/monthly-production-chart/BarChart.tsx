@@ -33,11 +33,11 @@ export default function ManufacturingOrderMonthlyProductionBarChart() {
   } = useGetAllMOStatusesByDateRangeQuery({ startDate: new Date(year, month, 1).toString(), endDate: new Date(year, month, numberOfDays).toString() })
 
   const data = [...Array(numberOfDays).keys()].map(day => {
-    const date = year + "-" + (month + 1) + "-" + (day + 1)
+    const date = year + "-" + (month < 9 ? "0" : "") + (month + 1) + "-" + (day < 9 ? "0" : "") + (day + 1)
     const statsForDate = response?.data?.filter(order => formatDateToYYYYMMDD(order.manufacturingDateAdjustment ?? order.manufacturingDate) === date).length ?? 0
     return {
       "Số lượng lệnh": statsForDate,
-      day: date,
+      day: (day < 9 ? "0" : "") + (day + 1),
     }
   })
 

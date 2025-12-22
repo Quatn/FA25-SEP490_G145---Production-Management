@@ -36,13 +36,13 @@ export default function ManufacturingOrderMonthlyDepartmentOutputsBarChart() {
   } = useGetAllMOProductionOutputByDateRangeQuery({ startDate: new Date(year, month, 1).toString(), endDate: new Date(year, month, numberOfDays).toString() })
 
   const data = [...Array(numberOfDays).keys()].map(day => {
-    const date = year + "-" + (month + 1) + "-" + (day + 1)
+    const date = year + "-" + (month < 9 ? "0" : "") + (month + 1) + "-" + (day < 9 ? "0" : "") + (day + 1)
     const initialValue = {
       "Bộ phận sóng": 0,
       "Bộ phận in": 0,
       "Bộ phận chế biến": 0,
       "Bộ phận ghim dán": 0,
-      day: date
+      day: (day < 9 ? "0" : "") + (day + 1),
     }
 
     const statsForDate: {
@@ -65,13 +65,13 @@ export default function ManufacturingOrderMonthlyDepartmentOutputsBarChart() {
         .filter(fp => check.in(fp.wareFinishingProcessType.code, ["GHIM", "DAN"]))
         .map(fp => fp.completedAmount)
         .reduce((acc, i) => acc + i, 0),
-      day: date,
+      day: (day < 9 ? "0" : "") + (day + 1),
     })).reduce((acc, i) => ({
       "Bộ phận sóng": acc["Bộ phận sóng"] + i["Bộ phận sóng"],
       "Bộ phận in": acc["Bộ phận in"] + i["Bộ phận in"],
       "Bộ phận chế biến": acc["Bộ phận chế biến"] + i["Bộ phận chế biến"],
       "Bộ phận ghim dán": acc["Bộ phận ghim dán"] + i["Bộ phận ghim dán"],
-      day: date
+      day: (day < 9 ? "0" : "") + (day + 1),
     }), initialValue) ?? initialValue
     return statsForDate
   })
