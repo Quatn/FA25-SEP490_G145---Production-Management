@@ -35,7 +35,7 @@ const SemiFinishedDetailDialog: React.FC<Props> = ({ isOpen, onClose, item }) =>
     const mo = current?.manufacturingOrder as ManufacturingOrder;
     const poItem = mo?.purchaseOrderItem;
 
-    const amount = (poItem as PurchaseOrderItem)?.amount ?? 0;
+    const amount = mo?.numberOfBlanks;
     const importDiff = (current?.importedQuantity ?? 0) - amount;
     const hoursInStock = current?.currentQuantity == 0 ? 0 : hourGap(current?.createdAt);
 

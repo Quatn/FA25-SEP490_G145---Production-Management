@@ -34,7 +34,10 @@ export class PaperSupplierService {
 
         if (orConditions.length === 0) return;
 
-        const query: FilterQuery<PaperSupplierDocument> = { $or: orConditions };
+        const query: FilterQuery<PaperSupplierDocument> = { 
+            $or: orConditions,
+            isDeleted: { $in: [true, false] }, 
+         };
 
         if (excludeId) {
             query._id = { $ne: excludeId };

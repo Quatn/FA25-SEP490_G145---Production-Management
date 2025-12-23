@@ -14,6 +14,13 @@ type GetWaresParams = {
   page?: number;
   limit?: number;
   search?: string;
+  wareWidth?: number | string;
+  wareHeight?: number | string;
+  fluteCombination?: string; // id
+  printColors?: string[]; // array of ids
+  wareManufacturingProcessType?: string;
+  unitPriceMin?: number | string;
+  unitPriceMax?: number | string;
 };
 
 export const wareApiSlice = apiSlice.injectEndpoints({
@@ -45,13 +52,20 @@ export const wareApiSlice = apiSlice.injectEndpoints({
           },
         }
         : {
-          query: ({ page = 1, limit = 20, search }) => ({
+          query: ({ page = 1, limit = 20, search, wareWidth, wareHeight, fluteCombination, printColors, wareManufacturingProcessType, unitPriceMin, unitPriceMax }: GetWaresParams) => ({
             url: `${WARE_URL}/`,
             method: "GET",
             params: {
               page,
               limit,
               ...(search ? { search } : {}),
+              ...(wareWidth !== undefined ? { wareWidth } : {}),
+              ...(wareHeight !== undefined ? { wareHeight } : {}),
+              ...(fluteCombination ? { fluteCombination } : {}),
+              ...(wareManufacturingProcessType ? { wareManufacturingProcessType } : {}),
+              ...(unitPriceMin !== undefined ? { unitPriceMin } : {}),
+              ...(unitPriceMax !== undefined ? { unitPriceMax } : {}),
+              ...(printColors && printColors.length > 0 ? { printColors: printColors.join(",") } : {}),
             },
             credentials: "include",
           }),

@@ -23,7 +23,7 @@ export const PaperStorageApp: React.FC = () => {
             className={activeTab === "history" ? "btn btn-primary" : "btn btn-outline-secondary"}
             onClick={() => setActiveTab("history")}
           >
-            Nhập/Xuất/Tồn
+            Lịch sử
           </button>
         </div>
 

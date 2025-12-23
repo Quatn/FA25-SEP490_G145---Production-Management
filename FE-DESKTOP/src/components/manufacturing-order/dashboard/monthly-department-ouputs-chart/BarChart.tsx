@@ -12,33 +12,72 @@ import {
 } from "recharts"
 import { ManufacturingOrderMonthlyDepartmentOutputsChartReducerStore } from "@/context/manufacturing-order/dashboard/manufacturingOrderMonthlyDepartmentOutputsChartContext"
 import { ManufacturingOrderDashBoardUtils } from "../utils"
+import { useGetAllMOProductionOutputByDateRangeQuery } from "@/service/api/manufacturingOrderApiSlice"
+import check from "check-types"
+import { formatDateToYYYYMMDD } from "@/utils/dateUtils"
+import DataLoading from "@/components/common/DataLoading"
+import DataFetchError from "@/components/common/DataFetchError"
+import DataEmpty from "@/components/common/DataEmpty"
 
 const { getDaysInMonth } = ManufacturingOrderDashBoardUtils
 
-const randomList = Array.from({ length: 50 }, () => Math.floor(Math.random() * (1000 - 200 + 1)) + 200);
-const randomList2 = Array.from({ length: 50 }, () => Math.floor(Math.random() * (1000 - 200 + 1)) + 200);
-const randomList3 = Array.from({ length: 50 }, () => Math.floor(Math.random() * (1000 - 200 + 1)) + 200);
-const randomList4 = Array.from({ length: 50 }, () => Math.floor(Math.random() * (1000 - 200 + 1)) + 200);
-
 export default function ManufacturingOrderMonthlyDepartmentOutputsBarChart() {
   const { useSelector } = ManufacturingOrderMonthlyDepartmentOutputsChartReducerStore
-  const month = useSelector(s => s.month)
-  // Maybe there will also be a year selector, idk
-  const year = new Date().getFullYear()
+  const currentDate = new Date()
 
+  const year = currentDate.getFullYear()
+  const month = useSelector(s => s.month)
   const numberOfDays = getDaysInMonth(year, month)
 
-  const mockData = [...Array(numberOfDays).keys()].map(day =>
-  ({
-    "Bộ phận sóng": randomList.at(day) ?? 0,
-    "Bộ phận in": randomList2.at(day) ?? 0,
-    "Bộ phận chế biến": randomList3.at(day) ?? 0,
-    "Bộ phận ghim dán": randomList4.at(day) ?? 0,
-    day: (day + 1) + "/" + (month + 1) + "/" + year
-  }))
+  const {
+    data: response,
+    isLoading,
+    isError,
+  } = useGetAllMOProductionOutputByDateRangeQuery({ startDate: new Date(year, month, 1).toString(), endDate: new Date(year, month, numberOfDays).toString() })
+
+  const data = [...Array(numberOfDays).keys()].map(day => {
+    const date = year + "-" + (month < 9 ? "0" : "") + (month + 1) + "-" + (day < 9 ? "0" : "") + (day + 1)
+    const initialValue = {
+      "Bộ phận sóng": 0,
+      "Bộ phận in": 0,
+      "Bộ phận chế biến": 0,
+      "Bộ phận ghim dán": 0,
+      day: (day < 9 ? "0" : "") + (day + 1),
+    }
+
+    const statsForDate: {
+      "Bộ phận sóng": number,
+      "Bộ phận in": number,
+      "Bộ phận chế biến": number,
+      "Bộ phận ghim dán": number,
+      day: string
+    } = response?.data?.filter(order => formatDateToYYYYMMDD(order.manufacturingDateAdjustment ?? order.manufacturingDate) === date).map((order) => ({
+      "Bộ phận sóng": order.corrugatorProcess.manufacturedAmount ?? 0,
+      "Bộ phận in": order.finishingProcesses
+        .filter(fp => check.in(fp.wareFinishingProcessType.code, ["IN"]))
+        .map(fp => fp.completedAmount)
+        .reduce((acc, i) => acc + i, 0),
+      "Bộ phận chế biến": order.finishingProcesses
+        .filter(fp => !check.in(fp.wareFinishingProcessType.code, ["IN", "GHIM", "DAN"]))
+        .map(fp => fp.completedAmount)
+        .reduce((acc, i) => acc + i, 0),
+      "Bộ phận ghim dán": order.finishingProcesses
+        .filter(fp => check.in(fp.wareFinishingProcessType.code, ["GHIM", "DAN"]))
+        .map(fp => fp.completedAmount)
+        .reduce((acc, i) => acc + i, 0),
+      day: (day < 9 ? "0" : "") + (day + 1),
+    })).reduce((acc, i) => ({
+      "Bộ phận sóng": acc["Bộ phận sóng"] + i["Bộ phận sóng"],
+      "Bộ phận in": acc["Bộ phận in"] + i["Bộ phận in"],
+      "Bộ phận chế biến": acc["Bộ phận chế biến"] + i["Bộ phận chế biến"],
+      "Bộ phận ghim dán": acc["Bộ phận ghim dán"] + i["Bộ phận ghim dán"],
+      day: (day < 9 ? "0" : "") + (day + 1),
+    }), initialValue) ?? initialValue
+    return statsForDate
+  })
 
   const chart = useChart({
-    data: mockData,
+    data: data,
     series: [
       { name: "Bộ phận sóng", color: "orange", stackId: "total" },
       { name: "Bộ phận in", color: "khaki", stackId: "total" },
@@ -46,6 +85,18 @@ export default function ManufacturingOrderMonthlyDepartmentOutputsBarChart() {
       { name: "Bộ phận ghim dán", color: "teal.solid", stackId: "total" },
     ],
   })
+
+  if (isLoading) {
+    return <DataLoading h="full" />
+  }
+
+  if (isError) {
+    return <DataFetchError h="full" />
+  }
+
+  if (chart.data.length < 1) {
+    return <DataEmpty h="full" text="Không có lệnh nào sản xuất trong khoảng thời gian đã chọn" />
+  }
 
   return (
     <Chart.Root maxH="sm" chart={chart}>
@@ -58,11 +109,11 @@ export default function ManufacturingOrderMonthlyDepartmentOutputsBarChart() {
           tickFormatter={(value) => (value + "").split("/").filter((_v, index) => index < 2).join("/")}
         />
         <Tooltip
-          cursor={false}
+          cursor={{ fill: chart.color("bg.muted") }}
           animationDuration={100}
           content={<Chart.Tooltip />}
         />
-        <Legend content={<Chart.Legend interaction="hover"/>} />
+        <Legend content={<Chart.Legend interaction="hover" />} />
         {chart.series.map((item) => (
           <Bar
             isAnimationActive={false}
@@ -70,7 +121,12 @@ export default function ManufacturingOrderMonthlyDepartmentOutputsBarChart() {
             dataKey={chart.key(item.name)}
             fill={chart.color(item.color)}
             stackId={item.stackId}
-          />
+          >
+            <LabelList
+              position="top"
+              style={{ fontWeight: "600", fill: chart.color("fg") }}
+            />
+          </Bar>
         ))}
       </BarChart>
     </Chart.Root>

@@ -1,6 +1,6 @@
 "use client"
 
-import { Highlight, TreeView } from "@chakra-ui/react"
+import { Highlight, Text, TreeView } from "@chakra-ui/react"
 import { LuChevronRight } from "react-icons/lu"
 import { Node } from "./Sidebar"
 import Link from "next/link"
@@ -21,12 +21,15 @@ export const SidebarTreeBranchNode = (props: {
       <TreeView.BranchText>
         {props.query
           ? (
-            <Highlight
-              query={[props.query]}
-              styles={{ bg: "colorPalette.emphasized" }}
-            >
-              {props.node.name}
-            </Highlight>
+            <Text>
+              <Highlight
+                ignoreCase
+                query={[props.query]}
+                styles={{ colorPalette: "orange", color: "colorPalette.500" }}
+              >
+                {props.node.name}
+              </Highlight>
+            </Text>
           )
           : props.node.name}
       </TreeView.BranchText>
@@ -41,18 +44,43 @@ export const SidebarTreeLeafNode = (props: {
 ) => {
   const pathname = usePathname();
 
-  if (!props.node.href || props.node.href === pathname) {
+  if (!props.node.href) {
+    return (
+      <TreeView.Item asChild>
+        <TreeView.ItemText>
+          {props.query
+            ? (
+              <Text>
+                <Highlight
+                  ignoreCase
+                  query={[props.query]}
+                  styles={{ colorPalette: "orange", color: "colorPalette.500" }}
+                >
+                  {props.node.name}
+                </Highlight>
+              </Text>
+            )
+            : props.node.name}
+        </TreeView.ItemText>
+      </TreeView.Item>
+    )
+  }
+
+  if (props.node.href && props.node.href === pathname) {
     return (
       <TreeView.Item asChild>
         <TreeView.ItemText bgColor={"colorPalette.emphasized"}>
           {props.query
             ? (
-              <Highlight
-                query={[props.query]}
-                styles={{ bg: "colorPalette.emphasized" }}
-              >
-                {props.node.name}
-              </Highlight>
+              <Text>
+                <Highlight
+                  ignoreCase
+                  query={[props.query]}
+                  styles={{ bg: "colorPalette.emphasized", color: "yellow.emphasized" }}
+                >
+                  {props.node.name}
+                </Highlight>
+              </Text>
             )
             : props.node.name}
         </TreeView.ItemText>
@@ -66,12 +94,15 @@ export const SidebarTreeLeafNode = (props: {
         <TreeView.ItemText>
           {props.query
             ? (
-              <Highlight
-                query={[props.query]}
-                styles={{ bg: "colorPalette.emphasized" }}
-              >
-                {props.node.name}
-              </Highlight>
+              <Text>
+                <Highlight
+                  ignoreCase
+                  query={[props.query]}
+                  styles={{ bg: "colorPalette.emphasized" }}
+                >
+                  {props.node.name}
+                </Highlight>
+              </Text>
             )
             : props.node.name}
         </TreeView.ItemText>

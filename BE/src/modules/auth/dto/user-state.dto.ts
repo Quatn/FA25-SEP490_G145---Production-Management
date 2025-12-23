@@ -30,5 +30,8 @@ export class UserState {
   role: string;
 
   @ApiProperty()
+  roleName: string;
+
+  @ApiProperty()
   accessPrivileges: AnyAccessPrivileges[];
 }

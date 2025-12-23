@@ -5,11 +5,9 @@ import type {
   TreeViewExpandedChangeDetails,
   TreeViewRootProps,
 } from "@chakra-ui/react";
-import { Box, Flex, Highlight, HStack, Text, TreeView } from "@chakra-ui/react";
+import { Box, Flex, HStack, Text, TreeView } from "@chakra-ui/react";
 import { ReactNode, RefObject } from "react";
-import { LuChevronRight } from "react-icons/lu";
 import SidebarExpandCollapseButton from "./SidebarExpandCollapseButton";
-import Link from "next/link";
 import { SidebarTreeBranchNode, SidebarTreeLeafNode } from "./SidebarTreeNodes";
 
 export interface Node {

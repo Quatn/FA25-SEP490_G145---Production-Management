@@ -1,8 +1,10 @@
+import PrivilegedContent from "@/components/layout/PrivilegedContent";
 import { ManufacturingOrderTableComponents } from "@/components/manufacturing-order/full-detail-table/components";
 import ManufacturingOrderOrderDetailsConfirmDialog from "@/components/manufacturing-order/order-details-dialog/ConfirmDialog";
 import { DataTableProvider } from "@/components/ui/data-table/Provider";
 import { ManufacturingOrderDialogProvider } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent";
 import { ManufacturingOrderTableProvider } from "@/context/manufacturing-order/manufacturingOrderTableContext";
+import { manufacturingOrderReadWritePrivileges } from "@/types/CascadingAccessPrivileges";
 import { Box, Button, HStack, Stack, Text } from "@chakra-ui/react";
 import Link from "next/link";
 
@@ -35,9 +37,13 @@ export default function ManufacturingOrderList() {
 
                   {/*<ManufacturingOrderTableComponents.SearchFilterControl />*/}
 
-                  <Link href="/manufacturing-order/create">
-                    <Button size={"sm"} colorPalette={"cyan"}>Tạo mới</Button>
-                  </Link>
+                  {/* If the user has any of the access privileges in the requiredPrivileges, the content inside of this component will be rendered */}
+                  <PrivilegedContent requiredPrivileges={manufacturingOrderReadWritePrivileges} >
+                    <Link href="/manufacturing-order/create">
+                      <Button size={"sm"} colorPalette={"cyan"}>Tạo mới</Button>
+                    </Link>
+                  </PrivilegedContent>
+
                 </HStack>
 
                 <ManufacturingOrderTableComponents.TableControl />

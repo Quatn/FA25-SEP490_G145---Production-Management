@@ -2,7 +2,7 @@
 
 import { useAppSelector } from "@/service/hooks";
 import { UserState } from "@/types/UserState";
-import { Avatar, Box, HStack, Stack, Text } from "@chakra-ui/react";
+import { Avatar, Box, Center, HStack, Spinner, Stack, Text } from "@chakra-ui/react";
 import check from "check-types";
 import Link from "next/link";
 
@@ -10,6 +10,17 @@ export default function UserAvatar(props: { displayDetails?: boolean }) {
   const userState: UserState | null = useAppSelector((state) =>
     state.auth.userState
   );
+  const hydrating: boolean = useAppSelector((state) => {
+    return state.auth.hydrating
+  });
+
+  if (hydrating) {
+    return (
+      <Center>
+        <Spinner />
+      </Center>
+    )
+  }
 
   if (check.null(userState)) {
     return (

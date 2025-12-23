@@ -1,25 +1,27 @@
 "use client"
 import { ManufacturingOrder } from "@/types/ManufacturingOrder"
-import { Alert, Box, Button, Card, createListCollection, DataList, Editable, Heading, HStack, Input, NumberInput, Portal, Select, Stack, Table, TableHeader, Text } from "@chakra-ui/react"
+import { Alert, Button, Card, createListCollection, DataList, Heading, HStack, Input, NumberInput, Portal, Select, Stack, Table, Textarea } from "@chakra-ui/react"
 import check from "check-types"
 import { useMemo, useState } from "react"
 import { manufacturingOrderComponentUtils as utils } from "../utils"
 import { ManufacturingOrderDirectives } from "@/types/enums/ManufacturingOrderDirectives"
-import { formatDateToDDMMYYYY, formatDateToYYYYMMDD } from "@/utils/dateUtils"
+import { formatDateToDDMMYYYY, formatDateTohhmm, formatDateToYYYYMMDD } from "@/utils/dateUtils"
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine"
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError"
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto"
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem"
 import { useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice"
 import { toaster } from "@/components/ui/toaster"
-import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg"
+import { defaultAltHandler, tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg"
 import { ManufacturingOrderDetailsDialogReducerStore } from "@/context/manufacturing-order/manufacturingOrderDetailsDialogContent"
-import { OrderFinishingProcess } from "@/types/OrderFinishingProcess"
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus"
 import { ManufacturingOrderOperativeStatus } from "@/types/enums/ManufacturingOrderOperativeStatus"
 import { LuCircleCheckBig, LuCircleMinus, LuCircleX, LuPause, LuPlay } from "react-icons/lu"
 import ManufacturingOrderDetailsDialogManufacturingDetailsAdditionalDetails from "./ManufacturingDetailsAdditionalDetails"
 import { numToFixedBounded } from "@/utils/numToFixedBounded"
+import { dateDMYCompare } from "@/utils/dateDMYCompare"
+import { Field } from "@/components/ui/field"
+import { TIME_INPUT_REGEX } from "@/constants/time-input-regex"
 
 const OrderStatusAlertColorMap: Record<ManufacturingOrderOperativeStatus, string> = {
   NOTSTARTED: "gray",
@@ -82,10 +84,13 @@ type FormValue = {
 }
 
 export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(props: ManufacturingOrderDetailsDialogManufacturingDetailsCardProps) {
-  const disabled = props.order.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
-
-  const { useDispatch } = ManufacturingOrderDetailsDialogReducerStore;
+  const { useDispatch, useSelector } = ManufacturingOrderDetailsDialogReducerStore;
   const dispatch = useDispatch();
+  const allowValueEdit = useSelector(s => s.allowValueEdit)
+
+  const disabled = props.order.approvalStatus !== ManufacturingOrderApprovalStatus.Draft || !allowValueEdit
+  const finished = (props.order.operativeStatus === ManufacturingOrderOperativeStatus.COMPLETED) || (props.order.operativeStatus === ManufacturingOrderOperativeStatus.CANCELLED)
+
   const [updateOrders, { isLoading: updating, error: updateError }] = useUpdateManyManufacturingOrdersMutation();
 
   const ware = utils.getPopulatedWare(props.order)
@@ -102,8 +107,12 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
     isEdited: false,
   }
 
+  const [interactFlag, setInteractFlag] = useState(false)
   const [formValue, setFormValue] = useState<FormValue & { isEdited: boolean }>(initialFormVal)
-  const setFormValueWrapped = (setFunc: (val: FormValue) => FormValue) => setFormValue(prev => ({ ...(setFunc(prev)), isEdited: true }))
+  const setFormValueWrapped = (setFunc: (val: FormValue) => FormValue) => {
+    setInteractFlag(true)
+    setFormValue(prev => ({ ...(setFunc(prev)), isEdited: true }))
+  }
 
   const setApprovalStatus = (value?: string) => {
     setFormValueWrapped(prev => ({
@@ -129,7 +138,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
   const setAmount = (value: string) => {
     if (value.length < 1) setFormValueWrapped(prev => ({ ...prev, amount: undefined }))
     const val = parseInt(value)
-    if (check.number(val)) setFormValueWrapped(prev => ({ ...prev, amount: val }))
+    if (check.number(val) && val > 0) setFormValueWrapped(prev => ({ ...prev, amount: val }))
   }
 
   const setManufacturingDateAdjustment = (value: string | null) => {
@@ -137,15 +146,108 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
   }
 
   const setRequestedDatetime = (value: string | null) => {
-    setFormValueWrapped(prev => ({ ...prev, requestedDatetime: (check.greater(value?.length as number, 0)) ? value : null }))
+    setFormValueWrapped(prev => {
+      if (value?.match(TIME_INPUT_REGEX)) {
+        const rd = new Date(prev.requestedDatetime ?? "-----")
+        const mda = new Date(prev.manufacturingDateAdjustment ?? "-----")
+        const md = new Date(props.order.manufacturingDate)
+
+        const date =
+          (check.string(prev.requestedDatetime) && check.date(rd)) ? rd :
+            (check.string(prev.manufacturingDateAdjustment) && check.date(mda)) ? mda :
+              (check.string(props.order.manufacturingDate) && check.date(md)) ? md
+                : new Date()
+        const [hours, minutes, seconds = 0] = value
+          .split(":")
+          .map(Number);
+        date.setHours(hours, minutes, seconds, 0);
+
+        return { ...prev, requestedDatetime: date.toString() }
+      }
+
+      return { ...prev, requestedDatetime: (check.greater(value?.length as number, 0)) ? value : null }
+    })
   }
 
   const setNote = (value: string) => {
     setFormValueWrapped(prev => ({ ...prev, note: value }))
   }
 
+  const [showAlert, setAlert] = useState<string | null>(null);
+
+  const amountErr: string | undefined = useMemo(() => {
+    if (!interactFlag) return undefined
+
+    if (check.undefined(formValue.amount)) {
+      return "Số lượng sản xuất là trường bắt buộc";
+    }
+
+    const poiAmount = utils.getPopulatedPoi(props.order).amount
+    if (formValue.amount < poiAmount) {
+      return `Số lượng sản xuất không được ít hơn số lượng cần sản xuất của đơn hàng (${poiAmount})`;
+    }
+
+    return undefined
+  }, [interactFlag, formValue.amount, props.order])
+
+  const manufacturingDateErr: string | undefined = useMemo(() => {
+    if (!interactFlag) return undefined
+    if (check.null(formValue.manufacturingDateAdjustment)) return undefined
+
+    const manufacturingDate = new Date(formValue.manufacturingDateAdjustment)
+
+    if (!check.date(manufacturingDate)) {
+      return "Ngày sản xuất không hợp lệ"
+    }
+
+    const subPO = utils.getPopulatedSubPo(props.order)
+    const compare = dateDMYCompare(manufacturingDate, subPO.deliveryDate)
+
+    if (check.undefined(compare)) {
+      return "Không thể so sánh ngày sản xuất với ngày giao đơn hàng, hãy kiểm tra lại dữ liệu"
+    }
+
+    if (compare < 0) {
+      return `Ngày sản xuất phải trước ngày giao của đơn hàng (${formatDateToDDMMYYYY(subPO.deliveryDate)})`
+    }
+
+    return undefined
+  }, [interactFlag, formValue.manufacturingDateAdjustment, props.order])
+
+  const requestedDatetimeErr: string | undefined = useMemo(() => {
+    if (!interactFlag) return undefined
+    if (check.null(formValue.requestedDatetime)) return undefined
+
+    const requestedDatetime = new Date(formValue.requestedDatetime)
+
+    if (!check.date(requestedDatetime)) {
+      return "Ngày cần không hợp lệ"
+    }
+
+    const subPO = utils.getPopulatedSubPo(props.order)
+    const compare = dateDMYCompare(requestedDatetime, subPO.deliveryDate)
+
+    if (check.undefined(compare)) {
+      return "Không thể so sánh ngày cần với ngày giao đơn hàng, hãy kiểm tra lại dữ liệu"
+    }
+
+    if (compare < 0) {
+      return `Ngày cần phải trước ngày giao của đơn hàng (${formatDateToDDMMYYYY(subPO.deliveryDate)})`
+    }
+
+    return undefined
+  }, [interactFlag, formValue.requestedDatetime, props.order])
+
+  const formErr = !!amountErr || !!manufacturingDateErr || !!requestedDatetimeErr
+
   const handleSubmit = () => {
     if (!formValue.isEdited) return false
+
+    if (!interactFlag || formErr) {
+      setAlert(interactFlag ? "Dữ liệu không hợp lệ" : "Hãy điều chỉnh dữ liệu trước khi lưu")
+      setInteractFlag(true)
+      return false
+    }
 
     if (check.string(props.order.purchaseOrderItem)) {
       throw new UnpopulatedFieldError("props.order.purchaseOrderItem should have been populated before it reaches here")
@@ -171,24 +273,30 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
         updateOrders(dto).unwrap().then((res) => {
           if (check.greaterOrEqual(res.data?.patchedAmount as number, 1)) {
             toaster.success({
-              title: "Success",
-              description: "Updated order successfully",
+              description: "Cập nhật lệnh thành công",
             })
             setFormValue(prev => ({ ...prev, isEdited: false }))
+            setAlert(null)
           }
           else {
             toaster.warning({
-              title: "Order not updated",
+              title: "Cập nhật lệnh không thành công",
             })
           }
         }).catch(error => {
-          toaster.warning({
-            title: "Error updating order",
+          toaster.error({
+            title: "Có lỗi xảy ra trong quá trình cập nhật lệnh",
             description: (error as Error).message,
           })
         })
       }
     })
+  }
+
+  const handleReset = () => {
+    setFormValue(initialFormVal)
+    setInteractFlag(false);
+    setAlert(null)
   }
 
   const parsedFaceLayerPaperWeight = parseFloat(props.order.faceLayerPaperWeight + "")
@@ -199,6 +307,12 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
   const parsedACFlutePaperWeight = parseFloat(props.order.ACFlutePaperWeight + "")
   const parsedBackLayerPaperWeight = parseFloat(props.order.backLayerPaperWeight + "")
 
+  const shouldEnableTimeSelector = useMemo(() => {
+    // return ((check.string(formValue.requestedDatetime) && check.date(new Date(formValue.requestedDatetime))) ||
+    //   (check.string(props.order.requestedDatetime) && check.date(new Date(props.order.requestedDatetime))))
+    return check.string(formValue.requestedDatetime) && check.date(new Date(formValue.requestedDatetime))
+  }, [formValue.requestedDatetime])
+
   return (
     <Card.Root size="md">
       <Card.Header>
@@ -206,7 +320,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
       </Card.Header>
       <Card.Body color="fg.muted">
         <HStack alignItems={"stretch"} justifyContent={"space-between"} wrap={"wrap"} gapX={"40px"}>
-          <Stack minW={"10rem"}>
+          <Stack w={"30rem"}>
             <DataList.Root orientation="horizontal" flexGrow={1}>
               <DataList.Item>
                 <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Mã lệnh</Heading></DataList.ItemLabel>
@@ -234,7 +348,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     width="320px"
                     value={check.null(formValue.approvalStatus) ? undefined : [formValue.approvalStatus]}
                     onValueChange={(v) => setApprovalStatus(v.value.at(0))}
-                    disabled={disabled}
+                    disabled={finished || disabled && props.order.approvalStatus !== ManufacturingOrderApprovalStatus.PendingApproval}
                   >
                     <Select.HiddenSelect />
                     <Select.Control>
@@ -270,7 +384,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     width="320px"
                     value={check.null(formValue.manufacturingDirective) ? undefined : [formValue.manufacturingDirective]}
                     onValueChange={(v) => setManufacturingDirective(v.value.at(0))}
-                    disabled={disabled}
+                    disabled={finished}
                   >
                     <Select.HiddenSelect />
                     <Select.Control>
@@ -307,7 +421,7 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
                     width="320px"
                     value={check.null(formValue.corrugatorLineAdjustment) ? undefined : [formValue.corrugatorLineAdjustment]}
                     onValueChange={(v) => setCorrugatorLine(v.value.at(0))}
-                    disabled={disabled}
+                    disabled={finished || disabled}
                   >
                     <Select.HiddenSelect />
                     <Select.Control>
@@ -337,16 +451,18 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
               <DataList.Item>
                 <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Số lượng sản xuất</Heading></DataList.ItemLabel>
                 <DataList.ItemValue color="fg.muted" flexGrow={1}>
-                  <NumberInput.Root
-                    bg={"bg"}
-                    value={formValue.amount + ""}
-                    onValueChange={(ev) => setAmount(ev.value)}
-                    w="full"
-                    disabled={disabled}
-                  >
-                    <NumberInput.Control />
-                    <NumberInput.Input />
-                  </NumberInput.Root>
+                  <Field w={"full"} invalid={!!amountErr} errorText={amountErr}>
+                    <NumberInput.Root
+                      bg={"bg"}
+                      value={(formValue.amount ?? "") + ""}
+                      onValueChange={(ev) => setAmount(ev.value)}
+                      w="full"
+                      disabled={finished || disabled}
+                    >
+                      <NumberInput.Control />
+                      <NumberInput.Input />
+                    </NumberInput.Root>
+                  </Field>
 
                 </DataList.ItemValue>
               </DataList.Item>
@@ -354,64 +470,88 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
               <DataList.Item>
                 <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Ngày sản xuất</Heading></DataList.ItemLabel>
                 <DataList.ItemValue color="fg.muted" flexGrow={1}>
-                  <Input
-                    bg={"bg"}
-                    type="date"
-                    value={check.null(formValue.manufacturingDateAdjustment) ?
-                      formatDateToYYYYMMDD(props.order.manufacturingDate)
-                      : formatDateToYYYYMMDD(formValue.manufacturingDateAdjustment)}
-                    onChange={(ev) => {
-                      return setManufacturingDateAdjustment(ev.target.value)
-                    }}
-                    disabled={disabled}
-                  />
+                  <Field invalid={!!manufacturingDateErr} errorText={manufacturingDateErr}>
+                    <Input
+                      bg={"bg"}
+                      type="date"
+                      value={check.null(formValue.manufacturingDateAdjustment) ?
+                        formatDateToYYYYMMDD(props.order.manufacturingDate)
+                        : formatDateToYYYYMMDD(formValue.manufacturingDateAdjustment)}
+                      onChange={(ev) => {
+                        return setManufacturingDateAdjustment(ev.target.value)
+                      }}
+                      disabled={finished || disabled}
+                    />
+                  </Field>
+
                 </DataList.ItemValue>
               </DataList.Item>
 
               <DataList.Item>
                 <DataList.ItemLabel color="fg" minW={"30%"} maxW={"50%"}><Heading size={"md"}>Ngày cần</Heading></DataList.ItemLabel>
                 <DataList.ItemValue color="fg.muted" flexGrow={1}>
-                  <Input
-                    bg={"bg"}
-                    type="date"
-                    value={check.null(formValue.requestedDatetime) ?
-                      formatDateToYYYYMMDD(props.order.requestedDatetime)
-                      : formatDateToYYYYMMDD(formValue.requestedDatetime)}
-                    onChange={(ev) => {
-                      return setRequestedDatetime(ev.target.value)
-                    }}
-                    disabled={disabled}
-                  />
+                  <Field invalid={!!requestedDatetimeErr} errorText={requestedDatetimeErr}>
+                    <HStack w={"full"}>
+                      <Input
+                        flexGrow={1}
+                        bg={"bg"}
+                        type="time"
+                        value={check.null(formValue.requestedDatetime) ?
+                          ""
+                          : formatDateTohhmm(formValue.requestedDatetime)}
+                        onChange={(ev) => {
+                          return setRequestedDatetime(ev.target.value)
+                        }}
+                        disabled={finished || !shouldEnableTimeSelector}
+                      />
+
+                      <Input
+                        flexGrow={1}
+                        bg={"bg"}
+                        type="date"
+                        value={check.null(formValue.requestedDatetime) ?
+                          ""
+                          : formatDateToYYYYMMDD(formValue.requestedDatetime)}
+                        onChange={(ev) => {
+                          return setRequestedDatetime(ev.target.value)
+                        }}
+                        disabled={finished}
+                      />
+                    </HStack>
+                  </Field>
                 </DataList.ItemValue>
               </DataList.Item>
 
             </DataList.Root>
             <Stack mt={2}>
               <Heading size="lg">Ghi chú</Heading>
-              <Editable.Root bg={"bg.muted"} value={formValue.note} placeholder={"Nhấn để nhập"} onValueChange={(v) => setNote(v.value)}>
-                <Editable.Preview w={"full"} />
-                <Editable.Input />
-              </Editable.Root>
+              <Textarea
+                variant="subtle"
+                value={formValue.note}
+                placeholder={finished ? "" : "Nhấn để nhập"}
+                onChange={(v) => setNote(v.target.value)}
+                readOnly={finished}
+              />
             </Stack>
             {formValue.isEdited && <HStack>
-              <Button variant="outline" onClick={() => setFormValue(initialFormVal)}>Hủy</Button>
+              <Button variant="outline" onClick={handleReset}>Hủy</Button>
               <Button
                 colorPalette={"blue"}
                 variant="solid"
                 onClick={handleSubmit}
                 loading={!!updating}
-                disabled={!!updateError}
+                disabled={finished || formErr}
               >
-                Confirm
+                Cập nhật
               </Button>
             </HStack>}
 
-            {updateError && (
+            {(check.string(showAlert) || !!updateError) && (
               <Alert.Root status={"error"}>
                 <Alert.Indicator />
                 <Alert.Content>
                   <Alert.Description>
-                    {tryGetApiErrorMsg(updateError)}
+                    {showAlert ? showAlert : tryGetApiErrorMsg(updateError, defaultAltHandler)}
                   </Alert.Description>
                 </Alert.Content>
               </Alert.Root>
@@ -516,9 +656,6 @@ export default function ManufacturingOrderDetailsDialogManufacturingDetailsCard(
             <ManufacturingOrderDetailsDialogManufacturingDetailsAdditionalDetails order={props.order} />
 
           </Stack>
-        </HStack>
-        <HStack>
-          {props.order.corrugatorProcess.note}
         </HStack>
       </Card.Body>
     </Card.Root>

@@ -12,7 +12,7 @@ export default function ProfilePage() {
 
   const stats = [
     { label: "Tên", value: userState?.name },
-    { label: "Chức danh", value: userState?.role },
+    { label: "Chức danh", value: userState?.roleName },
     { label: "Mã nhân viên", value: userState?.employeeCode },
     { label: "Email", value: userState?.email },
     { label: "Điện thoại", value: userState?.contactNumber },

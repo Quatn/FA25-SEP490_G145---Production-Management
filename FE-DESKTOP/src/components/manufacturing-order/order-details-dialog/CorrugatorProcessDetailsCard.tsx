@@ -1,6 +1,6 @@
 "use client"
 import { ManufacturingOrder } from "@/types/ManufacturingOrder"
-import { Alert, Button, Card, createListCollection, DataList, Editable, Heading, HStack, Menu, NumberInput, Portal, Select, Stack } from "@chakra-ui/react"
+import { Alert, Button, Card, createListCollection, DataList, Editable, Heading, HStack, Menu, NumberInput, Portal, Select, Stack, Textarea } from "@chakra-ui/react"
 import check from "check-types"
 import { useMemo, useState } from "react"
 import { manufacturingOrderComponentUtils as utils } from "../utils"
@@ -14,6 +14,9 @@ import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError"
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto"
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem"
 import { toaster } from "@/components/ui/toaster"
+import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus"
+import { ManufacturingOrderOperativeStatus } from "@/types/enums/ManufacturingOrderOperativeStatus"
+import { URLMatch } from "@/components/layout/URLMatch"
 
 const corrugatorLines: { label: string, value: string }[] = [
   { label: "Dàn 5", value: CorrugatorLine.L5 },
@@ -65,6 +68,9 @@ type FormValue = {
 
 export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCard(props: ManufacturingOrderDetailsDialogCorrugatorProcessDetailsCardProps) {
   const po = utils.getPopulatedPo(props.order)
+  const disabled = props.order.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
+  const finished = (props.order.operativeStatus === ManufacturingOrderOperativeStatus.COMPLETED) || (props.order.operativeStatus === ManufacturingOrderOperativeStatus.CANCELLED)
+
   const stats: { label: string, value: string }[] = useMemo(() => {
     if (check.null(props.order)) return []
 
@@ -126,7 +132,7 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
     const dto: UpdateManyManufacturingOrdersRequestDto = {
       orders: [{
         id: props.order._id,
-        corrugatorLineAdjustment: props.order.corrugatorLineAdjustment,
+        corrugatorLineAdjustment: formValue.corrugatorLineAdjustment,
         corrugatorProcess: {
           manufacturedAmount: formValue.manufacturedAmount,
           status: formValue.status,
@@ -150,20 +156,19 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
         updateOrders(dto).unwrap().then((res) => {
           if (check.greaterOrEqual(res.data?.patchedAmount as number, 1)) {
             toaster.success({
-              title: "Success",
-              description: "Updated order successfully",
+              title: "Cập nhật quy trình sóng thành công",
             })
             setFormValue(prev => ({ ...prev, isEdited: false }))
           }
           else {
             toaster.warning({
-              title: "Order not updated",
+              title: "Không cập nhật được quy trình sóng",
             })
           }
-        }).catch(error => {
-          toaster.warning({
-            title: "Error updating order",
-            description: (error as Error).message,
+        }).catch(() => {
+          toaster.error({
+            title: "Có lỗi xảy ra trong quá trình cập nhật quy trình sóng",
+            // description: (error as Error).message,
           })
         })
       }
@@ -176,11 +181,17 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
       <Card.Header>
         <HStack justifyContent={"space-between"}>
           <Heading size="md">Quy trình sóng</Heading>
+          <URLMatch path="/manufacturing-order/corrugator-process-operate" notMatched={
+            <Link href={`/manufacturing-order/corrugator-process-operate${check.string(props.order?._id) ? "?id=" + props.order._id : ""}`}>
+              <Button colorPalette={"blue"} size="xs">Thao tác</Button>
+            </Link>
+          } />
         </HStack>
       </Card.Header>
 
       <Card.Body justifyContent={"space-between"} gap={8}>
         <HStack gap={20}>
+          {/*
           <Menu.Root>
             <Menu.Trigger asChild>
               <Alert.Root cursor={"pointer"} colorPalette={CorrugatorProcessProgressColorMap[props.order.corrugatorProcess.status]} w="10rem">
@@ -202,6 +213,13 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
               </Menu.Positioner>
             </Portal>
           </Menu.Root>
+          */}
+          <Alert.Root colorPalette={CorrugatorProcessProgressColorMap[props.order.corrugatorProcess.status]} w="10rem">
+            <Alert.Indicator>
+              {CorrugatorProcessProgressSymbolMap[props.order.corrugatorProcess.status]}
+            </Alert.Indicator>
+            <Alert.Title>{CorrugatorProcessProgressNameMap[props.order.corrugatorProcess.status]}</Alert.Title>
+          </Alert.Root>
 
           <Stack>
             <Heading size={"xs"}>Dàn sóng</Heading>
@@ -211,6 +229,7 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
               width="320px"
               value={check.null(formValue.corrugatorLineAdjustment) ? undefined : [formValue.corrugatorLineAdjustment]}
               onValueChange={(v) => setCorrugatorLine(v.value.at(0))}
+              disabled={finished || disabled}
             >
               <Select.HiddenSelect />
               <Select.Control>
@@ -261,9 +280,13 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
         </DataList.Root>
         <Stack mt={5}>
           <Heading size="lg">Ghi chú</Heading>
-          <Editable.Root value={po?.note} readOnly >
-            <Editable.Preview w={"full"} />
-          </Editable.Root>
+          <Textarea
+            variant="subtle"
+            value={formValue.note}
+            placeholder={finished ? "" : "Nhấn để nhập"}
+            onChange={(v) => setNote(v.target.value)}
+            readOnly={finished}
+          />
         </Stack>
 
         {formValue.isEdited && <HStack>
@@ -275,7 +298,7 @@ export default function ManufacturingOrderDetailsDialogCorrugatorProcessDetailsC
             loading={!!updating}
             disabled={!!updateError}
           >
-            Confirm
+            Cập nhật
           </Button>
         </HStack>}
 

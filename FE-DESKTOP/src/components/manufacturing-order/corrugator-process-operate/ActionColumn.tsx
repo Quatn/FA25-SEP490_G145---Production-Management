@@ -124,19 +124,21 @@ export default function ManufacturingOrderCorrugatorOperatePageTableActionColumn
             colorPalette={"blue"}
             onClick={() =>
               dialogDispatch({
-                type: "OPEN_DIALOG_WITH_ORDER",
-                payload: moObj,
+                type: "OPEN_DIALOG_WITH_ORDER_ID",
+                payload: moObj.order._id,
               })
             }
           >
             Chi tiết
           </Button>
 
+          {/*
           <Popover.Trigger asChild>
             <Button variant="solid" size="xs" colorPalette={"gray"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }}>
               <BiSolidDownArrow />
             </Button>
           </Popover.Trigger>
+          */}
         </Group>
 
         <Portal>

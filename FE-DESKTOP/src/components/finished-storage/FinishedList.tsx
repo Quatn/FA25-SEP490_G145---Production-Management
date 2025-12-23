@@ -13,8 +13,33 @@ import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { useGetFinishedGoodsQuery } from "@/service/api/finishedGoodApiSlice";
 import { FinishedGood } from "@/types/FinishedGood";
 import FinishedTransactionBulkForm from "./FinishedTransactionBulkForm";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import check from "check-types";
+import DataLoading from "../common/DataLoading";
+
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "finished-good-readWrite",
+    "finished-good-transaction-readWrite",
+]
 
 const FinishedList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
+
     const [page, setPage] = useState(1);
     const limit = 10;
     const [search, setSearch] = useState("");
@@ -39,16 +64,40 @@ const FinishedList: React.FC = () => {
     const [bulkFormOpen, setBulkFormOpen] = useState(false);
     const [bulkFormType, setBulkFormType] = useState<'IMPORT' | 'EXPORT' | undefined>(undefined);
 
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
+
     const handleOpenDetail = (item?: FinishedGood) => {
         setSelected(item);
         setDetailOpen(true);
     };
 
     const handleOpenForm = (type: "IMPORT" | "EXPORT", item?: FinishedGood) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelected(item);
         setFormType(type);
         setFormOpen(true);
     };
+
+    const handleOpenBulkForm = () => {
+
+        if (!handleValidateAccess()) return;
+
+        setBulkFormOpen(true);
+        setBulkFormType('IMPORT');
+    }
 
     const handleCloseForm = () => {
         setFormOpen(false);
@@ -56,10 +105,19 @@ const FinishedList: React.FC = () => {
         setFormType(undefined);
     };
 
+    const handleCloseBulkForm = () => {
+        setBulkFormOpen(false);
+        setBulkFormType(undefined);
+    }
+
     const handleCloseDetail = () => {
         setDetailOpen(false);
         setSelected(undefined);
     };
+
+    if (hydrating) {
+        return <DataLoading />
+    }
 
     if (fgLoading || moLoading) return <Spinner />;
     if (fgError || moError) {
@@ -78,10 +136,7 @@ const FinishedList: React.FC = () => {
 
             <FinishedTransactionBulkForm
                 isOpen={bulkFormOpen}
-                onClose={() => {
-                    setBulkFormOpen(false);
-                    setBulkFormType(undefined);
-                }}
+                onClose={handleCloseBulkForm}
                 transactionType={bulkFormType ?? 'IMPORT'}
                 manufacturingOrders={mos}
 
@@ -100,10 +155,7 @@ const FinishedList: React.FC = () => {
                 <Stack direction="row" spaceX={10}>
                     <Button
                         colorPalette="green"
-                        onClick={() => {
-                            setBulkFormOpen(true);
-                            setBulkFormType('IMPORT');
-                        }}
+                        onClick={handleOpenBulkForm}
                     >
                         <FaPlus /> Tạo phiếu nhập
                     </Button>

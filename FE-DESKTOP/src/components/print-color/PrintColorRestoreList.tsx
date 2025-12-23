@@ -8,8 +8,30 @@ import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import PrintColorRestoreTable from "./PrintColorRestoreTable";
 import PrintColorDetailDialog from "./PrintColorDetailDialog";
 import { useGetDeletedPrintColorQuery, useRestorePrintColorMutation } from "@/service/api/printColorApiSlice";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import check from "check-types";
+import DataLoading from "../common/DataLoading";
+
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+]
 
 const PrintColorRestoreList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
 
     const [restoreItem] = useRestorePrintColorMutation();
 
@@ -23,6 +45,19 @@ const PrintColorRestoreList: React.FC = () => {
 
     const [detailOpen, setDetailOpen] = useState(false);
     const [selected, setSelected] = useState<PrintColor | undefined>(undefined);
+
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
 
     const handleOpenDetail = (item?: PrintColor) => {
         setSelected(item);
@@ -59,11 +94,18 @@ const PrintColorRestoreList: React.FC = () => {
     };
 
     const handleRestore = async (data: PrintColor) => {
+
+        if (!handleValidateAccess()) return;
+
         handleMutation(
             () => restoreItem(data).unwrap(),
             `Đã khôi phục màu in ${data.code}`,
             'Khôi phục thất bại',
         );
+    }
+
+    if (hydrating) {
+        return <DataLoading />
     }
 
     if (isLoading) return <Text>Đang tải dữ liệu...</Text>;

@@ -12,8 +12,31 @@ import WareFinishingProcessTypeAlertDialog from "./WareFinishingProcessTypeAlert
 import WareFinishingProcessTypeTable from "./WareFinishingProcessTypeTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import WareFinishingProcessTypeDetailDialog from "./WareFinishingProcessTypeDetailDialog";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { UserState } from "@/types/UserState";
+import { useAppSelector } from "@/service/hooks";
+import check from "check-types";
+import DataLoading from "@/components/common/DataLoading";
+
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "ware-finishing-process-type-readWrite",
+]
 
 const WareFinishingProcessTypeList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
 
     const [addItem] = useAddWareFinishingProcessTypeMutation();
     const [updateItem] = useUpdateWareFinishingProcessTypeMutation();
@@ -41,7 +64,23 @@ const WareFinishingProcessTypeList: React.FC = () => {
 
     const inputRef = useRef<HTMLInputElement | null>(null);
 
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
+
     const handleOpenForm = (item?: WareFinishingProcessType) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelected(item);
         setFormOpen(true);
     };
@@ -52,6 +91,9 @@ const WareFinishingProcessTypeList: React.FC = () => {
     };
 
     const handleOpenAlert = (item: WareFinishingProcessType) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelected(item);
         setAlertOpen(true);
     }
@@ -140,6 +182,10 @@ const WareFinishingProcessTypeList: React.FC = () => {
             <FaSearch />
         </IconButton>
     );
+
+    if (hydrating) {
+        return <DataLoading />
+    }
 
     if (isLoading) return <Text>Đang tải dữ liệu...</Text>;
     if (error) return <Text>Không thể tải dữ liệu. Vui lòng thử lại.</Text>;

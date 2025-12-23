@@ -5,6 +5,8 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
 } from "class-validator";
 import mongoose from "mongoose";
 import { FullDetailPurchaseOrderItemDto } from "../../purchase-order-item/dto/full-details-orders.dto";
@@ -44,6 +46,8 @@ export class CreateManufacturingOrderRequestDtoFormFields {
 
   @ApiProperty()
   @IsNumber()
+  @Min(0)
+  // @Max()
   amount: number;
 
   @ApiProperty()

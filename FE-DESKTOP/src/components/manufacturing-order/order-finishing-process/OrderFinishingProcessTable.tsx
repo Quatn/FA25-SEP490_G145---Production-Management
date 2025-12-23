@@ -154,7 +154,7 @@ const OrderFinishingProcessTable: React.FC<Props> = ({
                                                 variant="surface"
                                                 colorPalette={"gray"}
                                                 ms={2}
-                                                onClick={() => dialogDispatch({type: "OPEN_DIALOG_WITH_ORDER", payload: { order: item.manufacturingOrder as unknown as Serialized<ManufacturingOrder> }})}
+                                                onClick={() => dialogDispatch({ type: "OPEN_DIALOG_WITH_ORDER_ID", payload:  item.manufacturingOrder._id })}
                                             >
                                                 Chi tiết lệnh
                                             </Button>

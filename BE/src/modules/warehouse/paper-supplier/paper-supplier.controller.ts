@@ -1,17 +1,36 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { PaperSupplierService } from './paper-supplier.service';
 import { CreatePaperSupplierRequestDto } from './dto/create-paper-supplier-request.dto';
 import { UpdatePaperSupplierRequestDto } from './dto/update-paper-supplier-request.dto';
 import { PaperSupplier, PaperSupplierDocument } from '../schemas/paper-supplier.schema';
 import { BaseResponse } from '@/common/dto/response.dto';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
+import { PrivilegedJwtAuthGuard } from '@/common/guards/privileged-jwt-auth.guard';
+import { paperSupplierAdminPrivileges, paperSupplierCreatePrivileges, paperSupplierGetPrivileges, paperSupplierUpdatePrivileges } from './paper-supplier-module-access-privileges';
 
+const PaperSupplierGetRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: paperSupplierGetPrivileges,
+});
+
+const PaperSupplierCreateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: paperSupplierCreatePrivileges,
+});
+
+const PaperSupplierUpdateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: paperSupplierUpdatePrivileges,
+});
+
+const PaperSupplierAdminRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: paperSupplierAdminPrivileges,
+});
+
+@ApiBearerAuth("access-token")
 @Controller('paper-supplier')
 export class PaperSupplierController {
     constructor(private readonly psService: PaperSupplierService) { }
 
-    // @UseGuards(JwtAuthGuard)
+    // @UseGuards(PaperSupplierGetRequestGuard)
     @Get("list")
     @ApiOperation({ summary: "List paginated paper suppliers" })
     async findPaginated(
@@ -27,7 +46,7 @@ export class PaperSupplierController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    // @UseGuards(PaperSupplierGetRequestGuard)
     @Get("list-all")
     @ApiOperation({ summary: "List paper suppliers" })
     async findAll(): Promise<BaseResponse<PaperSupplierDocument[]>> {
@@ -39,7 +58,7 @@ export class PaperSupplierController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperSupplierAdminRequestGuard)
     @Get('list-deleted')
     @ApiOperation({ summary: 'List deleted paper suppliers' })
     async findDeleted(
@@ -54,7 +73,7 @@ export class PaperSupplierController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    // @UseGuards(PaperSupplierGetRequestGuard)
     @Get("detail/:id")
     @ApiOperation({ summary: "Paper supplier detail" })
     async findOne(@Param("id") id: string): Promise<BaseResponse<PaperSupplierDocument>> {
@@ -66,7 +85,7 @@ export class PaperSupplierController {
         }
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperSupplierCreateRequestGuard)
     @Post("create")
     @ApiOperation({ summary: "Create new paper supplier" })
     async create(
@@ -80,7 +99,7 @@ export class PaperSupplierController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperSupplierUpdateRequestGuard)
     @Patch("update/:id")
     @ApiOperation({ summary: "Update paper supplier" })
     async update(
@@ -95,7 +114,7 @@ export class PaperSupplierController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperSupplierUpdateRequestGuard)
     @Delete("delete-soft/:id")
     @ApiOperation({ summary: "Soft delete paper supplier" })
     async softDelete(
@@ -109,7 +128,7 @@ export class PaperSupplierController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperSupplierAdminRequestGuard)
     @Patch("restore/:id")
     @ApiOperation({ summary: "Restore paper supplier" })
     async restore(
@@ -123,7 +142,7 @@ export class PaperSupplierController {
         };
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(PaperSupplierAdminRequestGuard)
     @Delete("delete-hard/:id")
     @ApiOperation({ summary: "Hard delete paper supplier" })
     async hardDelete(

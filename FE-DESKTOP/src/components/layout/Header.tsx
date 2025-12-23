@@ -1,21 +1,15 @@
-"use client";
-
 import { Box, Button, Flex, IconButton } from "@chakra-ui/react";
 import Link from "next/link";
 import { OptionsMenu } from "./OptionsMenu";
 import { RiEqualizerLine } from "react-icons/ri";
-import { useColorModeValue } from "../ui/color-mode";
 import AuthenticatedContent from "./AuthenticatedContent";
 import UserAvatar from "./UserAvatar";
 import HeaderHomeButton from "./HeaderHomeButton";
 
 export default function Header() {
-  const bg = useColorModeValue("gray.200", "gray.900");
-  const color = useColorModeValue("gray.700", "gray.300");
-
   return (
     <header>
-      <Flex bg={bg} color={color} p={1} gap={2} pt={2}>
+      <Flex bg={{ base: "gray.200", _dark: "gray.900" }} color={{ base: "gray.700", _dark: "gray.300" }}p={1} gap={2} pt={2}>
         <HeaderHomeButton />
         <Box flexGrow={1} />
         <AuthenticatedContent

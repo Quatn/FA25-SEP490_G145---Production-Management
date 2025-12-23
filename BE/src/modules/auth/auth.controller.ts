@@ -84,6 +84,7 @@ export class AuthController {
         employeeCode: user.employee.code,
         employeeId: (user.employee as EmployeeDocument)._id.toString(),
         role: (user.employee.role as Role).code,
+        roleName: (user.employee.role as Role).name,
       },
     };
 
@@ -110,11 +111,13 @@ export class AuthController {
       sameSite: "strict",
     });
 
+    const code = check.undefined(req.user) ? undefined : req.user.code;
+
     return {
       success: true,
       message: "Logged out successfully",
       data: {
-        code: req.user.code,
+        code,
       },
     };
   }

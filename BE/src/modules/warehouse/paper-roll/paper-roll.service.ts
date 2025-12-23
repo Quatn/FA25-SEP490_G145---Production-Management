@@ -463,9 +463,11 @@ export class PaperRollService {
 
     const splittedCodes = arr.map(c => c.split("/")).filter(cs => check.inRange(cs.length, 3, 4))
 
+    /*
     if (splittedCodes.some(s => s.length == 3) && splittedCodes.some(s => s.length == 4)) {
       throw new BadRequestException("Only send an array of all face and back type codes or all middle layer codes, this is to prevent duplicated rows from showing up in the results")
     }
+    */
 
     const promAcc: Promise<any>[] = []
 

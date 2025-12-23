@@ -1,12 +1,12 @@
-// src/components/ware/WareList.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   useGetWaresQuery,
   useCreateWareMutation,
   useUpdateWareMutation,
   useDeleteWareMutation,
+  useGetDeletedWaresQuery, // <-- added
 } from "@/service/api/wareApiSlice";
 import { useGetAllFluteCombinationQuery } from "@/service/api/fluteCombinationApiSlice";
 import { useGetAllPrintColorsQuery } from "@/service/api/printColorApiSlice";
@@ -21,6 +21,15 @@ import {
 import { useGetAllPaperSuppliersQuery } from "@/service/api/paperSupplierApiSlice";
 import { useConfirm } from "@/components/common/ConfirmModal";
 import { toaster } from "@/components/ui/toaster";
+import dynamic from "next/dynamic";
+import WareAdvancedSearchModal from "@/components/ware/WareAdvancedSearchModal";
+
+// --- new imports for privilege check ---
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import check from "check-types";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+// ------------------------------------------------
 
 function getIdFromDoc(doc: any): string | undefined {
   if (doc === null || doc === undefined) return undefined;
@@ -291,7 +300,7 @@ const MultiSelectInline: React.FC<{
           })
         ) : (
           <span className="text-muted" style={{ fontSize: 14 }}>
-            {placeholder ?? "-- choose --"}
+            {placeholder ?? "-- chọn --"}
           </span>
         )}
 
@@ -329,7 +338,7 @@ const MultiSelectInline: React.FC<{
         >
           {avail.length === 0 ? (
             <div className="text-muted" style={{ padding: 8 }}>
-              No options
+              Không có mục chọn
             </div>
           ) : (
             avail.map((opt) => {
@@ -374,15 +383,68 @@ const MultiSelectInline: React.FC<{
 export const WareList: React.FC = () => {
   const confirm = useConfirm();
 
+  // --- privilege check (manual as requested) ---
+  const hydrating: boolean = useAppSelector((state) => state.auth.hydrating);
+  const userState: UserState | null = useAppSelector(
+    (state) => state.auth.userState
+  );
+
+  const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "purchase-order-admin",
+    "purchase-order-readWrite",
+    "ware-admin",
+    "ware-readWrite",
+  ];
+
+  const writeAllowed =
+    check.nonEmptyArray(userState?.accessPrivileges) &&
+    EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
+
+  const writeDisabled = !writeAllowed;
+  // -------------------------------------------------
+
+  // Header style constants (light blue plain)
+  const HEADER_BG = "#e6f7ff"; // plain light blue
+  const HEADER_TEXT = "#02296a"; // dark/navy text for contrast
+  const headerCellBaseStyle: React.CSSProperties = {
+    background: HEADER_BG,
+    color: HEADER_TEXT,
+    verticalAlign: "middle",
+    fontWeight: 600,
+    borderColor: "#d1e7ff",
+    textAlign: "center",
+  };
+  const topHeaderBarStyle: React.CSSProperties = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    color: HEADER_TEXT,
+    padding: "10px 12px",
+    borderRadius: 6,
+  };
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(5);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<any | null>(null);
+
+  const waresQueryParams = React.useMemo(() => {
+    if (activeFilters && Object.keys(activeFilters).length > 0) {
+      return { ...activeFilters, page, limit };
+    }
+    // fallback to simple search field (maps to 'code' param for backend)
+    return { page, limit, code: search ?? undefined };
+  }, [activeFilters, page, limit, search]);
 
   const {
     data: waresResp,
     refetch: refetchWares,
     isLoading: waresLoading,
-  } = useGetWaresQuery({ page, limit, search });
+  } = useGetWaresQuery(waresQueryParams);
 
   const { data: fluteResp } = useGetAllFluteCombinationQuery();
   const fluteList: any[] = fluteResp?.data ?? fluteResp ?? [];
@@ -418,6 +480,27 @@ export const WareList: React.FC = () => {
   const { data: paperSupplierResp } = useGetAllPaperSuppliersQuery();
   const paperSupplierList: any[] =
     paperSupplierResp?.data ?? paperSupplierResp ?? [];
+
+  // --- fetch deleted wares for client-side duplicate detection (large limit)
+  const {
+    data: deletedWaresResp,
+    isLoading: isLoadingDeletedWares,
+    refetch: refetchDeletedWares,
+  } = useGetDeletedWaresQuery({ page: 1, limit: 1000, search: "" });
+
+  // normalize deleted list to an array
+  const deletedWaresList = React.useMemo(() => {
+    const raw = deletedWaresResp?.data ?? deletedWaresResp ?? [];
+    // sometimes transformResponse returns { data: [...] } or direct array
+    const arr = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.data)
+      ? raw.data
+      : raw?.data?.data && Array.isArray(raw.data.data)
+      ? raw.data.data
+      : [];
+    return Array.isArray(arr) ? arr : [];
+  }, [deletedWaresResp]);
 
   let wares: any[] = [];
   if (waresResp?.data?.data && Array.isArray(waresResp.data.data))
@@ -488,7 +571,62 @@ export const WareList: React.FC = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
 
+  // --- helper: parse stored paper layer value into base 3-part paperType and supplier
+  // Accepts strings like:
+  // "color/width/grammage" => { paperType: "color/width/grammage", supplier: "" }
+  // "color/supplier/width/grammage" => { paperType: "color/width/grammage", supplier: "supplier" }
+  function parsePaperLayerValue(val: any) {
+    if (val === undefined || val === null)
+      return { paperType: "", supplier: "" };
+    const s = String(val ?? "");
+    if (!s) return { paperType: "", supplier: "" };
+    const parts = s.split("/").map((p) => p ?? "");
+    if (parts.length === 4) {
+      const [color, supplier, width, grammage] = parts;
+      return {
+        paperType: `${String(color)}/${String(width)}/${String(grammage)}`,
+        supplier: supplier || "",
+      };
+    }
+    if (parts.length === 3) {
+      const [color, width, grammage] = parts;
+      return {
+        paperType: `${String(color)}/${String(width)}/${String(grammage)}`,
+        supplier: "",
+      };
+    }
+    // fallback: return whole string as paperType (UI will try to match)
+    return { paperType: s, supplier: "" };
+  }
+
   const openEdit = (ware: any) => {
+    // parse face/back in case ware stores merged value
+    const rawFace =
+      ware.faceLayerPaperType ??
+      ware.faceLayerPaper ??
+      ware.faceLayerPaperMerged ??
+      "";
+    const rawBack =
+      ware.backLayerPaperType ??
+      ware.backLayerPaper ??
+      ware.backLayerPaperMerged ??
+      "";
+
+    const faceParsed = parsePaperLayerValue(rawFace);
+    // prefer explicit supplier field if present on document
+    const explicitFaceSupplier =
+      ware.faceLayerPaperSupplier ?? ware.faceLayerPaperSupplierCode ?? "";
+    if (explicitFaceSupplier && String(explicitFaceSupplier).trim() !== "") {
+      faceParsed.supplier = String(explicitFaceSupplier);
+    }
+
+    const backParsed = parsePaperLayerValue(rawBack);
+    const explicitBackSupplier =
+      ware.backLayerPaperSupplier ?? ware.backLayerPaperSupplierCode ?? "";
+    if (explicitBackSupplier && String(explicitBackSupplier).trim() !== "") {
+      backParsed.supplier = String(explicitBackSupplier);
+    }
+
     setEditForm({
       id: getIdFromDoc(ware) ?? ware._id ?? ware.code,
       code: ware.code ?? "",
@@ -562,15 +700,16 @@ export const WareList: React.FC = () => {
           (p: any) => getIdFromDoc(p) ?? p
         ) ?? [],
       note: ware.note ?? "",
-      faceLayerPaperType: ware.faceLayerPaperType ?? "",
-      faceLayerPaperSupplier: ware.faceLayerPaperSupplier ?? "", // note: may not exist yet
+      // set parsed values (paperType = base 3-part, supplier separate)
+      faceLayerPaperType: faceParsed.paperType ?? "",
+      faceLayerPaperSupplier: faceParsed.supplier ?? "",
       EFlutePaperType: ware.EFlutePaperType ?? "",
       EBLinerLayerPaperType: ware.EBLinerLayerPaperType ?? "",
       BFlutePaperType: ware.BFlutePaperType ?? "",
       BACLinerLayerPaperType: ware.BACLinerLayerPaperType ?? "",
       ACFlutePaperType: ware.ACFlutePaperType ?? "",
-      backLayerPaperType: ware.backLayerPaperType ?? "",
-      backLayerPaperSupplier: ware.backLayerPaperSupplier ?? "",
+      backLayerPaperType: backParsed.paperType ?? "",
+      backLayerPaperSupplier: backParsed.supplier ?? "",
     });
     setEditOpen(true);
   };
@@ -664,8 +803,34 @@ export const WareList: React.FC = () => {
     });
   };
 
+  // check whether code exists in deleted list. excludeId optional for updates.
+  const isCodeInDeleted = (code?: string, excludeId?: string | null) => {
+    if (!code) return false;
+    const norm = String(code).trim().toLowerCase();
+    if (!norm) return false;
+    return (deletedWaresList || []).some((d: any) => {
+      const candidate = String(d?.code ?? d?.id ?? d?._id ?? d?.orderCode ?? "")
+        .trim()
+        .toLowerCase();
+      if (!candidate) return false;
+      // if excludeId provided and matches this deleted doc's id, don't treat as conflict
+      const did = getIdFromDoc(d) ?? d._id ?? d.id ?? d.code;
+      if (excludeId && did && String(did) === String(excludeId)) return false;
+      return candidate === norm;
+    });
+  };
+
   const handleCreateSubmit = async () => {
     try {
+      // double-check permission before performing API action
+      if (writeDisabled) {
+        toaster.create({
+          description: "Bạn không có quyền thực hiện hành động này",
+          type: "error",
+        });
+        return;
+      }
+
       if (!createForm.code || String(createForm.code).trim() === "") {
         toaster.create({
           description: "Mã hàng không được để trống",
@@ -674,9 +839,28 @@ export const WareList: React.FC = () => {
         return;
       }
 
-      // uniqueness check
+      // uniqueness check (current active list)
       if (isCodeTaken(createForm.code)) {
         toaster.create({ description: "Mã hàng đã tồn tại", type: "error" });
+        return;
+      }
+
+      // check deleted list (prevent creating a code that already existed but was soft-deleted)
+      if (isCodeInDeleted(createForm.code)) {
+        toaster.create({
+          description: "Mã hàng đã tồn tại trong danh sách mã hàng đã xóa",
+          type: "error",
+        });
+        return;
+      }
+
+      // optional guard if deleted list still loading (choose to fail-fast)
+      if (isLoadingDeletedWares) {
+        toaster.create({
+          description:
+            "Đang kiểm tra danh sách mã bị xóa — vui lòng thử lại sau",
+          type: "error",
+        });
         return;
       }
 
@@ -916,6 +1100,21 @@ export const WareList: React.FC = () => {
       });
     } catch (err: any) {
       console.error("Tạo thất bại", err);
+
+      // server duplicate fallback
+      const status = err?.status ?? err?.response?.status;
+      const serverMsg = (err?.data?.message ?? err?.message ?? "") as string;
+      if (
+        status === 409 ||
+        /duplicate|already exists|unique|exists/i.test(String(serverMsg))
+      ) {
+        toaster.create({
+          description: "Mã hàng đã tồn tại trong danh sách mã hàng đã xóa",
+          type: "error",
+        });
+        return;
+      }
+
       toaster.create({
         description: err?.data?.message ?? err?.message ?? "Tạo thất bại",
         type: "error",
@@ -925,6 +1124,15 @@ export const WareList: React.FC = () => {
 
   const handleEditSubmit = async () => {
     try {
+      // double-check permission before performing API action
+      if (writeDisabled) {
+        toaster.create({
+          description: "Bạn không có quyền thực hiện hành động này",
+          type: "error",
+        });
+        return;
+      }
+
       if (!editForm?.id) {
         toaster.create({ description: "Không tìm thấy mã này", type: "error" });
         return;
@@ -941,6 +1149,15 @@ export const WareList: React.FC = () => {
       // uniqueness check (exclude current record id)
       if (isCodeTaken(editForm.code, editForm.id)) {
         toaster.create({ description: "Mã hàng đã tồn tại", type: "error" });
+        return;
+      }
+
+      // check deleted list (prevent updating code to one that was soft-deleted)
+      if (isCodeInDeleted(editForm.code, editForm.id)) {
+        toaster.create({
+          description: "Mã hàng đã tồn tại trong danh sách mã hàng đã xóa",
+          type: "error",
+        });
         return;
       }
 
@@ -993,35 +1210,6 @@ export const WareList: React.FC = () => {
 
       if (!volume || volume <= 0) {
         toaster.create({ description: "Thể tích phải > 0", type: "error" });
-        return;
-      }
-
-      if (warePerBlankAdjustment !== null && warePerBlankAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh số SP phải >= 1",
-          type: "error",
-        });
-        return;
-      }
-      if (flapAdjustment !== null && flapAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh tai phải >= 1",
-          type: "error",
-        });
-        return;
-      }
-      if (flapOverlapAdjustment !== null && flapOverlapAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh cộng cánh phải >= 1",
-          type: "error",
-        });
-        return;
-      }
-      if (crossCutCountAdjustment !== null && crossCutCountAdjustment < 1) {
-        toaster.create({
-          description: "Điều chỉnh part SX phải >= 1",
-          type: "error",
-        });
         return;
       }
 
@@ -1152,20 +1340,44 @@ export const WareList: React.FC = () => {
         type: "success",
       });
     } catch (err: any) {
-      console.error("Update failed", err);
+      console.error("Thay đổi thất bại", err);
+
+      // server duplicate fallback
+      const status = err?.status ?? err?.response?.status;
+      const serverMsg = (err?.data?.message ?? err?.message ?? "") as string;
+      if (
+        status === 409 ||
+        /duplicate|already exists|unique|exists/i.test(String(serverMsg))
+      ) {
+        toaster.create({
+          description: "Mã hàng đã tồn tại trong danh sách mã hàng đã xóa",
+          type: "error",
+        });
+        return;
+      }
+
       toaster.create({
-        description: err?.data?.message ?? err?.message ?? "Update failed",
+        description: err?.data?.message ?? err?.message ?? "Thay đổi thất bại",
         type: "error",
       });
     }
   };
 
   const handleSoftDelete = async (w: any) => {
+    // permission guard
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền thực hiện hành động này",
+        type: "error",
+      });
+      return;
+    }
+
     const ok = await confirm({
-      title: "Delete Ware",
-      description: `Delete ${w.code}?`,
-      confirmText: "Delete",
-      cancelText: "Cancel",
+      title: "Xóa mã hàng",
+      description: `Xóa ${w.code}?`,
+      confirmText: "Xóa",
+      cancelText: "Hủy",
       destructive: true,
     });
     if (!ok) return;
@@ -1192,9 +1404,9 @@ export const WareList: React.FC = () => {
         type: "success",
       });
     } catch (err: any) {
-      console.error("delete failed", err);
+      console.error("Xóa thất bại", err);
       toaster.create({
-        description: err?.data?.message ?? err?.message ?? "Delete failed",
+        description: err?.data?.message ?? err?.message ?? "Xóa thất bại",
         type: "error",
       });
     }
@@ -1283,16 +1495,9 @@ export const WareList: React.FC = () => {
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 12,
-        }}
-      >
+      <div style={topHeaderBarStyle}>
         <div>
-          <strong>Mã hàng </strong>
+          <strong style={{ color: HEADER_TEXT }}>Mã hàng </strong>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
@@ -1302,12 +1507,27 @@ export const WareList: React.FC = () => {
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(1);
+              if (activeFilters) setActiveFilters(null);
             }}
             style={{ minWidth: 300 }}
           />
           <button
+            className="btn btn-outline-secondary"
+            onClick={() => setAdvancedOpen(true)}
+            title="Tìm kiếm nâng cao"
+            style={{ marginLeft: 8, minWidth: 170 }}
+          >
+            Tìm kiếm nâng cao
+          </button>
+          <button
             className="btn btn-primary"
-            onClick={() => setCreateOpen(true)}
+            style={{ minWidth: 69 }}
+            onClick={() => {
+              if (writeDisabled) return;
+              setCreateOpen(true);
+            }}
+            disabled={writeDisabled}
+            title={"Tạo mới"}
           >
             + Tạo
           </button>
@@ -1341,30 +1561,77 @@ export const WareList: React.FC = () => {
           <thead>
             {/* first header row */}
             <tr>
-              <th rowSpan={2}>Mã hàng</th>
-              <th rowSpan={2}>Sóng</th>
-              <th rowSpan={2}>Đơn giá (đồng)</th>
-              <th rowSpan={2}>Rộng (mm)</th>
-              <th rowSpan={2}>Dài (mm)</th>
-              <th rowSpan={2}>Cao (mm)</th>
-              <th rowSpan={2}>Thể tích (m2)</th>
-              <th rowSpan={2}>Kiểu SP gia công</th>
-              <th rowSpan={2}>Công đoạn hoàn thiện</th>
-              <th rowSpan={2}>Màu in</th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Mã hàng
+              </th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Sóng
+              </th>
+              <th
+                rowSpan={2}
+                style={{ ...headerCellBaseStyle, textAlign: "right" }}
+              >
+                Đơn giá (đồng)
+              </th>
+              <th
+                rowSpan={2}
+                style={{ ...headerCellBaseStyle, textAlign: "right" }}
+              >
+                Rộng (mm)
+              </th>
+              <th
+                rowSpan={2}
+                style={{ ...headerCellBaseStyle, textAlign: "right" }}
+              >
+                Dài (mm)
+              </th>
+              <th
+                rowSpan={2}
+                style={{ ...headerCellBaseStyle, textAlign: "right" }}
+              >
+                Cao (mm)
+              </th>
+              <th
+                rowSpan={2}
+                style={{ ...headerCellBaseStyle, textAlign: "right" }}
+              >
+                Thể tích (m2)
+              </th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Kiểu SP gia công
+              </th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Công đoạn hoàn thiện
+              </th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Màu in
+              </th>
               <th
                 colSpan={PAPER_LAYER_KEYS.length}
-                style={{ textAlign: "center", verticalAlign: "middle" }}
+                style={{
+                  ...headerCellBaseStyle,
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                }}
               >
                 Mặt giấy
               </th>
-              <th rowSpan={2}>Máy in</th>
-              <th rowSpan={2}>Ghi chú</th>
-              <th rowSpan={2}>Thao tác</th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Máy in
+              </th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Ghi chú
+              </th>
+              <th rowSpan={2} style={headerCellBaseStyle}>
+                Thao tác
+              </th>
             </tr>
 
             <tr>
               {PAPER_LAYER_KEYS.map((k) => (
-                <th key={k.key}>{k.label}</th>
+                <th key={k.key} style={headerCellBaseStyle}>
+                  {k.label}
+                </th>
               ))}
             </tr>
           </thead>
@@ -1438,13 +1705,23 @@ export const WareList: React.FC = () => {
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
                         className="btn btn-outline-secondary btn-sm"
-                        onClick={() => openEdit(w)}
+                        onClick={() => {
+                          if (writeDisabled) return;
+                          openEdit(w);
+                        }}
+                        disabled={writeDisabled}
+                        title={"Sửa"}
                       >
                         Sửa
                       </button>
                       <button
                         className="btn btn-outline-danger btn-sm"
-                        onClick={() => handleSoftDelete(w)}
+                        onClick={() => {
+                          if (writeDisabled) return;
+                          handleSoftDelete(w);
+                        }}
+                        disabled={writeDisabled}
+                        title={"Xóa"}
                       >
                         Xóa
                       </button>
@@ -1553,6 +1830,37 @@ export const WareList: React.FC = () => {
         handleEditSubmit={handleEditSubmit}
         getIdFromDoc={getIdFromDoc}
         MultiSelectInline={MultiSelectInline}
+        paperTypeList={paperTypeList}
+        paperSupplierList={paperSupplierList}
+      />
+
+      <WareAdvancedSearchModal
+        show={advancedOpen}
+        onClose={() => setAdvancedOpen(false)}
+        onSearch={(filters: any) => {
+          // normalize filters slightly: convert numeric strings to numbers where appropriate
+          const normalized: any = { ...(filters || {}) };
+          ["wareWidth", "wareLength", "wareHeight"].forEach((k) => {
+            const v = (normalized as any)[k];
+            if (v === "" || v === undefined || v === null)
+              delete (normalized as any)[k];
+            else if (typeof v === "string") {
+              const n = Number(v);
+              if (!Number.isFinite(n)) delete (normalized as any)[k];
+              else (normalized as any)[k] = n;
+            }
+          });
+          setActiveFilters(
+            Object.keys(normalized).length === 0 ? null : normalized
+          );
+          setPage(1);
+        }}
+        initial={activeFilters ?? {}}
+        fluteList={fluteList}
+        printColorList={printColorList}
+        manufList={manufList}
+        MultiSelectInline={MultiSelectInline}
+        getIdFromDoc={getIdFromDoc}
       />
     </div>
   );

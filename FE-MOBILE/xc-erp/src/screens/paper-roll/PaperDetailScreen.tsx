@@ -21,14 +21,16 @@ import {
   useGetPaperRollsQuery,
   useUpdatePaperRollMutation,
 } from "../../service/api/paperRollApiSlice";
+import { useCreateTransactionMutation } from "../../service/api/paperRollTransactionApiSlice";
 import { useGetAllPaperColorsQuery } from "@/service/api/paperColorApiSlice";
 import { useGetAllPaperSuppliersQuery } from "@/service/api/paperSupplierApiSlice";
 import { useGetAllPaperTypesQuery } from "@/service/api/paperTypeApiSlice";
 import { PAPER_ROLL_URL } from "@/service/constants";
 
 type RootStackParamList = {
-  Scan: undefined;
-  Detail: { qrText: string };
+  ImportExportButton: undefined;
+  Scan: { action?: "import" | "export" } | undefined;
+  Detail: { qrText: string; action?: "import" | "export" };
 };
 type Props = NativeStackScreenProps<RootStackParamList, "Detail">;
 
@@ -43,7 +45,7 @@ function getIdFromDoc(doc: any): string | undefined {
 }
 
 export default function PaperDetailScreen({ route, navigation }: Props) {
-  const { qrText } = route.params;
+  const { qrText, action } = route.params;
 
   const {
     data: detailResp,
@@ -170,6 +172,9 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
   const [updatePaperRoll, { isLoading: updating }] =
     useUpdatePaperRollMutation();
 
+  // NEW: create transaction mutation (same as desktop)
+  const [createTransaction] = useCreateTransactionMutation();
+
   const foundFromDetail =
     detailResp?.data?.data?.[0] ?? detailResp?.data ?? null;
 
@@ -215,11 +220,23 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
         {
           text: "Xuất",
           onPress: async () => {
+            const prevWeight = Number(doc?.weight ?? localWeight ?? 0);
             try {
               // optimistic update local UI
               setLocalWeight(0);
 
-              // call backend to update weight = 0
+              // create transaction first (XUAT)
+              await createTransaction({
+                paperRollId: stableId,
+                employeeId: "69146dd889bf8e8ca320bcff",
+                transactionType: "XUAT",
+                initialWeight: prevWeight,
+                finalWeight: 0,
+                timeStamp: new Date().toISOString(),
+                inCharge: "Operator A",
+              }).unwrap();
+
+              // then update roll weight on server
               const res: any = await updatePaperRoll({
                 id: stableId,
                 data: { weight: 0 },
@@ -236,7 +253,7 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
             } catch (err: any) {
               console.error("Export failed", err);
               // rollback local weight if something failed
-              setLocalWeight(doc?.weight ?? 0);
+              setLocalWeight(doc?.weight ?? prevWeight ?? 0);
               Alert.alert(
                 "Lỗi",
                 err?.data?.message ?? err?.message ?? "Xuất thất bại"
@@ -256,10 +273,24 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
     if (!Number.isFinite(val) || val < 0) return Alert.alert("Nhập số hợp lệ");
     if (!stableId) return Alert.alert("Không xác định được cuộn để nhập");
 
+    const prevWeight = Number(doc?.weight ?? localWeight ?? 0);
+
     try {
       // optimistic update local UI
       setLocalWeight(val);
 
+      // create transaction (NHAPLAI)
+      await createTransaction({
+        paperRollId: stableId,
+        employeeId: "69146dd889bf8e8ca320bcff",
+        transactionType: "NHAPLAI",
+        initialWeight: prevWeight,
+        finalWeight: val,
+        timeStamp: new Date().toISOString(),
+        inCharge: "Operator A",
+      }).unwrap();
+
+      // then update roll weight on server
       const res: any = await updatePaperRoll({
         id: stableId,
         data: { weight: val },
@@ -277,7 +308,7 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
     } catch (err: any) {
       console.error("reimport failed", err);
       // rollback if needed
-      setLocalWeight(doc?.weight ?? 0);
+      setLocalWeight(doc?.weight ?? prevWeight ?? 0);
       Alert.alert("Lỗi", err?.data?.message ?? err?.message ?? "Nhập thất bại");
     }
   };
@@ -311,6 +342,10 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
       </View>
     );
   }
+
+  // Decide which UI blocks to show:
+  const showExport = action === undefined || action === "export";
+  const showReimport = action === undefined || action === "import";
 
   // Render the same layout you had, but use localWeight to show current weight
   return (
@@ -366,30 +401,37 @@ export default function PaperDetailScreen({ route, navigation }: Props) {
           </View>
         </View>
 
+        {/* Actions area */}
         <View style={styles.actionsRow}>
-          <View style={styles.actionBtn}>
-            <Button title="Xuất" onPress={onExport} disabled={updating} />
-          </View>
+          {showExport && (
+            <View style={styles.actionBtn}>
+              <Button title="Xuất" onPress={onExport} disabled={updating} />
+            </View>
+          )}
         </View>
 
-        <View style={styles.reimportBox}>
-          <Text style={styles.reimportTitle}>Điền trọng lượng để nhập lại</Text>
+        {showReimport && (
+          <View style={styles.reimportBox}>
+            <Text style={styles.reimportTitle}>
+              Điền trọng lượng để nhập lại
+            </Text>
 
-          <TextInput
-            placeholder="Số kg nhập lại"
-            value={reimportValue}
-            onChangeText={setReimportValue}
-            keyboardType="numeric"
-            style={styles.input}
-          />
-          <View style={{ marginTop: 8 }}>
-            <Button
-              title={updating ? "Đang lưu..." : "Xác nhận nhập"}
-              onPress={onReImport}
-              disabled={updating}
+            <TextInput
+              placeholder="Số kg nhập lại"
+              value={reimportValue}
+              onChangeText={setReimportValue}
+              keyboardType="numeric"
+              style={styles.input}
             />
+            <View style={{ marginTop: 8 }}>
+              <Button
+                title={updating ? "Đang lưu..." : "Xác nhận nhập"}
+                onPress={onReImport}
+                disabled={updating}
+              />
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={{ height: 96 }} />
       </ScrollView>

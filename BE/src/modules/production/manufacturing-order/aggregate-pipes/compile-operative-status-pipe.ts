@@ -5,6 +5,9 @@ import {
 } from "../../schemas/manufacturing-order.schema";
 import { OrderFinishingProcessStatus } from "../../schemas/order-finishing-process.schema";
 
+// Compile the operativeStatus field to the MO based on its corrugatorProcess status and finishingProcesses statuses
+// Requires the finishingProcesses to be already contructed on a PipelineStage above where is this to be placed
+// Also requires the corrugatorProcess object field to not be removed by a PipelineStage above where is this to be placed
 export const CompileMOOperativeStatusPipe = [
   {
     $addFields: {

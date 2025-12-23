@@ -19,6 +19,7 @@ import { toaster } from "@/components/ui/toaster";
 import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 import DataEmpty from "@/components/common/DataEmpty";
+import { ManufacturingOrderCorrugatorProcessOperateTableReducerStore } from "@/context/manufacturing-order/manufacturingOrderCorrugatorProcessOperateTableContext";
 
 export type ManufacturingOrderCorrugatorOperatePageTableProps = {
   rootProps?: BoxProps;
@@ -34,16 +35,18 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
 ) {
   const [updateOrders] = useUpdateManyManufacturingOrdersMutation();
   const { useDispatch, useSelector } = ManufacturingOrderCorrugatorProcessOperateReducerStore;
+  const { useDispatch: useTableDispatch, useSelector: useTableSelector } = ManufacturingOrderCorrugatorProcessOperateTableReducerStore;
   const dispatch = useDispatch();
-  const page = useSelector(s => s.page)
-  const limit = useSelector(s => s.limit)
+  const tableDispatch = useTableDispatch()
+  const page = useTableSelector(s => s.page)
+  const limit = useTableSelector(s => s.limit)
   const query = useDataTableSelector(s => s.query)
   const corrugatorLine = useSelector(s => s.corrugatorLine)
 
   const {
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
-    isLoading: isFetchingList,
+    isFetching: isFetchingList,
     refetch: refetchTable,
   } = useGetFullDetailManufacturingOrdersQuery({
     page,
@@ -105,11 +108,11 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
 
   useEffect(() => {
     devlog("SET_TOTAL_ITEMS effect Triggered")
-    dispatch({
+    tableDispatch({
       type: "SET_TOTAL_ITEMS",
       payload: fullDetailMOPaginatedResponse?.data ? fullDetailMOPaginatedResponse?.data.totalItems : 0,
     });
-  }, [dispatch, fullDetailMOPaginatedResponse?.data, fullDetailMOPaginatedResponse?.data?.totalItems]);
+  }, [tableDispatch, fullDetailMOPaginatedResponse?.data, fullDetailMOPaginatedResponse?.data?.totalItems]);
 
   if (isFetchingList) {
     return (
@@ -177,23 +180,22 @@ export default function ManufacturingOrderCorrugatorOperatePageTable(
         updateOrders(dto).unwrap().then((res) => {
           if (check.greaterOrEqual(res.data?.patchedAmount as number, res.data?.patchedAmount as number)) {
             toaster.success({
-              title: "Success",
-              description: "All orders updated successfully",
+              description: "Cập nhật tất cả công đoạn sóng thành công",
             })
           }
           else if (check.greaterOrEqual(res.data?.patchedAmount as number, 1)) {
             toaster.warning({
-              title: "Some orders was not updated",
+              title: "Một vài công đoạn sóng cập nhật không thành công",
             })
           }
           else {
             toaster.warning({
-              title: "No orders updated",
+              title: "Cập nhật công đoạn sóng không thành công",
             })
           }
         }).catch(error => {
           toaster.warning({
-            title: "Error updating order",
+            title: "Có lỗi xảy ra trong quá trình cập nhật công đoạn sóng",
             description: tryGetApiErrorMsg(error),
           })
         })

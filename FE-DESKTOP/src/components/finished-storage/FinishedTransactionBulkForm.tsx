@@ -47,7 +47,7 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
     const { contains } = useFilter({ sensitivity: "base" });
     const initialMOs = manufacturingOrders.map((mo) => {
         const poi: PurchaseOrderItem = mo.purchaseOrderItem as PurchaseOrderItem;
-        const subPO = poi.subPurchaseOrder;
+        const subPO = poi?.subPurchaseOrder;
         const po = subPO?.purchaseOrder;
         const customer = po?.customer;
         return ({
@@ -216,7 +216,7 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
                                 {transactionType === "IMPORT" ? "Phiếu Nhập" : "Phiếu Xuất"} Kho Thành Phẩm
                             </Dialog.Title>
                         </Dialog.Header>
-                        <Dialog.Body>
+                        <Dialog.Body overflowY={"auto"}>
                             <Table.Root
                                 size={'lg'}
                                 variant={'line'}

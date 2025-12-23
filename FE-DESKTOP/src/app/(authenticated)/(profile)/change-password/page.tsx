@@ -1,5 +1,5 @@
 import ChangePasswordBox from "@/components/auth/ChangePasswordBox";
-import { Box, Center, Field, HStack, Input, Stack, Text } from "@chakra-ui/react";
+import { Box, Center, HStack, Stack, Text } from "@chakra-ui/react";
 
 export default function ChangePassword() {
   return (
@@ -14,7 +14,7 @@ export default function ChangePassword() {
         <Stack>
           <HStack ms={3} justifyContent={"space-between"}>
             <Text fontWeight={"bold"} color={"black"}>
-              Change password
+              Đổi mật khẩu
             </Text>
           </HStack>
           <ChangePasswordBox />

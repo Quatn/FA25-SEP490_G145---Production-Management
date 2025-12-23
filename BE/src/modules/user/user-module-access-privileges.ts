@@ -1,7 +1,7 @@
 import {
   systemCreatePrivileges,
   systemGetPrivileges,
-  systemHardDeletePrivileges,
+  systemAdminPrivileges,
   systemUpdatePrivileges,
 } from "@/app-access-privileges";
 import { UserModuleAccessPrivilege } from "@/config/access-privileges-list";
@@ -21,7 +21,7 @@ export const userUpdatePrivileges = [
   UserModuleAccessPrivilege.Admin,
   UserModuleAccessPrivilege.ReadWrite,
 ];
-export const userHardDeletePrivileges = [
-  ...systemHardDeletePrivileges,
+export const userAdminPrivileges = [
+  ...systemAdminPrivileges,
   UserModuleAccessPrivilege.Admin,
 ];

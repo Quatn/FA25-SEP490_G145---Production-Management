@@ -344,9 +344,8 @@ export const HistoryTab: React.FC = () => {
                     <td style={{ textAlign: "right" }}>{tx.initialWeight}</td>
                     <td style={{ textAlign: "right" }}>{tx.finalWeight}</td>
                     <td>
-                      {tx.inCharge ??
-                        tx.employeeName ??
-                        tx.employee?.name ??
+                      {tx.employee?.name ??
+                        tx.inCharge ??
                         ""}
                     </td>
                   </tr>

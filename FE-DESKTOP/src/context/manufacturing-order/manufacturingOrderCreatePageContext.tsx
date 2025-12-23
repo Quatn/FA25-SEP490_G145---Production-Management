@@ -41,6 +41,9 @@ interface StoreState {
   hasUnsavedChanges: boolean;
   displayUnsavedChangeWarning: boolean;
   preparedSubmitFunction?: () => void;
+  preparedSubmitAskText: string;
+  insufficientPaperTypes?: { type: string, missingAmount: number }[];
+  insufficientOrderBufferTimes?: { code: string, date: Date }[];
 }
 
 type POTreeActionPayload = {
@@ -125,6 +128,9 @@ type StoreAction =
   }
   | { type: "RESET_TREE_STATE" }
   | { type: "SET_PREPARED_SUBMIT_FUNCTION"; payload: (() => void) | undefined }
+  | { type: "SET_PREPARED_SUBMIT_ASK_TEXT"; payload: string }
+  | { type: "SET_INSUFFICIENT_PAPER_TYPES"; payload: { type: string, missingAmount: number }[] }
+  | { type: "SET_INSUFFICIENT_ORDER_BUFFER_TIMES"; payload: { code: string, date: Date }[] }
   | { type: "RESET" };
 
 const initialState: StoreState = {
@@ -140,6 +146,7 @@ const initialState: StoreState = {
   selectedPOIsIds: [],
   hasUnsavedChanges: false,
   displayUnsavedChangeWarning: false,
+  preparedSubmitAskText: "",
 };
 
 function reducer(state: StoreState, action: StoreAction): StoreState {
@@ -218,6 +225,12 @@ function reducer(state: StoreState, action: StoreAction): StoreState {
       };
     case "SET_PREPARED_SUBMIT_FUNCTION":
       return { ...state, preparedSubmitFunction: action.payload }
+    case "SET_PREPARED_SUBMIT_ASK_TEXT":
+      return { ...state, preparedSubmitAskText: action.payload }
+    case "SET_INSUFFICIENT_PAPER_TYPES":
+      return { ...state, insufficientPaperTypes: action.payload }
+    case "SET_INSUFFICIENT_ORDER_BUFFER_TIMES":
+      return { ...state, insufficientOrderBufferTimes: action.payload }
     case "RESET":
       return initialState;
     default:
