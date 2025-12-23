@@ -118,7 +118,7 @@ export default function ManufacturingOrderDetailsDialogFinishingProcessDetailsCa
     <Card.Root size="md" h="full">
       <Card.Header>
         <HStack justifyContent={"space-between"}>
-          <Heading size="md">Quy trình sóng</Heading>
+          <Heading size="md">Quy trình hoàn thiện</Heading>
           <URLMatch path="/order-finishing-process" notMatched={
             <Link href={`/order-finishing-process${check.string(props.order?._id) ? "?id=" + props.order._id : ""}`}>
               <Button colorPalette={"blue"} size="xs">Thao tác</Button>

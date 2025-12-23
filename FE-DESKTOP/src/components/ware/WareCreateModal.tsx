@@ -380,10 +380,13 @@ const WareCreateModal: React.FC<Props> = ({
 
     let newVol = (wForFormula * hForFormula * lForFormula) / 1000000000; // m3
     // round to 3 decimal places
-    newVol = Number(parseFloat(String(newVol)).toFixed(5));
+    newVol = Number(parseFloat(String(newVol)).toFixed(50));
 
-    // Only update if different (loose compare to handle "" -> number)
-    if (createForm?.volume !== newVol) {
+    if (w === 0 || l === 0) {
+      setCreateForm((p: any) => ({ ...(p ?? {}), volume: 0 }));
+    }
+
+    else if (createForm?.volume !== newVol) {
       setCreateForm((p: any) => ({ ...(p ?? {}), volume: newVol }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

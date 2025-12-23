@@ -369,9 +369,13 @@ const WareEditModal: React.FC<Props> = ({
     const lForFormula = l === 0 ? 1 : l;
 
     let newVol = (wForFormula * hForFormula * lForFormula) / 1000000000;
-    newVol = Number(parseFloat(String(newVol)).toFixed(3));
+    newVol = Number(parseFloat(String(newVol)).toFixed(50));
 
-    if (editForm?.volume !== newVol) {
+    if (w === 0 || l === 0) {
+      setEditForm((p: any) => ({ ...(p ?? {}), volume: 0 }));
+    }
+
+    else if (editForm?.volume !== newVol) {
       setEditForm((p: any) => ({ ...(p ?? {}), volume: newVol }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
