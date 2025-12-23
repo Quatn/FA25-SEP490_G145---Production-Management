@@ -216,7 +216,7 @@ const FinishedTransactionBulkForm: React.FC<Props> = ({
                                 {transactionType === "IMPORT" ? "Phiếu Nhập" : "Phiếu Xuất"} Kho Thành Phẩm
                             </Dialog.Title>
                         </Dialog.Header>
-                        <Dialog.Body>
+                        <Dialog.Body overflowY={"auto"}>
                             <Table.Root
                                 size={'lg'}
                                 variant={'line'}
