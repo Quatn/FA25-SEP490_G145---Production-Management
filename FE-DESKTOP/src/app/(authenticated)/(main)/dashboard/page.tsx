@@ -42,7 +42,7 @@ export default function Dashboard() {
               </Link>
             </HStack>
 
-            <Center h={"full"}>
+            <Center h={"full"} w="full">
               <POPieChart />
             </Center>
           </Box>
@@ -51,12 +51,16 @@ export default function Dashboard() {
         <GridItem colSpan={{ base: 1 }}>
           <ManufacturingOrderMonthlyOrderStatusesChartProvider>
             <Box bg="bg" p={2} rounded={"sm"} h={"full"}>
-              <HStack mb={5} justifyContent={"space-between"}>
-                <Heading size={"sm"}>Tổng quan trạng thái của các lệnh sản xuất theo tháng</Heading>
-                <ManufacturingOrderMonthlyStatusesPieChartMonthSelector />
-              </HStack>
+              <Stack>
+                <HStack mb={5} justifyContent={"space-between"}>
+                  <Heading size={"sm"}>Tổng quan trạng thái của các lệnh sản xuất theo tháng</Heading>
+                  <ManufacturingOrderMonthlyStatusesPieChartMonthSelector />
+                </HStack>
 
-              <ManufacturingOrderMonthlyStatusesPieChart />
+                <Box flexGrow={1}>
+                  <ManufacturingOrderMonthlyStatusesPieChart />
+                </Box>
+              </Stack>
             </Box>
           </ManufacturingOrderMonthlyOrderStatusesChartProvider>
         </GridItem>

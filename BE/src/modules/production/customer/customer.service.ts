@@ -30,7 +30,10 @@ export class CustomerService {
 
     if (orConditions.length === 0) return;
 
-    const query: FilterQuery<CustomerDocument> = { $or: orConditions };
+    const query: FilterQuery<CustomerDocument> = { 
+      $or: orConditions,
+      isDeleted: { $in: [true, false] }, 
+     };
 
     if (excludeId) {
       query._id = { $ne: excludeId };

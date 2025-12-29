@@ -6,6 +6,7 @@ import { ManufacturingOrderTableReducerStore } from "@/context/manufacturing-ord
 import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { useDeleteManufacturingOrderMutation, useUpdateManyManufacturingOrdersMutation } from "@/service/api/manufacturingOrderApiSlice";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
+import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
@@ -65,19 +66,19 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
     dispatch({
       type: "SET_PREPARED_SUBMIT_FUNCTION", payload: () => {
         updateOrders(dto).unwrap().then((res) => {
-          if (check.greaterOrEqual(res.data?.patchedAmount as number, 1)) {
+          if (check.greaterOrEqual(res.data?.patchedAmount as number, res.data?.patchedAmount as number)) {
             toaster.success({
-              title: "Success",
-              description: "Updated order successfully",
+              description: "Cập nhật lệnh thành công",
             })
-          } else {
+          }
+          else {
             toaster.warning({
-              title: "Order not updated",
+              title: "Cập nhật lệnh không thành công",
             })
           }
         }).catch(error => {
           toaster.warning({
-            title: "Error updating order",
+            title: "Có lỗi xảy ra trong quá trình cập nhật lệnh",
             description: tryGetApiErrorMsg(error),
           })
         })
@@ -98,22 +99,23 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
         if (check.equal(res.data?.deletedAmount, 1)) {
           toaster.success({
             title: "Success",
-            description: "Order deleted successfully",
+            description: "Xóa lệnh thành công",
           })
         }
         else {
           toaster.warning({
-            title: "Order not deleted",
+            title: "Không thể xóa lệnh",
           })
         }
-      }).catch(error => {
+      }).catch(() => {
         toaster.warning({
-          title: "Error deleting order",
-          description: (error as Error).message,
+          title: "Có lỗi xảy ra trong khi xóa lệnh",
         })
       })
     })
   }
+
+  const disabled = true // mo.approvalStatus !== ManufacturingOrderApprovalStatus.Draft
 
   return (
     <Popover.Root size="xs">
@@ -124,29 +126,28 @@ export default function ManufacturingOrderTableActionColumn(props: Manufacturing
             colorPalette={"blue"}
             onClick={() =>
               dialogDispatch({
-                type: "OPEN_DIALOG_WITH_ORDER",
-                payload: moObj,
+                type: "OPEN_DIALOG_WITH_ORDER_ID",
+                payload: moObj.order._id,
               })
             }
           >
             Chi tiết
           </Button>
 
-          <Popover.Trigger asChild>
+          {!disabled && <Popover.Trigger asChild>
             <Button variant="solid" size="xs" colorPalette={"gray"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }}>
               <BiSolidDownArrow />
             </Button>
-          </Popover.Trigger>
+          </Popover.Trigger>}
         </Group>
 
         <Portal>
           <Popover.Positioner>
             <Popover.Content>
               <Stack p={2}>
-                <Button disabled={!props.isEdited} size="xs" colorPalette={"green"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.muted" }} onClick={handleUpdateOrder}>Lưu</Button>
-                {props.meta?.resetRow && <Button size="xs" disabled={!props.isEdited} colorPalette={"yellow"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }} onClick={handleResetRow}>Hoàn tác</Button>}
-                <Button size="xs" colorPalette={"blue"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }}>Ghim lệnh</Button>
-                <Button size="xs" colorPalette={"red"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }} onClick={handleDeleteOrder}>Xóa</Button>
+                {!disabled && <Button disabled={!props.isEdited} size="xs" colorPalette={"green"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.muted" }} onClick={handleUpdateOrder}>Lưu</Button>}
+                {!disabled && props.meta?.resetRow && <Button size="xs" disabled={!props.isEdited} colorPalette={"yellow"} bg={{ base: "colorPalette.emphasized", _hover: "colorPalette.muted" }} onClick={handleResetRow}>Hoàn tác</Button>}
+                {!disabled && <Button size="xs" colorPalette={"red"} bg={{ base: "colorPalette.solid", _hover: "colorPalette.emphasized" }} onClick={handleDeleteOrder}>Xóa</Button>}
               </Stack>
             </Popover.Content>
           </Popover.Positioner>

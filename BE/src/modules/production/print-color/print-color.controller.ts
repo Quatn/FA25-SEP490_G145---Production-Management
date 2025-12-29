@@ -1,17 +1,37 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { PrintColorService } from './print-color.service';
 import { CreatePrintColorRequestDto } from './dto/create-print-color-request.dto';
 import { UpdatePrintColorRequestDto } from './dto/update-print-color-request.dto';
 import { PrintColorDocument } from '../schemas/print-color.schema';
 import { BaseResponse } from '@/common/dto/response.dto';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
+import { PrivilegedJwtAuthGuard } from '@/common/guards/privileged-jwt-auth.guard';
+import { printColorAdminPrivileges, printColorCreatePrivileges, printColorGetPrivileges, printColorUpdatePrivileges } from './print-color-module-access-privileges';
 
+const PrintColorGetRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: printColorGetPrivileges,
+});
+
+const PrintColorCreateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: printColorCreatePrivileges,
+});
+
+const PrintColorUpdateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: printColorUpdatePrivileges,
+});
+
+const PrintColorAdminRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: printColorAdminPrivileges,
+});
+
+@ApiBearerAuth("access-token")
 @Controller('print-color')
 @ApiTags('PrintColor')
 export class PrintColorController {
   constructor(private readonly pcService: PrintColorService) { }
 
+  // @UseGuards(PrintColorGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated print colors' })
   async findPaginated(
@@ -23,6 +43,7 @@ export class PrintColorController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
+  @UseGuards(PrintColorAdminRequestGuard)
   @Get('list-deleted')
   @ApiOperation({ summary: 'List deleted print colors' })
   async findDeleted(
@@ -33,6 +54,7 @@ export class PrintColorController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
+  // @UseGuards(PrintColorGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List print colors' })
   async findAll(): Promise<BaseResponse<PrintColorDocument[]>> {
@@ -40,6 +62,7 @@ export class PrintColorController {
     return { success: true, message: 'Fetch successful', data: docs };
   }
 
+  // @UseGuards(PrintColorGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'Print color detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<PrintColorDocument>> {
@@ -47,6 +70,7 @@ export class PrintColorController {
     return { success: true, message: 'Fetch successful', data: doc };
   }
 
+  @UseGuards(PrintColorCreateRequestGuard)
   @Post('create')
   @ApiOperation({ summary: 'Create new print color' })
   async create(@Body() dto: CreatePrintColorRequestDto): Promise<BaseResponse<PrintColorDocument>> {
@@ -54,6 +78,7 @@ export class PrintColorController {
     return { success: true, message: `Created print color ${doc.code} successfully`, data: doc };
   }
 
+  @UseGuards(PrintColorUpdateRequestGuard)
   @Patch('update/:id')
   @ApiOperation({ summary: 'Update print color' })
   async update(
@@ -64,6 +89,7 @@ export class PrintColorController {
     return { success: true, message: `Updated print color ${doc.code} successfully`, data: doc };
   }
 
+  @UseGuards(PrintColorUpdateRequestGuard)
   @Delete('delete-soft/:id')
   @ApiOperation({ summary: 'Soft delete print color' })
   async softDelete(@Param('id') id: string): Promise<BaseResponse<null>> {
@@ -71,6 +97,7 @@ export class PrintColorController {
     return { success: true, message: 'Soft deleted successfully', data: null };
   }
 
+  @UseGuards(PrintColorAdminRequestGuard)
   @Patch('restore/:id')
   @ApiOperation({ summary: 'Restore print color' })
   async restore(@Param('id') id: string): Promise<BaseResponse<null>> {
@@ -78,6 +105,7 @@ export class PrintColorController {
     return { success: true, message: 'Restored successfully', data: null };
   }
 
+  @UseGuards(PrintColorAdminRequestGuard)
   @Delete('delete-hard/:id')
   @ApiOperation({ summary: 'Hard delete print color' })
   async hardDelete(@Param('id') id: string): Promise<BaseResponse<null>> {

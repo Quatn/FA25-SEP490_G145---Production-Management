@@ -28,7 +28,10 @@ export class PaperColorService {
 
         if (orConditions.length === 0) return;
 
-        const query: FilterQuery<PaperColorDocument> = { $or: orConditions };
+        const query: FilterQuery<PaperColorDocument> = { 
+            $or: orConditions,
+            isDeleted: { $in: [true, false] }, 
+        };
 
         if (excludeId) {
             query._id = { $ne: excludeId };

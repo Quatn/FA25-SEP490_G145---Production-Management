@@ -162,7 +162,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                         size="lg"
                                         fontSize="lg"
                                         fontWeight="bold"
-                                        value={supplier.code}
+                                        value={supplier.code ?? ""}
                                         placeholder="Nhập mã"
                                         required
                                         disabled={!!initialData}
@@ -180,7 +180,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                         size="lg"
                                         fontSize="lg"
                                         fontWeight="bold"
-                                        value={supplier.name}
+                                        value={supplier.name ?? ""}
                                         placeholder="Nhập tên"
                                         required
                                         onChange={(e) => handleChange("name", e.target.value.toUpperCase())}
@@ -195,7 +195,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Số điện thoại</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={supplier.phone}
+                                        value={supplier.phone ?? ""}
                                         placeholder="Nhập số điện thoại"
                                         required
                                         onChange={(e) => handleChange("phone", e.target.value)}
@@ -210,7 +210,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Địa chỉ</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={supplier.address}
+                                        value={supplier.address ?? ""}
                                         placeholder="Nhập địa chỉ"
                                         onChange={(e) => handleChange("address", e.target.value)}
                                     />
@@ -225,7 +225,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                     <Input
                                         size="lg"
                                         type="email"
-                                        value={supplier.email}
+                                        value={supplier.email ?? ""}
                                         placeholder="Nhập email"
                                         onChange={(e) => handleChange("email", e.target.value)}
                                     />
@@ -239,7 +239,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Ngân hàng</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={supplier.bank}
+                                        value={supplier.bank ?? ""}
                                         placeholder="Nhập ngân hàng"
                                         onChange={(e) => handleChange("bank", e.target.value)}
                                     />
@@ -253,7 +253,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Số tài khoản</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={supplier.bankAccount}
+                                        value={supplier.bankAccount ?? ""}
                                         placeholder="Nhập số tài khoản"
                                         onChange={(e) => handleChange("bankAccount", e.target.value)}
                                     />
@@ -267,7 +267,7 @@ const PaperSupplierFormDialog: React.FC<PaperSupplierFormDialogProps> = ({
                                     <Field.Label fontSize="lg">Ghi chú</Field.Label>
                                     <Input
                                         size="lg"
-                                        value={supplier.note}
+                                        value={supplier.note ?? ""}
                                         placeholder="Nhập ghi chú"
                                         onChange={(e) => handleChange("note", e.target.value)}
                                     />

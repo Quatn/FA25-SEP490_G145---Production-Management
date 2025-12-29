@@ -13,9 +13,31 @@ import PrintColorTable from "./PrintColorTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import PrintColorDetailDialog from "./PrintColorDetailDialog";
 import { useAddPrintColorMutation, useDeleteSoftPrintColorMutation, useGetPrintColorQuery, useUpdatePrintColorMutation } from "@/service/api/printColorApiSlice";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import DataLoading from "../common/DataLoading";
+import check from "check-types";
 
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "print-color-readWrite",
+]
 
 const PrintColorList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
 
     const [addPrintColor] = useAddPrintColorMutation();
     const [updatePrintColor] = useUpdatePrintColorMutation();
@@ -48,7 +70,23 @@ const PrintColorList: React.FC = () => {
 
     const inputRef = useRef<HTMLInputElement | null>(null);
 
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
+
     const handleOpenFormDialog = (color?: PrintColor) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelectedColor(color);
         setFormDialogOpen(true);
     };
@@ -59,6 +97,9 @@ const PrintColorList: React.FC = () => {
     };
 
     const handleOpenAlertDialog = (color: PrintColor) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelectedColor(color);
         setAlertDialogOpen(true);
     }
@@ -152,6 +193,10 @@ const PrintColorList: React.FC = () => {
             <FaSearch />
         </IconButton>
     );
+
+    if (hydrating) {
+        return <DataLoading />
+    }
 
     if (isColorsLoading) return <Text>Đang tải dữ liệu...</Text>;
     if (colorsError) return <Text>Không thể tải dữ liệu. Vui lòng thử lại.</Text>;

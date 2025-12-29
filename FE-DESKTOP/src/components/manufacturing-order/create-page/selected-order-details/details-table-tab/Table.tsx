@@ -15,7 +15,7 @@ import {
   TabsRootProps,
   Text,
 } from "@chakra-ui/react";
-import { CSSProperties, useMemo, useState } from "react";
+import { CSSProperties, useContext, useMemo, useState } from "react";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { ManufacturingTableTabType } from "@/context/manufacturing-order/manufacturingOrderTableContext";
 import { useCreateManyManufacturingOrdersMutation, useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery } from "@/service/api/manufacturingOrderApiSlice";
@@ -28,6 +28,10 @@ import { manufacturingOrderColumnsByTabs, manufacturingOrderMergedHeaders, Manuf
 import DataFetchError from "@/components/common/DataFetchError";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import useDataTable from "@/components/ui/data-table/hook";
+import { CreatePageStoreContext } from "../TabbedContainer";
+import { useStore } from "@tanstack/react-store";
+import { Ware } from "@/types/Ware";
+import { productionModuleConfigs } from "@/config/production-module.config";
 
 type TableProps = {
   rootProps?: BoxProps;
@@ -45,19 +49,18 @@ export default function CreatePageManufacturingOrderTable(
   const [tab, setTab] = useState<ManufacturingTableTabType>("all");
   const columnsForTab = manufacturingOrderColumnsByTabs[tab] ?? [];
 
-  const {
-    data: fullDetailMOsResponse,
-    error: fetchError,
-    isLoading: isFetchingList,
-  } = useGetDraftFullDetailManufacturingOrdersByPoiIdsQuery({
-    ids: selectedPOIsIds,
-  });
+  const store = useContext(CreatePageStoreContext);
+  if (!store) throw new Error("Must be used inside CreatePageStoreContext");
+  const draftedMOs = useStore(store, (s) => s.draftedMOs)
+  const paperUsageChartData = useStore(store, (s) => s.paperUsageChartData)
+  const facePaperUsage = useStore(store, (s) => s.facePaperUsage)
+  const rawPaperUsage = useStore(store, (s) => s.rawPaperUsage)
 
-  const rawTableData: (Omit<ManufacturingOrderTableDataType, "isEdited">)[] = fullDetailMOsResponse?.data ?? []
+  const rawTableData: (Omit<ManufacturingOrderTableDataType, "isEdited">)[] = draftedMOs ?? []
 
-  const { table, tableComponent, tableData, resetTable } = useDataTable({
+  const { table, tableComponent, tableData } = useDataTable({
     data: rawTableData,
-    columns: columnsForTab.filter((r) => r.id !== "actions-column"),
+    columns: columnsForTab.filter((r) => !check.in(r.id, ["orderStatusDisplay", "actions-column"])).filter((r) => r.id !== "actions-column"),
     getCoreRowModel: getCoreRowModel(),
     getRowId: (mo) => mo._id,
     bodyPropsStack: {
@@ -104,6 +107,7 @@ export default function CreatePageManufacturingOrderTable(
 
   // const fullDetailMOsResponse?.data = selectedManufacturingOrders;
 
+  /*
   if (isFetchingList) {
     return (
       <Center h={"full"} flex={1} flexGrow={1}>
@@ -114,12 +118,15 @@ export default function CreatePageManufacturingOrderTable(
       </Center>
     );
   }
+  */
 
+  /*
   if (fetchError) {
     return <DataFetchError h={"full"} flexGrow={1} />;
   }
+  */
 
-  if (check.undefined(fullDetailMOsResponse?.data)) {
+  if (check.undefined(draftedMOs)) {
     return <DataFetchError h={"full"} flexGrow={1} />;
   }
 
@@ -153,29 +160,116 @@ export default function CreatePageManufacturingOrderTable(
       }))
     }
 
-    createOrders(formValue).unwrap().then((res) => {
-      if (check.greaterOrEqual(res.data?.createdAmount as number, res.data?.createdAmount as number)) {
-        toaster.success({
-          title: "Success",
-          description: "All orders created successfully",
-        })
-      }
-      else if (check.greaterOrEqual(res.data?.createdAmount as number, 1)) {
-        toaster.warning({
-          title: "Some orders was not created",
-        })
-      }
-      else {
-        toaster.warning({
-          title: "No orders created",
-        })
-      }
-      dispatch({ type: "RESET_TREE_STATE" })
-    }).catch(error => {
-      toaster.warning({
-        title: "Error creating order",
-        description: tryGetApiErrorMsg(error),
+    dispatch({
+      type: "SET_PREPARED_SUBMIT_ASK_TEXT",
+      payload: `Xác nhận tạo ${formValue.orders.length} lệnh?`
+    });
+
+    const accumulatedCalc: Record<string, number> = {}
+
+    if (paperUsageChartData.data.at(-1)) {
+      Object.assign(accumulatedCalc, paperUsageChartData.data.at(-1))
+    }
+    else {
+      [...facePaperUsage, ...rawPaperUsage].forEach(usage => {
+        if (check.number(accumulatedCalc[usage.code])) {
+          accumulatedCalc[usage.code] += usage.inventoryWeight
+        }
+        else {
+          accumulatedCalc[usage.code] = usage.inventoryWeight
+        }
       })
+
+    }
+
+    if (accumulatedCalc) {
+      const requirementMap: Map<string, number> = new Map();
+
+      const pois = draftedMOs
+        .filter(mo => check.nonEmptyObject(mo.purchaseOrderItem))
+        .filter(poi => check.nonEmptyObject((poi.purchaseOrderItem as Serialized<PurchaseOrderItem>).ware))
+        .map(mo => mo.purchaseOrderItem as Serialized<PurchaseOrderItem>)
+      const wares = pois.map(poi => poi.ware)
+
+      if (check.undefined(pois) || check.undefined(wares)) return []
+
+      // List of all paper type and weight field pairs
+      const fields: { type: keyof Ware; weight: keyof PurchaseOrderItem }[] = [
+        { type: "faceLayerPaperType", weight: "faceLayerPaperWeight" },
+        { type: "EFlutePaperType", weight: "EFlutePaperWeight" },
+        { type: "EBLinerLayerPaperType", weight: "EBLinerLayerPaperWeight" },
+        { type: "BFlutePaperType", weight: "BFlutePaperWeight" },
+        { type: "BACLinerLayerPaperType", weight: "BACLinerLayerPaperWeight" },
+        { type: "ACFlutePaperType", weight: "ACFlutePaperWeight" },
+        { type: "backLayerPaperType", weight: "backLayerPaperWeight" },
+      ];
+
+      for (const poi of pois) {
+        for (const pair of fields) {
+          const code = (poi.ware as Serialized<Ware>)[pair.type] as string;
+          const weight = poi[pair.weight];
+
+          if (code && typeof weight === "number") {
+            const current = requirementMap.get(code) || 0;
+            requirementMap.set(code, current + weight);
+          }
+        }
+      }
+
+      const insufficientPaperTypes: { type: string, missingAmount: number }[] = []
+
+      Object.keys(accumulatedCalc).forEach((f) => {
+        if (check.number(accumulatedCalc[f]) && check.less(accumulatedCalc[f], requirementMap.get(f) as number)) {
+          insufficientPaperTypes.push({ type: f, missingAmount: (requirementMap.get(f) as number) - accumulatedCalc[f] })
+        }
+      });
+
+      dispatch({ type: "SET_INSUFFICIENT_PAPER_TYPES", payload: insufficientPaperTypes })
+
+      if (check.nonEmptyArray(insufficientPaperTypes)) {
+        const currentDate = new Date()
+
+        const insufficientOrderBufferTimes = tableData.filter(order => check.nonEmptyObject(order.purchaseOrderItem))
+          .map((order) => {
+            const adjusted = new Date(order.manufacturingDateAdjustment ?? "---")
+            return {
+              code: order.code,
+              date: (check.string(order.manufacturingDateAdjustment) && check.date(adjusted)) ? adjusted : new Date(order.manufacturingDate)
+            }
+          })
+          .filter(order => (order.date.getTime() - currentDate.getTime()) < productionModuleConfigs.MIN_SCHEDULE_TIME_MS_DISTANCE_ALLOWED_FOR_UNFULFILLED_MATERIAL_REQUIREMENTS)
+
+        dispatch({ type: "SET_INSUFFICIENT_ORDER_BUFFER_TIMES", payload: insufficientOrderBufferTimes })
+      }
+    }
+
+    dispatch({
+      type: "SET_PREPARED_SUBMIT_FUNCTION", payload: () => {
+        createOrders(formValue).unwrap().then((res) => {
+          if (check.greaterOrEqual(res.data?.createdAmount as number, res.data?.createdAmount as number)) {
+            toaster.success({
+              title: "Success",
+              description: "Tạo tất cả lệnh thành công",
+            })
+          }
+          else if (check.greaterOrEqual(res.data?.createdAmount as number, 1)) {
+            toaster.warning({
+              title: "Một vài lệnh chưa được tạo",
+            })
+          }
+          else {
+            toaster.warning({
+              title: "Tạo lệnh không thành công",
+            })
+          }
+          dispatch({ type: "RESET_TREE_STATE" })
+        }).catch(error => {
+          toaster.warning({
+            title: "Có vấn đề xảy ra trong lúc tạo lệnh",
+            description: tryGetApiErrorMsg(error),
+          })
+        })
+      }
     })
   }
 
@@ -197,31 +291,24 @@ export default function CreatePageManufacturingOrderTable(
       >
         <Tabs.List ms={`${getTabBarOffset()}px`}>
           <Tabs.Trigger value="all">
-            <LuUser />
             Tổng quan
           </Tabs.Trigger>
           <Tabs.Trigger value="order">
-            <LuUser />
             Thông tin đơn hàng
           </Tabs.Trigger>
           <Tabs.Trigger value="manufacture">
-            <LuFolder />
             Gia công
           </Tabs.Trigger>
           <Tabs.Trigger value="layers">
-            <LuSquareCheck />
             Cấu trúc lớp
           </Tabs.Trigger>
           <Tabs.Trigger value="notes">
-            <LuSquareCheck />
             Ghi chú
           </Tabs.Trigger>
           <Tabs.Trigger value="weight">
-            <LuSquareCheck />
             Trọng lượng giấy sử dụng
           </Tabs.Trigger>
           <Tabs.Trigger value="processes">
-            <LuSquareCheck />
             Công đoạn hoàn thiện
           </Tabs.Trigger>
         </Tabs.List>
@@ -232,7 +319,7 @@ export default function CreatePageManufacturingOrderTable(
       </Table.ScrollArea>
 
       <HStack my={3} justifyContent={"end"}>
-        <Button colorPalette={"blue"} onClick={() => dispatch({ type: "SET_PREPARED_SUBMIT_FUNCTION", payload: handleCreateOrder })}>Tạo {selectedPOIsIds.length} lệnh</Button>
+        <Button colorPalette={"blue"} onClick={handleCreateOrder}>Tạo {selectedPOIsIds.length} lệnh</Button>
         <Button colorPalette={"red"}>Đặt lại</Button>
       </HStack>
     </Box>

@@ -21,7 +21,7 @@ const colSize = {
   },
 }
 
-export const paperTypesTableColumns = (header: string) => [
+export const paperUsageTableColumns = (header: string) => [
   columnHelper.group({
     id: "table",
     header: header,
@@ -35,18 +35,19 @@ export const paperTypesTableColumns = (header: string) => [
       }),
       columnHelper.display({
         id: "requirementWeight",
-        header: "Trọng lượng sử dựng (kg)",
+        header: "Trọng lượng sử dụng (kg)",
         ...colSize.sm,
         cell: ({ row }) =>
-          row.original.requirementWeight.toFixed(4),
+          row.original.requirementWeight.toFixed(2),
       }),
       columnHelper.display({
         id: "inventoryWeight",
         header: "Tồn kho (kg)",
         ...colSize.sm,
         cell: ({ row }) =>
-          row.original.inventoryWeight.toFixed(4),
+          row.original.inventoryWeight.toFixed(2),
       }),
+      /*
       columnHelper.display({
         id: "status",
         header: "Trạng thái",
@@ -54,6 +55,7 @@ export const paperTypesTableColumns = (header: string) => [
         cell: ({ row }) =>
           row.original.status,
       }),
+      */
     ]
   })
 ]

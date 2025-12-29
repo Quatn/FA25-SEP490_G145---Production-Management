@@ -12,6 +12,7 @@ import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
 import ManufacturingOrderTableActionColumn from "./ActionColumn";
 import { manufacturingOrderComponentUtils as utils } from "../utils"
+import { formatDateTohhmmDDMMYYYY } from "@/utils/dateUtils";
 
 const { getPopulatedPoi, getPopulatedCustomer, getPopulatedPo, getPopulatedWare, getPopulatedSubPo, OrderStatusNameMap } = utils
 
@@ -484,10 +485,12 @@ export const manufacturingOrderColumns: (ColumnDef<ManufacturingOrderTableDataTy
 
   columnHelper.defineDataTableAccessorColumn({
     id: "requestedDatetime",
-    accessorKey: "requestedDatetime",
+    accessorFn: (mo) => {
+      return formatDateTohhmmDDMMYYYY(mo.requestedDatetime)
+    },
     header: "Ngày và giờ cần",
     enablePinning: true,
-    cellType: DataTableCellType.Date,
+    cellType: DataTableCellType.Readonly,
     ...colSize.md,
   }),
 

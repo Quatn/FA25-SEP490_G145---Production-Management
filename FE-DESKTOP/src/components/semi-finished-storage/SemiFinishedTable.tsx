@@ -4,7 +4,6 @@ import { FaEye, FaMinus, FaPlus } from "react-icons/fa";
 import { SemiFinishedGood } from "@/types/SemiFinishedGood";
 import { formatDate, hourGap } from "@/utils/dateUtils";
 import { safeGet } from "@/utils/storagesUtils";
-import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 
 interface Props {
@@ -114,7 +113,7 @@ const SemiFinishedTable: React.FC<Props> = ({ page, limit, items, onView, onTran
                     {items.map((item, index) => {
                         const mo = item.manufacturingOrder as ManufacturingOrder;
                         const poItem = mo?.purchaseOrderItem;
-                        const amount = (poItem as PurchaseOrderItem)?.amount ?? 0;
+                        const amount = mo?.numberOfBlanks;
                         const importDiff = item.importedQuantity - amount;
 
                         const hoursInStock = item.currentQuantity == 0 ? 0 : hourGap(item.createdAt);

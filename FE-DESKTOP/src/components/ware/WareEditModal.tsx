@@ -1,7 +1,7 @@
-// src/components/ware/WareEditModal.tsx
 "use client";
 
 import React from "react";
+import { toaster } from "../ui/toaster";
 
 type EditForm = any;
 
@@ -9,7 +9,6 @@ type MultiSelectInlineProps = {
   id?: string;
   options?: any[];
   selected?: any[];
-  // REQUIRED handlers to match the MultiSelectInline implementation
   onAdd: (id: string) => void;
   onRemove: (id: string) => void;
   getLabel?: (o: any) => string;
@@ -37,8 +36,9 @@ type Props = {
   ) => void;
   handleEditSubmit: () => Promise<void>;
   getIdFromDoc: (doc: any) => string | undefined;
-  // accept a component value
   MultiSelectInline: React.ComponentType<MultiSelectInlineProps>;
+  paperTypeList?: any[];
+  paperSupplierList?: any[];
 };
 
 /* TOP-LEVEL stable Label component */
@@ -76,17 +76,14 @@ const WareEditModal: React.FC<Props> = ({
   handleEditSubmit,
   getIdFromDoc,
   MultiSelectInline,
+  paperTypeList = [],
+  paperSupplierList = [],
 }) => {
-  // helper factories to keep numeric behavior consistent
   const makeOnKeyDown =
     (allowDecimal = false) =>
     (e: React.KeyboardEvent) => {
-      if (e.key === "-" || e.key === "e" || e.key === "+") {
-        e.preventDefault();
-      }
-      if (!allowDecimal && e.key === ".") {
-        e.preventDefault();
-      }
+      if (e.key === "-" || e.key === "e" || e.key === "+") e.preventDefault();
+      if (!allowDecimal && e.key === ".") e.preventDefault();
     };
 
   const makeOnPaste =
@@ -138,24 +135,321 @@ const WareEditModal: React.FC<Props> = ({
         setEditForm((p: any) => ({ ...(p ?? {}), [field]: num }));
       } else {
         const num = Number(raw);
-        if (Number.isNaN(num)) {
-          return;
-        }
+        if (Number.isNaN(num)) return;
         setEditForm((p: any) => ({ ...(p ?? {}), [field]: num < 0 ? 0 : num }));
       }
     };
 
-  // debug: observe selected printColors in edit form
+  const labelForPaperOption = (optString: string) => {
+    const parts = optString.split("/");
+    if (parts.length === 3) {
+      const [colorCode, width, grammage] = parts;
+      const found = (paperTypeList || []).find((pt) => {
+        const code = pt?.paperColor?.code ?? pt?.paperColor;
+        const w = String(pt?.width ?? pt?.w ?? "");
+        const g = String(pt?.grammage ?? pt?.gsm ?? "");
+        return (
+          String(code) === String(colorCode) &&
+          String(w) === String(width) &&
+          String(g) === String(grammage)
+        );
+      });
+      if (found) {
+        const title =
+          found?.paperColor?.title ?? found?.paperColor ?? colorCode;
+        return `${title} - ${width} / ${grammage}`;
+      }
+      return `${colorCode} — ${width} / ${grammage}`;
+    } else if (parts.length === 4) {
+      const [colorCode, supplierCode, width, grammage] = parts;
+      return `${colorCode}/${supplierCode} - ${width}/${grammage}`;
+    }
+    return optString;
+  };
+
+  const fluteToField: Record<string, string> = {
+    faceLayer: "faceLayerPaperType",
+    EFlute: "EFlutePaperType",
+    EBLiner: "EBLinerLayerPaperType",
+    BFlute: "BFlutePaperType",
+    BACLiner: "BACLinerLayerPaperType",
+    ACFlute: "ACFlutePaperType",
+    backLayer: "backLayerPaperType",
+  };
+
+  const fluteKeyLabel: Record<string, string> = {
+    faceLayer: "Mặt",
+    EFlute: "Sóng E",
+    EBLiner: "Lớp giữa E/B",
+    BFlute: "Sóng B",
+    BACLiner: "Lớp giữa B/A C",
+    ACFlute: "Sóng AC",
+    backLayer: "Đáy",
+  };
+
+  const selectedFluteDef = React.useMemo(() => {
+    const sel = editForm?.fluteCombination ?? "";
+    if (!sel) return undefined;
+    return (fluteList || []).find((f) => {
+      try {
+        const id = getIdFromDoc(f);
+        return String(id) === String(sel) || f._id === sel || f.code === sel;
+      } catch {
+        return false;
+      }
+    });
+  }, [editForm?.fluteCombination, fluteList]);
+
+  const displayedFlutes: string[] = (
+    selectedFluteDef?.flutes && Array.isArray(selectedFluteDef.flutes)
+      ? selectedFluteDef.flutes
+      : []
+  ) as string[];
+
+  const shownBasePaper = (val: string) => {
+    if (!val) return "";
+    if (!val.includes("/")) return val;
+    const parts = val.split("/");
+    if (parts.length === 4) return `${parts[0]}/${parts[2]}/${parts[3]}`;
+    return val;
+  };
+
+  const extractSupplierFromStored = (val: string) => {
+    if (!val || !val.includes("/")) return "";
+    const parts = val.split("/");
+    if (parts.length === 4) return parts[1];
+    return "";
+  };
+
+  const onFacePaperChange = (paperOpt: string) => {
+    setEditForm((prev: any) => {
+      const supplierCode = prev?.faceLayerPaperSupplier ?? "";
+      let finalVal = paperOpt;
+      if (supplierCode && supplierCode !== "") {
+        const parts = paperOpt.split("/");
+        if (parts.length === 3)
+          finalVal = `${parts[0]}/${supplierCode}/${parts[1]}/${parts[2]}`;
+      }
+      return { ...(prev ?? {}), faceLayerPaperType: finalVal };
+    });
+  };
+
+  const onBackPaperChange = (paperOpt: string) => {
+    setEditForm((prev: any) => {
+      const supplierCode = prev?.backLayerPaperSupplier ?? "";
+      let finalVal = paperOpt;
+      if (supplierCode && supplierCode !== "") {
+        const parts = paperOpt.split("/");
+        if (parts.length === 3)
+          finalVal = `${parts[0]}/${supplierCode}/${parts[1]}/${parts[2]}`;
+      }
+      return { ...(prev ?? {}), backLayerPaperType: finalVal };
+    });
+  };
+
+  const onFaceSupplierChange = (supplierCode: string) => {
+    setEditForm((prev: any) => {
+      const currentPaper = prev?.faceLayerPaperType ?? "";
+      let basePaper = currentPaper;
+      if (currentPaper && currentPaper.includes("/")) {
+        const parts = currentPaper.split("/");
+        if (parts.length === 4)
+          basePaper = `${parts[0]}/${parts[2]}/${parts[3]}`;
+      }
+      let newFacePaper = "";
+      if (basePaper) {
+        const parts = basePaper.split("/");
+        if (parts.length === 3 && supplierCode)
+          newFacePaper = `${parts[0]}/${supplierCode}/${parts[1]}/${parts[2]}`;
+        else newFacePaper = basePaper;
+      } else newFacePaper = "";
+      return {
+        ...(prev ?? {}),
+        faceLayerPaperSupplier: supplierCode,
+        faceLayerPaperType: newFacePaper,
+      };
+    });
+  };
+
+  const onBackSupplierChange = (supplierCode: string) => {
+    setEditForm((prev: any) => {
+      const currentPaper = prev?.backLayerPaperType ?? "";
+      let basePaper = currentPaper;
+      if (currentPaper && currentPaper.includes("/")) {
+        const parts = currentPaper.split("/");
+        if (parts.length === 4)
+          basePaper = `${parts[0]}/${parts[2]}/${parts[3]}`;
+      }
+      let newBackPaper = "";
+      if (basePaper) {
+        const parts = basePaper.split("/");
+        if (parts.length === 3 && supplierCode)
+          newBackPaper = `${parts[0]}/${supplierCode}/${parts[1]}/${parts[2]}`;
+        else newBackPaper = basePaper;
+      } else newBackPaper = "";
+      return {
+        ...(prev ?? {}),
+        backLayerPaperSupplier: supplierCode,
+        backLayerPaperType: newBackPaper,
+      };
+    });
+  };
+
+  const handleFluteChange = (newId: string) => {
+    const def = (fluteList || []).find((f) => {
+      try {
+        const id = getIdFromDoc(f);
+        return (
+          String(id) === String(newId) || f._id === newId || f.code === newId
+        );
+      } catch {
+        return false;
+      }
+    });
+    const newFlutes = def?.flutes ?? [];
+    setEditForm((prev: any) => {
+      const next = { ...(prev ?? {}), fluteCombination: newId };
+      Object.entries(fluteToField).forEach(([fluteKey, fieldName]) => {
+        if (!newFlutes.includes(fluteKey)) {
+          next[fieldName] = "";
+          if (fluteKey === "faceLayer") next["faceLayerPaperSupplier"] = "";
+          if (fluteKey === "backLayer") next["backLayerPaperSupplier"] = "";
+        }
+      });
+      return next;
+    });
+  };
+
+  React.useEffect(() => {
+    if (!editForm) return;
+    const updates: any = {};
+    try {
+      const faceFromStored = extractSupplierFromStored(
+        editForm?.faceLayerPaperType ?? ""
+      );
+      const backFromStored = extractSupplierFromStored(
+        editForm?.backLayerPaperType ?? ""
+      );
+      if (
+        (!editForm?.faceLayerPaperSupplier ||
+          editForm?.faceLayerPaperSupplier === "") &&
+        faceFromStored
+      )
+        updates.faceLayerPaperSupplier = faceFromStored;
+      if (
+        (!editForm?.backLayerPaperSupplier ||
+          editForm?.backLayerPaperSupplier === "") &&
+        backFromStored
+      )
+        updates.backLayerPaperSupplier = backFromStored;
+      if (Object.keys(updates).length > 0)
+        setEditForm((p: any) => ({ ...(p ?? {}), ...updates }));
+    } catch (err) {
+      console.error("prefill suppliers failed", err);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editForm?.faceLayerPaperType, editForm?.backLayerPaperType]);
+
+  // compute volume when dimensions change (same formula & zero->1 rule)
+  React.useEffect(() => {
+    if (!editForm) return;
+
+    const toNum = (v: any) => {
+      if (v === "" || v == null) return 0;
+      const n = Number(v);
+      return Number.isNaN(n) ? 0 : n;
+    };
+
+    const w = toNum(editForm?.wareWidth);
+    const h = toNum(editForm?.wareHeight);
+    const l = toNum(editForm?.wareLength);
+
+    const wForFormula = w === 0 ? 1 : w;
+    const hForFormula = h === 0 ? 1 : h;
+    const lForFormula = l === 0 ? 1 : l;
+
+    let newVol = (wForFormula * hForFormula * lForFormula) / 1000000000;
+    newVol = Number(parseFloat(String(newVol)).toFixed(50));
+
+    if (w === 0 || l === 0) {
+      setEditForm((p: any) => ({ ...(p ?? {}), volume: 0 }));
+    }
+
+    else if (editForm?.volume !== newVol) {
+      setEditForm((p: any) => ({ ...(p ?? {}), volume: newVol }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editForm?.wareWidth, editForm?.wareHeight, editForm?.wareLength]);
+
   React.useEffect(() => {
     try {
       console.debug(
-        "WareEditModal editForm.printColors:",
-        editForm?.printColors
+        "WareEditModal displayed flutes:",
+        displayedFlutes,
+        "face/back stored:",
+        editForm?.faceLayerPaperType,
+        editForm?.faceLayerPaperSupplier,
+        editForm?.backLayerPaperType,
+        editForm?.backLayerPaperSupplier
       );
     } catch {}
-  }, [editForm?.printColors]);
+  }, [
+    JSON.stringify(displayedFlutes),
+    editForm?.faceLayerPaperType,
+    editForm?.faceLayerPaperSupplier,
+    editForm?.backLayerPaperType,
+    editForm?.backLayerPaperSupplier,
+  ]);
 
   if (!show || !editForm) return null;
+
+  const middleFlutes = displayedFlutes.filter(
+    (k) => k !== "faceLayer" && k !== "backLayer"
+  );
+
+  // helpers to check whether supplier exists in supplier list
+  const supplierKeyOf = (s: any) =>
+    s == null ? "" : s.code ?? getIdFromDoc(s) ?? String(s);
+  const faceCurrentSupplier = editForm?.faceLayerPaperSupplier ?? "";
+  const backCurrentSupplier = editForm?.backLayerPaperSupplier ?? "";
+  const faceSupplierPresent = (paperSupplierList || []).some(
+    (s) => String(supplierKeyOf(s)) === String(faceCurrentSupplier)
+  );
+  const backSupplierPresent = (paperSupplierList || []).some(
+    (s) => String(supplierKeyOf(s)) === String(backCurrentSupplier)
+  );
+
+  const onSubmitWrapper = async () => {
+    const missing: string[] = [];
+    displayedFlutes.forEach((fluteKey) => {
+      const fieldName = fluteToField[fluteKey];
+      const label = fluteKeyLabel[fluteKey] ?? fluteKey;
+      const val = (editForm && editForm[fieldName]) || "";
+      if (!val || String(val).trim() === "") {
+        missing.push(label);
+      } else if (fluteKey === "faceLayer") {
+        const supp = editForm?.faceLayerPaperSupplier ?? "";
+        if (!supp || String(supp).trim() === "")
+          missing.push(`${label} - nhà cung cấp`);
+      } else if (fluteKey === "backLayer") {
+        const supp = editForm?.backLayerPaperSupplier ?? "";
+        if (!supp || String(supp).trim() === "")
+          missing.push(`${label} - nhà cung cấp`);
+      }
+    });
+    if (missing.length > 0) {
+      toaster.create({
+        description: `Vui lòng chọn giá trị cho: ${missing.join(", ")}`,
+        type: "error",
+      });
+      return;
+    }
+    try {
+      await handleEditSubmit();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div className="modal-backdrop" style={{ display: "block" }}>
@@ -177,6 +471,7 @@ const WareEditModal: React.FC<Props> = ({
                     <input
                       className="form-control"
                       value={editForm?.code ?? ""}
+                      disabled
                       onChange={(e) =>
                         setEditForm((p: any) => ({
                           ...(p ?? {}),
@@ -206,12 +501,7 @@ const WareEditModal: React.FC<Props> = ({
                     <select
                       className="form-control"
                       value={editForm?.fluteCombination ?? ""}
-                      onChange={(e) =>
-                        setEditForm((p: any) => ({
-                          ...(p ?? {}),
-                          fluteCombination: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => handleFluteChange(e.target.value)}
                     >
                       <option value="">-- chọn --</option>
                       {(fluteList || []).map((f) => (
@@ -306,10 +596,7 @@ const WareEditModal: React.FC<Props> = ({
                       step="any"
                       inputMode="numeric"
                       value={editForm?.volume ?? ""}
-                      onChange={handleNumberChange("volume", false)}
-                      onKeyDown={makeOnKeyDown(true)}
-                      onPaste={makeOnPaste(true, false)}
-                      onWheel={onWheelPreventChange}
+                      disabled
                     />
                   </Label>
                 </div>
@@ -400,7 +687,7 @@ const WareEditModal: React.FC<Props> = ({
                       getLabel={(o: any) =>
                         o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
                       }
-                      placeholder="-- choose print colors --"
+                      placeholder="-- chọn màu in --"
                     />
                   </Label>
 
@@ -418,7 +705,7 @@ const WareEditModal: React.FC<Props> = ({
                       getLabel={(o: any) =>
                         o?.code ?? o?.name ?? getIdFromDoc(o) ?? ""
                       }
-                      placeholder="-- choose finishing processes --"
+                      placeholder="-- chọn công đoạn hoàn thiện --"
                     />
                   </Label>
 
@@ -457,161 +744,163 @@ const WareEditModal: React.FC<Props> = ({
                   marginBottom: 12,
                 }}
               >
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <Label label="Mặt">
-                      <select
-                        className="form-control"
-                        value={editForm?.faceLayerPaperType ?? ""}
-                        onChange={(e) =>
-                          setEditForm((p: any) => ({
-                            ...(p ?? {}),
-                            faceLayerPaperType: e.target.value,
-                          }))
-                        }
+                {displayedFlutes.includes("faceLayer") && (
+                  <div style={{ marginBottom: 10 }}>
+                    <Label label="Mặt" required>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "center",
+                        }}
                       >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
-                    </Label>
-                  </div>
+                        <select
+                          className="form-control"
+                          style={{ flex: "1 1 auto" }}
+                          value={shownBasePaper(
+                            editForm?.faceLayerPaperType ?? ""
+                          )}
+                          onChange={(e) => onFacePaperChange(e.target.value)}
+                        >
+                          <option value="">-- rỗng --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {labelForPaperOption(o)}
+                            </option>
+                          ))}
+                        </select>
 
-                  <div className="col-md-4">
-                    <Label label="Sóng E">
-                      <select
-                        className="form-control"
-                        value={editForm?.EFlutePaperType ?? ""}
-                        onChange={(e) =>
-                          setEditForm((p: any) => ({
-                            ...(p ?? {}),
-                            EFlutePaperType: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
-                    </Label>
-                  </div>
+                        <select
+                          className="form-control"
+                          style={{ width: 220 }}
+                          value={editForm?.faceLayerPaperSupplier ?? ""}
+                          onChange={(e) => onFaceSupplierChange(e.target.value)}
+                        >
+                          <option value="">-- nhà cung cấp --</option>
 
-                  <div className="col-md-4">
-                    <Label label="Lớp giữa E/B">
-                      <select
-                        className="form-control"
-                        value={editForm?.EBLinerLayerPaperType ?? ""}
-                        onChange={(e) =>
-                          setEditForm((p: any) => ({
-                            ...(p ?? {}),
-                            EBLinerLayerPaperType: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
-                    </Label>
-                  </div>
+                          {/* show the current supplier as option if not present in supplier list */}
+                          {faceCurrentSupplier && !faceSupplierPresent && (
+                            <option
+                              key={"__face_current"}
+                              value={faceCurrentSupplier}
+                            >
+                              {faceCurrentSupplier}
+                            </option>
+                          )}
 
-                  <div className="col-md-4">
-                    <Label label="Sóng B">
-                      <select
-                        className="form-control"
-                        value={editForm?.BFlutePaperType ?? ""}
-                        onChange={(e) =>
-                          setEditForm((p: any) => ({
-                            ...(p ?? {}),
-                            BFlutePaperType: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
+                          {(paperSupplierList || []).map((s) => (
+                            <option
+                              key={supplierKeyOf(s)}
+                              value={supplierKeyOf(s)}
+                            >
+                              {s.code ?? supplierKeyOf(s)}{" "}
+                              {s.name ? `- ${s.name}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </Label>
                   </div>
+                )}
 
-                  <div className="col-md-4">
-                    <Label label="Lớp giữa B/A C">
-                      <select
-                        className="form-control"
-                        value={editForm?.BACLinerLayerPaperType ?? ""}
-                        onChange={(e) =>
-                          setEditForm((p: any) => ({
-                            ...(p ?? {}),
-                            BACLinerLayerPaperType: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
-                    </Label>
+                {middleFlutes.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "flex-start",
+                      marginBottom: 10,
+                      flexWrap: "nowrap",
+                    }}
+                  >
+                    {middleFlutes.map((fl) => {
+                      const fieldName = fluteToField[fl];
+                      const label = fluteKeyLabel[fl] ?? fl;
+                      return (
+                        <div key={fl} style={{ flex: "1 1 18%" }}>
+                          <Label label={label} required>
+                            <select
+                              className="form-control"
+                              value={editForm?.[fieldName] ?? ""}
+                              onChange={(e) =>
+                                setEditForm((p: any) => ({
+                                  ...(p ?? {}),
+                                  [fieldName]: e.target.value,
+                                }))
+                              }
+                            >
+                              <option value="">-- rỗng --</option>
+                              {PAPER_LAYER_OPTIONS.map((o) => (
+                                <option key={o} value={o}>
+                                  {labelForPaperOption(o)}
+                                </option>
+                              ))}
+                            </select>
+                          </Label>
+                        </div>
+                      );
+                    })}
                   </div>
+                )}
 
-                  <div className="col-md-4">
-                    <Label label="Sóng AC">
-                      <select
-                        className="form-control"
-                        value={editForm?.ACFlutePaperType ?? ""}
-                        onChange={(e) =>
-                          setEditForm((p: any) => ({
-                            ...(p ?? {}),
-                            ACFlutePaperType: e.target.value,
-                          }))
-                        }
+                {displayedFlutes.includes("backLayer") && (
+                  <div>
+                    <Label label="Đáy" required>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "center",
+                        }}
                       >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
-                    </Label>
-                  </div>
+                        <select
+                          className="form-control"
+                          style={{ flex: "1 1 auto" }}
+                          value={shownBasePaper(
+                            editForm?.backLayerPaperType ?? ""
+                          )}
+                          onChange={(e) => onBackPaperChange(e.target.value)}
+                        >
+                          <option value="">-- rỗng --</option>
+                          {PAPER_LAYER_OPTIONS.map((o) => (
+                            <option key={o} value={o}>
+                              {labelForPaperOption(o)}
+                            </option>
+                          ))}
+                        </select>
 
-                  <div className="col-md-4">
-                    <Label label="Đáy">
-                      <select
-                        className="form-control"
-                        value={editForm?.backLayerPaperType ?? ""}
-                        onChange={(e) =>
-                          setEditForm((p: any) => ({
-                            ...(p ?? {}),
-                            backLayerPaperType: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">-- rỗng --</option>
-                        {PAPER_LAYER_OPTIONS.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </select>
+                        <select
+                          className="form-control"
+                          style={{ width: 220 }}
+                          value={editForm?.backLayerPaperSupplier ?? ""}
+                          onChange={(e) => onBackSupplierChange(e.target.value)}
+                        >
+                          <option value="">-- nhà cung cấp --</option>
+
+                          {/* fallback current supplier if missing */}
+                          {backCurrentSupplier && !backSupplierPresent && (
+                            <option
+                              key={"__back_current"}
+                              value={backCurrentSupplier}
+                            >
+                              {backCurrentSupplier}
+                            </option>
+                          )}
+
+                          {(paperSupplierList || []).map((s) => (
+                            <option
+                              key={supplierKeyOf(s)}
+                              value={supplierKeyOf(s)}
+                            >
+                              {s.code ?? supplierKeyOf(s)}{" "}
+                              {s.name ? `- ${s.name}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </Label>
                   </div>
-                </div>
+                )}
               </div>
 
               <hr />
@@ -646,7 +935,7 @@ const WareEditModal: React.FC<Props> = ({
               <button className="btn btn-secondary" onClick={onClose}>
                 Đóng
               </button>
-              <button className="btn btn-primary" onClick={handleEditSubmit}>
+              <button className="btn btn-primary" onClick={onSubmitWrapper}>
                 Lưu
               </button>
             </div>

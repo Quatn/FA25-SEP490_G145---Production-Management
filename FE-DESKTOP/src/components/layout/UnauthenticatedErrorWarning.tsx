@@ -8,14 +8,14 @@ export default function UnauthenticatedErrorWarning(props: BoxProps) {
       <Center h="full">
         <Stack alignItems={"center"} gap={8}>
           <LuCircleMinus size={"10rem"} color="#ee6666" strokeWidth={1} />
-          <Text colorPalette={"red"} color={"colorPalette.solid"}>This page is for authorized users only</Text>
+          <Text colorPalette={"red"} color={"colorPalette.solid"}>Trang này chỉ dành cho người dùng đã đăng nhập</Text>
           <HStack gap={2} colorPalette={"cyan"}>
             <Link href={"/"}>
-              <ChakraLink as="p">Home</ChakraLink>
+              <ChakraLink as="p">Về trang chủ</ChakraLink>
             </Link>
             <p>-</p>
             <Link href={"/login"}>
-              <ChakraLink as="p">Login</ChakraLink>
+              <ChakraLink as="p">Đăng nhập</ChakraLink>
             </Link>
           </HStack>
         </Stack>

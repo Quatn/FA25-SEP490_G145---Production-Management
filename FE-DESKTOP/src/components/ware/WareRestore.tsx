@@ -123,7 +123,7 @@ const WareRestore: React.FC = () => {
         <div style={{ display: "flex", gap: 8 }}>
           <input
             className="form-control"
-            placeholder="Search deleted by code"
+            placeholder="Tìm kiếm theo mã hàng..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -157,7 +157,7 @@ const WareRestore: React.FC = () => {
             {items.length === 0 && (
               <tr>
                 <td colSpan={9} className="text-muted p-4">
-                  {isFetching ? "Loading..." : "No deleted wares"}
+                  {isFetching ? "Loading..." : "Chưa có mã hàng đã xóa"}
                 </td>
               </tr>
             )}

@@ -98,4 +98,5 @@ export const {
   useQueryOrdersWithUnmanufacturedItemsQuery,
   useGetDeletedPurchaseOrdersQuery,
   useRestorePurchaseOrderMutation,
+  useLazyGetPurchaseOrderWithSubsQuery
 } = purchaseOrderApiSlice;

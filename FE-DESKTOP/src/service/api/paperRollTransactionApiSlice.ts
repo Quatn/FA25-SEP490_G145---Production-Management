@@ -8,12 +8,13 @@ export const paperRollTransactionApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getTransactions: builder.query<
       BaseResponse<PaginatedList<PaperRollTransaction>>,
-      { page?: number; limit?: number; search?: string }
+      { page?: number; limit?: number; search?: string; paperRollId?: string } 
     >({
-      query: ({ page = 1, limit = 100, search = "" }) => ({
+      query: ({ page = 1, limit = 100, search = "", paperRollId }) => ({
         url: `${PAPER_ROLL_TRANSACTION_URL}/list`,
         method: "GET",
-        params: { page, limit, search },
+        // only include paperRollId when it exists
+        params: { page, limit, search, ...(paperRollId ? { paperRollId } : {}) },
         credentials: "include",
       }),
       providesTags: ["PaperRollTransaction"],

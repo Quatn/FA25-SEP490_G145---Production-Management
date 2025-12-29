@@ -1,21 +1,25 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-// Navigator param types used in your app. Adjust if your app defines these elsewhere.
 type RootStackParamList = {
-  Scan: undefined;
-  ImportExportButton: { qrText: string };
+  ImportExportButton: undefined;
+  Scan: { action?: "import" | "export" } | undefined;
   Detail: { qrText: string; action?: "import" | "export" };
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, "ImportExportButton">;
 
-export default function ImportExportButtonScreen({ route, navigation }: Props) {
-  const { qrText } = route.params;
-
+export default function ImportExportButtonScreen({ navigation }: Props) {
   const go = (action: "import" | "export") => {
-    navigation.navigate("Detail", { qrText, action });
+    // remember action by passing it to Scan screen
+    navigation.navigate("Scan", { action });
   };
 
   return (

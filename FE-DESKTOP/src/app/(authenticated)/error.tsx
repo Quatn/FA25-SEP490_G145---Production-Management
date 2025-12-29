@@ -1,4 +1,5 @@
 "use client";
+import ClientSideErrorWarning from "@/components/layout/ClientSideErrorWarning";
 import InsufficientPrivilegeErrorWarning from "@/components/layout/InsufficientPrivilegeErrorWarning";
 import UnauthenticatedErrorWarning from "@/components/layout/UnauthenticatedErrorWarning";
 import { InsufficientPrivilegeError } from "@/lib/errors/InsufficientPrivilegeError";
@@ -26,5 +27,5 @@ export default function AuthenticatedLayoutError({
     return <InsufficientPrivilegeErrorWarning path={path} />;
   }
 
-  return <UnauthenticatedErrorWarning />;
+  return <ClientSideErrorWarning reset={reset} position={"fixed"} w={"100vw"} h={"100vh"} top={0} left={0} />;
 }

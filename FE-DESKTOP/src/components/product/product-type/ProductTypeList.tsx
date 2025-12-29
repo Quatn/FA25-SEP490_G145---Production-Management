@@ -12,9 +12,31 @@ import ProductTypeFormDialog from "./ProductTypeFormDialog";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import { useAddProductTypeMutation, useDeleteProductTypeMutation, useGetProductTypeQuery, useUpdateProductTypeMutation } from "@/service/api/productTypeApiSlice";
 import ProductTypeDetailDialog from "./ProductTypeDetailDialog";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import DataLoading from "@/components/common/DataLoading";
+import check from "check-types";
 
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "product-type-readWrite",
+]
 
 const ProductTypeList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
 
     const [addItem] = useAddProductTypeMutation();
     const [updateItem] = useUpdateProductTypeMutation();
@@ -42,7 +64,23 @@ const ProductTypeList: React.FC = () => {
 
     const inputRef = useRef<HTMLInputElement | null>(null);
 
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
+
     const handleOpenForm = (item?: ProductType) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelected(item);
         setFormOpen(true);
     };
@@ -53,6 +91,9 @@ const ProductTypeList: React.FC = () => {
     };
 
     const handleOpenAlert = (item: ProductType) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelected(item);
         setAlertOpen(true);
     }
@@ -139,6 +180,10 @@ const ProductTypeList: React.FC = () => {
             <FaSearch />
         </IconButton>
     );
+
+    if (hydrating) {
+        return <DataLoading />
+    }
 
     if (isLoading) return <Text>Đang tải dữ liệu...</Text>;
     if (error) return <Text>Không thể tải dữ liệu. Vui lòng thử lại.</Text>;

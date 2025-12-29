@@ -1,6 +1,6 @@
 import UserManagementList from "@/components/user/user-management-page/List";
 import { UserManagementPageProvider } from "@/context/user/userManagementPageContext";
-import { Box, Stack, Text } from "@chakra-ui/react";
+import { Box, Heading, Stack } from "@chakra-ui/react";
 
 export default function PaperSupplierHome() {
   return (
@@ -13,9 +13,7 @@ export default function PaperSupplierHome() {
         rounded={"sm"}
       >
         <Stack ms={3} direction={"row"} justifyContent={"space-between"}>
-          <Text fontWeight={"bold"} color={"black"}>
-            Danh sách người dùng
-          </Text>
+          <Heading>Danh sách người dùng</Heading>
         </Stack>
         <Stack ms={3} mt={5}>
           <UserManagementList />

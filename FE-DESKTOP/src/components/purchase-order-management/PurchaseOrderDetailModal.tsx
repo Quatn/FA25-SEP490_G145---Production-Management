@@ -58,6 +58,9 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
 
   // fetch full server doc (subPOs + items) when editing an existing server PO
   const serverId = po?.id && !String(po.id).startsWith("local-") ? po.id : "";
+
+  const isEditMode = Boolean(serverId);
+
   const { data: fullResp } = useGetPurchaseOrderWithSubsQuery(serverId, {
     skip: !serverId,
   });
@@ -290,16 +293,6 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
     }
   };
 
-  const handleOpenSubPOSelector = (subId?: string) => {
-    if (onOpenSubPOSelector) {
-      onOpenSubPOSelector(local?.id, subId);
-      return;
-    }
-    alert(
-      "Sub-PO selector not implemented here. Parent can inject it via onOpenSubPOSelector."
-    );
-  };
-
   if (!local) return null;
 
   const selectedCustomerId = (() => {
@@ -338,6 +331,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                           className="form-control"
                           value={local.poNumber ?? ""}
                           onChange={(e) => {
+                            if (isEditMode) return;
                             onFieldChange("poNumber" as any, e.target.value);
                             if (
                               validation.poNumberRequired &&
@@ -350,6 +344,12 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                             }
                           }}
                           aria-required={true}
+                          disabled={isEditMode}
+                          title={
+                            isEditMode
+                              ? "Mã PO không thể chỉnh sửa khi đang sửa bản ghi"
+                              : undefined
+                          }
                         />
                         {validation.poNumberRequired && (
                           <div className="text-danger small mt-1">
@@ -417,7 +417,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                             className="form-control"
                             placeholder="Phone"
                             value={local.phone ?? ""}
-                            readOnly={readOnlyWhenCustomer}
+                            disabled
                             onChange={(e) =>
                               onFieldChange("phone" as any, e.target.value)
                             }
@@ -427,7 +427,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                             className="form-control"
                             placeholder="Email"
                             value={local.email ?? ""}
-                            readOnly={readOnlyWhenCustomer}
+                            disabled
                             onChange={(e) =>
                               onFieldChange("email" as any, e.target.value)
                             }
@@ -443,7 +443,7 @@ export const PurchaseOrderDetailModal: React.FC<Props> = ({
                         <input
                           className="form-control"
                           value={local.address ?? ""}
-                          readOnly={readOnlyWhenCustomer}
+                          disabled
                           onChange={(e) =>
                             onFieldChange("address" as any, e.target.value)
                           }

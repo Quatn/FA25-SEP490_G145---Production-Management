@@ -13,14 +13,14 @@ export default function InsufficientPrivilegeErrorWarning(props: InsufficientPri
       <Center h="full">
         <Stack alignItems={"center"} gap={8}>
           <LuLockKeyhole size={"10rem"} color="#ee6666" strokeWidth={1} />
-          <Text colorPalette={"red"} color={"colorPalette.solid"}>You do not have permission to view {props.path ? ` page "${props.path}"` : " this page"}</Text>
+          <Text colorPalette={"red"} color={"colorPalette.solid"}>Bạn không đủ quyền để truy cập {props.path ? ` page "${props.path}"` : "trang này"}</Text>
           <HStack gap={2} colorPalette={"cyan"}>
             <Link href={"/"}>
-              <ChakraLink as="p">Home</ChakraLink>
+              <ChakraLink as="p">Về trang chủ</ChakraLink>
             </Link>
             <p>-</p>
             <BackLink>
-              <ChakraLink as="p">Return to previous page</ChakraLink>
+              <ChakraLink as="p">Quay lại</ChakraLink>
             </BackLink>
           </HStack>
         </Stack>

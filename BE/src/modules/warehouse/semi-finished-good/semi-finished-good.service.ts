@@ -160,6 +160,23 @@ export class SemiFinishedGoodService {
     return await this.model.find().exec();
   }
 
+  async findByManufacturingOrderId(moId: string) {
+
+    if(!Types.ObjectId.isValid(moId)) {
+      throw new NotFoundException('Semi-finished goods not found');
+    }
+
+    const [data] = await Promise.all([
+      this.model
+        .find({ manufacturingOrder: new Types.ObjectId(moId) })
+        .lean(),
+    ]);
+
+    if (!data || data.length === 0) throw new NotFoundException('Semi-finished goods not found');
+
+    return data[0];
+  }
+
   async create(dto: CreateSemiFinishedGoodDto) {
     const doc = new this.model({
       manufacturingOrder: new Types.ObjectId(dto.manufacturingOrder),

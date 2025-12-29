@@ -1,16 +1,36 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
 import { FluteCombinationService } from './flute-combination.service';
 import { CreateFluteCombinationDto } from './dto/create-flute-combination.dto';
 import { UpdateFluteCombinationDto } from './dto/update-flute-combination.dto';
 import { BaseResponse } from '@/common/dto/response.dto';
 import { PaginatedList } from '@/common/dto/paginated-list.dto';
 import { FluteCombination } from '../schemas/flute-combination.schema';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { PrivilegedJwtAuthGuard } from '@/common/guards/privileged-jwt-auth.guard';
+import { fluteCombinationAdminPrivileges, fluteCombinationCreatePrivileges, fluteCombinationGetPrivileges, fluteCombinationUpdatePrivileges } from './flute-combination-module-access-privileges';
 
+const FluteCombinationGetRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: fluteCombinationGetPrivileges,
+});
+
+const FluteCombinationCreateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: fluteCombinationCreatePrivileges,
+});
+
+const FluteCombinationUpdateRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: fluteCombinationUpdatePrivileges,
+});
+
+const FluteCombinationAdminRequestGuard = PrivilegedJwtAuthGuard({
+  requiredPrivileges: fluteCombinationAdminPrivileges,
+});
+
+@ApiBearerAuth("access-token")
 @Controller('flute-combination')
 export class FluteCombinationController {
   constructor(private readonly service: FluteCombinationService) { }
 
+  // @UseGuards(FluteCombinationGetRequestGuard)
   @Get('list')
   @ApiOperation({ summary: 'List paginated flute combinations' })
   async findPaginated(
@@ -26,6 +46,7 @@ export class FluteCombinationController {
     };
   }
 
+  // @UseGuards(FluteCombinationGetRequestGuard)
   @Get('list-all')
   @ApiOperation({ summary: 'List flute combinations' })
   async findAll(): Promise<BaseResponse<FluteCombination[]>> {
@@ -37,6 +58,7 @@ export class FluteCombinationController {
     };
   }
 
+  @UseGuards(FluteCombinationAdminRequestGuard)
   @Get('list-deleted')
   @ApiOperation({ summary: 'List deleted flute combinations' })
   async findDeleted( 
@@ -51,6 +73,7 @@ export class FluteCombinationController {
     };
   }
 
+  // @UseGuards(FluteCombinationGetRequestGuard)
   @Get('detail/:id')
   @ApiOperation({ summary: 'flute combination detail' })
   async findOne(@Param('id') id: string): Promise<BaseResponse<FluteCombination>> {
@@ -62,6 +85,7 @@ export class FluteCombinationController {
     };
   }
 
+  @UseGuards(FluteCombinationCreateRequestGuard)
   @Post('create')
   @ApiOperation({ summary: 'Create new flute combination' })
   async create(@Body() dto: CreateFluteCombinationDto): Promise<BaseResponse<FluteCombination>> {
@@ -73,6 +97,7 @@ export class FluteCombinationController {
     };
   }
 
+  @UseGuards(FluteCombinationUpdateRequestGuard)
   @Patch('update/:id')
   @ApiOperation({ summary: 'Update flute combination' })
   async update(
@@ -87,6 +112,7 @@ export class FluteCombinationController {
     };
   }
 
+  @UseGuards(FluteCombinationUpdateRequestGuard)
   @Delete('delete-soft/:id')
   @ApiOperation({ summary: 'Soft delete flute combination' })
   async softDelete(@Param('id') id: string): Promise<BaseResponse<null>> {
@@ -98,6 +124,7 @@ export class FluteCombinationController {
     };
   }
 
+  @UseGuards(FluteCombinationAdminRequestGuard)
   @Patch('restore/:id')
   @ApiOperation({ summary: 'Restore flute combination' })
   async restore(@Param('id') id: string): Promise<BaseResponse<null>> {
@@ -109,6 +136,7 @@ export class FluteCombinationController {
     };
   }
 
+  @UseGuards(FluteCombinationAdminRequestGuard)
   @Delete('delete-hard/:id')
   @ApiOperation({ summary: 'Hard delete flute combination' })
   async hardDelete(@Param('id') id: string): Promise<BaseResponse<null>> {

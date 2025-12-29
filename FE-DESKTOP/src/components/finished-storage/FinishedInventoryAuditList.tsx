@@ -11,8 +11,33 @@ import { useGetAllManufacturingOrdersQuery } from "@/service/api/manufacturingOr
 import { ManufacturingOrder } from "@/types/ManufacturingOrder";
 import { useGetFinishedGoodAdjustmentTransactionQuery } from "@/service/api/finishedGoodTransactionApiSlice";
 import { FinishedGoodTransaction } from "@/types/FinishedGoodTransaction";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import check from "check-types";
+import DataLoading from "../common/DataLoading";
+
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "finished-good-readWrite",
+    "finished-good-transaction-readWrite",
+]
 
 const FinishedInventoryAuditList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
+
     const [page, setPage] = useState(1);
     const limit = 10;
     const [search, setSearch] = useState("");
@@ -35,13 +60,33 @@ const FinishedInventoryAuditList: React.FC = () => {
 
     const [txOpen, setTxOpen] = useState(false);
 
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
+
     const handleOpenTx = () => {
+
+        if (!handleValidateAccess()) return;
+
         setTxOpen(true);
     };
 
     const handleCloseTx = () => {
         setTxOpen(false);
     };
+
+    if (hydrating) {
+        return <DataLoading />
+    }
 
     if (isLoading || moLoading) return <Spinner />;
     if (error || moError) {

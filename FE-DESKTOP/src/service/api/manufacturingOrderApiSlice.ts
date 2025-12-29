@@ -13,6 +13,30 @@ import { UpdateManyManufacturingOrdersRequestDto, UpdateManyManufacturingOrdersR
 import { CorrugatorProcessStatus } from "@/types/enums/CorrugatorProcessStatus";
 import { ManufacturingOrderApprovalStatus } from "@/types/enums/ManufacturingOrderApprovalStatus";
 import { CorrugatorLine } from "@/types/enums/CorrugatorLine";
+import { QueryAllMOStatusesByDateRangeRequestDto, QueryAllMOStatusesByDateRangeResponseDto } from "@/types/DTO/manufacturing-order/QueryAllMOStatusesByDateRangeRequestDto";
+import check from "check-types";
+import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
+import { QueryAllMOProductionOutputByDateRangeRequestDto, QueryAllMOProductionOutputByDateRangeResponseDto } from "@/types/DTO/manufacturing-order/QueryAllMOProductionOutputByDateRangeDto";
+import { CancelManufacturingOrderRequestDto, CancelManufacturingOrderResponseDto } from "@/types/DTO/manufacturing-order/CancelManufacturingOrderDto";
+
+const relevantListTags = [
+  "ManufacturingOrder",
+  "ManufacturingOrderTracking",
+  "ManufacturingOrderProcess",
+  "CorrugatorProcess",
+  "PurchaseOrder",
+  "FluteCombination",
+  "PaperRoll",
+  "PaperRollTransaction",
+  "Product",
+  "Ware",
+  "SubPurchaseOrder",
+  "PrintColor",
+  "ManufacturingProcess",
+  "SemiFinishedGood",
+  "SemiFinishedGoodTransaction",
+  "PurchaseOrderItem",
+]
 
 export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -34,7 +58,7 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
         params: { page, limit, query, approvalStatuses, corrugatorLines, corrugatorProcessStatuses, sort },
         credentials: "include",
       }),
-      providesTags: ["ManufacturingOrder"],
+      providesTags: relevantListTags,
       // mockFn: ({ page = 1, limit = 20 }) => mockManufacturingOrderQuery({ page, limit }),
     }),
 
@@ -48,7 +72,7 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
         params: { ids },
         credentials: "include",
       }),
-      providesTags: ["ManufacturingOrder"],
+      providesTags: relevantListTags,
     }),
 
     createManyManufacturingOrders: builder.mutation<
@@ -61,7 +85,7 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
         body,
         credentials: "include",
       }),
-      invalidatesTags: ["ManufacturingOrder"],
+      invalidatesTags: relevantListTags,
     }),
 
     updateManyManufacturingOrders: builder.mutation<
@@ -74,7 +98,7 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
         body,
         credentials: "include",
       }),
-      invalidatesTags: ["ManufacturingOrder"],
+      invalidatesTags: relevantListTags,
     }),
 
     deleteManufacturingOrder: builder.mutation<
@@ -86,7 +110,7 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
         method: "DELETE",
         credentials: "include",
       }),
-      invalidatesTags: ["ManufacturingOrder"],
+      invalidatesTags: relevantListTags,
     }),
 
     getAllManufacturingOrders: builder.query<{ success: boolean; message: string; data: ManufacturingOrder[] }, void>({
@@ -95,7 +119,7 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
         method: "GET",
         credentials: "include",
       }),
-      providesTags: ["ManufacturingOrder"],
+      providesTags: relevantListTags,
     }),
 
     getAllByPaperTypesUsage: createApiEndpoint<
@@ -108,7 +132,64 @@ export const manufacturingOrderApiSlice = apiSlice.injectEndpoints({
         params: { paperTypes },
         credentials: "include",
       }),
-      providesTags: ["ManufacturingOrder"],
+      providesTags: relevantListTags,
+    }),
+
+    getAllMOStatusesByDateRange: builder.query<
+      BaseResponse<QueryAllMOStatusesByDateRangeResponseDto[]>,
+      Serialized<QueryAllMOStatusesByDateRangeRequestDto>
+    >({
+      query: ({ startDate, endDate }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/query/all-statuses-by-date-range`,
+        method: "GET",
+        params: {
+          startDate: check.string(startDate) ? formatDateToYYYYMMDD(startDate) : undefined,
+          endDate: check.string(endDate) ? formatDateToYYYYMMDD(endDate) : undefined
+        },
+        credentials: "include",
+      }),
+      providesTags: relevantListTags,
+    }),
+
+
+    getAllMOProductionOutputByDateRange: builder.query<
+      BaseResponse<QueryAllMOProductionOutputByDateRangeResponseDto[]>,
+      Serialized<QueryAllMOProductionOutputByDateRangeRequestDto>
+    >({
+      query: ({ startDate, endDate }) => ({
+        url: `${MANUFACTURING_ORDER_URL}/query/all-production-output-by-date-range`,
+        method: "GET",
+        params: {
+          startDate: check.string(startDate) ? formatDateToYYYYMMDD(startDate) : undefined,
+          endDate: check.string(endDate) ? formatDateToYYYYMMDD(endDate) : undefined
+        },
+        credentials: "include",
+      }),
+      providesTags: relevantListTags,
+    }),
+
+    getByIdFullDetails: builder.query<
+      BaseResponse<Serialized<ManufacturingOrder>>,
+      { id: string }
+    >({
+      query: (params) => ({
+        url: `${MANUFACTURING_ORDER_URL}/find/full-details/${params.id}`,
+        method: "GET",
+        credentials: "include",
+      }),
+      providesTags: relevantListTags,
+    }),
+
+    cancelManufacturingOrder: builder.mutation<
+      CancelManufacturingOrderResponseDto,
+      CancelManufacturingOrderRequestDto
+    >({
+      query: (params) => ({
+        url: `${MANUFACTURING_ORDER_URL}/cancel/${params.id}`,
+        method: "PATCH",
+        credentials: "include",
+      }),
+      invalidatesTags: relevantListTags,
     }),
   }),
 });
@@ -121,4 +202,8 @@ export const {
   useUpdateManyManufacturingOrdersMutation,
   useGetAllManufacturingOrdersQuery,
   useGetAllByPaperTypesUsageQuery,
+  useGetAllMOStatusesByDateRangeQuery,
+  useGetAllMOProductionOutputByDateRangeQuery,
+  useGetByIdFullDetailsQuery,
+  useCancelManufacturingOrderMutation,
 } = manufacturingOrderApiSlice;

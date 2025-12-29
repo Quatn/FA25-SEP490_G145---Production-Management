@@ -23,7 +23,6 @@ import check from "check-types";
 import { useCallback, useEffect, useMemo } from "react";
 import { getCoreRowModel } from "@tanstack/react-table";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
-import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import useDataTable from "@/components/ui/data-table/hook";
 import DataFetchError from "@/components/common/DataFetchError";
 import { useDataTableSelector } from "@/components/ui/data-table/Provider";
@@ -32,8 +31,6 @@ import { logTimestamp } from "@/utils/logTimestamp";
 import { toaster } from "@/components/ui/toaster";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import { ManufacturingOrderTableProps } from "./TablePicker";
-import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
-import { QueryListFullDetailsManufacturingOrderRequestSortOptions } from "@/types/enums/QueryListFullDetailsManufacturingOrderRequestSortOptions";
 import DataEmpty from "@/components/common/DataEmpty";
 
 export default function TruncatedManufacturingOrderTable(
@@ -151,23 +148,22 @@ export default function TruncatedManufacturingOrderTable(
     updateOrders(dto).unwrap().then((res) => {
       if (check.greaterOrEqual(res.data?.patchedAmount as number, res.data?.patchedAmount as number)) {
         toaster.success({
-          title: "Success",
-          description: "All orders updated successfully",
+          description: "Cập nhật tất cả lệnh thành công",
         })
       }
       else if (check.greaterOrEqual(res.data?.patchedAmount as number, 1)) {
         toaster.warning({
-          title: "Some orders was not updated",
+          title: "Một vài lệnh cập nhật không thành công",
         })
       }
       else {
         toaster.warning({
-          title: "No orders updated",
+          title: "Cập nhật lệnh không thành công",
         })
       }
     }).catch(error => {
       toaster.warning({
-        title: "Error updating order",
+        title: "Có lỗi xảy ra trong quá trình cập nhật lệnh",
         description: tryGetApiErrorMsg(error),
       })
     })

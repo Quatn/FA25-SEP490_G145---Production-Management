@@ -34,6 +34,13 @@ import { toaster } from "@/components/ui/toaster";
 import { useConfirm } from "@/components/common/ConfirmModal";
 import { PaperType } from "@/types/PaperType";
 
+// --- privilege check imports ---
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import check from "check-types";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+// ------------------------------------
+
 function uniqueIdTimeStamp() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
@@ -53,6 +60,40 @@ function getDbId(doc: any) {
 }
 
 export const PaperList: React.FC = () => {
+  // --- manual privilege check (edit list as requested) ---
+  const hydrating: boolean = useAppSelector((s) => (s as any).auth?.hydrating);
+  const userState: UserState | null = useAppSelector(
+    (s) => (s as any).auth?.userState ?? null
+  );
+
+  const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "paper-roll-admin",
+    "paper-roll-readWrite",
+    "warehouse-admin",
+    "warehouse-readWrite",
+  ];
+
+  const writeAllowed =
+    check.nonEmptyArray(userState?.accessPrivileges) &&
+    EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
+
+  const writeDisabled = !writeAllowed;
+  // -------------------------------------------------------
+
+  // Header style constants (match WareList: plain light blue)
+  const HEADER_BG = "#e6f7ff"; // plain light blue
+  const HEADER_TEXT = "#02296a"; // dark/navy text for contrast
+  const headerCellBaseStyle: React.CSSProperties = {
+    background: HEADER_BG,
+    color: HEADER_TEXT,
+    verticalAlign: "middle",
+    fontWeight: 600,
+    borderColor: "#d1e7ff",
+    textAlign: "center",
+  };
+
   const [query, setQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   // pagination state
@@ -319,6 +360,14 @@ export const PaperList: React.FC = () => {
       .map((r) => ({ ...r, paperRollId: computePaperRollId(r) })); // include computed id for UI
 
   const handleCreateSubmit = async () => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền tạo cuộn.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       const supplierId = String(createForm.paperSupplierId ?? "");
       if (!supplierId) {
@@ -339,8 +388,7 @@ export const PaperList: React.FC = () => {
         // cannot be empty
         if (!colorId || widthStr === "" || grammageStr === "") {
           toaster.create({
-            description:
-              "Please provide color, width and grammage for new type",
+            description: "Màu, rộng hoặc khổ đang trống",
             type: "error",
           });
           return;
@@ -357,7 +405,15 @@ export const PaperList: React.FC = () => {
           grammageNum < 0
         ) {
           toaster.create({
-            description: "Width and grammage must be numbers >= 0",
+            description: "Rộng và khổ >= 0",
+            type: "error",
+          });
+          return;
+        }
+
+        if (widthNum > 2000 || grammageNum > 2000) {
+          toaster.create({
+            description: "Rộng và khổ không được vượt quá 2000",
             type: "error",
           });
           return;
@@ -483,6 +539,14 @@ export const PaperList: React.FC = () => {
     );
 
   const handleCreateMultipleSubmit = async () => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền tạo nhiều cuộn.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       if (!createMultipleRows.length) {
         toaster.create({ description: "No rows", type: "error" });
@@ -651,6 +715,14 @@ export const PaperList: React.FC = () => {
   };
 
   const handleUpdateSubmit = async () => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền cập nhật cuộn.",
+        type: "error",
+      });
+      return;
+    }
+
     const widthStr = String(updateForm.width ?? "").trim();
     const grammageStr = String(updateForm.grammage ?? "").trim();
     const weightStr = String(updateForm.weight ?? "").trim();
@@ -745,16 +817,24 @@ export const PaperList: React.FC = () => {
   };
 
   const handleSoftDelete = async (r: any) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xóa cuộn.",
+        type: "error",
+      });
+      return;
+    }
+
     const id = getIdFromDoc(r) ?? r.paperRollId;
     if (!id) {
       toaster.create({ description: "No id", type: "error" });
       return;
     }
     const ok = await showConfirm({
-      title: "Delete roll",
-      description: `Delete ${computePaperRollId(r)}?`,
-      confirmText: "Delete",
-      cancelText: "Cancel",
+      title: "Xóa cuộn",
+      description: `Xóa ${computePaperRollId(r)}?`,
+      confirmText: "Xóa",
+      cancelText: "Hủy",
       destructive: true,
     });
     if (!ok) return;
@@ -774,6 +854,14 @@ export const PaperList: React.FC = () => {
   };
 
   const doSingleExport = async (roll: any) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xuất cuộn.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!roll) return;
     const w = Number(roll.weight || 0);
     if (!w || w <= 0) {
@@ -796,12 +884,12 @@ export const PaperList: React.FC = () => {
     try {
       await createTransaction({
         paperRollId: id,
-        employeeId: "69146dd889bf8e8ca320bcff",
+        employeeId: userState?.employeeId ?? "69146dd889bf8e8ca320bcff",
         transactionType: "XUAT",
         initialWeight: w,
         finalWeight: 0,
         timeStamp: new Date().toISOString(),
-        inCharge: "Operator A",
+        inCharge: userState?.name ?? "Operator A",
       }).unwrap();
       await updatePaperRoll({ id, data: { weight: 0 } }).unwrap();
       toaster.create({ description: "Xuất thành công", type: "success" });
@@ -815,6 +903,14 @@ export const PaperList: React.FC = () => {
     rollOrPaperRollId: any,
     newWeight: number
   ) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền nhập lại cuộn.",
+        type: "error",
+      });
+      return;
+    }
+
     if (
       typeof newWeight !== "number" ||
       !Number.isFinite(newWeight) ||
@@ -878,12 +974,12 @@ export const PaperList: React.FC = () => {
     try {
       await createTransaction({
         paperRollId: dbId,
-        employeeId: "69146dd889bf8e8ca320bcff",
+        employeeId: userState?.employeeId ?? "69146dd889bf8e8ca320bcff",
         transactionType: "NHAPLAI",
         initialWeight: prev,
         finalWeight: newW,
         timeStamp: new Date().toISOString(),
-        inCharge: "Operator A",
+        inCharge: userState?.name ?? "Operator A",
       }).unwrap();
 
       await updatePaperRoll({ id: dbId, data: { weight: newW } }).unwrap();
@@ -909,6 +1005,14 @@ export const PaperList: React.FC = () => {
   const doBulkReImport = async (
     updates: { paperRollId: string; newWeight: number }[]
   ) => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền nhập lại hàng loạt.",
+        type: "error",
+      });
+      return;
+    }
+
     if (!updates || updates.length === 0) return;
 
     try {
@@ -922,12 +1026,12 @@ export const PaperList: React.FC = () => {
 
           await createTransaction({
             paperRollId: dbId,
-            employeeId: "69146dd889bf8e8ca320bcff",
+            employeeId: userState?.employeeId ?? "69146dd889bf8e8ca320bcff",
             transactionType: "NHAPLAI",
             initialWeight: prev,
             finalWeight: newW,
             timeStamp: new Date().toISOString(),
-            inCharge: "Operator A",
+            inCharge: userState?.name ?? "Operator A",
           }).unwrap();
 
           await updatePaperRoll({ id: dbId, data: { weight: newW } }).unwrap();
@@ -1029,7 +1133,7 @@ export const PaperList: React.FC = () => {
       return;
     }
     w.document.write(`
-      <html><head><title>QR Print</title></head>
+      <html><head><title>In QR</title></head>
       <body style="text-align:center;font-family:sans-serif;margin-top:40px">
         <img src="${qrDataUrl}" style="width:300px;height:300px" />
         <div class="code">${qrModal.text ?? ""}</div>
@@ -1046,6 +1150,14 @@ export const PaperList: React.FC = () => {
 
   // handle bulk export (previously inline with window.confirm)
   const handleBulkExportSelected = async () => {
+    if (writeDisabled) {
+      toaster.create({
+        description: "Bạn không có quyền xuất hàng loạt.",
+        type: "error",
+      });
+      return;
+    }
+
     const sel = getSelectedRolls();
     if (!sel.length) {
       toaster.create({ description: "Select at least 1", type: "error" });
@@ -1074,8 +1186,16 @@ export const PaperList: React.FC = () => {
           marginBottom: 12,
         }}
       >
-        <div>
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <strong>List cuộn giấy</strong>
+          {/* show small hydrating indicator if auth still resolving */}
+          {hydrating && (
+            <div style={{ display: "inline-flex", alignItems: "center" }}>
+              <div className="spinner-border spinner-border-sm" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
@@ -1091,12 +1211,18 @@ export const PaperList: React.FC = () => {
           <button
             className="btn btn-primary"
             onClick={() => setCreateOpen(true)}
+            disabled={writeDisabled}
+            title={"Tạo cuộn"}
+            style={{ minWidth: 67 }}
           >
             + Tạo
           </button>
           <button
             className="btn btn-outline-primary"
             onClick={() => setCreateMultipleOpen(true)}
+            disabled={writeDisabled}
+            title={"Tạo nhiều"}
+            style={{ minWidth: 127 }}
           >
             + Tạo nhiều
           </button>
@@ -1110,6 +1236,8 @@ export const PaperList: React.FC = () => {
           onClick={() => {
             handleBulkExportSelected();
           }}
+          disabled={writeDisabled}
+          title={"Xuất (chọn)"}
         >
           Xuất (chọn)
         </button>
@@ -1131,7 +1259,7 @@ export const PaperList: React.FC = () => {
         <table className="table table-bordered">
           <thead>
             <tr>
-              <th style={{ width: 36 }}>
+              <th style={{ ...headerCellBaseStyle, width: 36 }}>
                 <input
                   type="checkbox"
                   onChange={(e) => selectAllVisible(e.target.checked)}
@@ -1141,14 +1269,20 @@ export const PaperList: React.FC = () => {
                   }
                 />
               </th>
-              <th>Mã cuộn</th>
-              <th>Màu</th>
-              <th>Nhà cung cấp</th>
-              <th style={{ textAlign: "right" }}>Khổ</th>
-              <th style={{ textAlign: "right" }}>Định lượng</th>
-              <th style={{ textAlign: "right" }}>Trọng lượng</th>
-              <th>Ngày nhập</th>
-              <th style={{ width: 360 }}>Actions</th>
+              <th style={headerCellBaseStyle}>Mã cuộn</th>
+              <th style={headerCellBaseStyle}>Màu</th>
+              <th style={headerCellBaseStyle}>Nhà cung cấp</th>
+              <th style={{ ...headerCellBaseStyle, textAlign: "right" }}>
+                Khổ
+              </th>
+              <th style={{ ...headerCellBaseStyle, textAlign: "right" }}>
+                Định lượng
+              </th>
+              <th style={{ ...headerCellBaseStyle, textAlign: "right" }}>
+                Trọng lượng
+              </th>
+              <th style={headerCellBaseStyle}>Ngày nhập</th>
+              <th style={{ ...headerCellBaseStyle, width: 360 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -1256,28 +1390,45 @@ export const PaperList: React.FC = () => {
                       >
                         Xem chi tiết
                       </button>
+
                       <button
                         className="btn btn-danger btn-sm"
                         onClick={() => doSingleExport(r)}
+                        disabled={writeDisabled}
+                        title={"Xuất"}
                       >
                         Xuất
                       </button>
+
                       <button
                         className="btn btn-secondary btn-sm"
                         onClick={() => {
+                          if (writeDisabled) {
+                            toaster.create({
+                              description: "Bạn không có quyền nhập lại cuộn.",
+                              type: "error",
+                            });
+                            return;
+                          }
                           setSingleModal({ open: true, roll: r });
                           const id = getDbId(r);
                           if (id) setSelectedIds({ [id]: true });
                         }}
+                        disabled={writeDisabled}
+                        title={"Nhập lại"}
                       >
                         Nhập lại
                       </button>
+
                       <button
                         className="btn btn-outline-danger btn-sm"
                         onClick={() => handleSoftDelete(r)}
+                        disabled={writeDisabled}
+                        title={"Xóa"}
                       >
                         Xóa
                       </button>
+
                       <button
                         className="btn btn-warning btn-sm"
                         onClick={() => handleCreateQR(r._id)}

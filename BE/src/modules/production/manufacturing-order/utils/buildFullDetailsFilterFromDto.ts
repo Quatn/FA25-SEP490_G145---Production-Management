@@ -56,8 +56,11 @@ export const buildFullDetailsMOFilterFromDto = (
 
   if (check.array(query.corrugatorLines))
     filter.$and.push({
-      corrugatorLine: {
-        $in: query.corrugatorLines,
+      $expr: {
+        $in: [
+          { $ifNull: ["$corrugatorLineAdjustment", "$corrugatorLine"] },
+          query.corrugatorLines,
+        ],
       },
     });
 
@@ -68,6 +71,6 @@ export const buildFullDetailsMOFilterFromDto = (
       },
     });
 
-  if (filter.$and.length > 0) return filter
+  if (filter.$and.length > 0) return filter;
   return {};
 };

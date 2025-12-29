@@ -172,9 +172,7 @@ export const PaperDetailModal: React.FC<Props> = ({
     if (!pt) return undefined;
     if (pt.paperColor && typeof pt.paperColor === "object")
       return getIdFromDoc(pt.paperColor);
-    return (
-      getIdFromDoc(pt.paperColor) ?? undefined
-    );
+    return getIdFromDoc(pt.paperColor) ?? undefined;
   };
 
   // safe to compute these even if `paper` is undefined
@@ -459,7 +457,7 @@ export const PaperDetailModal: React.FC<Props> = ({
                             <td style={{ textAlign: "right" }}>
                               {t.finalWeight}
                             </td>
-                            <td>{t.inCharge ?? t.employeeName ?? ""}</td>
+                            <td>{t.employee.name ?? t.inCharge ?? ""}</td>
                           </tr>
                         ))
                       )}

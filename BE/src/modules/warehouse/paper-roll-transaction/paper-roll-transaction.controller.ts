@@ -5,7 +5,7 @@ import { CreatePaperRollTransactionDto } from './dto/create-paper-roll-transacti
 import { UpdatePaperRollTransactionDto } from './dto/update-paper-roll-transaction.dto';
 import { PaperRollTransactionDocument } from '../schemas/paper-roll-transaction.schema';
 import { BaseResponse } from '@/common/dto/response.dto';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { PaginatedList } from '@/common/dto/paginatedList.dto';
 
 @Controller('paper-roll-transaction')
@@ -14,6 +14,10 @@ export class PaperRollTransactionController {
 
     @Get('list')
     @ApiOperation({ summary: 'List paginated transactions' })
+    @ApiQuery({ name: 'page', required: false, type: Number })
+    @ApiQuery({ name: 'limit', required: false, type: Number })
+    @ApiQuery({ name: 'search', required: false, type: String })
+    @ApiQuery({ name: 'paperRollId', required: false, type: String })
     async findPaginated(
         @Query('page') page: number = 1,
         @Query('limit') limit: number = 10,

@@ -8,8 +8,31 @@ import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import PaperSupplierRestoreTable from "./PaperSupplierRestoreTable";
 import PaperSupplierDetailDialog from "./PaperSupplierDetailDialog";
 import { useGetDeletedPaperSupplierQuery, useRestorePaperSupplierMutation } from "@/service/api/paperSupplierApiSlice";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import check from "check-types";
+import DataLoading from "@/components/common/DataLoading";
+
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+]
 
 const PaperSupplierRestoreList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
+
 
     const [restoreItem] = useRestorePaperSupplierMutation();
 
@@ -23,6 +46,19 @@ const PaperSupplierRestoreList: React.FC = () => {
 
     const [detailOpen, setDetailOpen] = useState(false);
     const [selected, setSelected] = useState<PaperSupplier | undefined>(undefined);
+
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
 
     const handleOpenDetail = (item?: PaperSupplier) => {
         setSelected(item);
@@ -59,11 +95,18 @@ const PaperSupplierRestoreList: React.FC = () => {
     };
 
     const handleRestore = async (data: PaperSupplier) => {
+
+        if (!handleValidateAccess()) return;
+
         handleMutation(
             () => restoreItem(data).unwrap(),
             `Đã khôi phục nhà giấy ${data.code}`,
             'Khôi phục thất bại',
         );
+    }
+
+    if (hydrating) {
+        return <DataLoading />
     }
 
     if (isLoading) return <Text>Đang tải dữ liệu...</Text>;

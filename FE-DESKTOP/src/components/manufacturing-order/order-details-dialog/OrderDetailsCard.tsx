@@ -1,6 +1,6 @@
 "use client"
 import { ManufacturingOrder } from "@/types/ManufacturingOrder"
-import { Button, Card, DataList, Editable, Heading, HStack, Stack } from "@chakra-ui/react"
+import { Button, Card, DataList, Editable, Heading, HStack, Stack, Textarea } from "@chakra-ui/react"
 import check from "check-types"
 import { useMemo } from "react"
 import { manufacturingOrderComponentUtils as utils } from "../utils"
@@ -47,9 +47,7 @@ export default function ManufacturingOrderDetailsDialogOrderDetailsCard(props: M
         </DataList.Root>
         <Stack mt={5}>
           <Heading size="lg">Ghi chú</Heading>
-          <Editable.Root value={po?.note} readOnly >
-            <Editable.Preview w={"full"} />
-          </Editable.Root>
+          <Textarea variant="subtle" value={po?.note} readOnly autoresize />
         </Stack>
 
       </Card.Body>

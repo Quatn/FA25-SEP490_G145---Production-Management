@@ -13,9 +13,31 @@ import PaperColorAlertDialog from "./PaperColorAlertDialog";
 import PaperColorTable from "./PaperColorTable";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import PaperColorDetailDialog from "./PaperColorDetailDialog";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import DataLoading from "@/components/common/DataLoading";
+import check from "check-types";
 
+const EDIT_PRIVS: AnyAccessPrivileges[] = [
+    "system-admin",
+    "system-readWrite",
+    "paper-color-readWrite",
+]
 
 const PaperColorList: React.FC = () => {
+
+    const hydrating: boolean = useAppSelector((state) =>
+        state.auth.hydrating
+    );
+
+    const userState: UserState | null = useAppSelector((state) =>
+        state.auth.userState
+    );
+
+    const writeAllowed =
+        check.nonEmptyArray(userState?.accessPrivileges) &&
+        EDIT_PRIVS.find((priv) => userState!.accessPrivileges.includes(priv));
 
     const [addPaperColor] = useAddPaperColorMutation();
     const [updatePaperColor] = useUpdatePaperColorMutation();
@@ -48,7 +70,23 @@ const PaperColorList: React.FC = () => {
 
     const inputRef = useRef<HTMLInputElement | null>(null);
 
+    const handleValidateAccess = (): boolean => {
+        if (!writeAllowed) {
+            toaster.create({
+                title: "Quyền truy cập bị từ chối",
+                description: "Bạn không có quyền thao tác chức năng này",
+                type: "error",
+                closable: true,
+            });
+            return false;
+        }
+        return true;
+    }
+
     const handleOpenFormDialog = (color?: PaperColor) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelectedColor(color);
         setFormDialogOpen(true);
     };
@@ -59,6 +97,9 @@ const PaperColorList: React.FC = () => {
     };
 
     const handleOpenAlertDialog = (color: PaperColor) => {
+
+        if (!handleValidateAccess()) return;
+
         setSelectedColor(color);
         setAlertDialogOpen(true);
     }
@@ -127,7 +168,7 @@ const PaperColorList: React.FC = () => {
 
     const handleDeleteColor = async (data: PaperColor) => {
 
-         return await handleMutation(
+        return await handleMutation(
             () => deletePaperColor(data).unwrap(),
             `Xóa màu giấy ${data.code} - ${data.title}`,
             'Xóa thất bại',
@@ -152,6 +193,10 @@ const PaperColorList: React.FC = () => {
             <FaSearch />
         </IconButton>
     );
+
+    if (hydrating) {
+        return <DataLoading />
+    }
 
     if (isColorsLoading) return <Text>Đang tải dữ liệu...</Text>;
     if (colorsError) return <Text>Không thể tải dữ liệu. Vui lòng thử lại.</Text>;

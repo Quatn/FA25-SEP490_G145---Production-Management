@@ -10,5 +10,6 @@ export interface UserState {
   email: string | null;
   contactNumber: string | null;
   role: string;
+  roleName: string;
   accessPrivileges: AnyAccessPrivileges[];
 }

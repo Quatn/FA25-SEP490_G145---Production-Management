@@ -12,8 +12,8 @@ import Link from "next/link";
 import React from "react";
 
 const links = [
-  { label: "Profile", href: "/profile" },
-  { label: "Change password", href: "/change-password" },
+  { label: "Hồ sơ cá nhân", href: "/profile" },
+  { label: "Đổi mật khẩu", href: "/change-password" },
 ]
 
 export default function ProfileLayout({

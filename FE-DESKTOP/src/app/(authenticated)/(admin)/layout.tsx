@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import InsufficientPrivilegeErrorWarning from "@/components/layout/InsufficientPrivilegeErrorWarning";
 import PrivilegedContent from "@/components/layout/PrivilegedContent";
 import { Node, Sidebar } from "@/components/layout/Sidebar";
+import { AnyAccessPrivileges } from "@/types/AccessPrivileges";
 import {
   Box,
   Center,
@@ -12,11 +13,18 @@ import {
   Flex,
   GridItem,
   Input,
+  InputGroup,
   SimpleGrid,
   Spinner,
   useFilter,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { getAccessPrivilegeFilteredCollection } from "./sidebar-collection";
+import { useAppSelector } from "@/service/hooks";
+import { UserState } from "@/types/UserState";
+import DataLoading from "@/components/common/DataLoading";
+import check from "check-types";
+import { LuSearch } from "react-icons/lu";
 
 const initialCollection = createTreeCollection<Node>({
   nodeToValue: (node) => node.id,
@@ -66,11 +74,8 @@ const initialCollection = createTreeCollection<Node>({
   },
 });
 
-export default function AdminLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+const SidebarNav = ({ accessPrivileges }: { accessPrivileges: AnyAccessPrivileges[] }) => {
+  const initialCollection = useMemo(() => getAccessPrivilegeFilteredCollection(accessPrivileges), [accessPrivileges])
   const [collection, setCollection] = useState(initialCollection);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [query, setQuery] = useState("");
@@ -87,8 +92,60 @@ export default function AdminLayout({
   };
 
   return (
+    <Sidebar.Root
+      colorPalette="black"
+      bg="colorPalette.muted"
+    >
+      <Sidebar.Header>
+        <InputGroup startElement={<LuSearch />}>
+          <Input
+            size="sm"
+            placeholder="Tìm trang"
+            onChange={(e) => search(e.target.value)}
+            backgroundColor={"bg"}
+          />
+        </InputGroup>
+      </Sidebar.Header>
+
+      <Sidebar.Body>
+        <Sidebar.Tree
+          collection={collection}
+          expandedValue={expanded}
+          onExpandedChange={(details) =>
+            setExpanded(details.expandedValue)
+          }
+          query={query}
+        />
+
+      </Sidebar.Body>
+
+    </Sidebar.Root>
+  )
+}
+
+export default function AdminLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const hydrating: boolean = useAppSelector((state) => {
+    return state.auth.hydrating
+  });
+  const userState: UserState | null = useAppSelector((state) => {
+    return state.auth.userState
+  });
+
+  if (hydrating) {
+    return <DataLoading />
+  }
+
+  if (check.null(userState)) {
+    <div />
+  }
+
+  return (
     <PrivilegedContent
-      requiredPrivileges={["system-admin", "system-read", "system-readWrite"]}
+      requiredPrivileges={["system-admin", "system-read", "system-readWrite", "employee-admin", "employee-read", "employee-readWrite", "user-admin", "user-read", "user-readWrite"]}
       loading={
         <Box
           w={"100vw"}
@@ -117,30 +174,7 @@ export default function AdminLayout({
           flexGrow={1}
         >
           <GridItem colSpan={{ base: 1, sm: 2, md: 1 }} overflowY={"auto"}>
-            <Sidebar.Root
-              colorPalette="black"
-              bg="colorPalette.muted"
-            >
-              <Sidebar.Header>
-                <Input
-                  size="sm"
-                  placeholder="Search page"
-                  onChange={(e) => search(e.target.value)}
-                  backgroundColor={"bg"}
-                />
-              </Sidebar.Header>
-
-              <Sidebar.Body>
-                <Sidebar.Tree
-                  collection={collection}
-                  expandedValue={expanded}
-                  onExpandedChange={(details) =>
-                    setExpanded(details.expandedValue)
-                  }
-                  query={query}
-                />
-              </Sidebar.Body>
-            </Sidebar.Root>
+            <SidebarNav accessPrivileges={userState?.accessPrivileges ?? []} />
           </GridItem>
           <GridItem colSpan={{ base: 1, sm: 3, md: 4 }} overflowY={"auto"}>
             <main

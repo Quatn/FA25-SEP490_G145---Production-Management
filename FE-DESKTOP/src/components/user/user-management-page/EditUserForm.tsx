@@ -35,7 +35,7 @@ export function EditUserForm(props: EditUserFormProps) {
     if (!interactFlag) return undefined
 
     if (code.length < 1) {
-      return "code is required";
+      return "";
     }
 
     return undefined
@@ -45,11 +45,11 @@ export function EditUserForm(props: EditUserFormProps) {
     if (!interactFlag || check.emptyString(newPassword)) return undefined
 
     if (!check.inRange(newPassword.length, 8, 200)) {
-      return "Password must be between 8 and 200 characters";
+      return "Mật khẩu phải dài từ 8 đến 200 kí tự";
     }
 
     if (!PASSWORD_REGEX.test(newPassword)) {
-      return "Password must contain least one lowercase, uppercase, digit, and special character"
+      return "Mật khẩu phải bao gồm một chữ cái viết hoa, viết thường, một chữ số vào một kí tự đặc biệt"
     }
 
     return undefined
@@ -61,7 +61,7 @@ export function EditUserForm(props: EditUserFormProps) {
 
   const handleSubmit = async () => {
     if (!interactFlag || !!codeErr || !!newPasswordErr) {
-      setAlert(interactFlag ? "Invalid operation" : "Please fill in the empoyee's code and login password")
+      setAlert(interactFlag ? "Dữ liệu không hợp lệ" : "Hãy điền mã đăng nhập và mật khẩu cho tài khoản")
       setInteractFlag(true)
       return false
     }
@@ -79,7 +79,7 @@ export function EditUserForm(props: EditUserFormProps) {
       }).unwrap()
       setAlert(null)
       toaster.create({
-        description: `Saved user successfully`,
+        description: `Cập nhật tài khoản thành công`,
         type: "success",
       });
     } catch (e) {
@@ -105,7 +105,7 @@ export function EditUserForm(props: EditUserFormProps) {
 
   return (
     <Stack>
-      <Field label="Login code" invalid={!!codeErr} errorText={codeErr}>
+      <Field label="Mã đăng nhập" invalid={!!codeErr} errorText={codeErr} required>
         <Input
           colorPalette={interactFlag ? "yellow" : undefined}
           borderColor={"colorPalette.emphasized"}
@@ -122,13 +122,13 @@ export function EditUserForm(props: EditUserFormProps) {
         setFormInteractedWith()
       }} collection={privilegeCol} size="sm" >
         <Select.HiddenSelect />
-        <Select.Label>Select access privileges</Select.Label>
+        <Select.Label>Các quyền truy cập</Select.Label>
         <Select.Control>
           <Select.Trigger
             colorPalette={interactFlag ? "yellow" : undefined}
             borderColor={"colorPalette.emphasized"}
           >
-            <Select.ValueText placeholder="Select access privileges" />
+            <Select.ValueText placeholder="Chọn các quyền" />
           </Select.Trigger>
           <Select.IndicatorGroup>
             <Select.Indicator />
@@ -148,7 +148,7 @@ export function EditUserForm(props: EditUserFormProps) {
         </Portal>
       </Select.Root>
 
-      <Field label="New password" invalid={!!newPasswordErr} errorText={newPasswordErr}>
+      <Field label="Mật khẩu mới" invalid={!!newPasswordErr} errorText={newPasswordErr}>
         <PasswordInput
           {... (interactFlag && newPassword.length > 0 && !newPasswordErr) ? { colorPalette: "yellow", borderColor: "colorPalette.emphasized" } : undefined}
           size="sm"

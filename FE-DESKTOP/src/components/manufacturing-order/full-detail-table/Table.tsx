@@ -24,11 +24,9 @@ import {
 import check from "check-types";
 import { LuFolder, LuSquareCheck, LuUser } from "react-icons/lu";
 import { manufacturingOrderColumnsByTabs, manufacturingOrderMergedHeaders, ManufacturingOrderTableDataType } from "./tableDefinition";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { getCoreRowModel } from "@tanstack/react-table";
 import { UpdateManyManufacturingOrdersRequestDto } from "@/types/DTO/manufacturing-order/UpdateManyManufacturingOrdersDto";
-import { recalculatePurchaseOrderItem, recalculateWare } from "@/service/mock-data/recalculation";
-import { UnpopulatedFieldError } from "@/lib/errors/UnpopulatedFieldError";
 import { PurchaseOrderItem } from "@/types/PurchaseOrderItem";
 import useDataTable from "@/components/ui/data-table/hook";
 import DataFetchError from "@/components/common/DataFetchError";
@@ -37,7 +35,6 @@ import { toaster } from "@/components/ui/toaster";
 import { tryGetApiErrorMsg } from "@/utils/tryGetApiErrorMsg";
 import { ManufacturingOrderTableProps } from "./TablePicker";
 import { devlog } from "@/utils/devlog";
-import { useFindManyOrderFinishingProcesssByManufacturingOrderIdQuery } from "@/service/api/orderFinishingProcessApiSlice";
 
 export default function ManufacturingOrderTable(
   props: ManufacturingOrderTableProps,
@@ -54,7 +51,7 @@ export default function ManufacturingOrderTable(
   const {
     data: fullDetailMOPaginatedResponse,
     error: fetchError,
-    isLoading: isFetchingList,
+    isFetching: isFetchingList,
     refetch: refetchTable,
   } = useGetFullDetailManufacturingOrdersQuery({ page, limit, query: query, sort: sorts });
 
@@ -189,31 +186,24 @@ export default function ManufacturingOrderTable(
       >
         <Tabs.List ms={`${getTabBarOffset()}px`}>
           <Tabs.Trigger value="all">
-            <LuUser />
             Tổng quan
           </Tabs.Trigger>
           <Tabs.Trigger value="order">
-            <LuUser />
             Thông tin đơn hàng
           </Tabs.Trigger>
           <Tabs.Trigger value="manufacture">
-            <LuFolder />
             Gia công
           </Tabs.Trigger>
           <Tabs.Trigger value="layers">
-            <LuSquareCheck />
             Cấu trúc lớp
           </Tabs.Trigger>
           <Tabs.Trigger value="notes">
-            <LuSquareCheck />
             Ghi chú
           </Tabs.Trigger>
           <Tabs.Trigger value="weight">
-            <LuSquareCheck />
             Trọng lượng giấy sử dụng
           </Tabs.Trigger>
           <Tabs.Trigger value="processes">
-            <LuSquareCheck />
             Công đoạn hoàn thiện
           </Tabs.Trigger>
         </Tabs.List>

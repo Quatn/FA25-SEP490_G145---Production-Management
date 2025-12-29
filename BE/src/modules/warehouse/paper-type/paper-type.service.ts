@@ -27,6 +27,7 @@ export class PaperTypeService {
             paperColor: dto.paperColor,
             width: dto.width,
             grammage: dto.grammage,
+            isDeleted: { $in: [true, false] }, 
         };
 
         if (excludeId) {
