@@ -1,0 +1,22 @@
+[
+  {
+    "_id": {
+      "$oid": "69270d94a4c9f48f342fa3dd"
+    },
+    "isDeleted": false,
+    "deletedAt": null,
+    "code": "admin",
+    "password": "$2b$10$RX4W77YYIqr8WAuyomN9KOgiqidOVR4h2ChKWT/dhdC613GLGDDWy",
+    "employee": {
+      "$oid": "6926c834c0637050c69dc2a3"
+    },
+    "accessPrivileges": ["system-admin"],
+    "createdAt": {
+      "$date": "2025-11-26T14:24:20.968Z"
+    },
+    "updatedAt": {
+      "$date": "2025-12-21T10:48:42.175Z"
+    },
+    "__v": 0
+  }
+]

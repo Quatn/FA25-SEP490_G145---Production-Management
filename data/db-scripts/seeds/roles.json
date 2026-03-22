@@ -1,0 +1,74 @@
+[
+  {
+    "_id": {
+      "$oid": "6926c82bc0637050c69dc2a0"
+    },
+    "code": "PAPER-ROLL-WAREHOUSE-MANAGER",
+    "name": "Thủ kho giấy",
+    "description": "",
+    "note": ""
+  },
+  {
+    "_id": {
+      "$oid": "6926c840c0637050c69dc2a4"
+    },
+    "code": "PLANNING-DEPARTMENT-MANAGER",
+    "name": "Trưởng phòng kế hoạch",
+    "description": "",
+    "note": ""
+  },
+  {
+    "_id": {
+      "$oid": "6926c825c0637050c69dc29f"
+    },
+    "code": "EMPLOYEE",
+    "name": "Công nhân",
+    "description": "",
+    "note": ""
+  },
+  {
+    "_id": {
+      "$oid": "6926c83bc0637050c69dc2a3"
+    },
+    "code": "BUSINESS-DEPARTMENT-MANAGER",
+    "name": "Trưởng phòng kinh doanh",
+    "description": "",
+    "note": ""
+  },
+  {
+    "_id": {
+      "$oid": "6926c846c0637050c69dc2a5"
+    },
+    "code": "DIRECTOR",
+    "name": "Giám đốc",
+    "description": "",
+    "note": ""
+  },
+  {
+    "_id": {
+      "$oid": "6926c836c0637050c69dc2a2"
+    },
+    "code": "FINISHED-PRODUCT-WAREHOUSE-MANAGER",
+    "name": "Thủ kho thành phẩm",
+    "description": "",
+    "note": ""
+  },
+  {
+    "_id": {
+      "$oid": "6926c81dc0637050c69dc29e"
+    },
+    "code": "ADMIN",
+    "name": "Quản trị hệ thống",
+    "description": "",
+    "note": ""
+  },
+  {
+    "_id": {
+      "$oid": "6926c831c0637050c69dc2a1"
+    },
+    "code": "SEMI-FINISHED-PRODUCT-WAREHOUSE-MANAGER",
+    "name": "Thủ kho phôi",
+    "description": "",
+    "note": ""
+  }
+]

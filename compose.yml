@@ -7,6 +7,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${DB_USER}
     volumes:
       - db-data:/data/db
+      - ./data/db-scripts:/docker-entrypoint-initdb.d
     ports:
       - "27017:27017"
     healthcheck:
@@ -23,7 +24,7 @@ services:
       dockerfile: Dockerfile
     image: production-management-api:latest
     environment:
-      DB_URI: mongodb://${DB_USER}:${DB_PASSWORD}@mongodb:27017/?authSource=admin
+      DB_URI: mongodb://${DB_USER}:${DB_PASSWORD}@mongodb:27017/
       DB_NAME: ${DB_NAME}
       CORS_ORIGINS: ${WEB_URL}
       JWT_SECRET: ${JWT_SECRET}

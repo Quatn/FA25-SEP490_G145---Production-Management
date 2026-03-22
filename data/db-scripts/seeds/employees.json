@@ -1,0 +1,19 @@
+[
+  {
+    "_id": {
+      "$oid": "6926c834c0637050c69dc2a3"
+    },
+    "code": "ADM-001",
+    "name": "Quản trị viên A",
+    "address": "",
+    "email": "xcerp@gmail.com",
+    "contactNumber": "",
+    "role": {
+      "$oid": "6926c81dc0637050c69dc29e"
+    },
+    "note": "",
+    "updatedAt": {
+      "$date": "2025-12-19T01:30:11.967Z"
+    }
+  }
+]
