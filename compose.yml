@@ -1,0 +1,57 @@
+services:
+  mongodb:
+    image: 'mongo:8.2.6'
+    environment:
+      MONGO_INITDB_DATABASE: ${DB_NAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USER}
+    volumes:
+      - db-data:/data/db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", 
+             "--eval",
+             "db.adminCommand('ping')"]
+      interval: ${DB_HEALTHCHECK_INTERVAL}
+      timeout: ${DB_HEALTHCHECK_TIMEOUT}
+      retries: ${DB_HEALTHCHECK_RETRIES}
+
+  api:
+    build:
+      context: ./BE
+      dockerfile: Dockerfile
+    image: production-management-api:latest
+    environment:
+      DB_URI: mongodb://${DB_USER}:${DB_PASSWORD}@mongodb:27017/?authSource=admin
+      DB_NAME: ${DB_NAME}
+      CORS_ORIGINS: ${WEB_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPTION_SECRET: ${ENCRYPTION_SECRET}
+    ports:
+      - "4000:8080"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080').then(r => { if (!r.ok) process.exit(1) })"]
+      interval: ${API_HEALTHCHECK_INTERVAL}
+      timeout: ${API_HEALTHCHECK_TIMEOUT}
+      retries: ${API_HEALTHCHECK_RETRIES}
+
+  web:
+    build:
+      context: ./FE-DESKTOP
+      dockerfile: Dockerfile
+    image: production-management-web:latest
+    environment:
+      WEB_URL: ${WEB_URL}
+      API_URL: ${API_URL}
+    ports:
+      - "3000:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  db-data:
