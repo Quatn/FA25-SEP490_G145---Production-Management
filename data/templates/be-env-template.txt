@@ -1,0 +1,8 @@
+# Fill the variables below to provide enviromental variables for the manually built and ran back-end NestJS application. The file should be renamed to ".env.production" and placed in the BE folder.
+NODE_ENV=production
+PORT=
+DB_URI=
+DB_NAME=
+CORS_ORIGINS=
+JWT_SECRET=
+ENCRYPTION_SECRET=

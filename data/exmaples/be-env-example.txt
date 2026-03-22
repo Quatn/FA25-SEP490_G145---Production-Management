@@ -1,0 +1,9 @@
+# Rename this file to ".env.production" and place it in the BE folder to provide the necessary environmental variables for a manually built and ran version of the NestJS back-end api application.
+# !!! This is an example env that can be used for quick demonstration purpose. Please change the variables before deploying to production !!!
+NODE_ENV=production
+PORT=4000
+DB_URI=mongodb://127.0.0.1:27017/
+DB_NAME=demo-app-db
+CORS_ORIGINS=http://localhost:3000,http://192.168.0.1:3000
+JWT_SECRET=AAABBABAABAABBbbaabaaABBBAaabaaBBAABAbbaaABABBAaabaaABBBAABA
+ENCRYPTION_SECRET=CCDddcCDDDcccdddDDCcCDDDCCDddcCDD

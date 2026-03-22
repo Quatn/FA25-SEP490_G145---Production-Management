@@ -1,0 +1,19 @@
+# Rename this file to ".env" and place it in the same folder as the compose.yml file to provide the necessary environmental variables for the docker compose process and its containers.
+# !!! This is an example env that can be used for quick demonstration purpose. Please change the variables before deploying to production !!!
+JWT_SECRET=AAABBABAABAABBbbaabaaABBBAaabaaBBAABAbbaaABABBAaabaaABBBAABA
+ENCRYPTION_SECRET=CCDddcCDDDcccdddDDCcCDDDCCDddcCDD
+
+WEB_URL=http://localhost:3000
+API_URL=http://localhost:4000
+
+DB_NAME=demo-app-db
+DB_USER=app
+DB_PASSWORD=KKlmanjchjas
+
+DB_HEALTHCHECK_INTERVAL=2s
+DB_HEALTHCHECK_TIMEOUT=5s
+DB_HEALTHCHECK_RETRIES=20
+
+API_HEALTHCHECK_INTERVAL=2s
+API_HEALTHCHECK_TIMEOUT=5s
+API_HEALTHCHECK_RETRIES=20

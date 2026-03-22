@@ -1,0 +1,18 @@
+# Fill the variables below and rename this file to ".env" and place it in the same folder as the compose.yml file to provide the necessary environmental variables for the docker compose process and its containers.
+JWT_SECRET=
+ENCRYPTION_SECRET=
+
+WEB_URL=
+API_URL=
+
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+
+DB_HEALTHCHECK_INTERVAL=
+DB_HEALTHCHECK_TIMEOUT=
+DB_HEALTHCHECK_RETRIES=
+
+API_HEALTHCHECK_INTERVAL=
+API_HEALTHCHECK_TIMEOUT=
+API_HEALTHCHECK_RETRIES=

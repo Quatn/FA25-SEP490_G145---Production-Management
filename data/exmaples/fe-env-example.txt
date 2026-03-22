@@ -1,0 +1,4 @@
+# Rename this file to ".env.production" and place it in the FE folder to provide the necessary environmental variables for a manually built and ran version of the NextJS front-end React application.
+# !!! This is an example env that can be used for quick demonstration purpose. Please change the variables before deploying to production !!!
+NODE_ENV=production
+API_URL=http://localhost:4000

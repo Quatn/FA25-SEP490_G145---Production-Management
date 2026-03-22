@@ -1,0 +1,3 @@
+# Fill the variables below to provide enviromental variables for the manually built and ran front-end NextJS application. The file should be renamed to ".env.production" and placed in the FE folder.
+NODE_ENV=production
+API_URL=
